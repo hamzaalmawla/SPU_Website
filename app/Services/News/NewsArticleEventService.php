@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\News;
 
+use App\Contracts\Content\PersonIdentityServiceInterface;
 use App\Contracts\Form\FormDefinitionServiceInterface;
 use App\Contracts\News\NewsArticleEventCmsServiceInterface;
 use App\Contracts\News\NewsArticleEventServiceInterface;
@@ -33,6 +34,7 @@ final class NewsArticleEventService implements NewsArticleEventServiceInterface
     public function __construct(
         private readonly NewsArticleEventCmsServiceInterface $eventCms,
         private readonly FormDefinitionServiceInterface $forms,
+        private readonly PersonIdentityServiceInterface $identities,
     ) {}
 
     public function forArticle(int $articleId, string $locale): ?NewsArticleEventDTO
@@ -405,6 +407,18 @@ final class NewsArticleEventService implements NewsArticleEventServiceInterface
             if (! $person instanceof Person) {
                 return null;
             }
+            // A leader with a faculty profile is shown as that profile.
+            $identity = $this->identities->publicIdentities([(int) $person->getKey()], $locale)[(int) $person->getKey()] ?? null;
+            if ($identity !== null) {
+                return new NewsArticleEventSpeakerDTO(
+                    name: $identity->name,
+                    title: $this->filled($identity->title) ?? $this->filled($person->translations->firstWhere('locale', $locale)?->role),
+                    organization: null,
+                    bio: null,
+                    photoUrl: $identity->image,
+                    profileUrl: $identity->profileUrl,
+                );
+            }
             $translation = $this->profileTranslation($person->translations->all(), $locale);
             if (! $translation instanceof PersonTranslation || trim((string) $translation->name) === '') {
                 return null;
@@ -430,10 +444,6 @@ final class NewsArticleEventService implements NewsArticleEventServiceInterface
         if (! $translation instanceof FacultyMemberTranslation || trim((string) $translation->full_name) === '') {
             return null;
         }
-        // A member linked to a leadership profile is shown at that address.
-        $linkedSlug = $member->person_id !== null
-            ? Person::query()->public()->whereKey($member->person_id)->value('slug')
-            : null;
 
         return new NewsArticleEventSpeakerDTO(
             name: trim((string) $translation->full_name),
@@ -443,7 +453,7 @@ final class NewsArticleEventService implements NewsArticleEventServiceInterface
             photoUrl: $member->photoMedia instanceof MediaAsset
                 ? MediaUrlResolver::resolveImage($member->photoMedia->webp_path, $member->photoMedia->path, $member->photoMedia->disk)
                 : MediaUrlResolver::resolveLegacy($member->legacy_photo_path),
-            profileUrl: '/'.$locale.'/about/profile/'.(is_string($linkedSlug) && $linkedSlug !== '' ? $linkedSlug : $member->slug),
+            profileUrl: '/'.$locale.'/about/profile/'.$member->slug,
         );
     }
 

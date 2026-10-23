@@ -123,42 +123,41 @@ final class ProfileAvailabilityTest extends TestCase
         $this->get('/ar')->assertOk()->assertDontSee('/ar/about/profile/mouhib-alnoukari', false);
     }
 
-    public function test_a_member_whose_canonical_person_is_unpublished_is_not_available(): void
+    public function test_a_member_is_its_own_profile_whatever_state_its_leadership_row_is_in(): void
     {
-        // hamza's person_id indirection: a member carrying one does not render
-        // itself, resolveUnifiedProfile() resolves it through the Person. So the
-        // member's own state says nothing about whether the page exists.
+        // One profile per person: the faculty member renders itself, and a
+        // leadership row only adds a role. Hiding the row hides the role, not
+        // the person's page.
         $person = $this->publishedPerson('linked-person');
         $person->translations()->create(['locale' => 'ar', 'name' => 'اسم', 'role' => 'دور']);
 
         $member = $this->publishedFacultyMember('linked-member');
-        $member->forceFill(['person_id' => $person->getKey()])->save();
+        $person->forceFill(['faculty_member_id' => $member->getKey()])->save();
 
         $service = app(ProfilePageServiceInterface::class);
         $this->assertTrue($service->hasPublicProfile('linked-member'));
+        $this->assertSame('linked-member', $service->getProfile('ar', 'unified', 'linked-person')?->slug);
 
         $person->forceFill(['is_enabled' => false])->save();
 
-        $this->assertFalse(
-            $service->hasPublicProfile('linked-member'),
-            'A member whose canonical Person is unpublished renders a 404, so it is not available.',
-        );
-        $this->assertNull($service->getProfile('ar', 'unified', 'linked-member'));
+        $this->assertTrue($service->hasPublicProfile('linked-member'));
+        $this->assertSame('linked-member', $service->getProfile('ar', 'unified', 'linked-member')?->slug);
     }
 
-    public function test_a_member_whose_canonical_person_has_no_translation_is_not_available(): void
+    public function test_a_leadership_row_with_a_hidden_profile_shows_on_its_own(): void
     {
-        $person = $this->publishedPerson('bare-person');   // no translations
-        $member = $this->publishedFacultyMember('bare-member');
-        $member->forceFill(['person_id' => $person->getKey()])->save();
+        $person = $this->publishedPerson('row-person');
+        $person->translations()->create(['locale' => 'ar', 'name' => 'اسم', 'role' => 'دور']);
+        $member = $this->publishedFacultyMember('hidden-member');
+        $member->forceFill(['is_enabled' => false])->save();
+        $person->forceFill(['faculty_member_id' => $member->getKey()])->save();
 
         $service = app(ProfilePageServiceInterface::class);
 
-        $this->assertNull($service->getProfile('ar', 'unified', 'bare-member'));
-        $this->assertFalse(
-            $service->hasPublicProfile('bare-member'),
-            'The check and the render must agree even through the person_id indirection.',
-        );
+        $this->assertFalse($service->hasPublicProfile('hidden-member'));
+        $this->assertNull($service->getProfile('ar', 'unified', 'hidden-member'));
+        $this->assertTrue($service->hasPublicProfile('row-person'));
+        $this->assertSame('row-person', $service->getProfile('ar', 'unified', 'row-person')?->slug);
     }
 
     private function publishedFacultyMember(string $slug): FacultyMember

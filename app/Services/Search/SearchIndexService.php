@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\Search;
 
+use App\Contracts\Content\PersonIdentityServiceInterface;
 use App\Contracts\Search\SearchIndexServiceInterface;
 use App\Models\Faculty\Faculty;
 use App\Models\Faculty\FacultyPage;
@@ -43,6 +44,10 @@ use Illuminate\Support\Str;
 final class SearchIndexService implements SearchIndexServiceInterface
 {
     private const LOCALES = ['ar', 'en'];
+
+    public function __construct(
+        private readonly PersonIdentityServiceInterface $identityService,
+    ) {}
 
     /**
      * Faculties reachable through the public /faculties routes. Mirrors the
@@ -559,6 +564,11 @@ final class SearchIndexService implements SearchIndexServiceInterface
     private function personDocuments(Model $record): array
     {
         if (! $record instanceof Person) {
+            return [];
+        }
+
+        // A leader with a public faculty profile is found through the profile.
+        if ($this->identityService->publicIdentities([(int) $record->getKey()], 'ar') !== []) {
             return [];
         }
 

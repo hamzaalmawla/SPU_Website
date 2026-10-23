@@ -819,8 +819,7 @@ fi
 
 # ── Approved people merge ───────────────────────────────────────────────────
 # Merges researchers and faculty members entered twice (same name, same
-# faculty) and links staff who also have a leadership profile, as listed by
-# people:duplicates. Merged-away records are soft-deleted and their profile
+# faculty), as listed by people:duplicates. Merged-away records are soft-deleted and their profile
 # addresses redirect to the kept profile; someone listed in two faculties is
 # left alone. Inert unless a human places an approval file not in git:
 #
@@ -837,6 +836,30 @@ if [[ -f "${PEOPLE_MERGE_APPROVAL}" ]]; then
         || fail "The people merge failed."
 
     mv "${PEOPLE_MERGE_APPROVAL}" "${PEOPLE_MERGE_APPROVAL}.consumed-$(date -u +%Y%m%d-%H%M%S)"
+fi
+
+# ── Approved people unify (one profile per person) ──────────────────────────
+# Ties every leadership row (dean, rector, ...) to the faculty profile of the
+# same person, which becomes the one place their name, photo and bio live. It
+# never overwrites faculty-member data: it only fills a profile's empty fields
+# from the leadership row, skips any row or profile with an unpublished draft,
+# and saves a JSON snapshot of every row it touches first. The dry run is in
+# every deploy log ("People unify dry run"). Inert unless a human places an
+# approval file not in git:
+#
+#     storage/app/private/legacy-imports/people-unify.approved
+#
+# It disarms itself after one run.
+PEOPLE_UNIFY_APPROVAL="${IMPORT_DIR}/people-unify.approved"
+
+if [[ -f "${PEOPLE_UNIFY_APPROVAL}" ]]; then
+    log "People unify"
+    (cd "${APP}" && "${PHP}" -d memory_limit=512M artisan people:unify --no-ansi) \
+        || fail "The people unify dry run failed. Nothing was changed."
+    (cd "${APP}" && "${PHP}" -d memory_limit=512M artisan people:unify --write --approve=people-unify-20261023 --no-ansi) \
+        || fail "The people unify failed."
+
+    mv "${PEOPLE_UNIFY_APPROVAL}" "${PEOPLE_UNIFY_APPROVAL}.consumed-$(date -u +%Y%m%d-%H%M%S)"
 fi
 
 # ── Approved researcher ↔ staff links ───────────────────────────────────────
@@ -1554,6 +1577,12 @@ log "CMS content status"
 log "People that look like duplicates"
 (cd "${APP}" && "${PHP}" -d memory_limit=512M artisan people:duplicates --no-ansi) || \
     printf '   (people:duplicates unavailable in this release)\n'
+
+# What people:unify would do: the profile each leadership row gets, the fields
+# it would fill and the ones that differ. Read-only; never fatal.
+log "People unify dry run"
+(cd "${APP}" && "${PHP}" -d memory_limit=512M artisan people:unify --no-ansi) || \
+    printf '   (people:unify unavailable in this release)\n'
 
 # A faculty's members (listed, hidden, deleted) and the admin activity on them,
 # for investigating a members page that lost people. Read-only. Runs once when a

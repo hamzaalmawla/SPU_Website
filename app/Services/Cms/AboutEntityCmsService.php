@@ -6,6 +6,7 @@ namespace App\Services\Cms;
 
 use App\Contracts\Auth\AdminAccessServiceInterface;
 use App\Contracts\Cms\AboutEntityCmsServiceInterface;
+use App\Contracts\Content\PersonIdentityServiceInterface;
 use App\Contracts\Media\MediaServiceInterface;
 use App\DTOs\Cms\AboutEntityCmsDataDTO;
 use App\DTOs\Cms\CmsTargetDTO;
@@ -45,6 +46,7 @@ final class AboutEntityCmsService implements AboutEntityCmsServiceInterface
     public function __construct(
         private readonly MediaServiceInterface $mediaService,
         private readonly AdminAccessServiceInterface $access,
+        private readonly PersonIdentityServiceInterface $identityService,
     ) {}
 
     public function prepareDraft(AboutEntityCmsDataDTO $data, int $userId): AboutEntityCmsDataDTO
@@ -222,6 +224,13 @@ final class AboutEntityCmsService implements AboutEntityCmsServiceInterface
             return null;
         }
 
+        $memberId = $this->nullableInt($payload['faculty_member_id'] ?? null);
+        $memberPayload = $memberId !== null ? $this->storedFacultyMemberPayload($memberId) : null;
+        $profile = $memberPayload !== null ? $this->buildFacultyMemberPreview($memberPayload, $locale) : null;
+        if ($profile instanceof ProfilePageDTO) {
+            return $this->withPreviewRole($profile, $payload, $translation);
+        }
+
         $slug = $this->stringValue($payload['slug'] ?? null);
         $name = $this->stringValue($translation['name'] ?? null);
         if ($slug === '' || $name === '') {
@@ -298,6 +307,51 @@ final class AboutEntityCmsService implements AboutEntityCmsServiceInterface
             seoImage: $this->mediaUrl($this->nullableInt($payload['photo_media_id'] ?? null))
                 ?? $this->nullableString($payload['image'] ?? null),
             path: '/'.$locale.'/about/profile/'.$slug,
+        );
+    }
+
+    /**
+     * The profile as the leadership row shows it: the profile's name, photo
+     * and bio, with the row's role, quote and category.
+     *
+     * @param  array<string, mixed>  $payload
+     * @param  array<string, mixed>  $translation
+     */
+    private function withPreviewRole(ProfilePageDTO $profile, array $payload, array $translation): ProfilePageDTO
+    {
+        $appointment = $this->primaryAppointmentPayload($payload);
+        $position = $this->nullableString($appointment['role_override'] ?? null)
+            ?? $this->nullableString($translation['role'] ?? null)
+            ?? $profile->position;
+
+        return new ProfilePageDTO(
+            locale: $profile->locale,
+            direction: $profile->direction,
+            sourceType: $profile->sourceType,
+            slug: $profile->slug,
+            name: $profile->name,
+            title: $profile->title,
+            position: $position,
+            category: $this->nullableString($payload['category'] ?? null) ?? $profile->category,
+            facultyName: $profile->facultyName,
+            departmentName: $profile->departmentName,
+            email: $profile->email,
+            phone: $profile->phone,
+            image: $profile->image,
+            bio: $profile->bio,
+            quote: $this->nullableString($translation['quote'] ?? null),
+            specializations: $profile->specializations,
+            officeLocation: $profile->officeLocation,
+            socialLinks: $profile->socialLinks,
+            educations: $profile->educations,
+            publications: $profile->publications,
+            councilMemberships: $profile->councilMemberships,
+            cvUrl: $profile->cvUrl,
+            profileUrl: $profile->profileUrl,
+            seoTitle: $profile->seoTitle,
+            seoDescription: $profile->seoDescription,
+            seoImage: $profile->seoImage,
+            path: $profile->path,
         );
     }
 
@@ -464,7 +518,16 @@ final class AboutEntityCmsService implements AboutEntityCmsServiceInterface
     private function publishPerson(int $id, array $payload, DateTimeInterface $publishedAt): void
     {
         $person = Person::query()->findOrFail($id);
+        $memberId = $this->nullableInt($payload['faculty_member_id'] ?? null);
+
+        if ($memberId !== null) {
+            $this->publishLeadershipRole($person, $memberId, $payload, $publishedAt);
+
+            return;
+        }
+
         $person->forceFill([
+            'faculty_member_id' => null,
             'slug' => $this->requiredString($payload, 'slug'),
             'category' => $this->nullableString($payload['category'] ?? null),
             'title' => $this->nullableString($payload['title'] ?? null),
@@ -533,6 +596,44 @@ final class AboutEntityCmsService implements AboutEntityCmsServiceInterface
             $educationQuery->whereNotIn('id', $keptEducationIds);
         }
         $educationQuery->delete();
+
+        $this->syncPersonAppointments($person, $payload);
+    }
+
+    /**
+     * A leadership row held by a faculty profile stores only the role: who
+     * they are (name, photo, bio, contact, education) is the profile's. The
+     * row's older copies of those fields are left as they were, not cleared,
+     * so nothing is lost; the public pages no longer read them.
+     *
+     * @param  array<string, mixed>  $payload
+     */
+    private function publishLeadershipRole(Person $person, int $memberId, array $payload, DateTimeInterface $publishedAt): void
+    {
+        $person->forceFill([
+            'faculty_member_id' => $memberId,
+            'slug' => $this->requiredString($payload, 'slug'),
+            'category' => $this->nullableString($payload['category'] ?? null),
+            'faculty_scope_slug' => $this->nullableString($payload['faculty_scope_slug'] ?? null),
+            'profile_url' => $this->nullableString($payload['profile_url'] ?? null),
+            'sort_order' => (int) ($payload['sort_order'] ?? 0),
+            'is_enabled' => (bool) ($payload['is_enabled'] ?? false),
+            'publication_status' => PublicationStatus::Published->value,
+            'published_at' => $publishedAt,
+        ])->save();
+
+        foreach ($this->translations($payload) as $locale => $translation) {
+            $existing = $person->translations()->where('locale', $locale)->first();
+            $person->translations()->updateOrCreate(['locale' => $locale], [
+                // The column cannot be empty; it keeps the old name or, for a
+                // new row, the profile's. Pages show the profile's name.
+                'name' => $existing instanceof PersonTranslation && trim((string) $existing->name) !== ''
+                    ? $existing->name
+                    : $this->requiredString($translation, 'name'),
+                'role' => $this->requiredString($translation, 'role'),
+                'quote' => $this->nullableString($translation['quote'] ?? null),
+            ]);
+        }
 
         $this->syncPersonAppointments($person, $payload);
     }
@@ -673,6 +774,9 @@ final class AboutEntityCmsService implements AboutEntityCmsServiceInterface
         return [
             'entity_type' => 'person',
             'entity_id' => $id,
+            // Includes the older faculty_members.person_id link, so saving the
+            // row keeps it tied to the same profile.
+            'faculty_member_id' => $this->identityService->profileMemberIds([$id])[$id] ?? null,
             'slug' => $person->slug,
             'category' => $person->category,
             'title' => $person->title,
@@ -847,6 +951,16 @@ final class AboutEntityCmsService implements AboutEntityCmsServiceInterface
             if ($slug !== '') {
                 $payload['profile_url'] = $this->personProfilePath($slug);
             }
+
+            $memberId = $this->nullableInt($payload['faculty_member_id'] ?? null);
+            $payload['faculty_member_id'] = $memberId;
+            if ($memberId !== null) {
+                $names = FacultyMemberTranslation::query()->where('faculty_member_id', $memberId)->pluck('full_name', 'locale');
+                foreach (['ar', 'en'] as $locale) {
+                    $name = (string) ($names[$locale] ?? $names['ar'] ?? $names['en'] ?? '');
+                    $payload['translations'][$locale] = [...($payload['translations'][$locale] ?? ['locale' => $locale]), 'name' => $name];
+                }
+            }
         }
 
         if ($type === 'person' && array_key_exists('appointments', $payload)) {
@@ -916,6 +1030,10 @@ final class AboutEntityCmsService implements AboutEntityCmsServiceInterface
             $errors['slug'][] = 'The slug is required.';
         }
         if ($type === 'person') {
+            $memberId = $this->nullableInt($payload['faculty_member_id'] ?? null);
+            if ($memberId !== null && ! FacultyMember::query()->whereKey($memberId)->exists()) {
+                $errors['faculty_member_id'][] = 'The selected profile does not exist.';
+            }
             $this->validatePersonAppointments($errors, $payload);
             $this->appendMediaErrors($errors, 'photo_media_id', $payload['photo_media_id'] ?? null, 'image/');
             $this->appendMediaErrors($errors, 'cv_media_id', $payload['cv_media_id'] ?? null, 'application/');
@@ -932,7 +1050,10 @@ final class AboutEntityCmsService implements AboutEntityCmsServiceInterface
             $facultyId = $this->nullableInt($payload['faculty_id'] ?? null);
             $departmentId = $this->nullableInt($payload['department_id'] ?? null);
 
-            if ($facultyId === null || ! Faculty::query()->whereKey($facultyId)->exists()) {
+            // No faculty is allowed: a university leader (rector, vice
+            // president) has a profile but belongs to no faculty. A user with
+            // a faculty limit still has to pick one of theirs.
+            if ($facultyId !== null && ! Faculty::query()->whereKey($facultyId)->exists()) {
                 $errors['faculty_id'][] = 'A valid faculty is required.';
             }
             if ($departmentId !== null && ($facultyId === null || ! Department::query()->whereKey($departmentId)->where('faculty_id', $facultyId)->exists())) {

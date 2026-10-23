@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services\Page;
 
 use App\Contracts\Cms\CmsWorkflowServiceInterface;
+use App\Contracts\Content\PersonIdentityServiceInterface;
 use App\Contracts\Faculty\FacultyStudyPlanLinkServiceInterface;
 use App\Contracts\Faculty\ProjectFieldBlockParserInterface;
 use App\Contracts\Page\AboutPageServiceInterface;
@@ -88,6 +89,7 @@ final class FacultyPageService implements FacultyPageServiceInterface
         private readonly ProfilePageServiceInterface $profilePageService,
         private readonly ProjectFieldBlockParserInterface $projectFieldBlockParser,
         private readonly FacultySubpageCardServiceInterface $subpageCardService,
+        private readonly PersonIdentityServiceInterface $identityService,
     ) {}
 
     public function getHub(string $locale): FacultyHubPageDTO
@@ -213,7 +215,15 @@ final class FacultyPageService implements FacultyPageServiceInterface
         }
 
         if (is_array($content['dean'] ?? null) && $content['dean'] !== []) {
-            $content['dean']['profileUrl'] = $this->deanProfileFor($faculty, $locale, $content['dean'])?->path;
+            $deanProfile = $this->deanProfileFor($faculty, $locale, $content['dean']);
+            $content['dean']['profileUrl'] = $deanProfile?->path;
+            // The dean's name and photo are the profile's, so an edit there shows here.
+            if ($deanProfile instanceof ProfilePageDTO) {
+                $content['dean']['name'] = $deanProfile->name;
+                if (is_string($deanProfile->image) && $deanProfile->image !== '') {
+                    $content['dean']['image'] = $deanProfile->image;
+                }
+            }
         }
 
         return new FacultyDetailPageDTO(
@@ -1039,7 +1049,6 @@ final class FacultyPageService implements FacultyPageServiceInterface
                 'translations',
                 'appointments' => fn ($q) => $q->enabled()->where('type', 'faculty_member')->where('faculty_id', $faculty->getKey())->with(['translations', 'department.translations']),
                 'photoMedia',
-                'linkedFacultyMembers' => fn ($q) => $q->public()->with('photoMedia')->orderByDesc('updated_at'),
             ])
             ->orderBy('sort_order')
             ->orderBy('id')
@@ -1048,24 +1057,19 @@ final class FacultyPageService implements FacultyPageServiceInterface
         $facultyMembers = FacultyMember::query()
             ->public()
             ->where('faculty_id', $faculty->getKey())
-            // A member carrying a person_id is represented by that Person, and
-            // resolveUnifiedProfile() resolves it through them. So when the
-            // Person is unpublished the member is unpublished by proxy: listing
-            // it would render a profile link to a page that 404s. Expressed as
-            // one condition on the existing query rather than a check per row.
-            ->where(fn ($query) => $query
-                ->whereNull('person_id')
-                ->orWhereHas('canonicalPerson', fn ($person) => $person
-                    ->public()
-                    ->whereHas('translations', fn ($t) => $t->whereIn('locale', ['ar', 'en']))))
             ->with(['translations', 'department.translations', 'photoMedia'])
             ->orderBy('sort_order')
             ->orderBy('id')
             ->get();
 
+        // A leader with a faculty profile is that profile's card: same name,
+        // photo and address, with the role as the position.
+        $identities = $this->identityService->publicIdentities(array_map('intval', $people->modelKeys()), $locale);
+
         $personItems = $people
-            ->map(function (Person $person) use ($locale): ?array {
-                $slug = (string) $person->slug;
+            ->map(function (Person $person) use ($locale, $identities): ?array {
+                $identity = $identities[(int) $person->getKey()] ?? null;
+                $slug = $identity !== null ? $identity->slug : (string) $person->slug;
                 if (preg_match('/^[A-Za-z0-9-]+$/', $slug) !== 1) {
                     return null;
                 }
@@ -1079,7 +1083,7 @@ final class FacultyPageService implements FacultyPageServiceInterface
                 }
 
                 $apt = $person->appointments->first();
-                $role = $translation->position ?: $translation->title ?: '';
+                $role = $identity?->position ?: $identity?->title ?: $translation->position ?: $translation->title ?: '';
                 if ($apt !== null) {
                     $aptTrans = $apt->translations->firstWhere('locale', $locale)
                         ?? $apt->translations->firstWhere('locale', 'ar')
@@ -1094,15 +1098,14 @@ final class FacultyPageService implements FacultyPageServiceInterface
                     $department = $this->departmentTranslation($apt->department, $locale)->name ?? null;
                 }
 
-                // A linked faculty member's photo wins, as on the profile page.
-                $photo = $person->linkedFacultyMembers->first()?->photoMedia ?? $person->photoMedia;
-                $image = $photo instanceof MediaAsset
+                $photo = $person->photoMedia;
+                $image = $identity?->image ?? ($photo instanceof MediaAsset
                     ? MediaUrlResolver::resolveImage($photo->webp_path, $photo->path, $photo->disk)
-                    : (is_string($person->image) && $person->image !== '' ? $person->image : MediaUrlResolver::resolveLegacy($person->legacy_photo_path));
+                    : (is_string($person->image) && $person->image !== '' ? $person->image : MediaUrlResolver::resolveLegacy($person->legacy_photo_path)));
 
                 return [
                     'slug' => $slug,
-                    'name' => (string) $translation->name,
+                    'name' => $identity !== null ? $identity->name : (string) $translation->name,
                     'position' => $role,
                     'department' => $department,
                     'image' => $image,
@@ -1112,12 +1115,9 @@ final class FacultyPageService implements FacultyPageServiceInterface
             })
             ->filter(fn (?array $item): bool => $item !== null);
 
-        // A member linked to a person already listed above is that person's
-        // card, not a second one.
-        $listedPersonIds = $people->modelKeys();
-
+        // A profile already listed above as a leader is one card, not two:
+        // unique('slug') below keeps the leader's card, with the role.
         $facultyMemberItems = $facultyMembers
-            ->reject(fn (FacultyMember $member): bool => $member->person_id !== null && in_array((int) $member->person_id, $listedPersonIds, true))
             ->map(function (FacultyMember $member) use ($locale): ?array {
                 $slug = (string) $member->slug;
                 if (preg_match('/^[A-Za-z0-9-]+$/', $slug) !== 1) {
@@ -2229,19 +2229,29 @@ final class FacultyPageService implements FacultyPageServiceInterface
         // The name in the dean message decides who is linked. A dean is not
         // always filed with the "dean" category (some are council members with
         // a dean appointment), so every leadership profile with that name is a
-        // candidate, and the one filed as this faculty's dean wins.
+        // candidate, and the one filed as this faculty's dean wins. When the
+        // profile's name has since been edited and no longer matches the
+        // message, the one dean filed for this faculty is still the dean.
         $facultySlug = $this->publicSlug($faculty);
-        $dean = $this->aboutPageService->getLeadershipProfiles($locale)
+        $leaders = $this->aboutPageService->getLeadershipProfiles($locale);
+        $dean = $leaders
             ->filter(fn (PersonDTO $person): bool => $this->samePersonName($displayName, $person->name))
             ->sortByDesc(fn (PersonDTO $person): int => ($person->category === 'dean' ? 2 : 0)
                 + ($this->canonicalFacultySlug((string) $person->facultySlug) === $facultySlug ? 1 : 0))
             ->first();
 
         if (! $dean instanceof PersonDTO) {
+            $facultyDeans = $leaders->filter(fn (PersonDTO $person): bool => $person->category === 'dean'
+                && $this->canonicalFacultySlug((string) $person->facultySlug) === $facultySlug);
+            $dean = $facultyDeans->count() === 1 ? $facultyDeans->first() : null;
+        }
+
+        if (! $dean instanceof PersonDTO) {
             return null;
         }
 
-        $profile = $this->profilePageService->getProfile($locale, 'person', $dean->slug);
+        // The card's slug is the faculty profile's when there is one.
+        $profile = $this->profilePageService->getProfile($locale, 'unified', $dean->slug);
 
         return $profile instanceof ProfilePageDTO ? $profile : null;
     }

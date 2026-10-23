@@ -253,7 +253,7 @@ final class ProfileWorkflowTest extends TestCase
         }
     }
 
-    public function test_legacy_profile_sources_converge_on_one_canonical_person_profile(): void
+    public function test_legacy_profile_sources_converge_on_one_profile(): void
     {
         $person = $this->adminService->createPerson($this->personData('shared-profile'), (int) $this->admin->getKey());
         $member = $this->adminService->createFacultyMember($this->facultyMemberData('shared-profile'), (int) $this->admin->getKey());
@@ -269,10 +269,10 @@ final class ProfileWorkflowTest extends TestCase
             ->assertRedirect('/en/about/profile/shared-profile');
         $this->get('/en/about/profile/shared-profile?source=faculty-member')
             ->assertRedirect('/en/about/profile/shared-profile');
+        // One profile per person: the faculty profile is the page at the shared address.
         $this->get('/en/about/profile/shared-profile')
             ->assertOk()
-            ->assertSee('English Profile')
-            ->assertDontSee('English Faculty Member');
+            ->assertSee('English Faculty Member');
     }
 
     public function test_managed_faculty_member_appears_in_staff_directory_with_canonical_profile_link(): void

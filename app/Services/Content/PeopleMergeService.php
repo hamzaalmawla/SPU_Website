@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Services\Content;
 
-use App\Contracts\Auth\AdminAccessServiceInterface;
 use App\Contracts\Content\PeopleMergeServiceInterface;
 use App\Contracts\Shared\AuditServiceInterface;
 use App\Contracts\Shared\CacheServiceInterface;
@@ -15,22 +14,19 @@ use App\Models\Person\CouncilMember;
 use App\Models\Person\FacultyMember;
 use App\Models\Person\FacultyMemberTranslation;
 use App\Models\Person\Person;
-use App\Models\Person\PersonAppointment;
-use App\Models\Person\PersonAppointmentTranslation;
 use App\Models\Research\Researcher;
 use App\Models\Research\ResearchPublication;
-use App\Models\User\User;
 use App\Support\PersonName;
-use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
 /**
- * Merges records that are one person: researchers entered twice, faculty
- * members listed twice in the same faculty, and faculty members who also
- * have a leadership profile. Nothing is hard-deleted: a merged-away record is
- * soft-deleted, and a merged profile's address redirects to the kept one.
+ * Merges records that are one person: researchers entered twice and faculty
+ * members listed twice in the same faculty. Nothing is hard-deleted: a
+ * merged-away record is soft-deleted, and a merged profile's address
+ * redirects to the kept one. Leadership rows are tied to their faculty
+ * profile by people:unify (PeopleUnifyServiceInterface), not here.
  *
  * Someone listed in two different faculties is left alone: that is usually
  * one person teaching in both.
@@ -42,7 +38,6 @@ final class PeopleMergeService implements PeopleMergeServiceInterface
     public function __construct(
         private readonly AuditServiceInterface $auditService,
         private readonly CacheServiceInterface $cacheService,
-        private readonly AdminAccessServiceInterface $accessService,
     ) {}
 
     public function merge(bool $write, ?string $approval): PeopleMergeResultDTO
@@ -53,7 +48,6 @@ final class PeopleMergeService implements PeopleMergeServiceInterface
 
         $researcherGroups = $this->researcherGroups();
         [$memberGroups, $skipped] = $this->memberGroups();
-        $links = $this->memberPersonLinks();
         $lines = [];
 
         foreach ($researcherGroups as $group) {
@@ -67,12 +61,9 @@ final class PeopleMergeService implements PeopleMergeServiceInterface
         foreach ($skipped as $line) {
             $lines[] = 'Left alone (different faculties): '.$line;
         }
-        foreach ($links as $link) {
-            $lines[] = 'Link faculty member M'.$link['member']->getKey().' /'.$link['member']->slug.' to leadership profile P'.$link['person']->getKey().' /'.$link['person']->slug;
-        }
 
         if ($write) {
-            DB::transaction(function () use ($researcherGroups, $memberGroups, $links): void {
+            DB::transaction(function () use ($researcherGroups, $memberGroups): void {
                 foreach ($researcherGroups as $group) {
                     foreach ($group['merge'] as $duplicate) {
                         $this->mergeResearcher($group['keep'], $duplicate);
@@ -83,16 +74,12 @@ final class PeopleMergeService implements PeopleMergeServiceInterface
                         $this->mergeMember($group['keep'], $duplicate);
                     }
                 }
-                foreach ($links as $link) {
-                    $this->linkMemberToPerson($link['member'], $link['person']);
-                }
             });
 
             $this->auditService->log('people.merged', null, Person::class, null, [
                 'batch' => self::APPROVAL_TOKEN,
                 'researchers' => $researcherGroups->sum(fn (array $group): int => $group['merge']->count()),
                 'faculty_members' => $memberGroups->sum(fn (array $group): int => $group['merge']->count()),
-                'links' => $links->count(),
             ]);
             $this->cacheService->flushTags(['public-pages', 'public-shell', 'about', 'facilities', 'research', 'seo', 'sitemap', 'continuity']);
         }
@@ -101,97 +88,9 @@ final class PeopleMergeService implements PeopleMergeServiceInterface
             written: $write,
             researchersMerged: $researcherGroups->sum(fn (array $group): int => $group['merge']->count()),
             membersMerged: $memberGroups->sum(fn (array $group): int => $group['merge']->count()),
-            membersLinked: $links->count(),
             leftAlone: count($skipped),
             lines: $lines,
         );
-    }
-
-    public function leadershipOptions(string $search = ''): array
-    {
-        $search = trim($search);
-
-        return Person::query()
-            ->with('translations:id,person_id,locale,name')
-            ->when($search !== '', fn ($query) => $query->where(fn ($inner) => $inner
-                ->where('slug', 'like', '%'.$search.'%')
-                ->orWhereHas('translations', fn ($translation) => $translation->where('name', 'like', '%'.$search.'%'))))
-            ->orderBy('sort_order')
-            ->limit(50)
-            ->get()
-            ->mapWithKeys(function (Person $person): array {
-                $names = $person->translations->pluck('name')->filter()->unique()->implode(' / ');
-
-                return [(int) $person->getKey() => trim($names.' (/'.$person->slug.($person->category ? ', '.$person->category : '').')')];
-            })
-            ->all();
-    }
-
-    public function linkFacultyMember(int $memberId, int $personId, int $userId): void
-    {
-        $member = FacultyMember::query()->with('translations', 'faculty')->findOrFail($memberId);
-        $this->authorizeLinking($member, $userId);
-        $person = Person::query()->with('translations')->find($personId);
-
-        if (! $person instanceof Person) {
-            throw new InvalidArgumentException('The leadership profile does not exist.');
-        }
-
-        if ($member->person_id !== null && (int) $member->person_id !== $personId) {
-            throw new InvalidArgumentException('This faculty member is already linked to another leadership profile. Unlink it first.');
-        }
-
-        DB::transaction(fn () => $this->linkMemberToPerson($member, $person));
-
-        $this->auditService->log('faculty_member.linked_to_person', $userId, FacultyMember::class, $memberId, ['person_id' => $personId, 'person_slug' => $person->slug]);
-        $this->flushPublicCaches();
-    }
-
-    public function unlinkFacultyMember(int $memberId, int $userId): void
-    {
-        $member = FacultyMember::query()->with('faculty')->findOrFail($memberId);
-        $this->authorizeLinking($member, $userId);
-        $personId = $member->person_id;
-
-        if ($personId === null) {
-            return;
-        }
-
-        DB::transaction(function () use ($member, $personId): void {
-            if ($member->faculty_id !== null) {
-                PersonAppointment::query()
-                    ->where('person_id', $personId)
-                    ->where('type', 'faculty_member')
-                    ->where('faculty_id', $member->faculty_id)
-                    ->update(['is_enabled' => false]);
-            }
-
-            $member->forceFill(['person_id' => null])->save();
-        });
-
-        $this->auditService->log('faculty_member.unlinked_from_person', $userId, FacultyMember::class, $memberId, ['person_id' => (int) $personId]);
-        $this->flushPublicCaches();
-    }
-
-    private function authorizeLinking(FacultyMember $member, int $userId): void
-    {
-        $user = User::query()->find($userId);
-        $faculty = $member->faculty;
-        $facultySlug = $faculty === null ? null : (string) ($faculty->public_slug ?: $faculty->slug);
-
-        if (! $user instanceof User
-            || ! $this->accessService->can($user, 'faculty_members.update')
-            || ! $this->accessService->can($user, 'people.update')
-            || ! $this->accessService->withinFacultyLimit($user, $facultySlug)) {
-            throw new AuthorizationException('You may not link this faculty member to a leadership profile.');
-        }
-    }
-
-    private function flushPublicCaches(): void
-    {
-        if (! $this->cacheService->flushTags(['public-pages', 'public-shell', 'about', 'facilities', 'research', 'seo', 'sitemap'])) {
-            $this->cacheService->flushAll();
-        }
     }
 
     /** @return Collection<int, array{keep: Researcher, merge: Collection<int, Researcher>}> */
@@ -232,22 +131,6 @@ final class PeopleMergeService implements PeopleMergeServiceInterface
             ->values();
 
         return [$groups, $skipped];
-    }
-
-    /** @return Collection<int, array{member: FacultyMember, person: Person}> */
-    private function memberPersonLinks(): Collection
-    {
-        $people = Person::query()->with('translations')->get();
-
-        return FacultyMember::query()->whereNull('person_id')->with('translations')->get()
-            ->map(function (FacultyMember $member) use ($people): ?array {
-                $names = $member->translations->pluck('full_name')->filter()->map(fn (mixed $name): string => (string) $name)->all();
-                $matches = $people->filter(fn (Person $person): bool => $this->sameName($names, $person->translations->pluck('name')->filter()->map(fn (mixed $name): string => (string) $name)->all()));
-
-                return $matches->count() === 1 ? ['member' => $member, 'person' => $matches->first()] : null;
-            })
-            ->filter()
-            ->values();
     }
 
     private function mergeResearcher(Researcher $keep, Researcher $duplicate): void
@@ -321,36 +204,6 @@ final class PeopleMergeService implements PeopleMergeServiceInterface
         }
 
         $duplicate->delete();
-    }
-
-    /** The faculty member's profile becomes the leadership profile, which keeps their faculty placement. */
-    private function linkMemberToPerson(FacultyMember $member, Person $person): void
-    {
-        // Nothing is copied onto the leadership profile: since 2026-10-20 its page
-        // shows the linked member's content as it is built (ProfilePageService),
-        // so later edits to the member show too. Copying the member's position
-        // also used to hide the leadership role ("Dean") behind "Professor".
-
-        if ($member->faculty_id !== null && PersonAppointment::query()->where('person_id', $person->getKey())->where('type', 'faculty_member')->where('faculty_id', $member->faculty_id)->doesntExist()) {
-            $appointment = PersonAppointment::query()->create([
-                'person_id' => $person->getKey(),
-                'type' => 'faculty_member',
-                'faculty_id' => $member->faculty_id,
-                'department_id' => $member->department_id,
-                'sort_order' => $member->sort_order,
-                'is_enabled' => $member->is_enabled,
-            ]);
-            foreach ($member->translations as $translation) {
-                $role = $translation->position ?: $translation->title;
-                if (filled($role)) {
-                    PersonAppointmentTranslation::query()->create(['person_appointment_id' => $appointment->getKey(), 'locale' => $translation->locale, 'role_override' => $role]);
-                }
-            }
-        }
-
-        ResearchPublication::query()->where('faculty_member_id', $member->getKey())->whereNull('person_id')->update(['person_id' => $person->getKey()]);
-        CouncilMember::query()->where('faculty_member_id', $member->getKey())->whereNull('person_id')->update(['person_id' => $person->getKey()]);
-        $member->forceFill(['person_id' => $person->getKey()])->save();
     }
 
     private function redirect(string $from, string $to, string $locale): void

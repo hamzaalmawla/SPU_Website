@@ -14,7 +14,7 @@ final class PeopleMergeCommand extends Command
         {--write : Merge (without it nothing is changed)}
         {--approve= : Required approval token for --write}';
 
-    protected $description = 'Merge researchers and faculty members entered twice, and link staff to their leadership profile.';
+    protected $description = 'Merge researchers and faculty members entered twice.';
 
     public function __construct(
         private readonly PeopleMergeServiceInterface $mergeService,
@@ -39,7 +39,6 @@ final class PeopleMergeCommand extends Command
         $this->table(['', 'Count'], [
             ['Researchers merged away', $result->researchersMerged],
             ['Faculty members merged away (address redirects to the kept profile)', $result->membersMerged],
-            ['Faculty members linked to their leadership profile', $result->membersLinked],
             ['Groups left alone (different faculties)', $result->leftAlone],
         ]);
 

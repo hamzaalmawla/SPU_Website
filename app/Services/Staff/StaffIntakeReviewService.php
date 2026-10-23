@@ -7,6 +7,7 @@ namespace App\Services\Staff;
 use App\Contracts\Auth\AdminAccessServiceInterface;
 use App\Contracts\Cms\AboutEntityCmsServiceInterface;
 use App\Contracts\Cms\CmsWorkflowServiceInterface;
+use App\Contracts\Content\PersonIdentityServiceInterface;
 use App\Contracts\Content\ProfileAdminServiceInterface;
 use App\Contracts\Media\MediaServiceInterface;
 use App\Contracts\Shared\AuditServiceInterface;
@@ -48,6 +49,7 @@ final class StaffIntakeReviewService implements StaffIntakeReviewServiceInterfac
         private readonly AuditServiceInterface $auditService,
         private readonly AdminAccessServiceInterface $access,
         private readonly StaffIntakeLinkServiceInterface $links,
+        private readonly PersonIdentityServiceInterface $identities,
     ) {}
 
     public function reviewableFacultyIds(int $actorId): array
@@ -106,9 +108,9 @@ final class StaffIntakeReviewService implements StaffIntakeReviewServiceInterfac
 
         $claimed = $request->facultyMember;
         $related = $request->relatedFacultyMember;
-        $linkedPersonSlug = $claimed instanceof FacultyMember && $claimed->person_id !== null
-            ? Person::query()->whereKey($claimed->person_id)->value('slug')
-            : null;
+        // A leadership role held by this profile shows the approved change too.
+        $leadershipRoleId = $claimed instanceof FacultyMember ? ($this->identities->personIdsForMember((int) $claimed->getKey())[0] ?? null) : null;
+        $linkedPersonSlug = $leadershipRoleId !== null ? Person::query()->whereKey($leadershipRoleId)->value('slug') : null;
 
         $accessLog = StaffIntakeAccessLog::query()
             ->where(function ($query) use ($request): void {

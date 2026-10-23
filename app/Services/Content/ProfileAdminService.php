@@ -66,6 +66,40 @@ final class ProfileAdminService implements ProfileAdminServiceInterface
         ])->all();
     }
 
+    public function profileOptions(string $search, int $userId, array $includeIds = []): array
+    {
+        $user = User::query()->findOrFail($userId);
+        if (! $this->access->canAny($user, ['faculty_members.view', 'people.view'])) {
+            throw new AuthorizationException('You are not authorized to view profile options.');
+        }
+
+        $search = trim($search);
+        $locale = app()->getLocale() === 'ar' ? 'ar' : 'en';
+        $label = function (FacultyMember $member) use ($locale): string {
+            $name = $member->translations->firstWhere('locale', $locale)?->full_name
+                ?? $member->translations->firstWhere('locale', $locale === 'ar' ? 'en' : 'ar')?->full_name
+                ?? (string) $member->slug;
+            $faculty = $member->faculty?->translations->firstWhere('locale', $locale)?->name;
+
+            return trim((string) $name).($faculty !== null ? ' ('.$faculty.')' : '');
+        };
+
+        $matches = FacultyMember::query()
+            ->with(['translations', 'faculty.translations'])
+            ->when($search !== '', fn ($query) => $query->where(fn ($inner) => $inner
+                ->where('slug', 'like', '%'.$search.'%')
+                ->orWhereHas('translations', fn ($translation) => $translation->where('full_name', 'like', '%'.$search.'%'))))
+            ->orderBy('sort_order')
+            ->limit(50)
+            ->get();
+        $included = $includeIds === [] ? collect() : FacultyMember::query()->with(['translations', 'faculty.translations'])->whereKey($includeIds)->get();
+
+        return $included->concat($matches)
+            ->unique(fn (FacultyMember $member): int => (int) $member->getKey())
+            ->mapWithKeys(fn (FacultyMember $member): array => [(int) $member->getKey() => $label($member)])
+            ->all();
+    }
+
     public function facultyIdForScope(string $scope, int $userId): ?int
     {
         $allowedIds = array_keys($this->facultyOptions($userId));

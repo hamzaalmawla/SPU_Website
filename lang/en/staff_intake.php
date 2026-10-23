@@ -213,7 +213,7 @@ return [
             'same_faculty' => 'same faculty',
             'claimed' => 'Profile picked by the teacher',
             'related' => 'Started from their profile in another faculty',
-            'linked_person' => 'This profile is shown on the website through the People profile ":slug". Update that profile as well, or the public page will not change.',
+            'linked_person' => 'This person also holds a leadership role (":slug"). Approved changes show there too.',
             'access_log' => 'Who opened the link for this profile',
             'reviewed' => 'Reviewed by :name on :date',
         ],

@@ -14,6 +14,15 @@ interface ProfileAdminServiceInterface
 
     public function facultyIdForScope(string $scope, int $userId): ?int;
 
+    /**
+     * Faculty profiles a leadership row can belong to, matching the search
+     * (name in either language, or slug), labelled with name and faculty.
+     *
+     * @param  list<int>  $includeIds  Always listed, so a chosen profile keeps its label.
+     * @return array<int, string>
+     */
+    public function profileOptions(string $search, int $userId, array $includeIds = []): array;
+
     /** @return array<int, string> */
     public function departmentOptions(?int $facultyId, int $userId): array;
 

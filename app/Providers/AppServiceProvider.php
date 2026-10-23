@@ -20,6 +20,8 @@ use App\Contracts\Cms\CmsWorkflowServiceInterface;
 use App\Contracts\Content\FacultyMemberActivityReportServiceInterface;
 use App\Contracts\Content\PeopleDuplicateReportServiceInterface;
 use App\Contracts\Content\PeopleMergeServiceInterface;
+use App\Contracts\Content\PeopleUnifyServiceInterface;
+use App\Contracts\Content\PersonIdentityServiceInterface;
 use App\Contracts\Content\PersonServiceInterface;
 use App\Contracts\Content\ProfileAdminServiceInterface;
 use App\Contracts\ErrorPage\ErrorPageRendererInterface;
@@ -216,6 +218,8 @@ use App\Services\Cms\CmsWorkflowService;
 use App\Services\Content\FacultyMemberActivityReportService;
 use App\Services\Content\PeopleDuplicateReportService;
 use App\Services\Content\PeopleMergeService;
+use App\Services\Content\PeopleUnifyService;
+use App\Services\Content\PersonIdentityService;
 use App\Services\Content\PersonService;
 use App\Services\Content\ProfileAdminService;
 use App\Services\ErrorPage\ErrorPageRenderer;
@@ -793,6 +797,8 @@ class AppServiceProvider extends ServiceProvider
             StaffIntakeReviewServiceInterface::class => StaffIntakeReviewService::class,
             PeopleDuplicateReportServiceInterface::class => PeopleDuplicateReportService::class,
             PeopleMergeServiceInterface::class => PeopleMergeService::class,
+            PersonIdentityServiceInterface::class => PersonIdentityService::class,
+            PeopleUnifyServiceInterface::class => PeopleUnifyService::class,
             ResearchPageServiceInterface::class => ResearchPageService::class,
             SearchIndexServiceInterface::class => SearchIndexService::class,
             SiteSearchServiceInterface::class => SiteSearchService::class,

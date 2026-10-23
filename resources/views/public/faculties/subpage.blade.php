@@ -148,11 +148,11 @@
                 <div class="container">
                     <div class="mx-auto grid max-w-[1080px] gap-10 lg:grid-cols-[0.72fr_1.28fr] lg:gap-16">
                         <div class="min-h-[360px] overflow-hidden rounded-[8px] border border-slate-100 bg-slate-50 shadow-[0_16px_42px_rgba(9,17,68,0.05)]">
-                            <img src="{{ $dean['image'] ?? $heroImage }}" alt="" class="h-full min-h-[360px] w-full object-cover object-top">
+                            <img src="{{ $page->deanProfile?->image ?: ($dean['image'] ?? $heroImage) }}" alt="" class="h-full min-h-[360px] w-full object-cover object-top">
                         </div>
                         <div class="border-l-[3px] pl-9 rtl:border-l-0 rtl:border-r-[3px] rtl:pl-0 rtl:pr-9" style="border-color: {{ $accent }}">
                             <h2 class="text-[30px] font-bold leading-tight text-spu-blue md:text-[40px]">{{ $isAr ? 'رسالة العميد' : 'Dean Message' }}</h2>
-                            @php($deanName = $dean['name'] ?? ($isAr ? ($dean['nameAr'] ?? '') : ($dean['nameEn'] ?? '')))
+                            @php($deanName = $page->deanProfile?->name ?: ($dean['name'] ?? ($isAr ? ($dean['nameAr'] ?? '') : ($dean['nameEn'] ?? ''))))
                             @if ($page->deanProfile)
                                 <a href="{{ $page->deanProfile->path }}" class="mt-8 inline-flex text-sm font-bold text-spu-blue transition-colors hover:text-spu-red focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-spu-blue">{{ $deanName }}</a>
                             @else

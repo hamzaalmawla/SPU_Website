@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Feature;
 
 use App\Contracts\Content\PeopleMergeServiceInterface;
+use App\Contracts\Content\PeopleUnifyServiceInterface;
 use App\Enums\PublicationStatus;
 use App\Models\Faculty\Faculty;
 use App\Models\Person\FacultyMember;
@@ -12,10 +13,12 @@ use App\Models\Person\Person;
 use App\Models\Research\Researcher;
 use App\Models\Research\ResearchPublication;
 use App\Services\Content\PeopleMergeService;
+use App\Services\Content\PeopleUnifyService;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use InvalidArgumentException;
 use Tests\TestCase;
 
@@ -86,20 +89,22 @@ final class PeopleMergeTest extends TestCase
         $person->translations()->create(['locale' => 'ar', 'name' => 'د. حسام شحرور', 'role' => 'العميد']);
         Person::query()->whereKeyNot($person->getKey())->whereHas('translations', fn ($q) => $q->where('name', 'like', '%شحرور%'))->delete();
 
-        $result = app(PeopleMergeServiceInterface::class)->merge(true, PeopleMergeService::APPROVAL_TOKEN);
+        // people:merge no longer links; people:unify ties the leader to the one profile.
+        app(PeopleMergeServiceInterface::class)->merge(true, PeopleMergeService::APPROVAL_TOKEN);
+        $this->assertNull($person->refresh()->faculty_member_id);
+        Storage::fake('local');
+        $result = app(PeopleUnifyServiceInterface::class)->unify(true, PeopleUnifyService::APPROVAL_TOKEN);
 
-        $this->assertGreaterThanOrEqual(1, $result->membersLinked);
-        $this->assertSame((int) $person->getKey(), (int) $member->refresh()->person_id);
-        $this->assertTrue($person->appointments()->where('type', 'faculty_member')->where('faculty_id', $pharmacy->getKey())->exists());
-        // Nothing is copied; the leadership page shows the member's content.
-        $this->assertNull($person->translations()->where('locale', 'en')->value('bio'));
+        $this->assertGreaterThanOrEqual(1, $result->linkedByName);
+        $this->assertSame((int) $member->getKey(), (int) $person->refresh()->faculty_member_id);
         Cache::flush();
-        $this->get('/en/about/profile/hossam-shahrour-test')->assertOk()->assertSee('Pharmacology.')->assertSee('Dean');
+        $this->get('/en/about/profile/hossam-shahrour-test')->assertRedirect('/en/about/profile/d-hsam-aldyn-shhrwr');
+        $this->get('/en/about/profile/d-hsam-aldyn-shhrwr')->assertOk()->assertSee('Pharmacology.')->assertSee('Dean');
 
         Cache::flush();
         $page = $this->get('/en/faculties/pharmacy/members')->assertOk()->getContent();
-        $this->assertStringContainsString('/en/about/profile/hossam-shahrour-test', (string) $page);
-        $this->assertStringNotContainsString('/en/about/profile/d-hsam-aldyn-shhrwr', (string) $page);
+        $this->assertStringContainsString('/en/about/profile/d-hsam-aldyn-shhrwr', (string) $page);
+        $this->assertStringNotContainsString('/en/about/profile/hossam-shahrour-test', (string) $page);
     }
 
     private function member(string $slug, Faculty $faculty, string $en, string $ar, ?string $bio = null, ?string $email = null): FacultyMember

@@ -593,3 +593,23 @@ actor=auto
 `/home/spuedu/public_html`, prints both reports in the deploy log, and renames the file to
 `person-photos.approved.consumed-<time>`. It only adds rows to the legacy library and fills empty titles,
 so it is safe to repeat. See `Docs/LEGACY_IMPORT_RUNBOOK.md`.
+
+### One profile per person (people:unify)
+
+Every deploy log has a "People unify dry run" section. It shows the faculty profile each leadership row
+(dean, rector, vice president, ...) would be tied to, the empty profile fields it would fill from that row,
+and the fields where the two differ (the profile's value is kept). Rows it cannot decide on are listed as
+"Left for an editor", for example when several profiles have the name or a profile only probably matches.
+An editor picks those in the leadership editor.
+
+After the dry run has been read and approved, place this file on the server:
+
+```
+storage/app/private/legacy-imports/people-unify.approved
+```
+
+`cpanel-deploy.sh` then runs `people:unify` as a dry run and then with `--write`, and renames the file to
+`people-unify.approved.consumed-<time>`. It never overwrites or deletes faculty-member data. It only fills
+empty fields, does not touch a profile or leadership row that has an unpublished draft, saves a JSON
+snapshot of every row it touches to `storage/app/private/people-unify/` first, and logs an audit entry per
+person. Plan and as-built notes: `Docs/PEOPLE_SINGLE_PROFILE_PLAN.md`.

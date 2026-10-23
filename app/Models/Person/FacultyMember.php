@@ -61,6 +61,12 @@ class FacultyMember extends Model
         return $this->belongsTo(Person::class, 'person_id');
     }
 
+    /** Leadership rows (dean, rector, ...) held by this profile. */
+    public function leadershipRoles(): HasMany
+    {
+        return $this->hasMany(Person::class, 'faculty_member_id');
+    }
+
     public function department(): BelongsTo
     {
         return $this->belongsTo(Department::class);

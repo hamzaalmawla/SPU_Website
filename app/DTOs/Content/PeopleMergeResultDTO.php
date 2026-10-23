@@ -11,7 +11,6 @@ final readonly class PeopleMergeResultDTO
         public bool $written,
         public int $researchersMerged,
         public int $membersMerged,
-        public int $membersLinked,
         public int $leftAlone,
         public array $lines,
     ) {}

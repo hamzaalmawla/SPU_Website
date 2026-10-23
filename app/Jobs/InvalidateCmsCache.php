@@ -59,6 +59,12 @@ final class InvalidateCmsCache implements ShouldQueue
             $tags[] = 'facilities';
         }
 
+        // A person is one profile: their name and photo also show on the
+        // leadership pages, the faculty dean block and every paper they wrote.
+        if (str_starts_with($targetKey, 'entity.faculty-member.') || str_starts_with($targetKey, 'entity.person.')) {
+            array_push($tags, 'about', 'facilities', 'research');
+        }
+
         if (str_starts_with($targetKey, 'research.')) {
             $tags[] = 'research';
         }

@@ -26,7 +26,7 @@
                         <a class="font-semibold text-primary-600 underline" href="{{ $memberUrl($details->relatedMember['id']) }}">{{ $details->relatedMember['name'] }}</a> ({{ $details->relatedMember['faculty'] }})</p>
                 @endif
                 @if ($details->linkedPersonSlug)
-                    <p class="rounded-lg bg-warning-50 p-3 font-semibold text-warning-800 dark:bg-warning-500/10 dark:text-warning-300">{{ __('staff_intake.admin.detail.linked_person', ['slug' => $details->linkedPersonSlug]) }}</p>
+                    <p class="rounded-lg bg-gray-50 p-3 text-gray-700 dark:bg-white/5 dark:text-gray-400">{{ __('staff_intake.admin.detail.linked_person', ['slug' => $details->linkedPersonSlug]) }}</p>
                 @endif
                 @if ($details->reviewerName)
                     <p>{{ __('staff_intake.admin.detail.reviewed', ['name' => $details->reviewerName, 'date' => $details->reviewedAt]) }}</p>

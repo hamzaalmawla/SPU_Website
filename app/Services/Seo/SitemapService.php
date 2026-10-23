@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services\Seo;
 
 use App\Contracts\Career\AlumniDirectoryServiceInterface;
+use App\Contracts\Content\PersonIdentityServiceInterface;
 use App\Contracts\Page\PageServiceInterface;
 use App\Contracts\Research\ResearchPageServiceInterface;
 use App\Contracts\Seo\SeoMetadataServiceInterface;
@@ -53,6 +54,7 @@ final class SitemapService implements SitemapServiceInterface
         private readonly SeoMetadataServiceInterface $seoMetadataService,
         private readonly ResearchPageServiceInterface $researchPageService,
         private readonly AlumniDirectoryServiceInterface $alumniDirectoryService,
+        private readonly PersonIdentityServiceInterface $identityService,
     ) {}
 
     public function generateEntries(): Collection
@@ -683,32 +685,22 @@ final class SitemapService implements SitemapServiceInterface
         foreach (Directorate::query()->public()->where('slug', '!=', 'it-services')->pluck('slug') as $slug) {
             $paths[] = '/about/directorates/'.$slug;
         }
-        // Publishing a URL that 404s is worse than omitting it: it spends crawl
-        // budget and teaches search engines the site is unreliable. A profile
-        // renders only with a usable translation, and a FacultyMember carrying a
-        // person_id renders through that Person rather than itself - so the same
-        // two conditions the navigation checks apply here.
+        // Publishing a URL that 404s or redirects is worse than omitting it:
+        // it spends crawl budget and teaches search engines the site is
+        // unreliable. A profile renders only with a usable translation, and a
+        // leadership row with a public faculty profile redirects to it.
         $translated = fn ($query) => $query->whereIn('locale', ['ar', 'en']);
 
-        foreach (
-            Person::query()->public()->whereHas('translations', $translated)
-                ->pluck('slug')->unique() as $slug
-        ) {
+        foreach (FacultyMember::query()->public()->whereHas('translations', $translated)->pluck('slug')->unique() as $slug) {
             $paths[] = '/about/profile/'.$slug;
         }
 
-        foreach (
-            FacultyMember::query()->public()
-                ->where(fn ($query) => $query
-                    ->where(fn ($own) => $own
-                        ->whereNull('person_id')
-                        ->whereHas('translations', $translated))
-                    ->orWhereHas('canonicalPerson', fn ($person) => $person
-                        ->public()
-                        ->whereHas('translations', $translated)))
-                ->pluck('slug')->unique() as $slug
-        ) {
-            $paths[] = '/about/profile/'.$slug;
+        $persons = Person::query()->public()->whereHas('translations', $translated)->pluck('slug', 'id');
+        $withProfile = $this->identityService->publicIdentities(array_map('intval', $persons->keys()->all()), 'ar');
+        foreach ($persons as $id => $slug) {
+            if (! isset($withProfile[(int) $id])) {
+                $paths[] = '/about/profile/'.$slug;
+            }
         }
 
         $this->pushBilingualPaths($entries, $baseUrl, array_unique($paths), $lastmod);

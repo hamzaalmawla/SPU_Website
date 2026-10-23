@@ -6,6 +6,7 @@ namespace App\Services\Page;
 
 use App\Contracts\Cms\CmsTargetRegistryInterface;
 use App\Contracts\Cms\CmsWorkflowServiceInterface;
+use App\Contracts\Content\PersonIdentityServiceInterface;
 use App\Contracts\Page\AboutNavigationCardServiceInterface;
 use App\Contracts\Page\AboutPageServiceInterface;
 use App\DTOs\About\AboutContentPageDTO;
@@ -46,6 +47,7 @@ final class AboutPageService implements AboutPageServiceInterface
         private readonly CmsWorkflowServiceInterface $cmsWorkflowService,
         private readonly CmsTargetRegistryInterface $targetRegistry,
         private readonly AboutNavigationCardServiceInterface $navigationCardService,
+        private readonly PersonIdentityServiceInterface $identityService,
     ) {}
 
     public function getAboutLanding(string $locale): AboutLandingDTO
@@ -233,9 +235,11 @@ final class AboutPageService implements AboutPageServiceInterface
             ->orderBy('sort_order')
             ->get();
 
+        $identities = $this->identityService->publicIdentities(array_map('intval', $people->modelKeys()), $locale);
         $allItems = $people
-            ->map(function (Person $person) use ($locale, $facultyLabels): ?StaffDirectoryItemDTO {
+            ->map(function (Person $person) use ($locale, $facultyLabels, $identities): ?StaffDirectoryItemDTO {
                 $translation = $this->personTranslation($person, $locale);
+                $identity = $identities[(int) $person->getKey()] ?? null;
                 $apt = $this->primaryDisplayAppointment($person->appointments);
 
                 $role = $translation->role ?? '';
@@ -246,7 +250,7 @@ final class AboutPageService implements AboutPageServiceInterface
                     if ($aptTrans?->role_override) {
                         $role = $aptTrans->role_override;
                     } elseif ($apt->type === 'faculty_member') {
-                        $role = $translation->position ?: $translation->title ?: '';
+                        $role = $identity?->position ?: $identity?->title ?: $translation->position ?: $translation->title ?: '';
                     }
                 }
 
@@ -257,12 +261,14 @@ final class AboutPageService implements AboutPageServiceInterface
                     $facultySlug = $person->faculty_scope_slug;
                 }
 
-                $image = $this->personImage($person);
+                $image = $identity?->image ?? $this->personImage($person);
 
+                // A leader with a faculty profile is listed once, under the
+                // profile's address; the profile's own entry is dropped below.
                 return new StaffDirectoryItemDTO(
-                    sourceType: 'person',
-                    slug: (string) $person->slug,
-                    name: (string) $translation->name,
+                    sourceType: $identity !== null ? 'faculty-member' : 'person',
+                    slug: $identity !== null ? $identity->slug : (string) $person->slug,
+                    name: $identity !== null ? $identity->name : (string) $translation->name,
                     role: $role,
                     image: $image,
                     facultySlug: $facultySlug,
@@ -503,34 +509,31 @@ final class AboutPageService implements AboutPageServiceInterface
             }
         }
 
+        // Who they are comes from their faculty profile; the row adds the role.
+        $identity = $this->identityService->publicIdentities([(int) $person->getKey()], $locale)[(int) $person->getKey()] ?? null;
+
         return new PersonDTO(
             id: (int) $person->getKey(),
-            slug: (string) $person->slug,
-            name: (string) $translation->name,
+            slug: $identity !== null ? $identity->slug : (string) $person->slug,
+            name: $identity !== null ? $identity->name : (string) $translation->name,
             role: $role,
             category: is_string($category) && $category !== '' ? $category : null,
             facultySlug: is_string($facultySlug) && $facultySlug !== '' ? $facultySlug : null,
-            bio: $this->linkedMemberBio($person, $locale) ?? $translation->bio,
+            bio: $identity !== null ? $identity->bio : $translation->bio,
             quote: $translation->quote,
-            image: $this->personImage($person),
-            email: $person->email,
-            profileUrl: '/'.$locale.'/about/profile/'.$person->slug,
+            image: $identity?->image ?? $this->personImage($person),
+            email: $identity !== null ? $identity->email : $person->email,
+            profileUrl: $identity !== null ? $identity->profileUrl : '/'.$locale.'/about/profile/'.$person->slug,
         );
     }
 
     /**
      * The photo uploaded in the person editor wins over the old image column
-     * and the legacy import, as on the profile page. Leadership cards read only
-     * the image column and stayed empty for people with an uploaded photo.
+     * and the legacy import, as on the profile page. Used only for a
+     * leadership row that has no public faculty profile.
      */
     private function personImage(Person $person): ?string
     {
-        // A linked faculty member's photo wins, as on the profile page.
-        $member = $this->linkedMember($person);
-        if ($member?->photoMedia instanceof MediaAsset) {
-            return MediaUrlResolver::resolveImage($member->photoMedia->webp_path, $member->photoMedia->path, $member->photoMedia->disk);
-        }
-
         if ($person->photoMedia instanceof MediaAsset) {
             return MediaUrlResolver::resolveImage($person->photoMedia->webp_path, $person->photoMedia->path, $person->photoMedia->disk);
         }
@@ -540,23 +543,6 @@ final class AboutPageService implements AboutPageServiceInterface
         }
 
         return MediaUrlResolver::resolveLegacy($person->legacy_photo_path);
-    }
-
-    /** The published faculty member profile linked to this person, if any. */
-    private function linkedMember(Person $person): ?FacultyMember
-    {
-        $person->loadMissing(['linkedFacultyMembers' => fn ($query) => $query->public()->with(['photoMedia', 'translations'])->orderByDesc('updated_at')]);
-        $member = $person->linkedFacultyMembers->first();
-
-        return $member instanceof FacultyMember ? $member : null;
-    }
-
-    private function linkedMemberBio(Person $person, string $locale): ?string
-    {
-        $translations = $this->linkedMember($person)?->translations;
-        $bio = $translations?->firstWhere('locale', $locale)?->bio ?? $translations?->firstWhere('locale', 'ar')?->bio;
-
-        return is_string($bio) && trim($bio) !== '' ? $bio : null;
     }
 
     /** @param Collection<int, Person> $persons @return Collection<int, PersonDTO> */

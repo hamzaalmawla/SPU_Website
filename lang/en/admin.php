@@ -356,6 +356,7 @@ return [
             'notes' => 'Internal notes',
         ],
         'help' => [
+            'name_from_profile' => 'On the website this researcher is shown with the name, photo and expertise of the chosen staff profile. This name stays as the research register lists it.',
             'staff_profile' => 'When this researcher is on the staff pages, link them: their papers then show on that profile, and their name links to it.',
             'suggestions' => 'Possible matches by name: :names',
             'no_papers' => 'No papers yet. Researchers are added to papers in each paper\'s Details tab.',

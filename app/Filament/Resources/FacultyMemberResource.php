@@ -87,7 +87,7 @@ class FacultyMemberResource extends Resource
     public static function getEloquentQuery(): Builder
     {
         $query = parent::getEloquentQuery()
-            ->with(['translations', 'faculty.translations', 'department.translations', 'canonicalPerson']);
+            ->with(['translations', 'faculty.translations', 'department.translations', 'leadershipRoles']);
 
         $user = auth()->user();
         if ($user instanceof User && $user->hasFacultyLimit()) {
@@ -127,9 +127,10 @@ class FacultyMemberResource extends Resource
                         ->preload()
                         ->native(false)
                         ->default(fn (mixed $livewire): ?int => self::contextFacultyId($livewire))
-                        ->required()
+                        // Empty for a university leader who belongs to no faculty.
+                        ->required(fn (): bool => auth()->user()?->hasFacultyLimit() ?? true)
+                        ->helperText(fn (mixed $livewire): ?string => self::contextFacultyId($livewire) !== null ? __('admin_resources.faculty_member.faculty_set_automatically') : __('admin_resources.faculty_member.faculty_optional_for_leaders'))
                         ->disabled(fn (mixed $livewire): bool => self::contextFacultyId($livewire) !== null)
-                        ->helperText(fn (mixed $livewire): ?string => self::contextFacultyId($livewire) !== null ? __('admin_resources.faculty_member.faculty_set_automatically') : null)
                         ->dehydrated()
                         ->live()
                         ->columnSpanFull(),
@@ -149,13 +150,6 @@ class FacultyMemberResource extends Resource
             Section::make(__('admin_resources.faculty_member.additional_details'))
                 ->description(__('admin_resources.faculty_member.additional_details_description'))
                 ->schema([
-                    Placeholder::make('canonical_person_status')
-                        ->label(__('admin_resources.faculty_member.canonical_person_profile'))
-                        ->content(fn (?FacultyMember $record): string => $record?->canonicalPerson
-                            ? 'Linked to the canonical People profile: '.$record->canonicalPerson->slug
-                            : 'Legacy placement record. Run the unified-person sync before publishing profile changes.')
-                        ->visibleOn('edit')
-                        ->columnSpanFull(),
                     Section::make(__('admin_resources.faculty_member.where_this_staff_member_appears'))->schema([
                         Select::make('department_id')
                             ->label(__('admin_resources.faculty_member.department'))
@@ -248,12 +242,10 @@ class FacultyMemberResource extends Resource
                 ->limit(40),
             TextColumn::make('translations.title')->label(__('admin_resources.faculty_member.title'))->limit(20),
             TextColumn::make('translations.position')->label(__('admin_resources.faculty_member.position'))->limit(20),
-            TextColumn::make('canonicalPerson.slug')
-                ->label(__('admin_resources.faculty_member.canonical_profile'))
-                ->placeholder(__('admin_resources.faculty_member.not_linked'))
-                ->url(fn (FacultyMember $record): ?string => $record->person_id !== null && Gate::allows('people.view')
-                    ? PersonResource::getUrl('edit', ['record' => $record->person_id])
-                    : null),
+            TextColumn::make('leadershipRoles.category')
+                ->label(__('admin_resources.faculty_member.leadership_role'))
+                ->badge()
+                ->placeholder('-'),
             TextColumn::make('faculty.translations.name')->label(__('admin_resources.faculty_member.faculty'))->limit(30),
             IconColumn::make('is_enabled')->boolean(),
             TextColumn::make('publication_status')->badge()->sortable(),

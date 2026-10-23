@@ -604,16 +604,15 @@ final class ResearchPageService implements ResearchPageServiceInterface
             return null;
         }
 
-        $researcher = Researcher::query()->where('is_enabled', true)->with(['faculty.translations', 'facultyMember.canonicalPerson'])->find((int) $matches[1]);
+        $researcher = Researcher::query()->where('is_enabled', true)->with(['faculty.translations', 'facultyMember.translations'])->find((int) $matches[1]);
 
         if (! $researcher instanceof Researcher || $researcher->publicSlug() !== $slug) {
             return null;
         }
 
-        $member = $researcher->facultyMember;
-        $profileSlug = $member?->canonicalPerson?->slug ?? $member?->slug;
+        $profileSlug = $researcher->facultyMember?->slug;
         if (is_string($profileSlug) && $profileSlug !== '' && $this->hasPublicProfile($profileSlug)) {
-            return $this->detailDto($locale, 'researcher', $slug, ['name' => $researcher->full_name], ['redirectTo' => '/'.$locale.'/about/profile/'.$profileSlug], '/research/researchers/'.$slug, '/images/uni-main-place.JPG');
+            return $this->detailDto($locale, 'researcher', $slug, ['name' => $this->researcherName($researcher, $locale)], ['redirectTo' => '/'.$locale.'/about/profile/'.$profileSlug], '/research/researchers/'.$slug, '/images/uni-main-place.JPG');
         }
 
         $papers = ResearchPublication::query()
@@ -641,7 +640,7 @@ final class ResearchPageService implements ResearchPageServiceInterface
         })->values()->all();
 
         $profile = [
-            'name' => trim($researcher->full_name),
+            'name' => $this->researcherName($researcher, $locale),
             'role' => (string) ($researcher->affiliation ?? ''),
             'faculty' => ['name' => $facultyName, 'slug' => (string) ($faculty?->public_slug ?? '')],
             'department' => '',
@@ -1716,7 +1715,7 @@ final class ResearchPageService implements ResearchPageServiceInterface
 
         $publications = ResearchPublication::query()
             ->public()
-            ->with(['translations', 'faculty.translations', 'facultyMember.faculty.translations', 'fileMedia', 'imageMedia', 'files.mediaAsset', 'legacyFileReferences', 'researchers.facultyMember'])
+            ->with(['translations', 'faculty.translations', 'facultyMember.faculty.translations', 'fileMedia', 'imageMedia', 'files.mediaAsset', 'legacyFileReferences', 'researchers.facultyMember.translations'])
             ->orderByDesc('published_at')
             ->orderBy('sort_order')
             ->orderByDesc('id')
@@ -2048,7 +2047,7 @@ final class ResearchPageService implements ResearchPageServiceInterface
                 $memberSlug = (string) ($researcher->facultyMember?->slug ?? '');
 
                 return [
-                    'name' => trim($researcher->full_name),
+                    'name' => $this->researcherName($researcher, $locale),
                     'role' => in_array($role, ResearchPublication::RESEARCHER_ROLES, true) ? (string) trans('research.roles.'.$role, [], $locale) : '',
                     'profileUrl' => $memberSlug !== '' && $this->hasPublicProfile($memberSlug) ? '/'.$locale.'/about/profile/'.$memberSlug : null,
                 ];
@@ -2067,7 +2066,7 @@ final class ResearchPageService implements ResearchPageServiceInterface
     private function previewResearchers(array $rows): \Illuminate\Database\Eloquent\Collection
     {
         $ids = collect($rows)->map(fn (mixed $row): ?int => is_array($row) && is_numeric($row['researcher_id'] ?? null) ? (int) $row['researcher_id'] : null)->filter()->values();
-        $researchers = Researcher::query()->with('facultyMember')->whereKey($ids->all())->get()->keyBy('id');
+        $researchers = Researcher::query()->with('facultyMember.translations')->whereKey($ids->all())->get()->keyBy('id');
 
         return new \Illuminate\Database\Eloquent\Collection(collect($rows)
             ->filter(fn (mixed $row): bool => is_array($row) && is_numeric($row['researcher_id'] ?? null) && $researchers->has((int) $row['researcher_id']))
@@ -2394,12 +2393,11 @@ final class ResearchPageService implements ResearchPageServiceInterface
             ->where('is_enabled', true)
             ->whereHas('publications', fn ($query) => $query->whereIn('research_publications.id', $publicPaperIds))
             ->withCount(['publications' => fn ($query) => $query->whereIn('research_publications.id', $publicPaperIds)])
-            ->with(['faculty.translations', 'facultyMember.canonicalPerson'])
+            ->with(['faculty.translations', 'facultyMember.translations'])
             ->get();
 
         foreach ($researchers as $researcher) {
-            $member = $researcher->facultyMember;
-            $profileSlug = $member?->canonicalPerson?->slug ?? $member?->slug;
+            $profileSlug = $researcher->facultyMember?->slug;
             $profile = is_string($profileSlug) ? ($profiles[$profileSlug] ?? null) : null;
 
             if ($profile instanceof ProfilePageDTO) {
@@ -2448,7 +2446,7 @@ final class ResearchPageService implements ResearchPageServiceInterface
 
         return [
             'slug' => $slug,
-            'name' => trim($researcher->full_name),
+            'name' => $this->researcherName($researcher, $locale),
             'title' => (string) ($researcher->affiliation ?? ''),
             'role' => (string) ($researcher->affiliation ?? ''),
             'faculty' => (string) ($faculty?->translations->firstWhere('locale', $locale)?->name ?? $faculty?->translations->first()?->name ?? ''),
@@ -2459,6 +2457,21 @@ final class ResearchPageService implements ResearchPageServiceInterface
             'expertise' => $this->scalarList($researcher->expertise ?? []),
             'profileUrl' => '/'.$locale.'/research/researchers/'.$slug,
         ];
+    }
+
+    /**
+     * A staff researcher's name is their faculty profile's, so an edit to the
+     * profile shows on every paper. Only an external co-author, who has no
+     * profile, is named by the register row itself.
+     */
+    private function researcherName(Researcher $researcher, string $locale): string
+    {
+        $translations = $researcher->facultyMember?->translations;
+        $name = $translations?->firstWhere('locale', $locale)?->full_name
+            ?? $translations?->firstWhere('locale', 'ar')?->full_name
+            ?? $translations?->firstWhere('locale', 'en')?->full_name;
+
+        return is_string($name) && trim($name) !== '' ? trim($name) : trim((string) $researcher->full_name);
     }
 
     /** @return list<array{id: string, name: string}> */

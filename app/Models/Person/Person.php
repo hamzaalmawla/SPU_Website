@@ -21,6 +21,7 @@ class Person extends Model
     protected $table = 'persons';
 
     protected $fillable = [
+        'faculty_member_id',
         'slug',
         'category',
         'title',
@@ -54,6 +55,12 @@ class Person extends Model
             'published_at' => 'datetime',
             'deleted_at' => 'datetime',
         ];
+    }
+
+    /** The faculty profile that holds this person's name, photo and bio. */
+    public function profileMember(): BelongsTo
+    {
+        return $this->belongsTo(FacultyMember::class, 'faculty_member_id');
     }
 
     public function translations(): HasMany

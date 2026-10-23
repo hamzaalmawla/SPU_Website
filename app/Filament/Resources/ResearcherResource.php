@@ -18,6 +18,7 @@ use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Forms\Form;
+use Filament\Forms\Get;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
@@ -85,7 +86,12 @@ class ResearcherResource extends Resource
     {
         return $form->schema([
             Section::make(__('admin.researcher.sections.details'))->schema([
-                TextInput::make('full_name')->label(__('admin.researcher.fields.full_name'))->required()->maxLength(200),
+                TextInput::make('full_name')
+                    ->label(__('admin.researcher.fields.full_name'))
+                    ->required()
+                    ->maxLength(200)
+                    // A staff researcher is shown on the website under their profile's name.
+                    ->helperText(fn (Get $get): ?string => filled($get('faculty_member_id')) ? __('admin.researcher.help.name_from_profile') : null),
                 TextInput::make('email')->label(__('admin.researcher.fields.email'))->email()->maxLength(150),
                 Select::make('faculty_id')
                     ->label(__('admin.researcher.fields.faculty'))

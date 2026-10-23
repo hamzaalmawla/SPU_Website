@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\Page;
 
+use App\Contracts\Content\PersonIdentityServiceInterface;
 use App\Contracts\Page\ProfilePageServiceInterface;
 use App\DTOs\Content\EducationDTO;
 use App\DTOs\Content\ProfilePageDTO;
@@ -35,51 +36,34 @@ final class ProfilePageService implements ProfilePageServiceInterface
     /** @var array<int, int>|null Faculty member ids that a researcher record is linked to */
     private ?array $membersWithResearchers = null;
 
+    public function __construct(
+        private readonly PersonIdentityServiceInterface $identityService,
+    ) {}
+
     public function getProfile(string $locale, string $source, string $slug): ?ProfilePageDTO
     {
         if ($source === 'person') {
             $person = $this->findPerson($locale, $slug);
 
-            return $person instanceof Person ? $this->buildPersonProfileDto($person, $locale) : null;
+            return $person instanceof Person ? $this->personOrProfile($person, $locale) : null;
         }
 
         if ($source === 'faculty-member') {
             $facultyMember = $this->findFacultyMember($locale, $slug);
 
-            if ($facultyMember instanceof FacultyMember && $facultyMember->person_id !== null) {
-                $person = $this->findPersonById($locale, (int) $facultyMember->person_id);
-
-                return $person instanceof Person ? $this->buildPersonProfileDto($person, $locale) : null;
-            }
-
-            return $facultyMember instanceof FacultyMember
-                ? $this->buildFacultyMemberProfileDto($facultyMember, $locale)
-                : null;
+            return $facultyMember instanceof FacultyMember ? $this->memberProfile($facultyMember, $locale) : null;
         }
 
         return $this->resolveUnifiedProfile($locale, $slug);
     }
 
     /**
-     * Mirrors what getProfile() treats as a resolvable profile: a public Person,
-     * or failing that a public FacultyMember, with this slug AND a translation
-     * the builders can actually use — answered with indexed existence queries
-     * rather than two hydrations of nine eager-loaded relations each.
-     *
-     * The translation clause is not defensive padding. buildPersonProfileDto()
-     * and buildFacultyMemberProfileDto() both return null when no translation
-     * resolves, and fallbackLocales() always tries the request locale, then ar,
-     * then en. A public row carrying neither an ar nor an en translation is
-     * therefore a profile that exists in the database and 404s on the web.
-     * Without this clause the navigation would render a link to it and the
-     * sitemap would publish its URL — the precise defect the availability check
-     * exists to prevent.
-     *
-     * Locale is not part of the question only because the public locales are ar
-     * and en and fallbackLocales() always tries both. A third public locale
-     * would widen getProfile() past what this checks — under-permissive, so it
-     * would hide a link rather than break one, but it would no longer be the
-     * same question.
+     * Mirrors what getProfile() treats as a resolvable profile: a public
+     * faculty profile, or a public leadership row (which renders itself or
+     * redirects to its faculty profile), with this slug AND a translation the
+     * builders can use. A public row with neither an ar nor an en translation
+     * exists in the database and 404s on the web, so the navigation and the
+     * sitemap must not link to it.
      */
     public function hasPublicProfile(string $slug): bool
     {
@@ -87,53 +71,36 @@ final class ProfilePageService implements ProfilePageServiceInterface
             return false;
         }
 
-        if (Person::query()->public()->where('slug', $slug)->whereHas(
+        // Leadership rows first: menus link to their slugs, and those answer in one query.
+        return Person::query()->public()->where('slug', $slug)->whereHas(
             'translations',
             fn ($query) => $query->whereIn('locale', ['ar', 'en']),
-        )->exists()) {
-            return true;
-        }
-
-        // A FacultyMember carrying a person_id does not render itself:
-        // resolveUnifiedProfile() resolves it through findPersonById(), which
-        // applies public(). So the member's own state says nothing — what has
-        // to be renderable is the Person behind it. Checking the member alone
-        // reported "safe to link" for pages that 404, which is the whole thing
-        // this method exists to prevent.
-        return FacultyMember::query()
-            ->public()
-            ->where('slug', $slug)
-            ->where(fn ($query) => $query
-                ->where(fn ($own) => $own
-                    ->whereNull('person_id')
-                    ->whereHas('translations', fn ($t) => $t->whereIn('locale', ['ar', 'en'])))
-                ->orWhereHas('canonicalPerson', fn ($person) => $person
-                    ->public()
-                    ->whereHas('translations', fn ($t) => $t->whereIn('locale', ['ar', 'en']))))
-            ->exists();
+        )->exists()
+            || FacultyMember::query()->public()->where('slug', $slug)->whereHas(
+                'translations',
+                fn ($query) => $query->whereIn('locale', ['ar', 'en']),
+            )->exists();
     }
 
-    /**
-     * Mirrors what getPublicProfiles() would actually return.
-     *
-     * A FacultyMember carrying a person_id is represented by that Person rather
-     * than listed separately, so counting it here would report a directory that
-     * the listing then renders as empty. And either row still has to carry a
-     * usable translation, or the entry it produces is a link to a 404.
-     */
     public function hasAnyPublicProfile(): bool
     {
         return Person::query()->public()->whereHas(
             'translations',
             fn ($query) => $query->whereIn('locale', ['ar', 'en']),
         )->exists()
-            || FacultyMember::query()->public()->whereNull('person_id')->whereHas(
+            || FacultyMember::query()->public()->whereHas(
                 'translations',
                 fn ($query) => $query->whereIn('locale', ['ar', 'en']),
             )->exists();
     }
 
-    /** @return array<int, ProfilePageDTO> */
+    /**
+     * Every public profile once: each faculty profile, with the leadership
+     * role it holds if any, then the leadership rows that have no public
+     * faculty profile yet.
+     *
+     * @return array<int, ProfilePageDTO>
+     */
     public function getPublicProfiles(string $locale): array
     {
         $cacheKey = 'profile-page.public-profiles.'.$locale;
@@ -146,30 +113,40 @@ final class ProfilePageService implements ProfilePageServiceInterface
             ->orderBy('sort_order')
             ->orderBy('id')
             ->get();
+        $memberIds = $this->identityService->profileMemberIds(array_map('intval', $persons->modelKeys()));
+        $rolesByMember = [];
+        foreach ($persons as $person) {
+            $memberId = $memberIds[(int) $person->getKey()] ?? null;
+            if ($memberId !== null) {
+                $rolesByMember[$memberId][] = $person;
+            }
+        }
+
         $facultyMembers = $this->facultyMemberProfileQuery($locale)
-            ->whereNull('person_id')
             ->orderBy('sort_order')
             ->orderBy('id')
             ->get();
 
         $profiles = [];
         $seenSlugs = [];
+        $renderedMembers = [];
 
-        foreach ($persons as $person) {
-            $profile = $this->buildPersonProfileDto($person, $locale);
-
-            if ($profile instanceof ProfilePageDTO) {
+        foreach ($facultyMembers as $facultyMember) {
+            $profile = $this->memberProfileWithRoles($facultyMember, $rolesByMember[(int) $facultyMember->getKey()] ?? [], $locale);
+            if ($profile instanceof ProfilePageDTO && ! isset($seenSlugs[$profile->slug])) {
                 $profiles[] = $profile;
                 $seenSlugs[$profile->slug] = true;
+                $renderedMembers[(int) $facultyMember->getKey()] = true;
             }
         }
 
-        foreach ($facultyMembers as $facultyMember) {
-            if (isset($seenSlugs[(string) $facultyMember->slug])) {
+        foreach ($persons as $person) {
+            $memberId = $memberIds[(int) $person->getKey()] ?? null;
+            if (($memberId !== null && isset($renderedMembers[$memberId])) || isset($seenSlugs[(string) $person->slug])) {
                 continue;
             }
 
-            $profile = $this->buildFacultyMemberProfileDto($facultyMember, $locale);
+            $profile = $this->buildPersonProfileDto($person, $locale);
             if ($profile instanceof ProfilePageDTO) {
                 $profiles[] = $profile;
                 $seenSlugs[$profile->slug] = true;
@@ -187,48 +164,59 @@ final class ProfilePageService implements ProfilePageServiceInterface
     }
 
     /**
-     * Person wins when both tables hold the slug, but only if it actually
-     * renders. The earlier form returned as soon as a Person row existed, so a
-     * translationless Person shadowed a perfectly renderable FacultyMember and
-     * the page 404'd — while the availability check, which ORs the two tables,
-     * went on reporting the profile as available and the navigation went on
-     * linking to it.
+     * The faculty profile with this slug, else the leadership row with it. A
+     * leadership row with a public faculty profile resolves to that profile,
+     * so its old address redirects there.
      */
     private function resolveUnifiedProfile(string $locale, string $slug): ?ProfilePageDTO
     {
-        $person = $this->findPerson($locale, $slug);
-        $profile = $person instanceof Person
-            ? $this->buildPersonProfileDto($person, $locale)
-            : null;
+        $facultyMember = $this->findFacultyMember($locale, $slug);
+        $profile = $facultyMember instanceof FacultyMember ? $this->memberProfile($facultyMember, $locale) : null;
 
         if ($profile instanceof ProfilePageDTO) {
             return $profile;
         }
 
-        $facultyMember = $this->findFacultyMember($locale, $slug);
+        $person = $this->findPerson($locale, $slug);
 
-        if ($facultyMember instanceof FacultyMember && $facultyMember->person_id !== null) {
-            $canonicalPerson = $this->findPersonById($locale, (int) $facultyMember->person_id);
+        return $person instanceof Person ? $this->personOrProfile($person, $locale) : null;
+    }
 
-            return $canonicalPerson instanceof Person ? $this->buildPersonProfileDto($canonicalPerson, $locale) : null;
-        }
+    /** A leadership row's faculty profile when that is public, else the row on its own. */
+    private function personOrProfile(Person $person, string $locale): ?ProfilePageDTO
+    {
+        $personId = (int) $person->getKey();
+        $memberId = $this->identityService->profileMemberIds([$personId])[$personId] ?? null;
+        $member = $memberId !== null ? $this->facultyMemberProfileQuery($locale)->whereKey($memberId)->first() : null;
+        $profile = $member instanceof FacultyMember ? $this->memberProfile($member, $locale) : null;
 
-        return $facultyMember instanceof FacultyMember
-            ? $this->buildFacultyMemberProfileDto($facultyMember, $locale)
-            : null;
+        return $profile ?? $this->buildPersonProfileDto($person, $locale);
+    }
+
+    private function memberProfile(FacultyMember $member, string $locale): ?ProfilePageDTO
+    {
+        $roleIds = $this->identityService->personIdsForMember((int) $member->getKey());
+        $roles = $roleIds === [] ? [] : $this->personProfileQuery($locale)->whereKey($roleIds)->orderBy('sort_order')->orderBy('id')->get()->all();
+
+        return $this->memberProfileWithRoles($member, array_values($roles), $locale);
+    }
+
+    /** @param list<Person> $roles */
+    private function memberProfileWithRoles(FacultyMember $member, array $roles, string $locale): ?ProfilePageDTO
+    {
+        $profile = $this->buildFacultyMemberProfileDto($member, $locale);
+        $role = $roles[0] ?? null;
+        $roleProfile = $role instanceof Person ? $this->buildPersonProfileDto($role, $locale) : null;
+
+        return $profile instanceof ProfilePageDTO && $roleProfile instanceof ProfilePageDTO
+            ? $this->withLeadershipRole($profile, $roleProfile)
+            : $profile;
     }
 
     private function findPerson(string $locale, string $slug): ?Person
     {
         return $this->personProfileQuery($locale)
             ->where('slug', $slug)
-            ->first();
-    }
-
-    private function findPersonById(string $locale, int $id): ?Person
-    {
-        return $this->personProfileQuery($locale)
-            ->whereKey($id)
             ->first();
     }
 
@@ -321,10 +309,7 @@ final class ProfilePageService implements ProfilePageServiceInterface
             officeLocation: $person->office_location,
             socialLinks: $this->personSocialLinks($person),
             educations: $this->mapPersonEducations($person->educations, $locale),
-            publications: $this->mapPublications($this->withResearcherPapers(
-                $person->researchPublications,
-                FacultyMember::query()->where('person_id', $person->getKey())->pluck('id')->map(fn (mixed $id): int => (int) $id)->all(),
-            ), $locale),
+            publications: $this->mapPublications($person->researchPublications, $locale),
             councilMemberships: $this->mapCouncilMemberships($person->councilMemberships, $locale),
             cvUrl: $this->resolveCvUrl($person),
             profileUrl: '/'.$locale.'/about/profile/'.$person->slug,
@@ -334,65 +319,60 @@ final class ProfilePageService implements ProfilePageServiceInterface
             path: '/'.$locale.'/about/profile/'.$person->slug,
         );
 
-        return $this->withLinkedFacultyMember($person, $profile, $locale);
+        return $profile;
     }
 
     /**
-     * A leadership profile linked to a faculty member (faculty_members.person_id)
-     * shows the faculty member's content: that is the record staff keep current,
-     * through the admin and the staff intake form. The leadership profile keeps
-     * its address and adds what only it has (its role, quote and council seats)
-     * and fills whatever the faculty member leaves empty.
+     * A faculty profile that holds a leadership role (dean, rector, ...): the
+     * profile is who they are, at its own address. The role adds what only it
+     * has: the role title, the quote and the council seats. Until people:unify
+     * has filled the profile, a field the profile leaves empty shows the role
+     * row's old copy, so nothing that was on the page disappears.
      */
-    private function withLinkedFacultyMember(Person $person, ProfilePageDTO $profile, string $locale): ProfilePageDTO
+    private function withLeadershipRole(ProfilePageDTO $profile, ProfilePageDTO $role): ProfilePageDTO
     {
-        $member = $this->facultyMemberProfileQuery($locale)
-            ->where('person_id', $person->getKey())
-            ->orderByDesc('updated_at')
-            ->first();
-        $linked = $member instanceof FacultyMember ? $this->buildFacultyMemberProfileDto($member, $locale) : null;
-
-        if (! $linked instanceof ProfilePageDTO) {
-            return $profile;
-        }
-
         $filled = static fn (mixed $value): bool => is_string($value) ? trim($value) !== '' : ($value !== null && $value !== []);
         $pick = static fn (mixed $first, mixed $second): mixed => $filled($first) ? $first : $second;
-        $publications = collect([...$linked->publications, ...$profile->publications])
+        $publications = collect([...$profile->publications, ...$role->publications])
             ->unique(fn (array $publication): int => (int) ($publication['id'] ?? 0))
             ->sortByDesc(fn (array $publication): string => (string) ($publication['publishedAt'] ?? ''))
             ->values()
             ->all();
-        $bio = $pick($linked->bio, $profile->bio);
+        $councilMemberships = collect([...$role->councilMemberships, ...$profile->councilMemberships])
+            ->unique(fn (array $membership): string => (string) json_encode($membership))
+            ->values()
+            ->all();
+        $bio = $pick($profile->bio, $role->bio);
+        $image = $pick($profile->image, $role->image);
 
         return new ProfilePageDTO(
             locale: $profile->locale,
             direction: $profile->direction,
             sourceType: $profile->sourceType,
             slug: $profile->slug,
-            name: (string) $pick($linked->name, $profile->name),
-            title: $pick($linked->title, $profile->title),
+            name: (string) $pick($profile->name, $role->name),
+            title: $pick($profile->title, $role->title),
             // The leadership role (Dean, Vice President, ...) describes them best.
-            position: $pick($profile->position, $linked->position),
-            category: $profile->category,
-            facultyName: $pick($linked->facultyName, $profile->facultyName),
-            departmentName: $pick($linked->departmentName, $profile->departmentName),
-            email: $pick($linked->email, $profile->email),
-            phone: $pick($linked->phone, $profile->phone),
-            image: $pick($linked->image, $profile->image),
+            position: $pick($role->position, $profile->position),
+            category: $role->category,
+            facultyName: $pick($profile->facultyName, $role->facultyName),
+            departmentName: $pick($profile->departmentName, $role->departmentName),
+            email: $pick($profile->email, $role->email),
+            phone: $pick($profile->phone, $role->phone),
+            image: $image,
             bio: $bio,
-            quote: $profile->quote,
-            specializations: $pick($linked->specializations, $profile->specializations),
-            officeLocation: $pick($linked->officeLocation, $profile->officeLocation),
-            socialLinks: $pick($linked->socialLinks, $profile->socialLinks),
-            educations: $pick($linked->educations, $profile->educations),
+            quote: $role->quote,
+            specializations: $pick($profile->specializations, $role->specializations),
+            officeLocation: $pick($profile->officeLocation, $role->officeLocation),
+            socialLinks: $pick($profile->socialLinks, $role->socialLinks),
+            educations: $pick($profile->educations, $role->educations),
             publications: $publications,
-            councilMemberships: $pick($profile->councilMemberships, $linked->councilMemberships),
-            cvUrl: $pick($linked->cvUrl, $profile->cvUrl),
+            councilMemberships: $councilMemberships,
+            cvUrl: $pick($profile->cvUrl, $role->cvUrl),
             profileUrl: $profile->profileUrl,
-            seoTitle: (string) $pick($linked->name, $profile->name).' - '.config('app.name', 'SPU'),
+            seoTitle: $profile->seoTitle,
             seoDescription: is_string($bio) && trim($bio) !== '' ? $bio : $profile->seoDescription,
-            seoImage: $pick($linked->image, $profile->seoImage),
+            seoImage: $image,
             path: $profile->path,
         );
     }

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services\Content;
 
 use App\Contracts\Content\PeopleDuplicateReportServiceInterface;
+use App\Contracts\Content\PersonIdentityServiceInterface;
 use App\DTOs\Content\PeopleDuplicateReportDTO;
 use App\Models\Person\FacultyMember;
 use App\Models\Person\Person;
@@ -17,6 +18,10 @@ use App\Support\PersonName;
  */
 final class PeopleDuplicateReportService implements PeopleDuplicateReportServiceInterface
 {
+    public function __construct(
+        private readonly PersonIdentityServiceInterface $identityService,
+    ) {}
+
     public function report(): PeopleDuplicateReportDTO
     {
         $researchers = Researcher::query()->withCount('publications')->get()
@@ -40,12 +45,15 @@ final class PeopleDuplicateReportService implements PeopleDuplicateReportService
                 'trashed' => $member->trashed(),
             ])->values()->all();
 
-        $people = Person::query()->with('translations')->get()
+        $peopleRows = Person::query()->with('translations')->get();
+        $profiles = $this->identityService->profileMemberIds(array_map('intval', $peopleRows->modelKeys()));
+        $people = $peopleRows
             ->map(fn (Person $person): array => [
                 'line' => 'P'.$person->getKey().' '.$this->names($person->translations->pluck('name')->all())
                     .' - '.($person->category ?? 'no category').', '.$person->publication_status.', /'.$person->slug,
                 'names' => $person->translations->pluck('name')->filter()->map(fn (mixed $name): string => (string) $name)->values()->all(),
                 'id' => (int) $person->getKey(),
+                'member_id' => $profiles[(int) $person->getKey()] ?? null,
             ])->values()->all();
 
         $liveMembers = array_values(array_filter($members, fn (array $member): bool => ! $member['trashed']));
@@ -55,16 +63,16 @@ final class PeopleDuplicateReportService implements PeopleDuplicateReportService
                 'Researchers that look like the same person' => $this->groups($researchers),
                 'Faculty members that look like the same person' => $this->groups($liveMembers),
                 'People (leadership and directory profiles) that look like the same person' => $this->groups($people),
-                'Faculty members who are also a People profile, not linked' => $this->pairs(
-                    array_values(array_filter($liveMembers, fn (array $member): bool => $member['person_id'] === null)),
-                    $people,
+                // A leadership row with no profile yet: people:unify or an editor ties it.
+                'Leadership rows with no profile that match a faculty member' => $this->pairs(
+                    array_values(array_filter($people, fn (array $person): bool => $person['member_id'] === null)),
+                    $liveMembers,
                 ),
-                // Since 2026-10-20 the People profile shows the linked member's content.
-                'People profiles showing a linked faculty member\'s content' => collect($liveMembers)
-                    ->filter(fn (array $member): bool => $member['person_id'] !== null)
-                    ->map(fn (array $member): array => [
-                        collect($people)->firstWhere('id', (int) $member['person_id'])['line'] ?? 'P'.$member['person_id'].' (missing)',
-                        $member['line'],
+                'Leadership rows and the profile they show' => collect($people)
+                    ->filter(fn (array $person): bool => $person['member_id'] !== null)
+                    ->map(fn (array $person): array => [
+                        $person['line'],
+                        collect($members)->firstWhere('id', (int) $person['member_id'])['line'] ?? 'M'.$person['member_id'].' (missing)',
                     ])
                     ->values()
                     ->all(),
