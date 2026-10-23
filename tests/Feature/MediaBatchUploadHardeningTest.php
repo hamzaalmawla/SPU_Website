@@ -111,6 +111,26 @@ class MediaBatchUploadHardeningTest extends TestCase
         $this->assertFalse($guard->invoke($service, 20000, 20000));
     }
 
+    public function test_webp_conversion_leaves_room_to_turn_a_phone_photo_upright(): void
+    {
+        $service = app(ImageConversionServiceInterface::class);
+        $guard = new \ReflectionMethod($service, 'hasMemoryToDecode');
+        $original = (string) ini_get('memory_limit');
+        ini_set('memory_limit', (string) (memory_get_usage(true) + 64 * 1024 * 1024));
+
+        try {
+            // A 12 MP phone photo: decoding, auto-orienting and encoding hold
+            // four full-size copies at once, so the limit must be raised to fit them.
+            $this->assertTrue($guard->invoke($service, 4000, 3000));
+            $this->assertGreaterThanOrEqual(
+                memory_get_usage(true) + 4000 * 3000 * 4 * 4,
+                (int) ini_get('memory_limit'),
+            );
+        } finally {
+            ini_set('memory_limit', $original);
+        }
+    }
+
     public function test_abandoned_temp_uploads_are_pruned_and_recent_ones_kept(): void
     {
         $disk = Storage::disk('public');

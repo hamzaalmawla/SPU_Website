@@ -219,8 +219,11 @@ final class ImageConversionService implements ImageConversionServiceInterface
             return true;
         }
 
-        // Truecolour pixels plus the encoder's working copy, and some headroom.
-        $needed = (int) ($width * $height * 4 * 2) + 16 * 1024 * 1024;
+        // Four truecolour copies and some headroom: the decoded image, the two
+        // that turning a sideways phone photo upright makes (EXIF auto-
+        // orientation), and the encoder's working copy. Counting only two
+        // ran approvals of a staff photo out of memory.
+        $needed = (int) ($width * $height * 4 * 4) + 16 * 1024 * 1024;
         $limit = $this->bytes((string) ini_get('memory_limit'));
 
         if ($limit < 0) {
