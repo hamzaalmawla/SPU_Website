@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Contracts\Content\ProfileAdminServiceInterface;
 use App\Contracts\Staff\StaffIntakeLinkServiceInterface;
 use App\Contracts\Staff\StaffIntakeReviewServiceInterface;
 use App\DTOs\Staff\StaffIntakeLinkCreatedDTO;
@@ -219,6 +220,57 @@ final class StaffIntakeTest extends TestCase
         $this->assertSame((int) $department->getKey(), (int) $member->department_id);
         $this->assertSame(['Orthodontics', 'Implants'], $member->translations->firstWhere('locale', 'en')?->specializations);
         $this->assertSame(2010, (int) $member->educations->first()?->translations->firstWhere('locale', 'en')?->year_start);
+    }
+
+    public function test_the_form_offers_only_current_departments_and_a_profile_keeps_its_own(): void
+    {
+        $current = Department::query()->create(['faculty_id' => $this->dentistry->getKey(), 'slug' => 'intake-current-department', 'sort_order' => 1]);
+        $current->translations()->create(['locale' => 'en', 'name' => 'Current Department']);
+        $retired = Department::query()->create(['faculty_id' => $this->dentistry->getKey(), 'slug' => 'intake-retired-department', 'sort_order' => 2, 'is_enabled' => false]);
+        $retired->translations()->create(['locale' => 'en', 'name' => 'Retired Department']);
+        $member = $this->member('nour-retired', 'نور القسم', 'Nour Retired', $this->dentistry);
+        $member->forceFill(['department_id' => $retired->getKey()])->save();
+        $token = $this->token($this->link());
+
+        // A new teacher sees only the faculty's current departments and cannot pick a switched-off one.
+        $newRef = $this->newRef($token, 'Fresh Teacher');
+        $this->get('/en/staff-intake/'.$token.'/form?name='.urlencode('Fresh Teacher'))
+            ->assertOk()
+            ->assertSee('Current Department')
+            ->assertDontSee('Retired Department');
+        $this->post('/en/staff-intake/'.$token.'/form', $this->formData($newRef, ['name_ar' => 'معلم جديد', 'name_en' => 'Fresh Teacher', 'department_id' => (string) $retired->getKey()]))
+            ->assertSessionHasErrors('department_id');
+
+        // A profile still in a switched-off department keeps it in its list and may send it back unchanged.
+        $ref = $this->refFor($token, 'Nour Retired');
+        $this->post('/en/staff-intake/'.$token.'/form', $this->formData($ref, ['name_ar' => 'نور القسم', 'name_en' => 'Nour Retired', 'department_id' => (string) $retired->getKey()]))
+            ->assertSessionHasNoErrors()
+            ->assertRedirect('/en/staff-intake/'.$token.'/sent');
+    }
+
+    public function test_approval_keeps_the_profiles_specialization_and_clears_one_the_plan_no_longer_has(): void
+    {
+        $programs = app(ProfileAdminServiceInterface::class)->specializationOptions((int) $this->dentistry->getKey());
+        $this->assertNotSame([], $programs);
+        $programId = (string) array_key_first($programs);
+        $kept = $this->member('kept-specialization', 'سامي الاختصاص', 'Sami Kept', $this->dentistry);
+        $kept->forceFill(['specialization_id' => $programId])->save();
+        $stale = $this->member('stale-specialization', 'رنا القديمة', 'Rana Stale', $this->dentistry);
+        $stale->forceFill(['specialization_id' => 'program-since-removed'])->save();
+        $token = $this->token($this->link());
+        $editor = (int) $this->user('editor')->getKey();
+
+        // The link has no specialization field: approving a teacher's corrections keeps the editor's choice.
+        $this->post('/en/staff-intake/'.$token.'/form', $this->formData($this->refFor($token, 'Sami Kept'), ['name_ar' => 'سامي الاختصاص', 'name_en' => 'Sami Kept']))->assertRedirect();
+        $result = app(StaffIntakeReviewServiceInterface::class)->approve((int) StaffIntakeRequest::query()->latest('id')->firstOrFail()->getKey(), $editor);
+        $this->assertTrue($result->published, implode(' ', $result->publishErrors));
+        $this->assertSame($programId, $kept->fresh()?->specialization_id);
+
+        // One the plan no longer has is cleared instead of blocking the approval.
+        $this->post('/en/staff-intake/'.$token.'/form', $this->formData($this->refFor($token, 'Rana Stale'), ['name_ar' => 'رنا القديمة', 'name_en' => 'Rana Stale']))->assertRedirect();
+        $result = app(StaffIntakeReviewServiceInterface::class)->approve((int) StaffIntakeRequest::query()->latest('id')->firstOrFail()->getKey(), $editor);
+        $this->assertTrue($result->published, implode(' ', $result->publishErrors));
+        $this->assertNull($stale->fresh()?->specialization_id);
     }
 
     public function test_requests_are_checked_against_the_links_faculty_and_reviewer_scope(): void

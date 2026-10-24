@@ -321,6 +321,15 @@ final class StaffIntakeReviewService implements StaffIntakeReviewServiceInterfac
         }
 
         $base['department_id'] = $fields['department_id'] ?? null;
+
+        // The link asks only for the department; the profile keeps the specialization an editor
+        // set. One that is no longer a program of the faculty's plan is cleared rather than
+        // blocking the approval.
+        $specializationId = is_string($base['specialization_id'] ?? null) && $base['specialization_id'] !== '' ? $base['specialization_id'] : null;
+        $facultyId = is_numeric($base['faculty_id'] ?? null) ? (int) $base['faculty_id'] : null;
+        $base['specialization_id'] = $specializationId !== null && array_key_exists($specializationId, $this->profiles->specializationOptions($facultyId))
+            ? $specializationId
+            : null;
         foreach (StaffIntakeFields::CONTACT as $field) {
             $base[$field] = $fields[$field] ?? null;
         }

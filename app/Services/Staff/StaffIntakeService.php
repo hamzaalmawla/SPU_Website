@@ -95,8 +95,6 @@ final class StaffIntakeService implements StaffIntakeServiceInterface
 
         $faculty = $link->faculty()->with('translations')->first();
         $facultyName = $faculty instanceof Faculty ? $this->facultyName($faculty, $locale) : '';
-        $departments = $this->departments((int) $link->faculty_id, $locale);
-
         if ($ref !== null && $ref !== '') {
             $decoded = $this->decodeRef($link, $ref);
             $member = $decoded !== null && $decoded['m'] !== null ? $this->member($decoded['m']) : null;
@@ -105,6 +103,7 @@ final class StaffIntakeService implements StaffIntakeServiceInterface
             }
 
             $sameFaculty = (int) $member->faculty_id === (int) $link->faculty_id;
+            $departments = $this->departments((int) $link->faculty_id, $locale, $sameFaculty ? $this->nullableId($member->department_id) : null);
             $fields = StaffIntakeFields::fromMember($member);
             if (! $sameFaculty) {
                 // A profile in another faculty: the teacher starts from it, and a
@@ -142,7 +141,7 @@ final class StaffIntakeService implements StaffIntakeServiceInterface
             facultyName: $facultyName,
             fields: $fields,
             educations: [],
-            departments: $departments,
+            departments: $this->departments((int) $link->faculty_id, $locale),
             photoUrl: null,
             cvUrl: null,
             relatedFacultyName: null,
@@ -168,7 +167,12 @@ final class StaffIntakeService implements StaffIntakeServiceInterface
 
         $isUpdate = $claimed instanceof FacultyMember && (int) $claimed->faculty_id === (int) $link->faculty_id;
         $this->requireFiles($submission, $claimed, $isUpdate);
-        $fields = $this->cleanFields($submission->fields, (int) $link->faculty_id, $submission->locale);
+        $fields = $this->cleanFields(
+            $submission->fields,
+            (int) $link->faculty_id,
+            $submission->locale,
+            $claimed instanceof FacultyMember && (int) $claimed->faculty_id === (int) $link->faculty_id ? $this->nullableId($claimed->department_id) : null,
+        );
         $educations = $this->cleanEducations($submission->educations, $isUpdate ? $claimed : null, $submission->locale);
 
         $candidates = $isUpdate ? collect() : $this->duplicateCandidates($fields, $claimed);
@@ -358,7 +362,7 @@ final class StaffIntakeService implements StaffIntakeServiceInterface
      * @param  array<string, mixed>  $input
      * @return array<string, mixed>
      */
-    private function cleanFields(array $input, int $facultyId, string $locale): array
+    private function cleanFields(array $input, int $facultyId, string $locale, ?int $currentDepartmentId = null): array
     {
         $fields = StaffIntakeFields::blank();
 
@@ -384,8 +388,11 @@ final class StaffIntakeService implements StaffIntakeServiceInterface
             $fields['email'] = mb_strtolower($fields['email']);
         }
 
+        // Only the faculty's current departments can be picked; a profile that is
+        // still in a department since switched off may keep it.
         if ($fields['department_id'] !== null
-            && ! Department::query()->whereKey($fields['department_id'])->where('faculty_id', $facultyId)->exists()) {
+            && $fields['department_id'] !== $currentDepartmentId
+            && ! Department::query()->whereKey($fields['department_id'])->where('faculty_id', $facultyId)->where('is_enabled', true)->exists()) {
             throw ValidationException::withMessages(['department_id' => __('staff_intake.public.errors.department', [], $locale)]);
         }
 
@@ -484,12 +491,19 @@ final class StaffIntakeService implements StaffIntakeServiceInterface
         return $uploads;
     }
 
-    /** @return array<int, string> */
-    private function departments(int $facultyId, string $locale): array
+    /**
+     * The faculty's current departments (Basic Sciences and the others, in page order). The
+     * profile's own department stays in the list even if it has since been switched off.
+     *
+     * @return array<int, string>
+     */
+    private function departments(int $facultyId, string $locale, ?int $keepId = null): array
     {
         return Department::query()
             ->where('faculty_id', $facultyId)
+            ->where(fn ($query) => $query->where('is_enabled', true)->when($keepId !== null, fn ($query) => $query->orWhere('id', $keepId)))
             ->with('translations')
+            ->orderBy('sort_order')
             ->orderBy('id')
             ->get()
             ->mapWithKeys(fn (Department $department): array => [
@@ -498,6 +512,11 @@ final class StaffIntakeService implements StaffIntakeServiceInterface
                     ?? '#'.$department->getKey()),
             ])
             ->all();
+    }
+
+    private function nullableId(mixed $value): ?int
+    {
+        return is_numeric($value) && (int) $value > 0 ? (int) $value : null;
     }
 
     private function encodeRef(StaffIntakeLink $link, ?int $memberId, ?string $name): string

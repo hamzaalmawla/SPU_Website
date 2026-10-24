@@ -25,7 +25,10 @@ The page stays `/{locale}/faculties/{faculty}/departments`, with the same CMS ta
   - The staff admin shows a "Specialization (optional)" picker under the department. It lists the faculty's study plan programs and is hidden when there are none.
   - The value goes through the profile draft and publish workflow. It must be a program of the faculty's plan.
   - The public profile shows "Specialization: <program name>" after the department.
-  - The staff intake form does not offer it yet.
+  - **Staff intake links** ask only for the department.
+    - The form lists the faculty's enabled departments in page order, so Basic Sciences is included and switched-off or invented ones are not. A profile still in a switched-off department keeps it in its list and may send it back unchanged.
+    - Submitting any other switched-off department is refused.
+    - Approving a request keeps the profile's specialization. One that is no longer a program of the faculty's plan is cleared, so it cannot block the approval.
 - **Already-published departments pages** keep their published list until an editor adds Basic Sciences, kinds, heads and specializations, then publishes. Nothing is overwritten.
 
 ## 1. The problem
