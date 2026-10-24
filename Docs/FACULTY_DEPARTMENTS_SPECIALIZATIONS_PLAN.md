@@ -1,6 +1,23 @@
 # Faculty departments and specializations: plan
 
-Status: proposal, not built. The current Departments subpage stays as it is until this plan is approved and replaces it.
+Status: the foundation is built (see "As built" below); the CMS manager fills the data. Sections 3 to 6 were the first proposal and are kept for the reasoning; where they differ, "As built" wins.
+
+## As built (2026-10-24)
+
+The page stays `/{locale}/faculties/{faculty}/departments`, with the same CMS target `facilities.<faculty>.departments` (draft, preview, publish, audit and cache as before). One payload, two lists:
+
+- **Departments** (`translations.<locale>.items[]`, every faculty): `slug`, `title`, `summary`, `code`, plus
+  - `kind`: `basic_sciences` | `academic` | `clinical` (default `academic`), shown as a badge;
+  - `headMemberId`: a faculty profile id (never a name). The page shows the head's current name, photo and profile link; a hidden profile is left out;
+  - `studyPlanDepartmentId` (now labelled "Specialization it teaches"): optional. A department without one gets no Study Plan button when the faculty has several programs. In a single-program faculty it keeps the faculty's plan as its link.
+  - `degrees`, `tags`: kept for older rows, under Advanced.
+- **Specializations** (`translations.<locale>.specializations[]`): `studyPlanDepartmentId` (required, a program of the published study plan), and optional `title`, `summary`, `degrees`, `tags`. An empty title or summary falls back to the program's name or summary in the plan; credits come from the plan.
+  - **Empty list:** a plan with two or more programs (AI, Business) lists every program automatically. A single-program faculty shows no specializations block.
+  - Validation: each program must exist in the published plan, appear once, and match in both languages.
+- Public rendering: `FacultyStudyPlanLinkServiceInterface::specializationItems` builds the list (with the department that teaches each one), and `FacultyPageService` adds the heads. The view shows the stats, then Specializations (cards, each with its Study Plan link), then Academic Departments.
+- Admin: the faculty page's Departments tab has the departments repeater (type, head picker grouped by this faculty or other faculties, code, summary; Advanced holds the specialization link, degree and keywords) and a Specializations repeater.
+- `departments.kind` column (migration `2026_10_24_000001`) for the record fallback used before a faculty's departments are first published. That migration marks the old site's Basic Sciences rows (petroleum, construction, dentistry Life Sciences) and adds **AI's Basic Sciences department** (`ai-basic-sciences`, first in order). `faculty_structure.json` carries the same, and `faculty:import-structure` writes `kind`.
+- **Already-published departments pages** keep their published list until an editor adds Basic Sciences, kinds, heads and specializations, then publishes. Nothing is overwritten.
 
 ## 1. The problem
 

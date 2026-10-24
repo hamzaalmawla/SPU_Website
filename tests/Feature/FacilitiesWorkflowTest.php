@@ -587,10 +587,16 @@ final class FacilitiesWorkflowTest extends TestCase
 
     public function test_ambiguous_department_names_do_not_generate_guessed_study_plan_links(): void
     {
-        $this->get('/en/faculties/artificial-intelligence/departments')
-            ->assertOk()
-            ->assertSee('href="/en/faculties/artificial-intelligence/study-plan"', false)
-            ->assertDontSee('/study-plan?department=', false);
+        $page = app(FacultyPageServiceInterface::class)->getSubpage('artificial-intelligence', 'departments', 'en');
+
+        $this->assertNotNull($page);
+        $this->assertNotSame([], $page->items);
+
+        foreach ($page->items as $item) {
+            $this->assertNull($item['studyPlanDepartmentId']);
+            // With several programs there is no single plan for an unlinked department to point to.
+            $this->assertNull($item['studyPlanUrl']);
+        }
     }
 
     public function test_study_plan_language_switch_preserves_only_valid_department_selection(): void

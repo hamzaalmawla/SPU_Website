@@ -66,6 +66,9 @@ final class FacultyPageService implements FacultyPageServiceInterface
         'business' => 'business-administration',
     ];
 
+    /** Kinds of academic department: basic sciences (common years), academic and clinical. */
+    private const DEPARTMENT_KINDS = ['basic_sciences', 'academic', 'clinical'];
+
     private const SUBPAGE_SLUGS = ['overview', 'departments', 'study-plan', 'study-plan-course', 'labs', 'projects', 'alumni', 'valedictorians', 'training', 'clinical-cases', 'final-exams', 'research', 'members'];
 
     private const ALUMNI_LIST_PER_PAGE = 12;
@@ -337,13 +340,20 @@ final class FacultyPageService implements FacultyPageServiceInterface
             }
         }
 
+        $detail = [];
+
         if ($subpageSlug === 'departments') {
-            $items = $this->studyPlanLinkService->enrichDepartmentItems($this->publicSlug($faculty), $locale, $items);
+            $items = $this->withDepartmentHeads($this->studyPlanLinkService->enrichDepartmentItems($this->publicSlug($faculty), $locale, $items), $locale);
+            $detail['specializations'] = $this->studyPlanLinkService->specializationItems(
+                $this->publicSlug($faculty),
+                $locale,
+                is_array($cmsContent) ? $this->arrayList($cmsContent['specializations'] ?? []) : [],
+                $items,
+            );
         }
 
         $filterOptions = [];
         $pagination = $this->emptyPagination(count($items));
-        $detail = [];
 
         if (in_array($subpageSlug, ['study-plan', 'study-plan-course'], true)) {
             $pageData['payload']['plan']['pdfUrl'] = $this->studyPlanLinkService->sanitizeCourseMaterialPath(
@@ -1184,6 +1194,7 @@ final class FacultyPageService implements FacultyPageServiceInterface
 
             return [
                 'slug' => (string) $department->slug,
+                'kind' => (string) $department->kind,
                 'code' => is_array($payload) ? ($payload['code'] ?? null) : null,
                 'title' => (string) $translation->name,
                 'summary' => (string) ($translation->description ?? ''),
@@ -1192,6 +1203,35 @@ final class FacultyPageService implements FacultyPageServiceInterface
                 'studyPlanDepartmentId' => $explicitDepartmentId,
             ];
         })->values()->all();
+    }
+
+    /**
+     * Normalizes each department's kind and adds its head (name, photo and profile link) from the
+     * public faculty profile. A head who is not public is left out.
+     *
+     * @param  array<int, array<string, mixed>>  $items
+     * @return array<int, array<string, mixed>>
+     */
+    private function withDepartmentHeads(array $items, string $locale): array
+    {
+        $memberIds = collect($items)
+            ->map(static fn (array $item): int => is_numeric($item['headMemberId'] ?? null) ? (int) $item['headMemberId'] : 0)
+            ->filter(static fn (int $id): bool => $id > 0)
+            ->unique()
+            ->values()
+            ->all();
+        $heads = $this->publicMemberCards($locale, $memberIds);
+
+        return array_map(static function (array $item) use ($heads): array {
+            $kind = (string) ($item['kind'] ?? '');
+            $headId = is_numeric($item['headMemberId'] ?? null) ? (int) $item['headMemberId'] : 0;
+
+            return [
+                ...$item,
+                'kind' => in_array($kind, self::DEPARTMENT_KINDS, true) ? $kind : 'academic',
+                'head' => $heads[$headId] ?? null,
+            ];
+        }, $items);
     }
 
     /** @return array<int, array<string, mixed>> */
@@ -2112,13 +2152,31 @@ final class FacultyPageService implements FacultyPageServiceInterface
             return [];
         }
 
-        $members = FacultyMember::query()->public()->whereKey(array_values($wanted))->with(['translations', 'photoMedia'])->get()->keyBy('id');
+        $cards = $this->publicMemberCards($locale, array_values($wanted));
         $teachers = [];
         foreach ($wanted as $part => $memberId) {
-            $member = $members->get($memberId);
-            if (! $member instanceof FacultyMember) {
-                continue;
+            if (isset($cards[$memberId])) {
+                $teachers[] = ['part' => $part, ...$cards[$memberId]];
             }
+        }
+
+        return $teachers;
+    }
+
+    /**
+     * Name, photo and profile link of each public faculty profile, keyed by its id.
+     *
+     * @param  array<int, int>  $memberIds
+     * @return array<int, array{name: string, image: string, url: string}>
+     */
+    private function publicMemberCards(string $locale, array $memberIds): array
+    {
+        if ($memberIds === []) {
+            return [];
+        }
+
+        $cards = [];
+        foreach (FacultyMember::query()->public()->whereKey($memberIds)->with(['translations', 'photoMedia'])->get() as $member) {
             $translation = $member->translations->firstWhere('locale', $locale)
                 ?? $member->translations->firstWhere('locale', 'ar')
                 ?? $member->translations->firstWhere('locale', 'en');
@@ -2126,8 +2184,7 @@ final class FacultyPageService implements FacultyPageServiceInterface
             if ($name === '') {
                 continue;
             }
-            $teachers[] = [
-                'part' => $part,
+            $cards[(int) $member->getKey()] = [
                 'name' => $name,
                 'image' => $member->photoMedia instanceof MediaAsset
                     ? MediaUrlResolver::resolveImage($member->photoMedia->webp_path, $member->photoMedia->path, $member->photoMedia->disk)
@@ -2136,7 +2193,7 @@ final class FacultyPageService implements FacultyPageServiceInterface
             ];
         }
 
-        return $teachers;
+        return $cards;
     }
 
     /** @param array<string, mixed>|null $instructor */

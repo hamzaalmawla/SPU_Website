@@ -194,13 +194,23 @@
             'locale' => $locale,
         ])
     @elseif ($page->subpageSlug === 'departments')
+        @php
+            $specializations = is_array($page->detail['specializations'] ?? null) ? $page->detail['specializations'] : [];
+            $hasSpecializations = $specializations !== [];
+        @endphp
         <section class="bg-white py-16 font-hacen lg:py-24">
             <div class="container">
-                <div class="cms-grid-stats cms-grid-stats-cols-3 mx-auto max-w-[1080px] gap-4">
+                <div class="cms-grid-stats {{ $hasSpecializations ? 'cms-grid-stats-cols-4' : 'cms-grid-stats-cols-3' }} mx-auto max-w-[1080px] gap-4">
                     <div class="rounded-[8px] bg-section p-6 text-center">
                         <p class="text-3xl font-bold" style="color: {{ $accent }}" dir="ltr">{{ count($page->items) }}</p>
                         <p class="mt-2 text-xs font-bold uppercase tracking-[0.16em] text-spu-blue/45">{{ $isAr ? 'أقسام' : 'Departments' }}</p>
                     </div>
+                    @if ($hasSpecializations)
+                        <div class="rounded-[8px] bg-section p-6 text-center">
+                            <p class="text-3xl font-bold" style="color: {{ $accent }}" dir="ltr">{{ count($specializations) }}</p>
+                            <p class="mt-2 text-xs font-bold uppercase tracking-[0.16em] text-spu-blue/45">{{ $isAr ? 'اختصاصات' : 'Specializations' }}</p>
+                        </div>
+                    @endif
                     <div class="rounded-[8px] bg-section p-6 text-center">
                         <p class="text-3xl font-bold" style="color: {{ $accent }}">{{ $faculty['yearsLabel'] }}</p>
                         <p class="mt-2 text-xs font-bold uppercase tracking-[0.16em] text-spu-blue/45">{{ $isAr ? 'مدة الدراسة' : 'Study Duration' }}</p>
@@ -211,25 +221,89 @@
                     </div>
                 </div>
 
-                <div class="mx-auto mt-12 max-w-[1080px] divide-y divide-slate-100 overflow-hidden rounded-[8px] border border-slate-100 bg-white shadow-[0_12px_40px_rgba(9,17,68,0.06)]">
+                @if ($hasSpecializations)
+                    <div id="specializations" class="mx-auto mt-14 max-w-[1080px]">
+                        <h2 class="text-2xl font-bold text-spu-blue">{{ $isAr ? 'الاختصاصات' : 'Specializations' }}</h2>
+                        <div class="mt-3 h-[3px] w-14 rounded-full" style="background-color: {{ $accent }}"></div>
+                        <p class="mt-4 max-w-[720px] text-sm leading-7 text-slate-600">{{ $isAr ? 'البرامج التي يتخرج منها الطالب، ولكل منها خطته الدراسية.' : 'The programs a student graduates in, each with its own study plan.' }}</p>
+                        <div class="mt-8 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                            @foreach ($specializations as $specialization)
+                                <article id="{{ $specialization['slug'] }}" class="flex flex-col rounded-[8px] border border-slate-100 bg-white p-6 shadow-[0_12px_40px_rgba(9,17,68,0.06)]">
+                                    <h3 class="card-title text-lg font-bold text-spu-blue" dir="auto">{{ $specialization['title'] }}</h3>
+                                    <div class="mt-3 flex flex-wrap gap-2">
+                                        @if ($specialization['degrees'])
+                                            <span class="rounded-full bg-section px-3 py-1 text-[11px] font-bold uppercase tracking-[0.12em] text-spu-blue/55">{{ $specialization['degrees'] }}</span>
+                                        @endif
+                                        @if ($specialization['credits'])
+                                            <span class="rounded-full bg-section px-3 py-1 text-[11px] font-bold text-spu-blue/55">{{ $specialization['credits'] }} {{ $isAr ? 'ساعة معتمدة' : 'credit hours' }}</span>
+                                        @endif
+                                    </div>
+                                    @if ($specialization['summary'] !== '')
+                                        <x-public.rich-text class="mt-3 text-sm leading-7 text-slate-600" :text="$specialization['summary']" />
+                                    @endif
+                                    @if ($specialization['tags'] !== [])
+                                        <div class="mt-4 flex flex-wrap gap-2">
+                                            @foreach ($specialization['tags'] as $tag)
+                                                <span class="rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-500">{{ $tag }}</span>
+                                            @endforeach
+                                        </div>
+                                    @endif
+                                    @if (is_array($specialization['department']) && $specialization['department']['title'] !== '')
+                                        <p class="mt-4 text-xs text-slate-500">{{ $isAr ? 'يدرّسه:' : 'Taught by:' }} <a href="#{{ $specialization['department']['slug'] }}" class="font-bold text-spu-blue underline-offset-2 hover:underline">{{ $specialization['department']['title'] }}</a></p>
+                                    @endif
+                                    <div class="flex-1"></div>
+                                    <a href="{{ $specialization['studyPlanUrl'] }}" class="mt-5 inline-flex h-11 items-center justify-center self-start rounded-[6px] px-5 text-sm font-bold text-white transition-all hover:-translate-y-0.5" style="background-color: {{ $accent }}">{{ $isAr ? 'الخطة الدراسية' : 'Study Plan' }}</a>
+                                </article>
+                            @endforeach
+                        </div>
+                    </div>
+
+                    <div class="mx-auto mt-14 max-w-[1080px]">
+                        <h2 class="text-2xl font-bold text-spu-blue">{{ $isAr ? 'الأقسام العلمية' : 'Academic Departments' }}</h2>
+                        <div class="mt-3 h-[3px] w-14 rounded-full" style="background-color: {{ $accent }}"></div>
+                    </div>
+                @endif
+
+                <div class="mx-auto {{ $hasSpecializations ? 'mt-8' : 'mt-12' }} max-w-[1080px] divide-y divide-slate-100 overflow-hidden rounded-[8px] border border-slate-100 bg-white shadow-[0_12px_40px_rgba(9,17,68,0.06)]">
                     @forelse ($page->items as $item)
+                        @php
+                            $kind = $item['kind'] ?? 'academic';
+                            $head = is_array($item['head'] ?? null) ? $item['head'] : null;
+                            $taughtSpecialization = collect($specializations)->firstWhere('studyPlanDepartmentId', $item['studyPlanDepartmentId'] ?? null);
+                            $kindLabel = match ($kind) {
+                                'basic_sciences' => $isAr ? 'علوم أساسية' : 'Basic Sciences',
+                                'clinical' => $isAr ? 'قسم سريري' : 'Clinical',
+                                default => $item['degrees'] ?? ($isAr ? 'قسم أكاديمي' : 'Academic Department'),
+                            };
+                        @endphp
                         <article id="{{ $item['slug'] ?? 'department-'.$loop->iteration }}" class="grid gap-5 p-6 md:grid-cols-[80px_1fr_auto] md:items-center md:p-8">
                             <div class="text-[32px] font-bold leading-none text-spu-red/80">{{ $item['code'] ?? str_pad((string) $loop->iteration, 2, '0', STR_PAD_LEFT) }}</div>
                             <div>
                                 <div class="flex flex-wrap items-center gap-3">
                                     <h2 class="card-title text-xl font-bold text-spu-blue" dir="auto">{{ $item['title'] ?? '' }}</h2>
-                                    <span class="rounded-full bg-section px-3 py-1 text-[11px] font-bold uppercase tracking-[0.12em] text-spu-blue/55">{{ $item['degrees'] ?? ($isAr ? 'اختصاص أكاديمي' : 'Academic Track') }}</span>
+                                    <span class="rounded-full bg-section px-3 py-1 text-[11px] font-bold uppercase tracking-[0.12em] text-spu-blue/55">{{ $kindLabel }}</span>
                                 </div>
                                 <x-public.rich-text class="mt-3 max-w-[720px] text-sm leading-7 text-slate-600" :text="$item['summary'] ?? ''" />
-                                <div class="mt-4 flex flex-wrap gap-2">
-                                    @forelse (($item['tags'] ?? []) as $tag)
-                                        <span class="rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-500">{{ $tag }}</span>
-                                    @empty
-                                        <span class="rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-500">{{ $faculty['title'] }}</span>
-                                    @endforelse
-                                </div>
+                                @if ($head)
+                                    <a href="{{ $head['url'] }}" class="mt-4 inline-flex items-center gap-3 rounded-[6px] border border-slate-100 px-3 py-2 transition hover:border-spu-blue hover:bg-spu-blue/5">
+                                        @if ($head['image'])<img src="{{ $head['image'] }}" alt="" class="h-9 w-9 rounded-full object-cover" loading="lazy">@else<img src="/images/icon-user-graduate-outline.svg" alt="" class="h-5 w-5" aria-hidden="true">@endif
+                                        <span class="text-start"><span class="block text-[11px] text-slate-400">{{ $isAr ? 'رئيس القسم' : 'Head of Department' }}</span><span class="block text-sm font-bold text-spu-blue">{{ $head['name'] }}</span></span>
+                                    </a>
+                                @endif
+                                @if (is_array($taughtSpecialization))
+                                    <p class="mt-3 text-xs text-slate-500">{{ $isAr ? 'يدرّس اختصاص:' : 'Teaches the specialization:' }} <a href="#{{ $taughtSpecialization['slug'] }}" class="font-bold text-spu-blue underline-offset-2 hover:underline">{{ $taughtSpecialization['title'] }}</a></p>
+                                @endif
+                                @if (($item['tags'] ?? []) !== [])
+                                    <div class="mt-4 flex flex-wrap gap-2">
+                                        @foreach ($item['tags'] as $tag)
+                                            <span class="rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-500">{{ $tag }}</span>
+                                        @endforeach
+                                    </div>
+                                @endif
                             </div>
-                            <a href="{{ $item['studyPlanUrl'] ?? ('/'.$locale.'/faculties/'.$page->facultySlug.'/study-plan') }}" class="inline-flex h-11 items-center justify-center rounded-[6px] px-5 text-sm font-bold text-white transition-all hover:-translate-y-0.5" style="background-color: {{ $accent }}">{{ $isAr ? 'الخطة الدراسية' : 'Study Plan' }}</a>
+                            @if (! empty($item['studyPlanUrl']))
+                                <a href="{{ $item['studyPlanUrl'] }}" class="inline-flex h-11 items-center justify-center rounded-[6px] px-5 text-sm font-bold text-white transition-all hover:-translate-y-0.5" style="background-color: {{ $accent }}">{{ $isAr ? 'الخطة الدراسية' : 'Study Plan' }}</a>
+                            @endif
                         </article>
                     @empty
                         <p class="p-8 text-center text-slate-500">{{ $isAr ? 'لا توجد أقسام منشورة حالياً.' : 'No published departments are available yet.' }}</p>

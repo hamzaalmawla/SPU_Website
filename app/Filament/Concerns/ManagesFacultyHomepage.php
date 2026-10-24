@@ -8,6 +8,7 @@ use App\Contracts\Auth\AdminAccessServiceInterface;
 use App\Contracts\Auth\PermissionCatalogInterface;
 use App\Contracts\Career\StudentListImportServiceInterface;
 use App\Contracts\Cms\CmsWorkflowServiceInterface;
+use App\Contracts\Content\ProfileAdminServiceInterface;
 use App\Contracts\Faculty\FacultyStudyPlanBoardServiceInterface;
 use App\Contracts\Faculty\FacultyStudyPlanEditorServiceInterface;
 use App\Contracts\Faculty\FacultyStudyPlanLinkServiceInterface;
@@ -63,6 +64,9 @@ trait ManagesFacultyHomepage
     private array $searchedItemKeys = [];
 
     public string $facultyScope = '';
+
+    /** @var array<string, array<int, string>>|null */
+    private ?array $departmentHeadCache = null;
 
     private FacultyPageServiceInterface $facultyPageService;
 
@@ -1104,17 +1108,27 @@ trait ManagesFacultyHomepage
                     ->schema([
                         Hidden::make('slug')->default(fn (): string => 'department-'.Str::lower(Str::random(8))),
                         TextInput::make('title')->label(__('admin.faculty_workspace.editor.fields.department_name'))->required()->maxLength(180),
-                        TextInput::make('degrees')->label(__('admin.faculty_workspace.editor.fields.degree_track'))->maxLength(160),
-                        TagsInput::make('tags')->label(__('admin.faculty_workspace.editor.fields.tags'))->columnSpanFull(),
+                        Select::make('kind')
+                            ->label(__('admin.faculty_workspace.editor.fields.department_kind'))
+                            ->options(fn (): array => __('admin.faculty_workspace.editor.department_kinds'))
+                            ->default('academic')
+                            ->selectablePlaceholder(false),
+                        Select::make('headMemberId')
+                            ->label(__('admin.faculty_workspace.editor.fields.department_head'))
+                            ->options(fn (): array => $this->departmentHeadOptions())
+                            ->searchable()
+                            ->helperText(__('admin.faculty_workspace.editor.help.department_head')),
+                        TextInput::make('code')->label(__('admin.faculty_workspace.editor.fields.department_code'))->maxLength(40),
                         Textarea::make('summary')->label(__('admin.faculty_workspace.editor.fields.summary'))->rows(3)->columnSpanFull(),
                         Section::make(__('admin.faculty_workspace.editor.sections.advanced'))->collapsed()->schema([
-                            TextInput::make('code')->label(__('admin.faculty_workspace.editor.fields.department_code'))->maxLength(40),
                             Select::make('studyPlanDepartmentId')
                                 ->label(__('admin.faculty_workspace.editor.fields.study_plan_link'))
                                 ->options(fn (): array => $this->departmentStudyPlanOptions())
                                 ->searchable()
                                 ->placeholder(__('admin.faculty_workspace.editor.fields.automatic'))
                                 ->helperText(__('admin.faculty_workspace.editor.help.study_plan_link')),
+                            TextInput::make('degrees')->label(__('admin.faculty_workspace.editor.fields.degree_track'))->maxLength(160),
+                            TagsInput::make('tags')->label(__('admin.faculty_workspace.editor.fields.tags'))->columnSpanFull(),
                         ]),
                     ])
                     ->columns(2)
@@ -1123,7 +1137,60 @@ trait ManagesFacultyHomepage
                     ->collapsible()
                     ->columnSpanFull(),
             ]),
+            Section::make(__('admin.faculty_workspace.editor.sections.specializations'))
+                ->description(__('admin.faculty_workspace.editor.help.specializations'))
+                ->schema([
+                    Repeater::make($prefix.'.specializations')
+                        ->label(__('admin.faculty_workspace.editor.sections.specializations'))
+                        ->schema([
+                            Hidden::make('slug')->default(fn (): string => 'specialization-'.Str::lower(Str::random(8))),
+                            Select::make('studyPlanDepartmentId')
+                                ->label(__('admin.faculty_workspace.editor.fields.specialization_program'))
+                                ->options(fn (): array => $this->departmentStudyPlanOptions())
+                                ->searchable()
+                                ->required(),
+                            TextInput::make('title')
+                                ->label(__('admin.faculty_workspace.editor.fields.display_title'))
+                                ->placeholder(__('admin.faculty_workspace.editor.help.specialization_title'))
+                                ->maxLength(180),
+                            TextInput::make('degrees')->label(__('admin.faculty_workspace.editor.fields.degree_track'))->maxLength(160),
+                            TagsInput::make('tags')->label(__('admin.faculty_workspace.editor.fields.tags')),
+                            Textarea::make('summary')
+                                ->label(__('admin.faculty_workspace.editor.fields.summary'))
+                                ->placeholder(__('admin.faculty_workspace.editor.help.specialization_summary'))
+                                ->rows(3)
+                                ->columnSpanFull(),
+                        ])
+                        ->columns(2)
+                        ->defaultItems(0)
+                        ->reorderable()
+                        ->collapsible()
+                        ->columnSpanFull(),
+                ]),
         ];
+    }
+
+    /**
+     * Faculty profiles for the department head picker: this faculty's first, then the others.
+     *
+     * @return array<string, array<int, string>>
+     */
+    private function departmentHeadOptions(): array
+    {
+        if ($this->departmentHeadCache !== null) {
+            return $this->departmentHeadCache;
+        }
+
+        try {
+            $options = app(ProfileAdminServiceInterface::class)->teacherOptions($this->facultyScope, $this->authenticatedUserId());
+        } catch (AuthorizationException) {
+            return $this->departmentHeadCache = [];
+        }
+
+        return $this->departmentHeadCache = array_filter([
+            __('admin.faculty_workspace.editor.fields.this_faculty') => $options['faculty'],
+            __('admin.faculty_workspace.editor.fields.other_faculties') => $options['other'],
+        ]);
     }
 
     /** @return array<int, Section> */
@@ -1646,6 +1713,7 @@ trait ManagesFacultyHomepage
         $content['items'] = array_map(function (array $item) use ($subpageSlug): array {
             if ($subpageSlug === 'departments') {
                 $item['tags'] = array_values(array_filter(is_array($item['tags'] ?? null) ? $item['tags'] : []));
+                $item['headMemberId'] = is_numeric($item['headMemberId'] ?? null) && (int) $item['headMemberId'] > 0 ? (int) $item['headMemberId'] : null;
             }
 
             if ($subpageSlug === 'projects') {
@@ -1679,6 +1747,13 @@ trait ManagesFacultyHomepage
 
         $content['items'] = array_map(fn (array $item): array => $this->withoutKeys($item, ['_cmsKey']), $content['items']);
         unset($content['stats'], $content['dean']);
+
+        if ($subpageSlug === 'departments') {
+            $content['specializations'] = array_map(static fn (array $row): array => [
+                ...$row,
+                'tags' => array_values(array_filter(is_array($row['tags'] ?? null) ? $row['tags'] : [])),
+            ], $this->listOfArrays($content['specializations'] ?? []));
+        }
 
         return $content;
     }

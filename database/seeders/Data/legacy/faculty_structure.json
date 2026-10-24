@@ -1,5 +1,5 @@
 {
-  "source": "Old site spu.edu.sy faculty sites: 'Specializations and Sections' pages (jx_categories 81, 181, 201, 229, 245, 270, 5268) and 'Laboratories' pages (105, 116, 211, 1463-1480). Arabic is the old text; English is the old site's English where it had one (cleaned of its machine-translation errors), otherwise a faithful translation. They replace the redesign's invented departments and labs. 'pages' are subpages the old site had that the redesign lacked (clinical cases 3043, pharmacy internship 1415, final exam schedules 5348/5357/6075/5345); their text is loaded by cms:import-page-texts from page_texts/faculty-pages.json. An empty 'labs' list means the old site lists no labs for that faculty, so the invented ones are switched off and the labs card is hidden.",
+  "source": "Old site spu.edu.sy faculty sites: 'Specializations and Sections' pages (jx_categories 81, 181, 201, 229, 245, 270, 5268) and 'Laboratories' pages (105, 116, 211, 1463-1480). Arabic is the old text; English is the old site's English where it had one (cleaned of its machine-translation errors), otherwise a faithful translation. They replace the redesign's invented departments and labs. 'pages' are subpages the old site had that the redesign lacked (clinical cases 3043, pharmacy internship 1415, final exam schedules 5348/5357/6075/5345); their text is loaded by cms:import-page-texts from page_texts/faculty-pages.json. An empty 'labs' list means the old site lists no labs for that faculty, so the invented ones are switched off and the labs card is hidden. 'kind' marks a Basic Sciences department (default academic). The AI faculty's Basic Sciences department is not on the old sections page; it is added from the faculty council page, which lists its head.",
   "faculties": {
     "medicine": {
       "departments": [
@@ -186,7 +186,8 @@
           "nameAr": "قسم علوم الحياة",
           "nameEn": "Department of Life Sciences",
           "descriptionAr": "",
-          "descriptionEn": ""
+          "descriptionEn": "",
+          "kind": "basic_sciences"
         },
         {
           "slug": "histology-oral-pathology",
@@ -559,6 +560,14 @@
     "artificial-intelligence": {
       "departments": [
         {
+          "slug": "ai-basic-sciences",
+          "kind": "basic_sciences",
+          "nameAr": "قسم العلوم الأساسية",
+          "nameEn": "Department of Basic Sciences",
+          "descriptionAr": "",
+          "descriptionEn": ""
+        },
+        {
           "slug": "software-engineering-intelligent-information-systems",
           "nameAr": "قسم هندسة البرمجيات ونظم المعلومات الذكية",
           "nameEn": "Department of Software Engineering and Intelligent Information Systems",
@@ -621,7 +630,8 @@
           "nameAr": "قسم العلوم الأساسية",
           "nameEn": "Department of Basic Sciences",
           "descriptionAr": "",
-          "descriptionEn": ""
+          "descriptionEn": "",
+          "kind": "basic_sciences"
         },
         {
           "slug": "petroleum-geology-exploration",
@@ -780,7 +790,8 @@
           "nameAr": "قسم العلوم الأساسية",
           "nameEn": "Department of Basic Sciences",
           "descriptionAr": "",
-          "descriptionEn": ""
+          "descriptionEn": "",
+          "kind": "basic_sciences"
         },
         {
           "slug": "materials-construction-technology",
