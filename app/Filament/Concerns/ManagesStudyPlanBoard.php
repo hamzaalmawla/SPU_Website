@@ -135,6 +135,41 @@ trait ManagesStudyPlanBoard
         $this->specificationUpload = null;
     }
 
+    /**
+     * Adds a profile to the open course's theory or practical teachers. The
+     * course is saved with the rest of the form.
+     */
+    public function addBoardTeacher(string $part, string $memberId): void
+    {
+        if (! is_array($this->boardCourse) || ! in_array($part, ['theory', 'practical'], true)) {
+            return;
+        }
+
+        $choices = $this->boardTeacherChoices();
+        $memberId = trim($memberId);
+        if (! ctype_digit($memberId) || (! isset($choices['faculty'][(int) $memberId]) && ! isset($choices['other'][(int) $memberId]))) {
+            return;
+        }
+
+        $ids = array_map('strval', (array) ($this->boardCourse[$part.'TeacherIds'] ?? []));
+        if (! in_array($memberId, $ids, true)) {
+            $ids[] = $memberId;
+        }
+        $this->boardCourse[$part.'TeacherIds'] = $ids;
+    }
+
+    public function removeBoardTeacher(string $part, string $memberId): void
+    {
+        if (! is_array($this->boardCourse) || ! in_array($part, ['theory', 'practical'], true)) {
+            return;
+        }
+
+        $this->boardCourse[$part.'TeacherIds'] = array_values(array_filter(
+            array_map('strval', (array) ($this->boardCourse[$part.'TeacherIds'] ?? [])),
+            static fn (string $id): bool => $id !== $memberId,
+        ));
+    }
+
     public function saveBoardCourse(): void
     {
         $form = $this->boardCourse;

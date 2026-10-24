@@ -2185,8 +2185,10 @@ final class FacultyPageService implements FacultyPageServiceInterface
 
     /**
      * The theory and practical teachers shown on a course page, read from
-     * their faculty profiles so the name and photo are the profile's own. A
-     * part switched off, or whose profile is not public, is left out.
+     * their faculty profiles so the name and photo are the profile's own.
+     * A part can have several teachers (`memberIds`); plans saved before that
+     * hold one `memberId`. A part switched off, or a profile that is not
+     * public, is left out.
      *
      * @return list<array{part: string, name: string, image: string|null, url: string}>
      */
@@ -2196,9 +2198,14 @@ final class FacultyPageService implements FacultyPageServiceInterface
         $wanted = [];
         foreach (['theory', 'practical'] as $part) {
             $entry = is_array($stored[$part] ?? null) ? $stored[$part] : [];
-            $memberId = $entry['memberId'] ?? null;
-            if (($entry['enabled'] ?? true) !== false && is_numeric($memberId) && (int) $memberId > 0) {
-                $wanted[$part] = (int) $memberId;
+            if (($entry['enabled'] ?? true) === false) {
+                continue;
+            }
+            $ids = is_array($entry['memberIds'] ?? null) ? $entry['memberIds'] : [$entry['memberId'] ?? null];
+            foreach ($ids as $memberId) {
+                if (is_numeric($memberId) && (int) $memberId > 0) {
+                    $wanted[$part][(int) $memberId] = (int) $memberId;
+                }
             }
         }
 
@@ -2206,11 +2213,13 @@ final class FacultyPageService implements FacultyPageServiceInterface
             return [];
         }
 
-        $cards = $this->publicMemberCards($locale, array_values($wanted));
+        $cards = $this->publicMemberCards($locale, array_values(array_unique(array_merge(...array_map('array_values', array_values($wanted))))));
         $teachers = [];
-        foreach ($wanted as $part => $memberId) {
-            if (isset($cards[$memberId])) {
-                $teachers[] = ['part' => $part, ...$cards[$memberId]];
+        foreach ($wanted as $part => $memberIds) {
+            foreach ($memberIds as $memberId) {
+                if (isset($cards[$memberId])) {
+                    $teachers[] = ['part' => $part, ...$cards[$memberId]];
+                }
             }
         }
 

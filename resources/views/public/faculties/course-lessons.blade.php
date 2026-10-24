@@ -65,8 +65,13 @@
                         <div class="rounded-[6px] border border-slate-100 bg-white p-3"><dt class="text-slate-400">{{ $label('courseType') }}</dt><dd class="mt-1 text-[13px] text-spu-blue">{{ $typeLabel($course) }}</dd></div>
                         <div class="col-span-2 rounded-[6px] border border-slate-100 bg-white p-3"><dt class="text-slate-400">{{ $label('requiredStatus') }}</dt><dd class="mt-1 text-[13px] text-spu-blue">{{ ($course['required'] ?? true) ? $label('required') : $label('elective') }}</dd></div>
                         @if (($course['teachers'] ?? []) !== [])
-                            @foreach ($course['teachers'] as $teacher)
-                                <a href="{{ $teacher['url'] }}" class="col-span-2 rounded-[1px] border border-slate-100 bg-white p-3 transition hover:border-spu-blue hover:bg-spu-blue/5"><dt class="text-slate-400">{{ $teacher['part'] === 'theory' ? ($isAr ? 'مدرّس القسم النظري' : 'Theory teacher') : ($isAr ? 'مدرّس القسم العملي' : 'Practical teacher') }}</dt><dd class="mt-1 flex items-center gap-2 text-[13px] font-bold text-spu-blue">@if ($teacher['image'])<img src="{{ $teacher['image'] }}" alt="" class="h-6 w-6 rounded-full object-cover" loading="lazy">@else<img src="/images/icon-user-graduate-outline.svg" alt="" class="h-4 w-4" aria-hidden="true">@endif<span>{{ $teacher['name'] }}</span></dd></a>
+                            @foreach (collect($course['teachers'])->groupBy('part') as $part => $partTeachers)
+                                @php($many = $partTeachers->count() > 1)
+                                <div class="col-span-2 rounded-[1px] border border-slate-100 bg-white p-3"><dt class="text-slate-400">{{ $part === 'theory' ? ($isAr ? ($many ? 'مدرّسو القسم النظري' : 'مدرّس القسم النظري') : ($many ? 'Theory teachers' : 'Theory teacher')) : ($isAr ? ($many ? 'مدرّسو القسم العملي' : 'مدرّس القسم العملي') : ($many ? 'Practical teachers' : 'Practical teacher')) }}</dt>
+                                    @foreach ($partTeachers as $teacher)
+                                        <dd class="mt-1"><a href="{{ $teacher['url'] }}" class="-mx-1 flex items-center gap-2 rounded-[1px] px-1 py-0.5 text-[13px] font-bold text-spu-blue transition hover:bg-spu-blue/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-spu-blue">@if ($teacher['image'])<img src="{{ $teacher['image'] }}" alt="" class="h-6 w-6 rounded-full object-cover" loading="lazy">@else<img src="/images/icon-user-graduate-outline.svg" alt="" class="h-4 w-4" aria-hidden="true">@endif<span>{{ $teacher['name'] }}</span></a></dd>
+                                    @endforeach
+                                </div>
                             @endforeach
                         @elseif (is_array($course['instructor'] ?? null))
                             @if (is_string($course['instructorUrl'] ?? null))

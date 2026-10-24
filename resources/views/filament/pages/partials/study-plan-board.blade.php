@@ -133,23 +133,40 @@
                     <fieldset class="spu-board-form">
                         <legend>{{ $t('teachers') }}</legend>
                         @php($teacherChoices = $this->boardTeacherChoices())
+                        @php($teacherNames = $teacherChoices['faculty'] + $teacherChoices['other'])
                         @foreach (['theory', 'practical'] as $part)
-                            <label>{{ $t($part.'_teacher') }}
-                                <select wire:model="boardCourse.{{ $part }}TeacherId">
-                                    <option value="">{{ $t('no_teacher') }}</option>
-                                    <optgroup label="{{ $t('teachers_this_faculty') }}">
-                                        @foreach ($teacherChoices['faculty'] as $memberId => $memberName)
-                                            <option value="{{ $memberId }}">{{ $memberName }}</option>
+                            @php($chosenTeachers = array_map('strval', (array) ($this->boardCourse[$part.'TeacherIds'] ?? [])))
+                            <div class="spu-board-teachers" wire:key="board-teachers-{{ $part }}">
+                                <span class="spu-board-teachers__label">{{ $t($part.'_teachers') }}</span>
+                                @if ($chosenTeachers !== [])
+                                    <ul class="spu-board-teachers__list">
+                                        @foreach ($chosenTeachers as $chosenId)
+                                            <li wire:key="board-teacher-{{ $part }}-{{ $chosenId }}">
+                                                <span>{{ $teacherNames[(int) $chosenId] ?? '#'.$chosenId }}</span>
+                                                <button type="button" wire:click="removeBoardTeacher('{{ $part }}', '{{ $chosenId }}')" aria-label="{{ $t('remove_teacher') }}: {{ $teacherNames[(int) $chosenId] ?? $chosenId }}">&times;</button>
+                                            </li>
                                         @endforeach
-                                    </optgroup>
-                                    <optgroup label="{{ $t('teachers_other_faculties') }}">
-                                        @foreach ($teacherChoices['other'] as $memberId => $memberName)
-                                            <option value="{{ $memberId }}">{{ $memberName }}</option>
-                                        @endforeach
-                                    </optgroup>
-                                </select>
-                            </label>
-                            <label class="spu-board-form__check"><input type="checkbox" wire:model="boardCourse.{{ $part }}TeacherEnabled"> {{ $t($part.'_teacher_shown') }}</label>
+                                    </ul>
+                                @endif
+                                <label class="spu-board-teachers__add">
+                                    <select wire:change="addBoardTeacher('{{ $part }}', $event.target.value)" aria-label="{{ $t('add_'.$part.'_teacher') }}">
+                                        <option value="" selected>{{ $t('add_teacher') }}</option>
+                                        <optgroup label="{{ $t('teachers_this_faculty') }}">
+                                            @foreach ($teacherChoices['faculty'] as $memberId => $memberName)
+                                                @continue(in_array((string) $memberId, $chosenTeachers, true))
+                                                <option value="{{ $memberId }}">{{ $memberName }}</option>
+                                            @endforeach
+                                        </optgroup>
+                                        <optgroup label="{{ $t('teachers_other_faculties') }}">
+                                            @foreach ($teacherChoices['other'] as $memberId => $memberName)
+                                                @continue(in_array((string) $memberId, $chosenTeachers, true))
+                                                <option value="{{ $memberId }}">{{ $memberName }}</option>
+                                            @endforeach
+                                        </optgroup>
+                                    </select>
+                                </label>
+                                <label class="spu-board-form__check"><input type="checkbox" wire:model="boardCourse.{{ $part }}TeacherEnabled"> {{ $t($part.'_teacher_shown') }}</label>
+                            </div>
                         @endforeach
                         <small>{{ $t('teachers_help') }}</small>
                     </fieldset>

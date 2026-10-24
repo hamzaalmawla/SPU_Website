@@ -16,6 +16,8 @@ final class FacultyStudyPlanBoardService implements FacultyStudyPlanBoardService
     /** @var list<string> */
     private const TYPES = ['university', 'faculty', 'specialization'];
 
+    private const MAX_TEACHERS_PER_PART = 12;
+
     public function brokenPrerequisiteEdges(array $payload): array
     {
         $known = array_flip($this->allCourseIds($payload));
@@ -646,25 +648,26 @@ final class FacultyStudyPlanBoardService implements FacultyStudyPlanBoardService
     /**
      * The theory and practical teacher fields of the course form.
      *
-     * @return array{theoryTeacherId: string, theoryTeacherEnabled: bool, practicalTeacherId: string, practicalTeacherEnabled: bool}
+     * @return array{theoryTeacherIds: list<string>, theoryTeacherEnabled: bool, practicalTeacherIds: list<string>, practicalTeacherEnabled: bool}
      */
     private function teacherFormFields(mixed $stored): array
     {
         $teachers = $this->storedTeachers($stored);
 
         return [
-            'theoryTeacherId' => $teachers['theory']['memberId'] !== null ? (string) $teachers['theory']['memberId'] : '',
+            'theoryTeacherIds' => array_map('strval', $teachers['theory']['memberIds']),
             'theoryTeacherEnabled' => $teachers['theory']['enabled'],
-            'practicalTeacherId' => $teachers['practical']['memberId'] !== null ? (string) $teachers['practical']['memberId'] : '',
+            'practicalTeacherIds' => array_map('strval', $teachers['practical']['memberIds']),
             'practicalTeacherEnabled' => $teachers['practical']['enabled'],
         ];
     }
 
     /**
-     * A course's teachers as stored, with both parts present. A part is
-     * shown by default; switching it off hides it on the course page.
+     * A course's teachers as stored, with both parts present. Each part has
+     * any number of teachers; plans saved before that hold one `memberId`.
+     * A part is shown by default; switching it off hides it on the course page.
      *
-     * @return array{theory: array{memberId: int|null, enabled: bool}, practical: array{memberId: int|null, enabled: bool}}
+     * @return array{theory: array{memberIds: list<int>, enabled: bool}, practical: array{memberIds: list<int>, enabled: bool}}
      */
     private function storedTeachers(mixed $stored): array
     {
@@ -672,9 +675,15 @@ final class FacultyStudyPlanBoardService implements FacultyStudyPlanBoardService
         $teachers = [];
         foreach (['theory', 'practical'] as $part) {
             $entry = is_array($stored[$part] ?? null) ? $stored[$part] : [];
-            $memberId = $entry['memberId'] ?? null;
+            $ids = is_array($entry['memberIds'] ?? null) ? $entry['memberIds'] : [$entry['memberId'] ?? null];
+            $memberIds = [];
+            foreach ($ids as $memberId) {
+                if (is_numeric($memberId) && (int) $memberId > 0 && ! in_array((int) $memberId, $memberIds, true)) {
+                    $memberIds[] = (int) $memberId;
+                }
+            }
             $teachers[$part] = [
-                'memberId' => is_numeric($memberId) && (int) $memberId > 0 ? (int) $memberId : null,
+                'memberIds' => $memberIds,
                 'enabled' => (bool) ($entry['enabled'] ?? true),
             ];
         }
@@ -727,15 +736,27 @@ final class FacultyStudyPlanBoardService implements FacultyStudyPlanBoardService
         $type = (string) ($form['type'] ?? 'specialization');
 
         $teachers = null;
-        if (array_key_exists('theoryTeacherId', $form) || array_key_exists('practicalTeacherId', $form)) {
+        if (array_key_exists('theoryTeacherIds', $form) || array_key_exists('practicalTeacherIds', $form)) {
             $teachers = [];
             foreach (['theory', 'practical'] as $part) {
-                $memberId = trim((string) ($form[$part.'TeacherId'] ?? ''));
-                if ($memberId !== '' && (! ctype_digit($memberId) || (int) $memberId < 1)) {
-                    throw new InvalidArgumentException('Choose the teacher from the list.');
+                $memberIds = [];
+                foreach ((array) ($form[$part.'TeacherIds'] ?? []) as $value) {
+                    $memberId = trim(is_scalar($value) ? (string) $value : '');
+                    if ($memberId === '') {
+                        continue;
+                    }
+                    if (! ctype_digit($memberId) || (int) $memberId < 1) {
+                        throw new InvalidArgumentException('Choose the teacher from the list.');
+                    }
+                    if (! in_array((int) $memberId, $memberIds, true)) {
+                        $memberIds[] = (int) $memberId;
+                    }
+                }
+                if (count($memberIds) > self::MAX_TEACHERS_PER_PART) {
+                    throw new InvalidArgumentException('A course part can have at most '.self::MAX_TEACHERS_PER_PART.' teachers.');
                 }
                 $teachers[$part] = [
-                    'memberId' => $memberId === '' ? null : (int) $memberId,
+                    'memberIds' => $memberIds,
                     'enabled' => filter_var($form[$part.'TeacherEnabled'] ?? true, FILTER_VALIDATE_BOOLEAN),
                 ];
             }
