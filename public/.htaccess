@@ -1,9 +1,209 @@
+<IfModule mod_authz_core.c>
+    # Never serve dotfiles or PHP ini overrides from the web root.
+    <FilesMatch "^\.(?:user\.ini|env|htaccess|htpasswd|git.*)$">
+        Require all denied
+    </FilesMatch>
+</IfModule>
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Transfer optimisation
+#
+# There is no OPcache on this host, so PHP boot dominates time-to-first-byte and
+# cannot be fixed from here. What can be fixed is everything after it: a public
+# page is ~250 KB of HTML, and the site's audience is largely on slow
+# connections, so compression and asset caching are where the real time goes.
+# ─────────────────────────────────────────────────────────────────────────────
+
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css
+    AddOutputFilterByType DEFLATE application/javascript application/x-javascript text/javascript
+    AddOutputFilterByType DEFLATE application/json application/ld+json
+    AddOutputFilterByType DEFLATE application/xml application/rss+xml application/atom+xml
+    AddOutputFilterByType DEFLATE image/svg+xml application/vnd.ms-fontobject
+    AddOutputFilterByType DEFLATE font/ttf font/otf application/x-font-ttf
+
+    # Already-compressed payloads gain nothing and cost CPU.
+    SetEnvIfNoCase Request_URI \.(?:gif|jpe?g|png|webp|avif|ico|zip|gz|bz2|rar|7z|pdf|mp4|webm|mp3|woff2?)$ no-gzip dont-vary
+</IfModule>
+
+<IfModule mod_headers.c>
+    # These also cover physical static and internally rewritten legacy files,
+    # which do not pass through Laravel's security-header middleware.
+    <FilesMatch "\.(?:css|js|json|xml|jpe?g|png|gif|webp|avif|svg|ico|pdf|mp4|webm|mp3|woff2?|ttf|otf|eot)$">
+        Header always set X-Content-Type-Options "nosniff"
+        Header always set Referrer-Policy "strict-origin-when-cross-origin"
+        Header always set X-Frame-Options "SAMEORIGIN"
+        Header always set Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
+    </FilesMatch>
+
+    # Correct caching for content negotiated on encoding.
+    <FilesMatch "\.(?:css|js|svg|json|xml)$">
+        Header append Vary Accept-Encoding
+    </FilesMatch>
+
+    # Vite writes a content hash into every build filename, so these can be
+    # cached permanently - a new deploy produces a new filename.
+    <FilesMatch "\.(?:css|js|woff2?|ttf|otf|eot)$">
+        Header set Cache-Control "public, max-age=31536000, immutable"
+    </FilesMatch>
+
+    # Legacy media keeps its original filename forever, so it is safe to cache
+    # for a long time, but not immutable - a file could be replaced in place.
+    <FilesMatch "\.(?:jpe?g|png|gif|webp|avif|svg|ico|pdf|mp4|webm|mp3)$">
+        Header set Cache-Control "public, max-age=2592000"
+    </FilesMatch>
+
+    # Pre-compressed build assets, produced by cpanel-deploy.sh and selected by
+    # the rewrite further down. That rewrite is internal, so what is matched
+    # here is the .gz name and none of the blocks above have applied.
+    #
+    # Content-Type has to be restated because mod_mime would otherwise call
+    # these application/gzip, and Content-Encoding because the client must be
+    # told to inflate them. Setting both explicitly also overrides any
+    # AddEncoding the host applies to .gz by default.
+    <FilesMatch "\.css\.gz$">
+        Header set Content-Type "text/css; charset=utf-8"
+        Header set Content-Encoding "gzip"
+        Header set Cache-Control "public, max-age=31536000, immutable"
+        Header append Vary Accept-Encoding
+        Header always set X-Content-Type-Options "nosniff"
+        Header always set Referrer-Policy "strict-origin-when-cross-origin"
+    </FilesMatch>
+
+    <FilesMatch "\.js\.gz$">
+        Header set Content-Type "application/javascript; charset=utf-8"
+        Header set Content-Encoding "gzip"
+        Header set Cache-Control "public, max-age=31536000, immutable"
+        Header append Vary Accept-Encoding
+        Header always set X-Content-Type-Options "nosniff"
+        Header always set Referrer-Policy "strict-origin-when-cross-origin"
+    </FilesMatch>
+</IfModule>
+
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType text/css                  "access plus 1 year"
+    ExpiresByType application/javascript    "access plus 1 year"
+    ExpiresByType text/javascript           "access plus 1 year"
+    ExpiresByType font/woff2                "access plus 1 year"
+    ExpiresByType font/ttf                  "access plus 1 year"
+    ExpiresByType image/jpeg                "access plus 1 month"
+    ExpiresByType image/png                 "access plus 1 month"
+    ExpiresByType image/webp                "access plus 1 month"
+    ExpiresByType image/avif                "access plus 1 month"
+    ExpiresByType image/svg+xml             "access plus 1 month"
+    ExpiresByType image/x-icon              "access plus 1 month"
+    ExpiresByType application/pdf           "access plus 1 month"
+</IfModule>
+
 <IfModule mod_rewrite.c>
     <IfModule mod_negotiation.c>
         Options -MultiViews -Indexes
     </IfModule>
 
+    # The legacy media under _legacy/ is symlinked from the old document root,
+    # never copied. Without this Apache refuses to follow those links and every
+    # old image, PDF and upload answers 403.
+    Options +FollowSymLinks
+
+    # The front controller is app.php, not index.php — see the comment in app.php.
+    DirectoryIndex app.php
+
     RewriteEngine On
+
+    # Force HTTPS to the production canonical origin. Never reflect HTTP_HOST:
+    # it is client-controlled and can poison redirects. The staging host guard
+    # overlay runs before this block and remains authoritative on staging.
+    RewriteCond %{HTTPS} !=on
+    RewriteCond %{HTTP:X-Forwarded-Proto} !=https
+    RewriteRule ^ https://spu.edu.sy%{REQUEST_URI} [R=301,L,NE]
+
+    # Serve the pre-compressed sibling of a build asset when one exists.
+    #
+    # There is deliberately no Accept-Encoding condition. nginx strips that
+    # header before Apache sees it, so a negotiated rule would never match and
+    # every asset would keep going out at full size - the same measurement that
+    # made the application force gzip on HTML (config/edge.php). The clients
+    # this can hurt are ones that deliberately refuse gzip, which in practice
+    # means monitoring tools rather than browsers.
+    #
+    # Scoped to /build/ because only those filenames carry a Vite content hash,
+    # so a stale .gz cannot outlive the asset it was made from. The -f guard
+    # means a missing sibling simply serves the original file.
+    RewriteCond %{REQUEST_FILENAME}\.gz -f
+    RewriteRule ^(build/.+\.(?:css|js))$ /$1.gz [L]
+
+    # app.php is an internal implementation detail. Also reject PATH_INFO forms
+    # of both front-controller names before Apache can execute a physical PHP
+    # file. THE_REQUEST prevents these rules matching our internal rewrites.
+    RewriteCond %{THE_REQUEST} \s/+app\.php(?:[/?\s]) [NC]
+    RewriteRule ^app\.php(?:/.*)?$ - [R=404,L,NC]
+
+    RewriteCond %{THE_REQUEST} \s/+index\.php/ [NC]
+    RewriteRule ^index\.php/.*$ - [R=404,L,NC]
+
+    # Preserved legacy static trees must never execute old application code.
+    RewriteRule ^_legacy/.*\.(?:php[0-9]?|phtml|phar|cgi|pl|py|sh|asp|aspx|jsp|exe|dll|com|bat|cmd|ps1|sql|bak|conf|config|ini|log|htaccess|htpasswd|env)(?:\.|$) - [R=404,L,NC]
+    RewriteRule ^_legacy/.*\.(?:html?|xhtml|xml|svgz?)(?:\.|$) - [R=404,L,NC]
+    RewriteRule ^_legacy/(?:.*/)?\.[^/]+$ - [R=404,L,NC]
+    RewriteRule ^(?:downloads/files(?:/.*)?|downloads/files2(?:/.*)?|images(?:/.*)?|pdf(?:/.*)?|cv_bank(?:/.*)?|(?:med|dent|pharm|info|petrol|admin|research|hospital|dent_clinic|alumni|clubs)/images(?:/.*)?)\.(?:php[0-9]?|phtml|phar|cgi|pl|py|sh|asp|aspx|jsp|exe|dll|com|bat|cmd|ps1|sql|bak|conf|config|ini|log)(?:\.|$) - [R=404,L,NC]
+    # Markup and SVG are blocked only for requests that would FALL THROUGH to the
+    # legacy trees. The prefixes above are shared: /images/ is both the mount point
+    # for the old site's uploads and the directory holding this application's own
+    # committed icon set. Without the !-f guard this rule 404s our own SVGs before
+    # the file is ever looked up — which is exactly what it did in production,
+    # taking out all 37 icons (search, language, social, chevrons) site-wide.
+    #
+    # The guard preserves the security intent in full: a legacy upload never has a
+    # file of its own under this document root, so it still matches and is still
+    # refused. Only developer-committed assets that physically exist here are let
+    # through. Media-library uploads are unaffected — they are served from /storage,
+    # not /images, so this cannot become an editor-controlled XSS path.
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteRule ^(?:downloads/files(?:/.*)?|downloads/files2(?:/.*)?|images(?:/.*)?|pdf(?:/.*)?|cv_bank(?:/.*)?|(?:med|dent|pharm|info|petrol|admin|research|hospital|dent_clinic|alumni|clubs)/images(?:/.*)?)\.(?:html?|xhtml|xml|svgz?)(?:\.|$) - [R=404,L,NC]
+    RewriteRule ^(?:downloads/files|downloads/files2|images|pdf|cv_bank|(?:med|dent|pharm|info|petrol|admin|research|hospital|dent_clinic|alumni|clubs)/images)/(?:.*\/)?\.[^/]+$ - [R=404,L,NC]
+
+    # Legacy static file continuity.
+    # Old media stays in the old document root and is exposed read-only under
+    # _legacy/. These are INTERNAL rewrites, not redirects: an old file URL keeps
+    # its original address and answers 200, which is what must happen after
+    # cutover. The !-f guard means a same-named new-site file always wins.
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteRule ^downloads/(files2|files)/(.*)$ /_legacy/downloads/$1/$2 [L]
+
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteRule ^images/(.*)$ /_legacy/images/$1 [L]
+
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteRule ^cv_bank/(.*)$ /_legacy/cv_bank/$1 [L]
+
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteRule ^(med|dent|pharm|info|petrol|admin|research|hospital|dent_clinic|alumni|clubs)/images/(.*)$ /_legacy/$1/images/$2 [L]
+
+    # FCKeditor uploads. The old CMS editor saved every image, file, flash and
+    # media item pasted into an article under /FCKBIH/, so old article bodies -
+    # and the migrated ones that kept their markup - point there. Same contract
+    # as the trees above: served in place, never executed, never markup.
+    RewriteRule ^FCKBIH/.*\.(?:php[0-9]?|phtml|phar|cgi|pl|py|sh|asp|aspx|jsp|exe|dll|com|bat|cmd|ps1|sql|bak|conf|config|ini|log)(?:\.|$) - [R=404,L,NC]
+    RewriteRule ^FCKBIH/.*\.(?:html?|xhtml|xml|svgz?)(?:\.|$) - [R=404,L,NC]
+    RewriteRule ^FCKBIH/(?:.*/)?\.[^/]+$ - [R=404,L,NC]
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteRule ^FCKBIH/(.*)$ /_legacy/FCKBIH/$1 [L]
+
+    # Loose files the old site kept directly in /downloads/ rather than in
+    # downloads/files - documents only, so the tree's index.php is unreachable.
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteRule ^downloads/([^/]+\.(?:pdf|docx?|xlsx?|pptx?|zip|rar|jpe?g|png|gif))$ /_legacy/downloads/root/$1 [L,NC]
+
+    # iOS and many crawlers ask for sized and "precomposed" variants of the
+    # touch icon by name, whether or not the page declares one. One icon
+    # answers them all instead of a 404 per variant.
+    RewriteRule ^apple-touch-icon(?:-\d+x\d+(?:-precomposed)?|-precomposed)\.png$ /apple-touch-icon.png [L,NC]
+
+    # A literal /index.php request is a legacy router URL, not a request for the
+    # front controller. Route it through app.php so REQUEST_URI stays /index.php
+    # and the continuity middleware sees the real path.
+    RewriteRule ^index\.php$ app.php [L,QSA]
 
     # Handle Authorization Header
     RewriteCond %{HTTP:Authorization} .
@@ -13,6 +213,12 @@
     RewriteCond %{HTTP:x-xsrf-token} .
     RewriteRule .* - [E=HTTP_X_XSRF_TOKEN:%{HTTP:X-XSRF-Token}]
 
+    # The old subsite roots were real directories, linked and indexed as /med/
+    # and /med/?lang=2&page=… . Stripping the slash first cost every one of
+    # those a second hop before the continuity redirect; the application
+    # treats /med/ and /med alike, so let it answer them in one.
+    RewriteRule ^(?:med|dent|pharm|info|petrol|research|hospital|dent_clinic|alumni|clubs|members)/$ app.php [L]
+
     # Redirect Trailing Slashes If Not A Folder...
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteCond %{REQUEST_URI} (.+)/$
@@ -21,5 +227,5 @@
     # Send Requests To Front Controller...
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteCond %{REQUEST_FILENAME} !-f
-    RewriteRule ^ index.php [L]
+    RewriteRule ^ app.php [L]
 </IfModule>

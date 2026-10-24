@@ -1,11 +1,100 @@
 @import 'tailwindcss';
 
+@theme {
+    /* Where the full menu gives way to the hamburger. 1480 put a 13" laptop
+       and most Windows laptops on the mobile menu; see navigation.css. */
+    --breakpoint-nav: 1280px;
+    --shadow-card-sm: 0 4px 20px rgba(0, 0, 0, 0.04);
+    --shadow-card: 0 10px 30px rgba(0, 0, 0, 0.06);
+    --shadow-card-elevated: 0 15px 35px rgba(20, 30, 70, 0.08);
+    --shadow-card-hover: 0 25px 60px rgba(0, 0, 0, 0.12);
+    --shadow-panel: 0 30px 80px rgba(17, 26, 63, 0.18);
+    --shadow-panel-elevated: 0 18px 40px rgba(0, 0, 0, 0.2);
+}
+
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../storage/framework/views/*.php';
 @source '../**/*.blade.php';
 @source '../**/*.js';
 
-@theme {
-    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
-        'Segoe UI Symbol', 'Noto Color Emoji';
+[x-cloak] {
+    display: none !important;
+}
+
+@import './frontend/foundation.css';
+@import './frontend/layout.css';
+@import './frontend/navigation.css';
+@import './frontend/heroes.css';
+@import './frontend/home-sections.css';
+@import './frontend/honor-slider.css';
+@import './frontend/stats.css';
+@import './frontend/reveal.css';
+@import './frontend/faculty-hero.css';
+@import './frontend/study-plan.css';
+@import './frontend/about-pages.css';
+@import './frontend/admissions-subpages.css';
+@import './frontend/events-calendar.css';
+@import './frontend/utilities.css';
+@import './frontend/cards.css';
+
+body {
+    position: relative;
+}
+
+.prose mark {
+    background-color: #fef08a;
+    color: inherit;
+    border-radius: 0.15rem;
+    padding-inline: 0.15em;
+}
+
+.services-card-icon {
+    filter: brightness(0) saturate(100%) invert(16%) sepia(21%) saturate(2361%) hue-rotate(193deg) brightness(97%) contrast(97%);
+}
+
+/* Scoped under `.js` (added by the public layout <head>) so content
+   stays visible when JavaScript is unavailable. */
+.js [data-campus-reveal] {
+    opacity: 0;
+    transform: translateY(48px);
+    transition: opacity 0.8s ease-out, transform 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.js [data-campus-reveal].is-visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.js [data-campus-reveal="left"] {
+    transform: translateX(-60px) translateY(0);
+}
+
+.js [data-campus-reveal="right"] {
+    transform: translateX(60px) translateY(0);
+}
+
+.js [data-campus-reveal="left"].is-visible,
+.js [data-campus-reveal="right"].is-visible {
+    transform: translateX(0) translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    html,
+    .scroll-smooth {
+        scroll-behavior: auto !important;
+    }
+
+    [data-homepage] *,
+    [data-homepage] *::before,
+    [data-homepage] *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+
+    [data-campus-reveal] {
+        opacity: 1 !important;
+        transform: none !important;
+        transition: none !important;
+    }
 }

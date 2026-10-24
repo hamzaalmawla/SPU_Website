@@ -4,14 +4,20 @@
     "type": "module",
     "scripts": {
         "build": "vite build",
-        "dev": "vite"
+        "dev": "vite",
+    "test": "node --test tests/js/motionDirection.test.js tests/js/homepageComponents.test.js tests/js/scrollReveal.test.js tests/js/studyPlan.test.js tests/js/virtualTour.test.js tests/js/accessibilityInteractions.test.js tests/js/focalPointPicker.test.js tests/js/admissionsTuition.test.js tests/js/dynamicFormStore.test.js tests/js/deanMessage.test.js"
+    },
+    "dependencies": {
+        "@alpinejs/csp": "^3.15.12",
+        "alpinejs": "^3.14.9",
+        "dayjs": "^1.11.13"
     },
     "devDependencies": {
         "@tailwindcss/vite": "^4.0.0",
-        "axios": "^1.11.0",
-        "concurrently": "^9.0.1",
-        "laravel-vite-plugin": "^2.0.0",
+        "axios": "^1.16.0",
+        "concurrently": "^10.0.3",
+        "laravel-vite-plugin": "^3.1.0",
         "tailwindcss": "^4.0.0",
-        "vite": "^7.0.7"
+        "vite": "^8.0.16"
     }
 }

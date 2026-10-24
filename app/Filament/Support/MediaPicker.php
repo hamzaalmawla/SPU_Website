@@ -1,0 +1,790 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Filament\Support;
+
+use App\Contracts\Media\MediaServiceInterface;
+use App\DTOs\Media\MediaUploadResultDTO;
+use App\Filament\Components\FocalPointPicker;
+use App\Support\MediaUploadFailure;
+use App\Support\MediaUrlResolver;
+use Filament\Forms\Components\Actions\Action as FormAction;
+use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\Grid;
+use Filament\Forms\Components\Hidden;
+use Filament\Forms\Components\Placeholder;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\View;
+use Filament\Forms\Get;
+use Filament\Forms\Set;
+use Filament\Notifications\Notification;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\HtmlString;
+use Illuminate\Validation\ValidationException;
+use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
+use Throwable;
+
+final class MediaPicker
+{
+    public static function image(string $statePath, ?string $label = null, bool $required = false): Grid
+    {
+        return self::make($statePath, $label ?? __('admin.media_picker.image'), 'image', $required);
+    }
+
+    public static function document(string $statePath, ?string $label = null, bool $required = false): Grid
+    {
+        return self::make($statePath, $label ?? __('admin.media_picker.document'), 'document', $required);
+    }
+
+    public static function pdf(string $statePath, ?string $label = null, bool $required = false): Grid
+    {
+        return self::make($statePath, $label ?? __('admin.media_picker.document'), 'pdf', $required);
+    }
+
+    public static function any(string $statePath, ?string $label = null, bool $required = false): Grid
+    {
+        return self::make($statePath, $label ?? __('admin.media_picker.media_file'), 'any', $required);
+    }
+
+    public static function assetImage(string $statePath, ?string $label = null, bool $required = false): Grid
+    {
+        return self::asset($statePath, $label ?? __('admin.media_picker.image'), 'image', $required);
+    }
+
+    public static function assetDocument(string $statePath, ?string $label = null, bool $required = false): Grid
+    {
+        return self::asset($statePath, $label ?? __('admin.media_picker.document'), 'document', $required);
+    }
+
+    public static function assetAny(string $statePath, ?string $label = null, bool $required = false): Grid
+    {
+        return self::asset($statePath, $label ?? __('admin.media_picker.media_file'), 'any', $required);
+    }
+
+    public static function icon(string $statePath, ?string $label = null, bool $required = false): Grid
+    {
+        return self::make($statePath, $label ?? __('admin.media_picker.icon'), 'image', $required);
+    }
+
+    public static function lightImage(string $statePath, ?string $label = null, bool $required = false): Grid
+    {
+        return self::light($statePath, $label ?? __('admin.media_picker.image'), 'image', $required);
+    }
+
+    public static function lightDocument(string $statePath, ?string $label = null, bool $required = false): Grid
+    {
+        return self::light($statePath, $label ?? __('admin.media_picker.document'), 'document', $required);
+    }
+
+    public static function lightAny(string $statePath, ?string $label = null, bool $required = false): Grid
+    {
+        return self::light($statePath, $label ?? __('admin.media_picker.media_file'), 'any', $required);
+    }
+
+    public static function selectedUrl(int|string|null $mediaId): ?string
+    {
+        if ($mediaId === null || $mediaId === '') {
+            return null;
+        }
+
+        $userId = auth()->id();
+
+        if (! is_numeric($userId)) {
+            return null;
+        }
+
+        try {
+            return app(MediaServiceInterface::class)->find($mediaId, (int) $userId)?->url;
+        } catch (Throwable) {
+            return null;
+        }
+    }
+
+    private static function make(string $statePath, string $label, string $type, bool $required): Grid
+    {
+        $mediaIdPath = self::mediaIdPath($statePath);
+
+        return Grid::make(1)
+            ->schema([
+                Hidden::make($mediaIdPath),
+                Hidden::make($statePath)
+                    ->required($required)
+                    // Named in the error, so an editor knows which picture is missing.
+                    ->validationAttribute($label)
+                    ->dehydrated(true),
+                Placeholder::make($statePath.'_selection')
+                    ->key(fn (Placeholder $component): string => self::componentKey($component->getStatePath(), $label, $type))
+                    ->label($label)
+                    ->helperText(__('admin.media_picker.existing_value_help'))
+                    ->content(fn (Get $get): HtmlString|string => self::preview($get($statePath), $get($mediaIdPath)))
+                    ->hintActions([
+                        self::chooseOrUploadAction($statePath, $mediaIdPath, $type),
+                        self::clearAction($statePath, $mediaIdPath),
+                    ]),
+            ]);
+    }
+
+    private static function light(string $statePath, string $label, string $type, bool $required): Grid
+    {
+        $mediaIdPath = self::mediaIdPath($statePath);
+
+        return Grid::make(1)
+            ->schema([
+                Hidden::make($mediaIdPath),
+                Hidden::make($statePath)
+                    ->required($required)
+                    // Named in the error, so an editor knows which picture is missing.
+                    ->validationAttribute($label)
+                    ->dehydrated(true),
+                Placeholder::make($statePath.'_selection')
+                    ->key(fn (Placeholder $component): string => self::componentKey($component->getStatePath(), $label, $type))
+                    ->label($label)
+                    ->helperText(__('admin.media_picker.choose_help'))
+                    ->content(fn (Get $get): HtmlString|string => self::preview($get($statePath), $get($mediaIdPath)))
+                    ->hintActions([
+                        self::chooseOrUploadAction($statePath, $mediaIdPath, $type),
+                        self::clearAction($statePath, $mediaIdPath),
+                    ]),
+            ]);
+    }
+
+    private static function chooseOrUploadAction(string $statePath, string $mediaIdPath, string $type): FormAction
+    {
+        return FormAction::make('choose_or_upload_media')
+            ->label(__('admin.media_picker.choose_upload'))
+            ->icon('heroicon-o-photo')
+            ->modalHeading(__('admin.media_picker.modal_heading'))
+            ->form([
+                View::make('filament.forms.components.recent-media-cards')
+                    ->viewData(fn (): array => ['assets' => self::recentImages(), 'targetField' => 'media_id'])
+                    ->visible(self::isImageType($type)),
+                Select::make('media_id')
+                    ->label(__('admin.media_picker.choose_existing'))
+                    ->helperText(__('admin.media_picker.choose_existing_help'))
+                    ->live()
+                    ->afterStateUpdated(function (mixed $state, Set $set): void {
+                        if (is_numeric($state)) {
+                            $set('legacy_media_id', null);
+                            $set('file', null);
+                            $media = self::mediaResult((int) $state);
+                            $set('focal_x', $media?->focalX ?? 50);
+                            $set('focal_y', $media?->focalY ?? 50);
+                            $set('display_fit', $media?->displayFit ?? 'cover');
+                        }
+                    })
+                    ->searchable()
+                    ->native(false)
+                    ->preload(false)
+                    ->options(fn (): array => self::options($type))
+                    ->getSearchResultsUsing(fn (string $search): array => self::options($type, $search))
+                    ->getOptionLabelUsing(fn (mixed $value): ?string => self::optionLabel($value)),
+                Select::make('legacy_media_id')
+                    ->label(__('admin.media_picker.promote_legacy'))
+                    ->helperText(__('admin.media_picker.promote_legacy_help'))
+                    ->live()
+                    ->afterStateUpdated(function (mixed $state, Set $set): void {
+                        if (is_numeric($state)) {
+                            $set('media_id', null);
+                            $set('file', null);
+                        }
+                    })
+                    ->searchable()
+                    ->native(false)
+                    ->preload(false)
+                    ->options(fn (): array => [])
+                    ->getSearchResultsUsing(fn (string $search): array => self::options($type, $search, 'legacy'))
+                    ->getOptionLabelUsing(fn (mixed $value): ?string => self::optionLabel($value)),
+                self::uploadField($type, __('admin.media_picker.upload_new'), __('admin.media_picker.upload_new_help'))
+                    ->afterStateUpdated(function (mixed $state, Get $get, Set $set): void {
+                        if (self::hasUpload($state)) {
+                            $set('media_id', null);
+                            $set('legacy_media_id', null);
+                        }
+
+                        self::fillFromUpload($state, $get, $set);
+                    }),
+                Hidden::make('original_name'),
+                TextInput::make('title_ar')
+                    ->label(__('admin.media_picker.title_ar'))
+                    ->maxLength(255)
+                    ->required(fn (Get $get): bool => self::requiresUploadOrPromotionMetadata($get, 'title') && ! self::filledString($get('title_en'))),
+                TextInput::make('title_en')
+                    ->label(__('admin.media_picker.title_en'))
+                    ->maxLength(255)
+                    ->required(fn (Get $get): bool => self::requiresUploadOrPromotionMetadata($get, 'title') && ! self::filledString($get('title_ar'))),
+                TextInput::make('alt_text_ar')
+                    ->label(__('admin.media_picker.alt_ar'))
+                    ->maxLength(500)
+                    ->visible(self::isImageType($type))
+                    ->required(fn (Get $get): bool => self::isImageType($type) && self::requiresUploadOrPromotionMetadata($get, 'altText') && ! self::filledString($get('alt_text_en'))),
+                TextInput::make('alt_text_en')
+                    ->label(__('admin.media_picker.alt_en'))
+                    ->maxLength(500)
+                    ->visible(self::isImageType($type))
+                    ->required(fn (Get $get): bool => self::isImageType($type) && self::requiresUploadOrPromotionMetadata($get, 'altText') && ! self::filledString($get('alt_text_ar'))),
+                Hidden::make('display_fit')
+                    ->default('cover')
+                    ->visible(self::isImageType($type)),
+                FocalPointPicker::make('focal_x')
+                    ->label(__('admin.media_picker.focal_label'))
+                    ->imageUrl(fn (Get $get): ?string => self::pickerImageUrl($get))
+                    ->rules(['numeric', 'min:0', 'max:100'])
+                    ->default(50)
+                    ->visible(self::isImageType($type)),
+                Hidden::make('focal_y')
+                    ->rules(['numeric', 'min:0', 'max:100'])
+                    ->default(50)
+                    ->visible(self::isImageType($type)),
+            ])
+            ->action(function (array $data, Set $set) use ($statePath, $mediaIdPath, $type): void {
+                try {
+                    $mediaId = null;
+
+                    if (self::uploadedPath($data['file'] ?? null) !== null) {
+                        $mediaId = self::uploadOption($data, $type);
+                    } elseif (is_numeric($data['media_id'] ?? null)) {
+                        $mediaId = (int) $data['media_id'];
+                    } elseif (is_numeric($data['legacy_media_id'] ?? null)) {
+                        $mediaId = self::promoteLegacyOption((int) $data['legacy_media_id'], $data);
+                    }
+
+                    if ($mediaId === null) {
+                        Notification::make()->title(__('admin.media_picker.selection_required'))->warning()->send();
+
+                        return;
+                    }
+
+                    if (is_numeric($data['media_id'] ?? null) && self::isImageType($type)) {
+                        app(MediaServiceInterface::class)->updateMetadata($mediaId, [
+                            'focal_x' => $data['focal_x'] ?? 50,
+                            'focal_y' => $data['focal_y'] ?? 50,
+                            'display_fit' => $data['display_fit'] ?? 'cover',
+                        ], (int) auth()->id());
+                    }
+
+                    $url = self::selectedUrl($mediaId);
+
+                    if ($url === null) {
+                        throw new \RuntimeException('The selected media URL could not be resolved.');
+                    }
+
+                    $set($mediaIdPath, $mediaId);
+                    $set($statePath, $url);
+                } catch (Throwable $exception) {
+                    MediaUploadFailure::record($exception, 'media picker');
+                    Notification::make()->title(__('admin.media_picker.action_failed'))->body(MediaUploadFailure::message($exception))->danger()->persistent()->send();
+                }
+            });
+    }
+
+    private static function asset(string $statePath, string $label, string $type, bool $required): Grid
+    {
+        return Grid::make(1)
+            ->schema([
+                View::make('filament.forms.components.recent-media-cards')
+                    ->viewData(fn (): array => ['assets' => self::recentImages(), 'targetField' => $statePath])
+                    ->visible(self::isImageType($type)),
+                self::select($statePath, $label, $type)
+                    ->required($required),
+                Placeholder::make($statePath.'_preview')
+                    ->label(__('admin.media_picker.selected_file'))
+                    ->content(fn (Get $get): HtmlString|string => self::preview(self::selectedUrl($get($statePath)), $get($statePath))),
+            ]);
+    }
+
+    private static function select(string $statePath, string $label, string $type): Select
+    {
+        return Select::make($statePath)
+            ->label($label)
+            ->helperText(__('admin.media_picker.asset_help'))
+            ->nullable()
+            ->searchable()
+            ->native(false)
+            ->preload(false)
+            ->options(fn (): array => self::options($type))
+            ->getSearchResultsUsing(fn (string $search): array => self::options($type, $search))
+            ->getOptionLabelUsing(fn (mixed $value): ?string => self::optionLabel($value))
+            ->createOptionForm([
+                self::uploadField($type, __('admin.media_picker.upload_device'))
+                    ->required()
+                    ->afterStateUpdated(fn (mixed $state, Get $get, Set $set) => self::fillFromUpload($state, $get, $set)),
+                Hidden::make('original_name'),
+                TextInput::make('title_ar')
+                    ->label(__('admin.media_picker.title_ar'))
+                    ->maxLength(255)
+                    ->required(fn (Get $get): bool => ! self::filledString($get('title_en'))),
+                TextInput::make('title_en')
+                    ->label(__('admin.media_picker.title_en'))
+                    ->maxLength(255)
+                    ->required(fn (Get $get): bool => ! self::filledString($get('title_ar'))),
+                TextInput::make('alt_text_ar')
+                    ->label(__('admin.media_picker.alt_ar'))
+                    ->maxLength(500)
+                    ->visible(self::isImageType($type))
+                    ->required(fn (Get $get): bool => self::isImageType($type) && ! self::filledString($get('alt_text_en'))),
+                TextInput::make('alt_text_en')
+                    ->label(__('admin.media_picker.alt_en'))
+                    ->maxLength(500)
+                    ->visible(self::isImageType($type))
+                    ->required(fn (Get $get): bool => self::isImageType($type) && ! self::filledString($get('alt_text_ar'))),
+                Hidden::make('display_fit')
+                    ->default('cover')
+                    ->visible(self::isImageType($type)),
+                FocalPointPicker::make('focal_x')
+                    ->label(__('admin.media_picker.focal_label'))
+                    ->imageUrl(fn (Get $get): ?string => self::temporaryImageUrl($get('file')))
+                    ->rules(['numeric', 'min:0', 'max:100'])
+                    ->default(50)
+                    ->visible(self::isImageType($type)),
+                Hidden::make('focal_y')
+                    ->rules(['numeric', 'min:0', 'max:100'])
+                    ->default(50)
+                    ->visible(self::isImageType($type)),
+            ])
+            ->createOptionUsing(function (array $data) use ($type): int {
+                try {
+                    return self::uploadOption($data, $type);
+                } catch (Throwable $exception) {
+                    MediaUploadFailure::record($exception, 'media picker upload');
+
+                    throw ValidationException::withMessages([
+                        'file' => MediaUploadFailure::message($exception),
+                    ]);
+                }
+            })
+            ->dehydrated(true);
+    }
+
+    /** @return list<array{id: int, url: string, label: string}> */
+    private static function recentImages(int $limit = 8): array
+    {
+        $userId = auth()->id();
+        if (! is_numeric($userId)) {
+            return [];
+        }
+
+        try {
+            return app(MediaServiceInterface::class)
+                ->listPaginated((int) $userId, ['library_scope' => 'main', 'mime_type' => 'image/'], 1, $limit)
+                ->items
+                ->filter(fn (mixed $media): bool => $media instanceof MediaUploadResultDTO)
+                ->map(fn (MediaUploadResultDTO $media): array => [
+                    'id' => $media->mediaId,
+                    'url' => $media->url,
+                    'label' => self::labelFor($media),
+                ])
+                ->values()
+                ->all();
+        } catch (Throwable) {
+            return [];
+        }
+    }
+
+    private static function mediaResult(int|string $mediaId): ?MediaUploadResultDTO
+    {
+        $userId = auth()->id();
+        if (! is_numeric($userId)) {
+            return null;
+        }
+
+        try {
+            return app(MediaServiceInterface::class)->find($mediaId, (int) $userId);
+        } catch (Throwable) {
+            return null;
+        }
+    }
+
+    private static function pickerImageUrl(Get $get): ?string
+    {
+        return self::temporaryImageUrl($get('file'))
+            ?? self::selectedUrl(is_numeric($get('media_id')) ? (int) $get('media_id') : null)
+            ?? self::selectedUrl(is_numeric($get('legacy_media_id')) ? (int) $get('legacy_media_id') : null);
+    }
+
+    /**
+     * The upload field shared by both picker forms, set up as batch upload is.
+     */
+    private static function uploadField(string $type, string $label, ?string $helperText = null): FileUpload
+    {
+        $hint = self::isImageType($type) ? __('admin.media_picker.image_upload_help') : null;
+
+        return FileUpload::make('file')
+            ->label($label)
+            ->helperText(trim(($helperText ?? '').' '.($hint ?? '')) ?: null)
+            ->live()
+            ->disk((string) config('filesystems.media_disk', 'public'))
+            ->directory('media-tmp')
+            ->visibility('public')
+            ->acceptedFileTypes(self::acceptedFileTypes($type))
+            ->orientImagesFromExif(self::isImageType($type))
+            ->imagePreviewHeight('180')
+            ->maxSize(10240)
+            // Keeps the device file name readable in media-tmp and in the library.
+            ->getUploadedFileNameForStorageUsing(static function (TemporaryUploadedFile $file): string {
+                $original = preg_replace('/[^\pL\pN._ -]+/u', '-', $file->getClientOriginalName()) ?: 'file';
+
+                return hash('sha256', $file->getFilename()).'--'.$original;
+            });
+    }
+
+    /**
+     * Until the modal is submitted, a new upload is a Livewire temporary file,
+     * not a stored path. The picker only understood paths, so for a fresh
+     * upload the framing tool said "choose an image first" and the title and
+     * alt text fields were not required until the service refused the save
+     * after the modal had closed. Name the file and require its details now.
+     */
+    private static function fillFromUpload(mixed $state, Get $get, Set $set): void
+    {
+        $upload = self::temporaryUpload($state);
+
+        if ($upload === null) {
+            return;
+        }
+
+        $originalName = $upload->getClientOriginalName();
+        $name = trim((string) preg_replace('/[_-]+/', ' ', pathinfo($originalName, PATHINFO_FILENAME)));
+        $set('original_name', $originalName);
+
+        foreach (['title_ar', 'title_en'] as $field) {
+            if (! self::filledString($get($field)) && $name !== '') {
+                $set($field, $name);
+            }
+        }
+    }
+
+    private static function temporaryUpload(mixed $state): ?TemporaryUploadedFile
+    {
+        if ($state instanceof TemporaryUploadedFile) {
+            return $state;
+        }
+
+        if (is_array($state)) {
+            foreach ($state as $item) {
+                if ($item instanceof TemporaryUploadedFile) {
+                    return $item;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    private static function hasUpload(mixed $state): bool
+    {
+        return self::temporaryUpload($state) !== null || self::uploadedPath($state) !== null;
+    }
+
+    private static function temporaryImageUrl(mixed $state): ?string
+    {
+        $upload = self::temporaryUpload($state);
+
+        if ($upload !== null) {
+            try {
+                return $upload->temporaryUrl();
+            } catch (Throwable) {
+                return null;
+            }
+        }
+
+        $path = self::uploadedPath($state);
+
+        return $path !== null
+            ? MediaUrlResolver::resolve($path, (string) config('filesystems.media_disk', 'public'))
+            : null;
+    }
+
+    private static function clearAction(string $statePath, string $mediaIdPath): FormAction
+    {
+        return FormAction::make('clear_media')
+            ->label(__('admin.media_picker.clear'))
+            ->icon('heroicon-o-x-mark')
+            ->color('gray')
+            ->action(function (Set $set) use ($statePath, $mediaIdPath): void {
+                $set($mediaIdPath, null);
+                $set($statePath, null);
+            });
+    }
+
+    /** @return array<int|string, string> */
+    private static function options(string $type, string $search = '', string $libraryScope = 'main'): array
+    {
+        $userId = auth()->id();
+
+        if (! is_numeric($userId)) {
+            return [];
+        }
+
+        if ($libraryScope === 'legacy' && trim($search) === '') {
+            return [];
+        }
+
+        $filters = [
+            'library_scope' => $libraryScope,
+            'per_page' => 50,
+        ];
+
+        if ($search !== '') {
+            $filters['search'] = $search;
+        }
+
+        if (self::isImageType($type)) {
+            $filters['mime_type'] = 'image/';
+        } elseif (in_array($type, ['document', 'pdf'], true)) {
+            $filters['mime_type'] = $type === 'pdf' ? 'application/pdf' : 'application/';
+        }
+
+        try {
+            return app(MediaServiceInterface::class)
+                ->list((int) $userId, $filters)
+                ->take(50)
+                ->mapWithKeys(fn (MediaUploadResultDTO $media): array => [$media->mediaId => self::labelFor($media)])
+                ->all();
+        } catch (Throwable) {
+            return [];
+        }
+    }
+
+    private static function optionLabel(mixed $mediaId): ?string
+    {
+        $userId = auth()->id();
+
+        if (! is_numeric($userId) || (! is_int($mediaId) && ! is_string($mediaId))) {
+            return null;
+        }
+
+        try {
+            $media = app(MediaServiceInterface::class)->find($mediaId, (int) $userId);
+
+            return $media instanceof MediaUploadResultDTO ? self::labelFor($media) : null;
+        } catch (Throwable) {
+            return null;
+        }
+    }
+
+    /** @param array<string, mixed> $data */
+    private static function uploadOption(array $data, string $type): int
+    {
+        $filePath = self::uploadedPath($data['file'] ?? null);
+        $userId = auth()->id();
+
+        if ($filePath === null || ! is_numeric($userId)) {
+            throw new \RuntimeException('A valid uploaded file and authenticated user are required.');
+        }
+
+        $disk = Storage::disk((string) config('filesystems.media_disk', 'public'));
+        $fullPath = $disk->path($filePath);
+
+        if (! is_file($fullPath)) {
+            throw new \RuntimeException('The uploaded file could not be read.');
+        }
+
+        $file = new UploadedFile(
+            $fullPath,
+            basename($filePath),
+            $disk->mimeType($filePath) ?: null,
+            null,
+            true,
+        );
+
+        $result = app(MediaServiceInterface::class)->upload([
+            'file' => $file,
+            'original_name' => self::filledString($data['original_name'] ?? null)
+                ? $data['original_name']
+                : (string) preg_replace('/^[a-f0-9]{64}--/', '', basename($filePath)),
+            'title_ar' => $data['title_ar'] ?? null,
+            'title_en' => $data['title_en'] ?? null,
+            'alt_text_ar' => $data['alt_text_ar'] ?? null,
+            'alt_text_en' => $data['alt_text_en'] ?? null,
+            'focal_x' => $data['focal_x'] ?? 50,
+            'focal_y' => $data['focal_y'] ?? 50,
+            'display_fit' => $data['display_fit'] ?? 'cover',
+            'require_alt_text' => self::isImageType($type),
+            'uploaded_by' => (int) $userId,
+        ]);
+
+        $disk->delete($filePath);
+
+        return $result->mediaId;
+    }
+
+    /** @param array<string, mixed> $data */
+    private static function promoteLegacyOption(int $mediaId, array $data): int
+    {
+        $userId = auth()->id();
+
+        if (! is_numeric($userId)) {
+            throw new \RuntimeException('An authenticated user is required to promote legacy media.');
+        }
+
+        $result = app(MediaServiceInterface::class)->promoteLegacyAsset($mediaId, [
+            'title_ar' => $data['title_ar'] ?? null,
+            'title_en' => $data['title_en'] ?? null,
+            'alt_text_ar' => $data['alt_text_ar'] ?? null,
+            'alt_text_en' => $data['alt_text_en'] ?? null,
+            'focal_x' => $data['focal_x'] ?? 50,
+            'focal_y' => $data['focal_y'] ?? 50,
+            'display_fit' => $data['display_fit'] ?? 'cover',
+            'metadata_status' => 'reviewed',
+        ], (int) $userId);
+
+        return $result->mediaId;
+    }
+
+    private static function uploadedPath(mixed $value): ?string
+    {
+        if (is_string($value) && $value !== '') {
+            return $value;
+        }
+
+        if (is_array($value)) {
+            return array_values(array_filter($value, static fn (mixed $item): bool => is_string($item) && $item !== ''))[0] ?? null;
+        }
+
+        return null;
+    }
+
+    /**
+     * Promotion keeps a legacy asset's own title and alt text when the fields
+     * are left empty, so an imported person photo already named after the
+     * person does not make the editor type the name again.
+     *
+     * @param  'title'|'altText'  $field
+     */
+    private static function requiresUploadOrPromotionMetadata(Get $get, string $field): bool
+    {
+        if (self::hasUpload($get('file'))) {
+            return true;
+        }
+
+        if (! is_numeric($get('legacy_media_id'))) {
+            return false;
+        }
+
+        $legacy = self::mediaResult((int) $get('legacy_media_id'));
+
+        return ! self::filledString($field === 'title' ? $legacy?->title : $legacy?->altText);
+    }
+
+    private static function isImageType(string $type): bool
+    {
+        return in_array($type, ['image', 'icon'], true);
+    }
+
+    private static function filledString(mixed $value): bool
+    {
+        return is_string($value) && trim($value) !== '';
+    }
+
+    private static function labelFor(MediaUploadResultDTO $media): string
+    {
+        $title = $media->title !== null && $media->title !== '' ? $media->title.' - ' : '';
+
+        return $title.$media->originalName.' ('.strtoupper($media->mediaType).', '.self::formatFileSize($media->size).')';
+    }
+
+    private static function preview(mixed $value, mixed $mediaId = null): HtmlString|string
+    {
+        $url = is_string($value) ? MediaUrlResolver::resolve($value) : null;
+
+        if ($url === null || $url === '') {
+            return __('admin.media_picker.no_file_selected');
+        }
+
+        $escapedUrl = e($url);
+        $filename = self::filenameFromUrl($url);
+        $escapedFilename = e($filename);
+
+        if (self::isImageMedia($mediaId) || preg_match('/\.(jpe?g|png|gif|webp|svg)(\?.*)?$/i', $url) === 1) {
+            $alt = e(__('admin.media_picker.preview_alt', ['file' => $filename]));
+
+            return new HtmlString('<span class="spu-media-preview"><img src="'.$escapedUrl.'" alt="'.$alt.'" /><span>'.$escapedFilename.'</span></span>');
+        }
+
+        $ariaLabel = e(__('admin.media_picker.open_file', ['file' => $filename]));
+
+        return new HtmlString('<a class="spu-media-preview spu-media-preview--link" href="'.$escapedUrl.'" target="_blank" rel="noopener noreferrer" aria-label="'.$ariaLabel.'">'.$escapedFilename.'</a>');
+    }
+
+    private static function isImageMedia(mixed $mediaId): bool
+    {
+        $userId = auth()->id();
+
+        if (! is_numeric($userId) || (! is_int($mediaId) && ! is_string($mediaId)) || ! is_numeric($mediaId)) {
+            return false;
+        }
+
+        try {
+            $media = app(MediaServiceInterface::class)->find($mediaId, (int) $userId);
+
+            return $media instanceof MediaUploadResultDTO && str_starts_with($media->mimeType, 'image/');
+        } catch (Throwable) {
+            return false;
+        }
+    }
+
+    private static function filenameFromUrl(string $url): string
+    {
+        $path = parse_url($url, PHP_URL_PATH);
+        $filename = is_string($path) ? rawurldecode(basename($path)) : '';
+
+        return $filename !== '' ? $filename : __('admin.media_picker.selected_file');
+    }
+
+    /** @return list<string> */
+    private static function acceptedFileTypes(string $type): array
+    {
+        $images = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+        $documents = [
+            'application/pdf',
+            'application/msword',
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'application/vnd.ms-excel',
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'application/vnd.ms-powerpoint',
+            'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+        ];
+
+        return match ($type) {
+            'image', 'icon' => $images,
+            'pdf' => ['application/pdf'],
+            'document' => $documents,
+            default => [...$images, ...$documents, 'video/mp4', 'video/webm'],
+        };
+    }
+
+    private static function mediaIdPath(string $statePath): string
+    {
+        $segments = explode('.', $statePath);
+        $last = array_pop($segments) ?: $statePath;
+        $segments[] = $last.'MediaId';
+
+        return implode('.', $segments);
+    }
+
+    /**
+     * Built from the absolute state path: Filament finds the component behind a
+     * mounted action by key, first match wins, so pickers repeated in a Repeater
+     * or in both locale tabs would otherwise all write to the first one.
+     */
+    private static function componentKey(string $statePath, string $label, string $type): string
+    {
+        return 'media-picker-'.sha1($statePath.'|'.$label.'|'.$type);
+    }
+
+    private static function formatFileSize(int $bytes): string
+    {
+        if ($bytes >= 1048576) {
+            return round($bytes / 1048576, 1).' MB';
+        }
+
+        if ($bytes >= 1024) {
+            return round($bytes / 1024, 1).' KB';
+        }
+
+        return $bytes.' B';
+    }
+}

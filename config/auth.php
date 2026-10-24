@@ -1,6 +1,6 @@
 <?php
 
-use App\Models\User;
+use App\Models\User\User;
 
 return [
 
@@ -46,6 +46,52 @@ return [
     ],
 
     'admin_guard' => env('AUTH_ADMIN_GUARD', 'web'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Failed Sign-in Lockout
+    |--------------------------------------------------------------------------
+    |
+    | Five failed sign-ins (or two-factor codes) lock an account. A lock set
+    | that way lifts itself after decay_minutes, so the policy cannot be used
+    | to keep every administrator out for good; set it to 0 to keep automatic
+    | locks until an administrator or `php artisan auth:unlock` lifts them.
+    | Locks an administrator sets by hand never expire.
+    |
+    */
+
+    'lockout' => [
+        'decay_minutes' => max(0, (int) env('AUTH_LOCKOUT_DECAY_MINUTES', 30)),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Sign-in Timebox
+    |--------------------------------------------------------------------------
+    |
+    | Minimum time, in microseconds, a failed sign-in takes. Every rejected
+    | sign-in also runs one password hash, so an unknown email, a locked
+    | account and a wrong password cost the same; the timebox evens out the
+    | rest. The framework guard reads the same key.
+    |
+    */
+
+    'timebox_duration' => (int) env('AUTH_TIMEBOX_DURATION', 200000),
+
+    'admin_session' => [
+        'idle_timeout_minutes' => (int) env('ADMIN_SESSION_IDLE_TIMEOUT_MINUTES', env('SESSION_LIFETIME', 120)),
+        'absolute_timeout_minutes' => (int) env('ADMIN_SESSION_ABSOLUTE_TIMEOUT_MINUTES', 480),
+    ],
+
+    'two_factor' => [
+        // 2FA is opt-in for staff. Set REQUIRE_PRIVILEGED_ADMIN_2FA=true
+        // when every privileged account must enroll before accessing admin.
+        'require_for_privileged_roles' => (bool) env('REQUIRE_PRIVILEGED_ADMIN_2FA', false),
+        'privileged_roles' => array_values(array_filter(array_map(
+            'trim',
+            explode(',', (string) env('PRIVILEGED_ADMIN_2FA_ROLES', 'super_admin,editor,faculty_editor,hr')),
+        ))),
+    ],
 
     /*
     |--------------------------------------------------------------------------

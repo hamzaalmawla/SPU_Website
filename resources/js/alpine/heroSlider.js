@@ -1,0 +1,118 @@
+import { horizontalKeyAction, observeReducedMotion } from '../utils/motionDirection.js';
+
+export function createHeroSlider() {
+    return {
+        currentIndex: 0,
+        heroVisible: false,
+        pageLoaded: false,
+        images: [],
+        _timer: null,
+        _removeMotionObserver: null,
+        reducedMotion: false,
+
+        init() {
+            try {
+                this.images = JSON.parse(this.$el.dataset.images || '[]');
+            } catch {
+                this.images = [];
+            }
+
+            this.heroVisible = true;
+
+            // Rotation starts counting once the page has loaded. A slide that
+            // swaps in while the page is still loading paints a new, larger
+            // image, and Chrome reports it as a later Largest Contentful Paint.
+            this.pageLoaded = typeof document === 'undefined' || document.readyState === 'complete';
+            if (!this.pageLoaded) {
+                window.addEventListener('load', () => {
+                    this.pageLoaded = true;
+                    this.preloadSlides();
+                    if (!this.reducedMotion) this.startAuto();
+                }, { once: true });
+            } else {
+                this.preloadSlides();
+            }
+
+            this._removeMotionObserver = observeReducedMotion((reduced) => {
+                this.reducedMotion = reduced;
+                reduced ? this.stopAuto() : this.startAuto();
+            });
+        },
+
+        // The hidden slides are lazy and display:none, so nothing fetches them
+        // during the page load. Fetch them once it is over, so the first
+        // rotation fades in a decoded image rather than an empty frame.
+        preloadSlides() {
+            if (typeof Image === 'undefined') return;
+
+            this.images.slice(1).forEach((src) => {
+                const image = new Image();
+                image.decoding = 'async';
+                image.src = src;
+            });
+        },
+
+        destroy() {
+            this.stopAuto();
+            this._removeMotionObserver?.();
+        },
+
+        startAuto() {
+            this.stopAuto();
+            if (!this.pageLoaded || this.reducedMotion || this.images.length <= 1 || this.hasActiveInteraction()) return;
+
+            this._timer = setInterval(() => this.next(), 5000);
+        },
+
+        stopAuto() {
+            if (this._timer) clearInterval(this._timer);
+            this._timer = null;
+        },
+
+        hasActiveInteraction() {
+            const hovered = typeof this.$el.matches === 'function' && this.$el.matches(':hover');
+            const focused = typeof document !== 'undefined' && this.$el.contains(document.activeElement);
+
+            return hovered || focused;
+        },
+
+        resumeAuto(event) {
+            if (event?.relatedTarget && this.$el.contains(event.relatedTarget)) return;
+            this.startAuto();
+        },
+
+        next() {
+            if (this.images.length > 0) this.currentIndex = (this.currentIndex + 1) % this.images.length;
+        },
+
+        previous() {
+            if (this.images.length > 0) this.currentIndex = (this.currentIndex - 1 + this.images.length) % this.images.length;
+        },
+
+        handleKey(event) {
+            const action = horizontalKeyAction(event, this.$el);
+            if (!action) return;
+
+            event.preventDefault();
+            this.stopAuto();
+            action === 'next' ? this.next() : this.previous();
+        },
+
+        visibleClass() {
+            return this.heroVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6';
+        },
+
+        isCurrent(index) {
+            return this.currentIndex === index;
+        },
+
+        isHidden(index) {
+            return !this.isCurrent(index);
+        },
+
+        slideLabel(index) {
+            const label = this.$el.dataset.slideLabel || 'Show slide';
+            return `${label} ${index + 1} / ${this.images.length}`;
+        },
+    };
+}

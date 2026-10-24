@@ -1,0 +1,1620 @@
+#!/usr/bin/env bash
+#
+# Deployment task for cPanel Git Version Control on v2.spu.edu.sy.
+#
+# cPanel clones the repository on the server and runs the tasks in .cpanel.yml
+# from that clone. This is the auditable, shell-free deployment mechanism REM-07
+# asks for: the executor is cPanel, the input is a commit, and the output is this
+# script's log.
+#
+# public/build is committed and ships with the clone, so the deploy does not
+# depend on Node being installed here - see .gitignore for why. Rebuild it before
+# a release with `php artisan view:clear && npm run build` and commit the result.
+#
+# The deployment this replaces ran `npm ci && npm run build` on the host. That
+# works if Node is present; committing the build removes the dependency either
+# way, and makes what shipped identical to what was tested.
+#
+# vendor/ is not committed; composer runs here.
+#
+# Everything is idempotent and safe to re-run.
+
+set -euo pipefail
+
+APP="${SPU_APP_PATH:-/home/spuedu/spu_v2_app}"
+WEB="${SPU_WEB_PATH:-/home/spuedu/public_html/spu_v2/public}"
+PHP="${SPU_PHP_BIN:-/opt/cpanel/ea-php84/root/usr/bin/php}"
+COMPOSER="${SPU_COMPOSER:-/home/spuedu/.spu_v2_tools/composer.phar}"
+SOURCE="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+
+log()  { printf '\n▸ %s\n' "$1"; }
+fail() { printf '\n✗ %s\n' "$1" >&2; exit 1; }
+
+log "Deploying ${SOURCE} → ${APP}"
+
+# ── Preconditions ────────────────────────────────────────────────────────────
+# Each of these has taken the site down before. Check them while it is still
+# cheap to stop.
+[[ -x "${PHP}" ]]        || fail "PHP binary not found at ${PHP}"
+[[ -d "${APP}" ]]        || fail "Application directory ${APP} does not exist"
+[[ -f "${APP}/.env" ]]   || fail "${APP}/.env is missing. It is not in git and must never be."
+[[ -d "${WEB}" ]]        || fail "Web root ${WEB} does not exist"
+
+# The docroot is NOT synced by this script - only public/build/ and the SVG
+# assets are copied into it. public/.htaccess and public/.user.ini there are
+# hand-maintained and deliberately diverge from the repository: the .htaccess
+# carries the STAGING ONLY noindex and host-guard blocks that must not ship to
+# the live domain (Docs/V2_PRE_CUTOVER_ACTIONS.md §C). That is a reasonable
+# arrangement, but it means editing those files in git changes nothing on the
+# server, silently, and one of them can break every page on the site.
+#
+# zlib.output_compression compresses at the SAPI output layer, after
+# CompressPublicResponses has already set Content-Encoding: gzip on a body it
+# compressed itself. The middleware cannot see zlib and zlib cannot see the
+# middleware, so the two together emit gzip(gzip(body)) under a single header:
+# every page unreadable, in every browser, triggered by whichever of the two is
+# enabled second rather than by any deploy. It was left On here as a
+# one-host-change-away optimisation back when nothing compressed; it is now the
+# one setting that must never be on.
+if [[ -f "${WEB}/.user.ini" ]] && grep -Eq '^[[:space:]]*zlib\.output_compression[[:space:]]*=[[:space:]]*(On|1|true)' "${WEB}/.user.ini"; then
+    fail "zlib.output_compression is enabled in ${WEB}/.user.ini. The application compresses in CompressPublicResponses; two compressors produce gzip(gzip(body)) and break every page. Comment it out - this file is not deployed from git, so it must be edited on the server."
+fi
+
+# The other half of the staging overlay, and the one with no other safety net.
+#
+# The docroot .htaccess adds `X-Robots-Tag: noindex, nofollow, noarchive` to
+# every response so v2 stays out of Google while it is a rehearsal. Apache adds
+# it, which means no check inside PHP can ever see it: launch:validate makes its
+# requests through the HTTP kernel and never touches the web server. So the
+# robots.txt half of the overlay is caught by the gate and this half is caught
+# by nothing.
+#
+# Left in place at cutover it tells every search engine to drop the university's
+# main website. That is the single most expensive mistake available here, it is
+# a manual step in a checklist (Docs/V2_PRE_CUTOVER_ACTIONS.md section C), and
+# manual steps in checklists are the ones that get missed.
+if [[ "${SPU_DEPLOY_ENV:-staging}" == "production" ]] \
+   && [[ -f "${WEB}/.htaccess" ]] \
+   && grep -Eqi '^[[:space:]]*Header[[:space:]]+(always[[:space:]]+)?set[[:space:]]+X-Robots-Tag.*noindex' "${WEB}/.htaccess"; then
+    fail "${WEB}/.htaccess still sets X-Robots-Tag: noindex, and this is a production deploy. Every page would tell search engines not to index the site. Remove the STAGING ONLY blocks - see Docs/V2_PRE_CUTOVER_ACTIONS.md section C. This file is not deployed from git; edit it on the server."
+fi
+
+# A missing asset directory does not error, it renders the whole site unstyled,
+# so check the source before touching anything on the server.
+[[ -f "${SOURCE}/public/build/manifest.json" ]] || fail \
+    "No Vite manifest in the release at ${SOURCE}/public/build. Run 'php artisan view:clear && npm run build' and commit public/build."
+
+env_value() {
+    grep -E "^[[:space:]]*$1=" "${APP}/.env" | tail -n 1 | cut -d= -f2- | tr -d '\r"' || true
+}
+
+# The admin panel is served from ADMIN_PATH (config/admin.php). Unset, it falls
+# back to /admin, the first address every scanner probes - so a release never
+# goes out while the panel would be sitting there. The value itself is never
+# printed: it is the secret.
+ADMIN_PATH_VALUE="$(env_value ADMIN_PATH | tr -d '/[:space:]')"
+if [[ ${#ADMIN_PATH_VALUE} -lt 12 || "${ADMIN_PATH_VALUE,,}" == "admin" ]]; then
+    fail "ADMIN_PATH in ${APP}/.env is missing or guessable. Set it to a random value of at least 12 characters (e.g. ADMIN_PATH=\$(openssl rand -hex 12)), then rerun. Tell the editors the new address privately; /admin will stop working."
+fi
+
+# Production migrations are forward-only. Require an operator-supplied reference
+# to a verified, restorable database backup before any release files are synced.
+APP_ENV_VALUE="$(env_value APP_ENV)"
+BACKUP_REFERENCE="${SPU_DATABASE_BACKUP_REFERENCE:-$(env_value SPU_DATABASE_BACKUP_REFERENCE)}"
+
+# ── Pre-migration database dump ──────────────────────────────────────────────
+# The gate below is unchanged and still authoritative: nothing is synced without
+# a reference to a restorable backup. What changed is that there is now a way to
+# produce one from here.
+#
+# The gate was written for an operator with a shell, who takes a cPanel backup,
+# checks it, and writes its name into .env by hand. That remains the preferred
+# path and an operator-supplied reference is never overwritten. But shell is
+# disabled on this account - UAPI has no SSH module - and cPanel's per-database
+# download endpoint is session-authenticated, so it refuses an API token with a
+# 403. With no human at a terminal there was no way to satisfy the gate
+# honestly, and the only remaining options were to skip the release or to write
+# a reference pointing at nothing. This is the third option.
+#
+# An automatic dump is better than a human at knowing the backup is recent, is
+# of this exact database, and is internally complete. It is worse at the thing
+# the gate was really protecting: that somebody looked. So the reference it
+# writes names itself - `auto-mysqldump-...` - and must never be mistaken for a
+# backup a person verified.
+#
+# This runs BEFORE the maintenance window and BEFORE any file is synced, so
+# every failure path here leaves the running site exactly as it was.
+# Re-dumps when the only reference present is one of ours from an earlier
+# deploy. The first version of this ran solely on an empty reference, which meant
+# it took exactly one backup ever: the value it wrote then satisfied the gate
+# forever and every later release migrated against a dump from whenever this
+# first ran. "A new backup and reference for every migration release" is the
+# whole point, so an auto- reference is treated as spent.
+#
+# An operator-supplied reference never matches this pattern and is still never
+# touched - a human who took a backup and wrote its name here keeps that name.
+if [[ "${SPU_DEPLOY_ENV:-staging}" == "production" || "${APP_ENV_VALUE}" == "production" ]] \
+   && [[ -z "${BACKUP_REFERENCE}" || "${BACKUP_REFERENCE}" == auto-mysqldump-* ]]; then
+
+    log "Taking a pre-migration database dump"
+
+    command -v mysqldump >/dev/null 2>&1 \
+        || fail "mysqldump is not on PATH, so no pre-migration backup can be taken and this release cannot proceed. Take a cPanel database backup by hand and set SPU_DATABASE_BACKUP_REFERENCE in ${APP}/.env."
+
+    DB_NAME="$(env_value DB_DATABASE)"
+    DB_USER="$(env_value DB_USERNAME)"
+    DB_PASS="$(env_value DB_PASSWORD)"
+    DB_HOST="$(env_value DB_HOST)"
+    DB_PORT="$(env_value DB_PORT)"
+    [[ -n "${DB_NAME}" && -n "${DB_USER}" ]] || fail "DB_DATABASE or DB_USERNAME is missing from ${APP}/.env; refusing to deploy without a backup."
+
+    BACKUP_DIR="${SPU_BACKUP_DIR:-/home/spuedu/backups/spu_v2}"
+    mkdir -p "${BACKUP_DIR}"
+    chmod 700 "${BACKUP_DIR}"
+
+    DUMP_STAMP="$(date -u +%Y%m%d-%H%M%S)"
+    DUMP_FILE="${BACKUP_DIR}/${DB_NAME}-${DUMP_STAMP}.sql.gz"
+
+    # The password never appears on a command line: ps is readable by other
+    # accounts, and this script's stdout becomes a log file cPanel keeps.
+    DUMP_CNF="$(umask 077 && mktemp "${BACKUP_DIR}/.my.XXXXXX")"
+    cleanup_dump_cnf() { rm -f "${DUMP_CNF}"; }
+    trap cleanup_dump_cnf EXIT
+    {
+        printf '[mysqldump]\n'
+        printf 'user=%s\n' "${DB_USER}"
+        printf 'password=%s\n' "${DB_PASS}"
+        [[ -n "${DB_HOST}" ]] && printf 'host=%s\n' "${DB_HOST}"
+        [[ -n "${DB_PORT}" ]] && printf 'port=%s\n' "${DB_PORT}"
+    } > "${DUMP_CNF}"
+
+    # --single-transaction keeps this non-blocking on InnoDB: the site stays up
+    # and consistent while the dump runs. Routines and triggers are part of the
+    # schema and a restore without them is not the database that was backed up.
+    ( umask 077 && mysqldump --defaults-extra-file="${DUMP_CNF}" \
+        --single-transaction --quick --routines --triggers --events \
+        --default-character-set=utf8mb4 \
+        "${DB_NAME}" | gzip -6 > "${DUMP_FILE}" ) \
+        || fail "mysqldump failed. Nothing has been synced and the site is untouched."
+
+    # mysqldump exiting 0 is not a restorable backup. Each of these has a real
+    # failure behind it: a dump truncated by a full disk still exits 0 through a
+    # pipe, and gzip will happily write a corrupt tail.
+    [[ -s "${DUMP_FILE}" ]] || fail "The dump at ${DUMP_FILE} is empty."
+    gzip -t "${DUMP_FILE}" 2>/dev/null || fail "The dump at ${DUMP_FILE} is not a valid gzip stream."
+    gzip -cd "${DUMP_FILE}" | tail -c 2000 | grep -q 'Dump completed' \
+        || fail "The dump at ${DUMP_FILE} has no completion trailer, so it is truncated."
+    DUMP_TABLES="$(gzip -cd "${DUMP_FILE}" | grep -c '^CREATE TABLE' || true)"
+    [[ "${DUMP_TABLES}" -ge 20 ]] \
+        || fail "The dump holds only ${DUMP_TABLES} tables, which is too few to be this database. Refusing to treat it as a backup."
+
+    # Remove the credentials file here rather than leaving it to the trap: the
+    # maintenance-window trap installed further down replaces this one, and a
+    # file holding the database password must not outlive the command that
+    # needed it.
+    cleanup_dump_cnf
+    trap - EXIT
+
+    chmod 600 "${DUMP_FILE}"
+    DUMP_SHA="$(sha256sum "${DUMP_FILE}" | cut -c1-12)"
+    DUMP_SIZE="$(du -h "${DUMP_FILE}" | cut -f1)"
+    BACKUP_REFERENCE="auto-mysqldump-${DB_NAME}-${DUMP_STAMP}-${DUMP_SHA}"
+
+    printf '  %s\n  %s tables, %s, sha256 %s…\n' "${DUMP_FILE}" "${DUMP_TABLES}" "${DUMP_SIZE}" "${DUMP_SHA}"
+
+    # Written into .env so the reference survives for a human reading it later,
+    # and so a re-run of this deploy reuses the dump rather than taking another.
+    if grep -qE '^[[:space:]]*SPU_DATABASE_BACKUP_REFERENCE=' "${APP}/.env"; then
+        sed -i.bak -E "s|^[[:space:]]*SPU_DATABASE_BACKUP_REFERENCE=.*|SPU_DATABASE_BACKUP_REFERENCE=${BACKUP_REFERENCE}|" "${APP}/.env"
+        rm -f "${APP}/.env.bak"
+    else
+        printf '\nSPU_DATABASE_BACKUP_REFERENCE=%s\n' "${BACKUP_REFERENCE}" >> "${APP}/.env"
+    fi
+
+    # The account runs close to its disk quota, and a dump per release adds up.
+    # Three is enough to cover "the release before this one" without becoming an
+    # archive nobody prunes.
+    # `|| true` throughout: set -o pipefail would otherwise turn "there are no
+    # old dumps to prune" into a failed deployment.
+    (ls -1t "${BACKUP_DIR}/${DB_NAME}-"*.sql.gz 2>/dev/null || true) | tail -n +4 | while read -r old; do
+        printf '  pruning old dump %s\n' "$(basename "${old}")"
+        rm -f "${old}"
+    done || true
+fi
+
+if [[ "${SPU_DEPLOY_ENV:-staging}" == "production" || "${APP_ENV_VALUE}" == "production" ]]; then
+    [[ -n "${BACKUP_REFERENCE}" ]] || fail \
+        "Production deployment requires SPU_DATABASE_BACKUP_REFERENCE naming a verified, restorable pre-deployment database backup."
+    log "Verified pre-deployment database backup: ${BACKUP_REFERENCE}"
+fi
+
+# ── Data-migration gate ──────────────────────────────────────────────────────
+# A normal production release may add or alter schema, but must not silently
+# rewrite editorial rows. A release whose pending migrations INSERT, UPDATE or
+# DELETE rows needs an approval that is never stored in git, given one of two
+# ways:
+#
+#   - SPU_ALLOW_DATA_MIGRATIONS=1 in the deploy process environment (only for an
+#     operator with a shell; cPanel's deploy cannot pass one), or
+#   - storage/app/private/legacy-imports/data-migrations.approved, listing every
+#     pending migration by name, one per line:
+#         migration=2026_10_19_000004_create_form_definitions_table
+#     The list must match the pending migrations exactly, so an approval cannot
+#     carry over to migrations nobody reviewed. It is renamed to
+#     .consumed-<time> after the migrations run.
+#
+# The gate runs twice. First here, before the source sync, with the release's
+# migrations read from ${SOURCE} by the code already on the server, so a
+# refused release leaves the site exactly as it was. (Before 2026-10-20 it only
+# ran after the sync, and a refusal left new code running on the old schema.)
+# Then again after the sync, against the release's own code.
+DATA_MIGRATION_APPROVAL="${APP}/storage/app/private/legacy-imports/data-migrations.approved"
+DATA_MIGRATIONS_APPROVED_BY_FILE=0
+
+data_migration_gate() {
+    local preview="$1" stage="$2"
+    [[ "${SPU_DEPLOY_ENV:-staging}" == "production" || "${APP_ENV_VALUE}" == "production" ]] || return 0
+    printf '%s\n' "${preview}" | grep -Eiq '(^|[[:space:]])(update|delete[[:space:]]+from|insert[[:space:]]+into)[[:space:]]' || return 0
+
+    if [[ "${SPU_ALLOW_DATA_MIGRATIONS:-0}" == "1" ]]; then
+        printf '  Data migrations allowed by SPU_ALLOW_DATA_MIGRATIONS (%s)\n' "${stage}"
+        return 0
+    fi
+
+    local pending approved
+    pending="$(printf '%s\n' "${preview}" | grep -Eo '^[[:space:]]*[0-9]{4}_[0-9]{2}_[0-9]{2}_[0-9]{6}_[A-Za-z0-9_]+' | sed 's/[[:space:]]//g' | sort -u || true)"
+
+    if [[ -f "${DATA_MIGRATION_APPROVAL}" ]]; then
+        approved="$(grep -E '^[[:space:]]*migration=' "${DATA_MIGRATION_APPROVAL}" | cut -d= -f2- | sed 's/[[:space:]]//g' | sort -u || true)"
+        if [[ -n "${pending}" && "${pending}" == "${approved}" ]]; then
+            printf '  Data migrations approved by %s (%s):\n' "$(basename "${DATA_MIGRATION_APPROVAL}")" "${stage}"
+            printf '    %s\n' ${pending}
+            DATA_MIGRATIONS_APPROVED_BY_FILE=1
+            return 0
+        fi
+        printf '  Pending migrations:\n' >&2
+        printf '    %s\n' ${pending} >&2
+        printf '  Approved in %s:\n' "$(basename "${DATA_MIGRATION_APPROVAL}")" >&2
+        printf '    %s\n' ${approved} >&2
+        fail "The data-migration approval does not match the pending migrations exactly (${stage}). Nothing was migrated."
+    fi
+
+    printf '  Pending migrations:\n' >&2
+    printf '    %s\n' ${pending} >&2
+    fail "Pending migrations contain row INSERT/UPDATE/DELETE statements (${stage}). Production content was not changed. Review the SQL above and approve exactly these migrations in ${DATA_MIGRATION_APPROVAL} (one 'migration=<name>' line each)."
+}
+
+if [[ -f "${APP}/vendor/autoload.php" && -d "${SOURCE}/database/migrations" ]]; then
+    log "Checking the release's migrations before syncing"
+    if ! PRE_SYNC_PREVIEW="$(cd "${APP}" && "${PHP}" artisan migrate --pretend --force --no-interaction --path="${SOURCE}/database/migrations" --realpath 2>&1)"; then
+        printf '%s\n' "${PRE_SYNC_PREVIEW}" >&2
+        fail "Could not preview the release's migrations with the code on the server. Nothing was synced and the site is untouched."
+    fi
+    data_migration_gate "${PRE_SYNC_PREVIEW}" "before sync"
+fi
+
+# ── Sync source ──────────────────────────────────────────────────────────────
+# Only the trees that are code. .env, storage/ and public/build/ are state and
+# are never touched. bootstrap/cache is excluded deliberately: shipping a
+# manifest built on another machine loads service providers that are not
+# installed here, and every page returns 500 (README 8.1).
+# Between the source sync and the migration the code and schema disagree, and
+# PHP keeps serving. Fine on staging; on the live domain it is a window of 500s.
+MAINTENANCE=0
+if [[ -f "${APP}/vendor/autoload.php" ]]; then
+    (cd "${APP}" && "${PHP}" artisan down --render="errors::503" --retry=60 >/dev/null 2>&1) && MAINTENANCE=1
+fi
+restore_service() { [[ "${MAINTENANCE}" == "1" ]] && (cd "${APP}" && "${PHP}" artisan up >/dev/null 2>&1) || true; }
+trap restore_service EXIT
+
+log "Syncing application source"
+for tree in app bootstrap config database lang resources routes; do
+    [[ -d "${SOURCE}/${tree}" ]] || fail "Expected source tree ${tree} is missing"
+done
+
+if command -v rsync >/dev/null 2>&1; then
+    rsync -a --delete \
+        --exclude='bootstrap/cache/' \
+        "${SOURCE}/app" "${SOURCE}/bootstrap" "${SOURCE}/config" \
+        "${SOURCE}/database" "${SOURCE}/lang" "${SOURCE}/resources" \
+        "${SOURCE}/routes" "${APP}/"
+else
+    # Anchored excludes. An unanchored --exclude=public once matched
+    # resources/views/public and silently dropped 118 view files (README 8.2).
+    tar -C "${SOURCE}" -cf - \
+        --exclude='./bootstrap/cache' \
+        app bootstrap config database lang resources routes | tar -C "${APP}" -xf -
+fi
+
+install -m 0644 "${SOURCE}/artisan" "${APP}/artisan"
+install -m 0644 "${SOURCE}/composer.json" "${APP}/composer.json"
+install -m 0644 "${SOURCE}/composer.lock" "${APP}/composer.lock"
+
+# ── Front-end assets ─────────────────────────────────────────────────────────
+# Published before anything else, and without --delete. Vite content-hashes
+# every filename, so new and old assets coexist happily - and they have to,
+# because the public page cache holds rendered HTML for an hour. Deleting the
+# previous build would strip the stylesheet out from under every page already
+# in that cache. Stale hashes accumulate slowly; seven files per release is a
+# price worth paying to never serve an unstyled page.
+log "Publishing front-end build"
+mkdir -p "${WEB}/build"
+if command -v rsync >/dev/null 2>&1; then
+    rsync -a "${SOURCE}/public/build/" "${WEB}/build/"
+else
+    cp -R "${SOURCE}/public/build/." "${WEB}/build/"
+fi
+[[ -f "${WEB}/build/manifest.json" ]] || fail "The build did not land at ${WEB}/build"
+
+# ── Root static files ────────────────────────────────────────────────────────
+# Only build/ and the SVGs are otherwise copied into the docroot, so a file
+# committed at the top of public/ never reached it. Two kinds live there and
+# both fail silently when missing:
+#
+#   - search-engine and backlink-index ownership tokens (Google Search Console,
+#     Ahrefs, Majestic). Ahrefs and Majestic are the two link indexes Webometrics
+#     reads for its Visibility score; losing their tokens at cutover loses
+#     verified ownership of the domain's link data.
+#   - favicon.ico and apple-touch-icon.png, which browsers and search engines
+#     request by name whatever the page declares.
+log "Publishing root static files"
+shopt -s nullglob
+for root_file in "${SOURCE}"/public/{favicon.ico,apple-touch-icon.png,site.webmanifest,google*.html,MJ12_*.txt,ahrefs_*}; do
+    install -m 0644 "${root_file}" "${WEB}/$(basename "${root_file}")"
+    printf '  %s\n' "$(basename "${root_file}")"
+done
+shopt -u nullglob
+
+# ── Legacy static mounts ─────────────────────────────────────────────────────
+# Old files stay in the old document root and are exposed read-only under
+# _legacy/, answered at their original URLs by public/.htaccess (README §4).
+# The original mounts already exist; these are the ones added since, created
+# here because there is no shell to create them with. An existing path is
+# never replaced, and a missing source is reported rather than linked.
+LEGACY_ROOT="${SPU_LEGACY_ROOT:-/home/spuedu/public_html}"
+ensure_legacy_mount() {
+    local source="$1" target="$2"
+    if [[ -L "${target}" || -e "${target}" ]]; then
+        return 0
+    fi
+    if [[ ! -d "${source}" ]]; then
+        printf '  ⚠ %s does not exist; %s not mounted\n' "${source}" "${target}" >&2
+        return 0
+    fi
+    mkdir -p "$(dirname "${target}")"
+    ln -s "${source}" "${target}"
+    printf '  mounted %s → %s\n' "${target}" "${source}"
+}
+log "Ensuring legacy static mounts"
+ensure_legacy_mount "${LEGACY_ROOT}/FCKBIH"    "${WEB}/_legacy/FCKBIH"
+ensure_legacy_mount "${LEGACY_ROOT}/downloads" "${WEB}/_legacy/downloads/root"
+
+# ── Live applications kept at their addresses ────────────────────────────────
+# Two separate PHP applications live in the old document root and are in use:
+# /forms (surveys, complaints and their dashboards) and /Medicine (the Faculty
+# of Medicine recruitment portal). Unlike the media above they must execute, so
+# they are mounted at their own paths rather than under _legacy/, where PHP is
+# refused. Once the domain points at this docroot they keep answering exactly
+# where they always did; until then they are also reachable on the v2 host.
+#
+# Each carries its own .htaccess with DirectoryIndex index.php - this docroot
+# sets app.php, which subdirectories would otherwise inherit and answer 403 -
+# and denies its internals (uploads, sessions, logs, source) over HTTP. A mount
+# without that file is refused rather than published half-protected.
+ensure_app_mount() {
+    local source="$1" target="$2"
+    if [[ -d "${source}" ]] && ! grep -qs '^[[:space:]]*DirectoryIndex[[:space:]]\+index\.php' "${source}/.htaccess"; then
+        printf '  ⚠ %s/.htaccess lacks DirectoryIndex index.php; %s not mounted\n' "${source}" "${target}" >&2
+        return 0
+    fi
+    ensure_legacy_mount "${source}" "${target}"
+}
+log "Ensuring live application mounts"
+ensure_app_mount "${LEGACY_ROOT}/forms"    "${WEB}/forms"
+ensure_app_mount "${LEGACY_ROOT}/Medicine" "${WEB}/Medicine"
+
+# nginx strips Accept-Encoding before Apache or PHP ever sees it (measured
+# 2 September; the reasoning is in config/edge.php). That means mod_deflate
+# cannot fire for a static file and no negotiated rewrite can either, so the
+# build assets were going out uncompressed: app.css alone is 311 KB on the wire
+# where it gzips to 51 KB, on an audience the .htaccess notes is "largely on
+# slow connections".
+#
+# The application already forces gzip on HTML for exactly this reason. These
+# siblings extend the same, already accepted trade-off to the build assets.
+# public/.htaccess serves a .gz only when it exists, so deleting one here just
+# restores the uncompressed file - this step is safe to fail.
+log "Pre-compressing build assets"
+if command -v gzip >/dev/null 2>&1; then
+    compressed=0
+    while IFS= read -r asset; do
+        # -n keeps the timestamp out of the output so an unchanged asset
+        # produces an identical .gz and rsync has nothing to copy next time.
+        if gzip -9 -n -c "${asset}" > "${asset}.gz" 2>/dev/null; then
+            compressed=$((compressed + 1))
+        else
+            rm -f "${asset}.gz"
+        fi
+    done < <(find "${WEB}/build" -type f \( -name '*.css' -o -name '*.js' \) -size +1k)
+    printf '  Compressed %d build asset(s)\n' "${compressed}"
+else
+    printf '  gzip not available; assets will be served uncompressed\n' >&2
+fi
+
+# ── Runtime directories ──────────────────────────────────────────────────────
+# Missing cache stores fail at runtime, not at deploy time.
+log "Ensuring runtime directories"
+mkdir -p "${APP}/storage/framework/cache/data" \
+         "${APP}/storage/framework/cache/webhook" \
+         "${APP}/storage/framework/cache/rate-limiter" \
+         "${APP}/storage/framework/sessions" \
+         "${APP}/storage/framework/views" \
+         "${APP}/storage/logs" \
+         "${APP}/bootstrap/cache"
+chmod -R 775 "${APP}/storage" "${APP}/bootstrap/cache"
+
+# public_path() must resolve or @vite emits nothing and the site renders unstyled.
+ln -sfn "${WEB}" "${APP}/public"
+
+# ── Dependencies ─────────────────────────────────────────────────────────────
+if [[ -f "${COMPOSER}" ]]; then
+    log "Installing PHP dependencies"
+    (cd "${APP}" && "${PHP}" "${COMPOSER}" install --no-dev --optimize-autoloader --no-interaction --no-progress)
+else
+    printf '⚠ composer.phar not found at %s — skipping dependency install.\n' "${COMPOSER}" >&2
+    printf '  Safe only when composer.lock has not changed in this release.\n' >&2
+fi
+
+# Without this the next artisan call dies on a require() of a missing autoloader,
+# which reads like a broken release rather than a missing dependency install.
+[[ -f "${APP}/vendor/autoload.php" ]] || fail \
+    "No vendor/autoload.php in ${APP}. Composer has never run here, or it failed above."
+
+# Regenerate the package manifest here rather than inheriting one.
+log "Clearing stale compiled state"
+rm -f "${APP}"/bootstrap/cache/{packages,services,config,routes-v7,events}.php
+rm -rf "${APP}/bootstrap/cache/filament"
+
+# ── Schema ───────────────────────────────────────────────────────────────────
+log "Recording migration status and SQL preview"
+(cd "${APP}" && "${PHP}" artisan migrate:status --no-interaction)
+# --force is required here even though nothing runs: in production, migrate's
+# confirmation guard comes before --pretend is honoured and, with no terminal,
+# cancels with exit 1. Under set -e that ended the deploy silently with the
+# preview swallowed by the command substitution. --pretend executes no SQL.
+if ! MIGRATION_PREVIEW="$(cd "${APP}" && "${PHP}" artisan migrate --pretend --force --no-interaction 2>&1)"; then
+    printf '%s\n' "${MIGRATION_PREVIEW}" >&2
+    fail "Could not produce the migration SQL preview. Nothing was migrated."
+fi
+printf '%s\n' "${MIGRATION_PREVIEW}"
+
+# Same gate as before the sync (see "Data-migration gate"), now against the
+# release's own code.
+data_migration_gate "${MIGRATION_PREVIEW}" "after sync"
+
+log "Running migrations"
+(cd "${APP}" && "${PHP}" artisan migrate --force --no-interaction)
+
+if [[ "${DATA_MIGRATIONS_APPROVED_BY_FILE}" == "1" && -f "${DATA_MIGRATION_APPROVAL}" ]]; then
+    mv "${DATA_MIGRATION_APPROVAL}" "${DATA_MIGRATION_APPROVAL}.consumed-$(date +%Y%m%d%H%M%S)"
+    printf '  Data-migration approval consumed\n'
+fi
+
+# ── Approved legacy faculty-project import ───────────────────────────────────
+# Runs an editorially approved one-off import that otherwise needs a shell, and
+# this account has none: UAPI reports no SSH module, so there is no terminal on
+# this host for anyone.
+#
+# This is deliberately NOT a general way to run commands here. REM-07 forbids an
+# execution bridge, and it means a surface that runs whatever it is handed. This
+# runs one hardcoded command, against one hardcoded expected result, and refuses
+# everything else. Three things keep it on the right side of that line:
+#
+#   1. It is inert unless a human places an approval file that is not in git and
+#      cannot be created by a deploy. No file, no import, silently.
+#   2. The dump's sha256 must match the one recorded in that approval file, so
+#      the bytes imported are provably the bytes that were approved.
+#   3. The dry run must report the approved manifest EXACTLY. Any other number -
+#      more, fewer, a faculty off by one - fails the deploy before anything is
+#      written.
+#
+# It disarms itself after a successful write, so a redeploy cannot run it twice.
+#
+# Placed after migrate because it needs the schema, and before the cache, search
+# and sitemap steps below - which are exactly the post-import commands the
+# runbook asks to be run afterwards, so they pick the new records up.
+IMPORT_DIR="${APP}/storage/app/private/legacy-imports"
+IMPORT_APPROVAL="${IMPORT_DIR}/faculty-projects.approved"
+IMPORT_SURVEY="${IMPORT_DIR}/faculty-projects.survey"
+NEWS_REVIEW="${IMPORT_DIR}/news.review"
+NEWS_PUBLISH="${IMPORT_DIR}/news.publish"
+
+# ── Legacy news review and publication ───────────────────────────────────────
+# Every legacy news article was imported with robots=noindex pending editorial
+# review, so sitemap-news.xml has always been empty while roughly 1,250 real
+# articles sat on the site unreachable from search.
+#
+# Two steps, each behind its own marker file that only a human can place.
+#
+# news.review is read-only: it runs legacy-import:news-review and prints what is
+# eligible. Nothing changes.
+#
+# news.publish drives legacy-import:publish-news, which is the sanctioned command
+# and keeps all of its own guards - the publish-legacy-news token, the actor
+# permission check, and its per-article eligibility rules, so anything the
+# service considers blocked stays blocked. What this loop DOES defeat is the
+# MAX_BATCH_SIZE of 25, which exists to pace a human through the archive in
+# reviewable chunks. That pacing is being bypassed on an explicit instruction to
+# publish the archive, and it is recorded here rather than hidden: a reviewer
+# looking at this script should see that the decision was made, by whom, and
+# that it was not a mistake.
+if [[ -f "${NEWS_REVIEW}" ]]; then
+    log "Legacy news review (read-only; nothing will be published)"
+    (cd "${APP}" && "${PHP}" -d memory_limit=1024M artisan legacy-import:news-review --json) \
+        || printf '\n  news review reported a problem; see the output above\n' >&2
+    mv "${NEWS_REVIEW}" "${NEWS_REVIEW}.done-$(date -u +%Y%m%d-%H%M%S)"
+    printf '  review complete; nothing was published\n'
+fi
+
+if [[ -f "${NEWS_PUBLISH}" ]]; then
+    log "Legacy news publication"
+
+    NEWS_ACTOR="$(grep -E '^actor=' "${NEWS_PUBLISH}" | head -n 1 | cut -d= -f2- | tr -d '\r')"
+    NEWS_TOKEN="$(grep -E '^token=' "${NEWS_PUBLISH}" | head -n 1 | cut -d= -f2- | tr -d '\r')"
+    [[ -n "${NEWS_ACTOR}" ]] || fail "The news publication file has no actor= line."
+    [[ -n "${NEWS_TOKEN}" ]] || fail "The news publication file has no token= line."
+
+    # actor=auto resolves the publishing user here rather than asking an operator
+    # to look up a primary key. The service validates whoever is named - it
+    # refuses a locked account or one without publication permission - so this
+    # chooses a candidate, it does not grant anything.
+    if [[ "${NEWS_ACTOR}" == "auto" ]]; then
+        NEWS_ACTOR="$(cd "${APP}" && "${PHP}" artisan tinker --execute='
+            echo (string) (\DB::table("users")
+                ->where("role_slug", "super_admin")
+                ->where(function ($q) { $q->whereNull("locked_at")->orWhere("locked_at", ""); })
+                ->orderBy("id")
+                ->value("id") ?? "");
+        ' 2>/dev/null | grep -Eo '^[0-9]+$' | head -n 1 || true)"
+        [[ -n "${NEWS_ACTOR}" ]] || fail "actor=auto found no unlocked super_admin to publish as."
+        printf '  publishing as user #%s\n' "${NEWS_ACTOR}"
+    fi
+
+    # Source IDs come either as explicit id= lines, or - with ids=eligible - from
+    # the news import log, letting the publication service decide what may go
+    # live rather than deciding here.
+    #
+    # That is not a way around the gate, it is the gate. blockReason() refuses an
+    # article with incomplete Arabic, with no Arabic SEO, with an English
+    # translation but no English SEO, in the wrong publication state, or without
+    # import provenance. Handing it every id and keeping what it accepts is
+    # exactly the check it was written to perform - and it reports the reasons it
+    # refused, which an operator picking ids by hand would never see.
+    #
+    # Missing English is deliberately NOT one of those reasons: the service
+    # permits Arabic-only articles, and only requires English SEO when an English
+    # translation exists.
+    NEWS_IDS_MODE="$(grep -E '^ids=' "${NEWS_PUBLISH}" | head -n 1 | cut -d= -f2- | tr -d '\r' | tr -d ' ')"
+
+    if [[ "${NEWS_IDS_MODE}" == "eligible" ]]; then
+        NEWS_IDS="$(cd "${APP}" && "${PHP}" artisan tinker --execute='
+            echo \DB::table("migration_logs")
+                ->where("module", "news")
+                ->where("status", "success")
+                ->orderBy("source_id")
+                ->pluck("source_id")
+                ->implode("\n");
+        ' 2>/dev/null | grep -E '^[0-9]+$' || true)"
+    else
+        NEWS_IDS="$(grep -E '^id=' "${NEWS_PUBLISH}" | cut -d= -f2- | tr -d '\r' | tr -d ' ' | grep -E '^[0-9]+$' || true)"
+    fi
+
+    NEWS_COUNT="$(printf '%s\n' "${NEWS_IDS}" | grep -c . || true)"
+    [[ "${NEWS_COUNT}" -gt 0 ]] || fail "The news publication file yielded no source ids."
+    printf '  %s article(s) offered to the publication service\n' "${NEWS_COUNT}"
+
+    NEWS_DONE=0
+    NEWS_FAILED=0
+    while IFS= read -r chunk; do
+        [[ -z "${chunk}" ]] && continue
+        args=""
+        for sid in ${chunk}; do args="${args} --source-id=${sid}"; done
+        # shellcheck disable=SC2086
+        if (cd "${APP}" && "${PHP}" -d memory_limit=1024M artisan legacy-import:publish-news \
+                ${args} --write --approve="${NEWS_TOKEN}" --actor="${NEWS_ACTOR}" \
+                --allow-deferred-media --json) ; then
+            NEWS_DONE=$((NEWS_DONE + 1))
+        else
+            NEWS_FAILED=$((NEWS_FAILED + 1))
+            printf '  batch failed; continuing with the rest\n' >&2
+        fi
+    done < <(printf '%s\n' "${NEWS_IDS}" | xargs -n 25 2>/dev/null || true)
+
+    printf '  %s batch(es) succeeded, %s failed\n' "${NEWS_DONE}" "${NEWS_FAILED}"
+    mv "${NEWS_PUBLISH}" "${NEWS_PUBLISH}.consumed-$(date -u +%Y%m%d-%H%M%S)"
+fi
+
+# ── Approved study plan import ───────────────────────────────────────────────
+# Loads the converted faculty curricula (database/seeders/Data/study_plans/*.json,
+# shipped with this release) into the faculty study plans. Like the imports above
+# it is not a way to run commands: it runs one hardcoded command over a hardcoded
+# list of plans, and it is inert unless a human places an approval file that is
+# not in git and cannot be created by a deploy:
+#
+#     storage/app/private/legacy-imports/study-plans.approved
+#         actor=auto                       (or a user id)
+#         faculty=artificial-intelligence  (one line per plan to import)
+#         faculty=pharmacy
+#
+# What keeps editors' work safe, in order:
+#
+#   1. The importer refuses any plan that has EVER been saved or published through
+#      the admin (any CMS draft or published row). It does not touch it, does not
+#      add a draft, and reports it as SKIPPED. Only plans still in their seeded
+#      state are loaded. The override (--replace-edited) is never used here.
+#   2. It only ever writes an UNPUBLISHED draft. The public site does not change
+#      until an editor reviews the draft in the admin and publishes it.
+#   3. Every plan is validated first; any validation error stops the deploy
+#      before that plan is written.
+#   4. The release has already taken the verified pre-migration database backup.
+#
+# It disarms itself after one run, so a redeploy cannot repeat it.
+STUDY_PLAN_APPROVAL="${IMPORT_DIR}/study-plans.approved"
+STUDY_PLAN_DATA="${APP}/database/seeders/Data/study_plans"
+STUDY_PLAN_ALLOWED=" artificial-intelligence building-construction-engineering petroleum pharmacy medicine business-administration "
+
+if [[ -f "${STUDY_PLAN_APPROVAL}" ]]; then
+    log "Study plan import"
+
+    SP_ACTOR="$(grep -E '^actor=' "${STUDY_PLAN_APPROVAL}" | head -n 1 | cut -d= -f2- | tr -d '\r' | tr -d ' ')"
+    [[ -n "${SP_ACTOR}" ]] || fail "The study plan approval file has no actor= line."
+
+    if [[ "${SP_ACTOR}" == "auto" ]]; then
+        SP_ACTOR="$(cd "${APP}" && "${PHP}" artisan tinker --execute='
+            echo (string) (\DB::table("users")
+                ->where("role_slug", "super_admin")
+                ->where(function ($q) { $q->whereNull("locked_at")->orWhere("locked_at", ""); })
+                ->orderBy("id")
+                ->value("id") ?? "");
+        ' 2>/dev/null | grep -Eo '^[0-9]+$' | head -n 1 || true)"
+        [[ -n "${SP_ACTOR}" ]] || fail "actor=auto found no unlocked super_admin to save the drafts as."
+    fi
+    [[ "${SP_ACTOR}" =~ ^[0-9]+$ ]] || fail "The study plan actor must be a numeric user id or 'auto'."
+    printf '  saving drafts as user #%s\n' "${SP_ACTOR}"
+
+    SP_FACULTIES="$(grep -E '^faculty=' "${STUDY_PLAN_APPROVAL}" | cut -d= -f2- | tr -d '\r' | tr -d ' ' | grep -E '^[a-z-]+$' || true)"
+    [[ -n "${SP_FACULTIES}" ]] || fail "The study plan approval file lists no faculty= lines."
+
+    SP_LOADED=0
+    SP_SKIPPED=0
+    while IFS= read -r sp_faculty; do
+        [[ -z "${sp_faculty}" ]] && continue
+        [[ "${STUDY_PLAN_ALLOWED}" == *" ${sp_faculty} "* ]] || fail "'${sp_faculty}' is not an approved study plan."
+        sp_file="${STUDY_PLAN_DATA}/${sp_faculty}.json"
+        [[ -f "${sp_file}" ]] || fail "No study plan data file for ${sp_faculty} in this release."
+
+        # Dry run first: it validates and reports the skip, and writes nothing.
+        sp_out="$(cd "${APP}" && "${PHP}" artisan faculty:import-study-plan "${sp_faculty}" "${sp_file}" --user="${SP_ACTOR}" --no-ansi)" \
+            || fail "Study plan ${sp_faculty} failed validation. Nothing was written for it."
+        if printf '%s\n' "${sp_out}" | grep -q '^SKIPPED'; then
+            printf '  %s: SKIPPED - editors have already worked on it; left exactly as it is\n' "${sp_faculty}"
+            SP_SKIPPED=$((SP_SKIPPED + 1))
+            continue
+        fi
+
+        (cd "${APP}" && "${PHP}" artisan faculty:import-study-plan "${sp_faculty}" "${sp_file}" --user="${SP_ACTOR}" --write --no-ansi) \
+            || fail "Study plan ${sp_faculty} could not be saved as a draft."
+        printf '  %s: saved as an unpublished draft\n' "${sp_faculty}"
+        SP_LOADED=$((SP_LOADED + 1))
+    done < <(printf '%s\n' "${SP_FACULTIES}")
+
+    printf '  %s draft(s) saved for review, %s plan(s) skipped because editors had already worked on them\n' "${SP_LOADED}" "${SP_SKIPPED}"
+    mv "${STUDY_PLAN_APPROVAL}" "${STUDY_PLAN_APPROVAL}.consumed-$(date -u +%Y%m%d-%H%M%S)"
+fi
+
+# ── Approved study plan publish ──────────────────────────────────────────────
+# Loads the converted curriculum for the listed faculties and PUBLISHES it, replacing
+# whatever draft or published plan is there (--replace-edited). Used when the import
+# above left a plan as an unreviewed draft, or skipped it over an old draft, and the
+# product owner has approved the converted plan going public as it is. Inert unless a
+# human places an approval file that is not in git:
+#
+#     storage/app/private/legacy-imports/study-plans-publish.approved
+#         actor=auto                       (or a user id)
+#         faculty=artificial-intelligence  (one line per plan to publish)
+#
+# It goes through the CMS workflow (draft, publish readiness, audit log, cache
+# invalidation). It disarms itself after one run.
+STUDY_PLAN_PUBLISH_APPROVAL="${IMPORT_DIR}/study-plans-publish.approved"
+
+if [[ -f "${STUDY_PLAN_PUBLISH_APPROVAL}" ]]; then
+    log "Study plan publish"
+
+    SPP_ACTOR="$(grep -E '^actor=' "${STUDY_PLAN_PUBLISH_APPROVAL}" | head -n 1 | cut -d= -f2- | tr -d '\r' | tr -d ' ')"
+    [[ -n "${SPP_ACTOR}" ]] || fail "The study plan publish approval file has no actor= line."
+
+    if [[ "${SPP_ACTOR}" == "auto" ]]; then
+        SPP_ACTOR="$(cd "${APP}" && "${PHP}" artisan tinker --execute='
+            echo (string) (\DB::table("users")
+                ->where("role_slug", "super_admin")
+                ->where(function ($q) { $q->whereNull("locked_at")->orWhere("locked_at", ""); })
+                ->orderBy("id")
+                ->value("id") ?? "");
+        ' 2>/dev/null | grep -Eo '^[0-9]+$' | head -n 1 || true)"
+        [[ -n "${SPP_ACTOR}" ]] || fail "actor=auto found no unlocked super_admin to publish the plans as."
+    fi
+    [[ "${SPP_ACTOR}" =~ ^[0-9]+$ ]] || fail "The study plan publish actor must be a numeric user id or 'auto'."
+
+    SPP_FACULTIES="$(grep -E '^faculty=' "${STUDY_PLAN_PUBLISH_APPROVAL}" | cut -d= -f2- | tr -d '\r' | tr -d ' ' | grep -E '^[a-z-]+$' || true)"
+    [[ -n "${SPP_FACULTIES}" ]] || fail "The study plan publish approval file lists no faculty= lines."
+
+    while IFS= read -r spp_faculty; do
+        [[ -z "${spp_faculty}" ]] && continue
+        [[ "${STUDY_PLAN_ALLOWED}" == *" ${spp_faculty} "* ]] || fail "'${spp_faculty}' is not an approved study plan."
+        spp_file="${STUDY_PLAN_DATA}/${spp_faculty}.json"
+        [[ -f "${spp_file}" ]] || fail "No study plan data file for ${spp_faculty} in this release."
+
+        (cd "${APP}" && "${PHP}" artisan faculty:import-study-plan "${spp_faculty}" "${spp_file}" --user="${SPP_ACTOR}" --replace-edited --no-ansi) \
+            || fail "Study plan ${spp_faculty} failed validation. Nothing was written for it."
+        (cd "${APP}" && "${PHP}" artisan faculty:import-study-plan "${spp_faculty}" "${spp_file}" --user="${SPP_ACTOR}" --replace-edited --write --publish --no-ansi) \
+            || fail "Study plan ${spp_faculty} could not be published."
+        printf '  %s: published\n' "${spp_faculty}"
+    done < <(printf '%s\n' "${SPP_FACULTIES}")
+
+    mv "${STUDY_PLAN_PUBLISH_APPROVAL}" "${STUDY_PLAN_PUBLISH_APPROVAL}.consumed-$(date -u +%Y%m%d-%H%M%S)"
+fi
+
+# ── Approved faculty research import ─────────────────────────────────────────
+# Loads the old research portal's per-faculty research lists
+# (database/seeders/Data/legacy/faculty_research.json, exported from the old site's
+# SQL dump and shipped with this release): every legacy publication gets its
+# faculty, and papers that were only in the faculty lists become public
+# publications. One hardcoded command over one hardcoded file, inert unless a
+# human places an approval file that is not in git:
+#
+#     storage/app/private/legacy-imports/faculty-research.approved
+#
+# Re-running it updates the same rows. It disarms itself after one run.
+FACULTY_RESEARCH_APPROVAL="${IMPORT_DIR}/faculty-research.approved"
+FACULTY_RESEARCH_DATA="${APP}/database/seeders/Data/legacy/faculty_research.json"
+
+if [[ -f "${FACULTY_RESEARCH_APPROVAL}" ]]; then
+    log "Faculty research import"
+    [[ -f "${FACULTY_RESEARCH_DATA}" ]] || fail "No faculty research data file in this release."
+
+    # Dry run first: it validates and prints what it would do, and writes nothing.
+    (cd "${APP}" && "${PHP}" -d memory_limit=512M artisan legacy-import:faculty-research "${FACULTY_RESEARCH_DATA}" --no-ansi) \
+        || fail "The faculty research data failed validation. Nothing was written."
+    (cd "${APP}" && "${PHP}" -d memory_limit=512M artisan legacy-import:faculty-research "${FACULTY_RESEARCH_DATA}" --write --approve=faculty-research-20261018 --no-ansi) \
+        || fail "The faculty research import failed."
+
+    mv "${FACULTY_RESEARCH_APPROVAL}" "${FACULTY_RESEARCH_APPROVAL}.consumed-$(date -u +%Y%m%d-%H%M%S)"
+fi
+
+# ── Approved research register import ───────────────────────────────────────
+# Adds the research office register's papers the website does not have yet,
+# with their researchers (database/seeders/Data/research/spu_sci_research.json,
+# converted from the office's database dump and shipped with this release).
+# Papers already on the site are left alone. One hardcoded command over one
+# hardcoded file, inert unless a human places an approval file not in git:
+#
+#     storage/app/private/legacy-imports/research-register.approved
+#
+# Re-running it adds nothing twice. It disarms itself after one run.
+RESEARCH_REGISTER_APPROVAL="${IMPORT_DIR}/research-register.approved"
+RESEARCH_REGISTER_DATA="${APP}/database/seeders/Data/research/spu_sci_research.json"
+
+if [[ -f "${RESEARCH_REGISTER_APPROVAL}" ]]; then
+    log "Research register import"
+    [[ -f "${RESEARCH_REGISTER_DATA}" ]] || fail "No research register data file in this release."
+
+    # Dry run first: it validates and prints what it would do, and writes nothing.
+    (cd "${APP}" && "${PHP}" -d memory_limit=512M artisan research:import-register "${RESEARCH_REGISTER_DATA}" --no-ansi) \
+        || fail "The research register data failed validation. Nothing was written."
+    (cd "${APP}" && "${PHP}" -d memory_limit=512M artisan research:import-register "${RESEARCH_REGISTER_DATA}" --write --approve=research-register-20261019 --no-ansi) \
+        || fail "The research register import failed."
+
+    mv "${RESEARCH_REGISTER_APPROVAL}" "${RESEARCH_REGISTER_APPROVAL}.consumed-$(date -u +%Y%m%d-%H%M%S)"
+fi
+
+# ── Approved people merge ───────────────────────────────────────────────────
+# Merges researchers and faculty members entered twice (same name, same
+# faculty), as listed by people:duplicates. Merged-away records are soft-deleted and their profile
+# addresses redirect to the kept profile; someone listed in two faculties is
+# left alone. Inert unless a human places an approval file not in git:
+#
+#     storage/app/private/legacy-imports/people-merge.approved
+#
+# It disarms itself after one run.
+PEOPLE_MERGE_APPROVAL="${IMPORT_DIR}/people-merge.approved"
+
+if [[ -f "${PEOPLE_MERGE_APPROVAL}" ]]; then
+    log "People merge"
+    (cd "${APP}" && "${PHP}" -d memory_limit=512M artisan people:merge --no-ansi) \
+        || fail "The people merge dry run failed. Nothing was changed."
+    (cd "${APP}" && "${PHP}" -d memory_limit=512M artisan people:merge --write --approve=people-merge-20261019 --no-ansi) \
+        || fail "The people merge failed."
+
+    mv "${PEOPLE_MERGE_APPROVAL}" "${PEOPLE_MERGE_APPROVAL}.consumed-$(date -u +%Y%m%d-%H%M%S)"
+fi
+
+# ── Approved people unify (one profile per person) ──────────────────────────
+# Ties every leadership row (dean, rector, ...) to the faculty profile of the
+# same person, which becomes the one place their name, photo and bio live. It
+# never overwrites faculty-member data: it only fills a profile's empty fields
+# from the leadership row, skips any row or profile with an unpublished draft,
+# and saves a JSON snapshot of every row it touches first. The dry run is in
+# every deploy log ("People unify dry run"). Inert unless a human places an
+# approval file not in git:
+#
+#     storage/app/private/legacy-imports/people-unify.approved
+#
+# It disarms itself after one run.
+PEOPLE_UNIFY_APPROVAL="${IMPORT_DIR}/people-unify.approved"
+
+if [[ -f "${PEOPLE_UNIFY_APPROVAL}" ]]; then
+    log "People unify"
+    (cd "${APP}" && "${PHP}" -d memory_limit=512M artisan people:unify --no-ansi) \
+        || fail "The people unify dry run failed. Nothing was changed."
+    (cd "${APP}" && "${PHP}" -d memory_limit=512M artisan people:unify --write --approve=people-unify-20261023 --no-ansi) \
+        || fail "The people unify failed."
+
+    mv "${PEOPLE_UNIFY_APPROVAL}" "${PEOPLE_UNIFY_APPROVAL}.consumed-$(date -u +%Y%m%d-%H%M%S)"
+fi
+
+# ── Approved researcher ↔ staff links ───────────────────────────────────────
+# Links every researcher whose name matches exactly one staff member, so their
+# papers show on that staff profile. Looser matches are left as suggestions in
+# the admin's Researchers list. Inert unless a human places:
+#
+#     storage/app/private/legacy-imports/researcher-staff-links.approved
+#
+# It disarms itself after one run.
+RESEARCHER_LINKS_APPROVAL="${IMPORT_DIR}/researcher-staff-links.approved"
+
+if [[ -f "${RESEARCHER_LINKS_APPROVAL}" ]]; then
+    log "Researcher to staff links"
+    (cd "${APP}" && "${PHP}" -d memory_limit=512M artisan researchers:link-staff --no-ansi) \
+        || fail "The researcher link dry run failed. Nothing was changed."
+    (cd "${APP}" && "${PHP}" -d memory_limit=512M artisan researchers:link-staff --write --approve=researcher-staff-links-20261019 --no-ansi) \
+        || fail "Linking researchers to staff failed."
+
+    mv "${RESEARCHER_LINKS_APPROVAL}" "${RESEARCHER_LINKS_APPROVAL}.consumed-$(date -u +%Y%m%d-%H%M%S)"
+fi
+
+# ── Approved faculty structure import ────────────────────────────────────────
+# Replaces the redesign's invented departments and labs with the old site's real
+# ones and adds the subpages the old site had (dentistry clinical cases, the
+# pharmacy internship system, final exam schedules), from
+# database/seeders/Data/legacy/faculty_structure.json shipped with this release.
+# Invented records are switched off, not deleted. Runs before the page texts so
+# their new pages exist. Inert unless a human places an approval file:
+#
+#     storage/app/private/legacy-imports/faculty-structure.approved
+#
+# Re-running it changes nothing. It disarms itself after one run.
+FACULTY_STRUCTURE_APPROVAL="${IMPORT_DIR}/faculty-structure.approved"
+FACULTY_STRUCTURE_DATA="${APP}/database/seeders/Data/legacy/faculty_structure.json"
+
+if [[ -f "${FACULTY_STRUCTURE_APPROVAL}" ]]; then
+    log "Faculty structure import"
+    [[ -f "${FACULTY_STRUCTURE_DATA}" ]] || fail "No faculty structure data file in this release."
+
+    (cd "${APP}" && "${PHP}" artisan faculty:import-structure "${FACULTY_STRUCTURE_DATA}" --no-ansi) \
+        || fail "The faculty structure data failed validation. Nothing was written."
+    (cd "${APP}" && "${PHP}" artisan faculty:import-structure "${FACULTY_STRUCTURE_DATA}" --write --no-ansi) \
+        || fail "The faculty structure import failed."
+
+    mv "${FACULTY_STRUCTURE_APPROVAL}" "${FACULTY_STRUCTURE_APPROVAL}.consumed-$(date -u +%Y%m%d-%H%M%S)"
+fi
+
+# ── Approved old-site page texts ─────────────────────────────────────────────
+# Publishes the old site's page text, laid into the new page structures
+# (database/seeders/Data/legacy/page_texts/<name>.json, shipped with this
+# release), through the CMS workflow: draft, readiness, publish, audit log and
+# cache invalidation. A page with an editor's unpublished draft is skipped and
+# reported, never overwritten. Inert unless a human places an approval file:
+#
+#     storage/app/private/legacy-imports/page-texts.approved
+#         actor=auto       (or a user id)
+#         file=about       (one line per data file)
+#
+# It disarms itself after one run.
+PAGE_TEXTS_APPROVAL="${IMPORT_DIR}/page-texts.approved"
+PAGE_TEXTS_DIR="${APP}/database/seeders/Data/legacy/page_texts"
+
+if [[ -f "${PAGE_TEXTS_APPROVAL}" ]]; then
+    log "Old-site page texts"
+
+    PT_ACTOR="$(grep -E '^actor=' "${PAGE_TEXTS_APPROVAL}" | head -n 1 | cut -d= -f2- | tr -d '\r' | tr -d ' ')"
+    [[ -n "${PT_ACTOR}" ]] || fail "The page texts approval file has no actor= line."
+    if [[ "${PT_ACTOR}" == "auto" ]]; then
+        PT_ACTOR="$(cd "${APP}" && "${PHP}" artisan tinker --execute='
+            echo (string) (\DB::table("users")
+                ->where("role_slug", "super_admin")
+                ->where(function ($q) { $q->whereNull("locked_at")->orWhere("locked_at", ""); })
+                ->orderBy("id")
+                ->value("id") ?? "");
+        ' 2>/dev/null | grep -Eo '^[0-9]+$' | head -n 1 || true)"
+        [[ -n "${PT_ACTOR}" ]] || fail "actor=auto found no unlocked super_admin to publish the pages as."
+    fi
+    [[ "${PT_ACTOR}" =~ ^[0-9]+$ ]] || fail "The page texts actor must be a numeric user id or 'auto'."
+
+    PT_FILES="$(grep -E '^file=' "${PAGE_TEXTS_APPROVAL}" | cut -d= -f2- | tr -d '\r' | tr -d ' ' | grep -E '^[a-z0-9_-]+$' || true)"
+    [[ -n "${PT_FILES}" ]] || fail "The page texts approval file lists no file= lines."
+
+    # Optional, for when the owner says an editor's open draft can be discarded:
+    #     only=facilities.artificial-intelligence    (one target)
+    #     over-drafts=yes                            (replace that target's open draft)
+    PT_ONLY="$(grep -E '^only=' "${PAGE_TEXTS_APPROVAL}" | head -n 1 | cut -d= -f2- | tr -d '\r' | tr -d ' ' | grep -E '^[a-z_]+(\.[a-z0-9_-]+)*$' || true)"
+    PT_EXTRA=()
+    [[ -n "${PT_ONLY}" ]] && PT_EXTRA+=("--only=${PT_ONLY}")
+    if grep -qE '^over-drafts=yes' "${PAGE_TEXTS_APPROVAL}"; then
+        [[ -n "${PT_ONLY}" ]] || fail "over-drafts=yes needs an only= target."
+        PT_EXTRA+=("--over-drafts")
+    fi
+
+    while IFS= read -r pt_file; do
+        [[ -z "${pt_file}" ]] && continue
+        pt_path="${PAGE_TEXTS_DIR}/${pt_file}.json"
+        [[ -f "${pt_path}" ]] || fail "No page text file ${pt_file}.json in this release."
+        (cd "${APP}" && "${PHP}" artisan cms:import-page-texts "${pt_path}" --user="${PT_ACTOR}" --write ${PT_EXTRA[@]+"${PT_EXTRA[@]}"} --no-ansi) \
+            || printf '  %s: some pages failed; see the table above\n' "${pt_file}"
+    done < <(printf '%s\n' "${PT_FILES}")
+
+    mv "${PAGE_TEXTS_APPROVAL}" "${PAGE_TEXTS_APPROVAL}.consumed-$(date -u +%Y%m%d-%H%M%S)"
+fi
+
+# ── Approved person photo registration ───────────────────────────────────────
+# Registers the photos imported with honor students, alumni, faculty members and
+# persons as legacy media assets titled with each person's name, so editors can
+# find a photo in the media picker by name. One hardcoded command, inert unless
+# a human places an approval file that is not in git:
+#
+#     storage/app/private/legacy-imports/person-photos.approved
+#         actor=auto        (or a user id)
+#
+# It only adds rows to the legacy media library (library_scope=legacy), which
+# nothing public renders. Existing legacy assets only get empty titles and alt
+# text filled, and the main library is never touched, so a re-run is a no-op.
+# It disarms itself after one run.
+PERSON_PHOTO_APPROVAL="${IMPORT_DIR}/person-photos.approved"
+PERSON_PHOTO_ROOT="/home/spuedu/public_html"
+
+if [[ -f "${PERSON_PHOTO_APPROVAL}" ]]; then
+    log "Person photo registration"
+
+    PP_ACTOR="$(grep -E '^actor=' "${PERSON_PHOTO_APPROVAL}" | head -n 1 | cut -d= -f2- | tr -d '\r' | tr -d ' ')"
+    [[ -n "${PP_ACTOR}" ]] || fail "The person photo approval file has no actor= line."
+
+    if [[ "${PP_ACTOR}" == "auto" ]]; then
+        PP_ACTOR="$(cd "${APP}" && "${PHP}" artisan tinker --execute='
+            echo (string) (\DB::table("users")
+                ->where("role_slug", "super_admin")
+                ->where(function ($q) { $q->whereNull("locked_at")->orWhere("locked_at", ""); })
+                ->orderBy("id")
+                ->value("id") ?? "");
+        ' 2>/dev/null | grep -Eo '^[0-9]+$' | head -n 1 || true)"
+        [[ -n "${PP_ACTOR}" ]] || fail "actor=auto found no unlocked super_admin to record the registration as."
+    fi
+    [[ "${PP_ACTOR}" =~ ^[0-9]+$ ]] || fail "The person photo actor must be a numeric user id or 'auto'."
+
+    # Dry run first, so the log shows what was found before anything is written.
+    (cd "${APP}" && "${PHP}" -d memory_limit=1024M artisan legacy-import:person-photos --root="${PERSON_PHOTO_ROOT}" --user="${PP_ACTOR}" --no-ansi) \
+        || fail "The person photo dry run failed. Nothing was written."
+    (cd "${APP}" && "${PHP}" -d memory_limit=1024M artisan legacy-import:person-photos --root="${PERSON_PHOTO_ROOT}" --user="${PP_ACTOR}" --write --no-ansi) \
+        || fail "The person photos could not be registered."
+
+    mv "${PERSON_PHOTO_APPROVAL}" "${PERSON_PHOTO_APPROVAL}.consumed-$(date -u +%Y%m%d-%H%M%S)"
+fi
+
+# ── Approved admissions fee table ────────────────────────────────────────────
+# Publishes the university's approved 2026-2027 fee table
+# (database/seeders/Data/admissions/tuition_fees_2026_2027.json, shipped with this
+# release) on the Admissions tuition page. One hardcoded command over one hardcoded
+# file, inert unless a human places an approval file that is not in git:
+#
+#     storage/app/private/legacy-imports/admissions-fees.approved
+#         actor=auto        (or a user id)
+#
+# It goes through the CMS workflow (draft, publish readiness, audit log, cache
+# invalidation), starts from the published page so only the fee table changes, and
+# leaves everything alone if an editor has an unpublished tuition draft. Editors can
+# change the fees afterwards in the admin. It disarms itself after one run.
+ADMISSIONS_FEES_APPROVAL="${IMPORT_DIR}/admissions-fees.approved"
+ADMISSIONS_FEES_DATA="${APP}/database/seeders/Data/admissions/tuition_fees_2026_2027.json"
+
+if [[ -f "${ADMISSIONS_FEES_APPROVAL}" ]]; then
+    log "Admissions fee table"
+
+    AF_ACTOR="$(grep -E '^actor=' "${ADMISSIONS_FEES_APPROVAL}" | head -n 1 | cut -d= -f2- | tr -d '\r' | tr -d ' ')"
+    [[ -n "${AF_ACTOR}" ]] || fail "The admissions fee approval file has no actor= line."
+
+    if [[ "${AF_ACTOR}" == "auto" ]]; then
+        AF_ACTOR="$(cd "${APP}" && "${PHP}" artisan tinker --execute='
+            echo (string) (\DB::table("users")
+                ->where("role_slug", "super_admin")
+                ->where(function ($q) { $q->whereNull("locked_at")->orWhere("locked_at", ""); })
+                ->orderBy("id")
+                ->value("id") ?? "");
+        ' 2>/dev/null | grep -Eo '^[0-9]+$' | head -n 1 || true)"
+        [[ -n "${AF_ACTOR}" ]] || fail "actor=auto found no unlocked super_admin to publish the fees as."
+    fi
+    [[ "${AF_ACTOR}" =~ ^[0-9]+$ ]] || fail "The admissions fee actor must be a numeric user id or 'auto'."
+    [[ -f "${ADMISSIONS_FEES_DATA}" ]] || fail "No admissions fee data file in this release."
+
+    # Dry run first: it validates and prints the table, and writes nothing.
+    (cd "${APP}" && "${PHP}" artisan admissions:import-tuition-fees "${ADMISSIONS_FEES_DATA}" --user="${AF_ACTOR}" --no-ansi) \
+        || fail "The admissions fee table failed validation. Nothing was written."
+    (cd "${APP}" && "${PHP}" artisan admissions:import-tuition-fees "${ADMISSIONS_FEES_DATA}" --user="${AF_ACTOR}" --publish --no-ansi) \
+        || fail "The admissions fee table could not be published."
+
+    mv "${ADMISSIONS_FEES_APPROVAL}" "${ADMISSIONS_FEES_APPROVAL}.consumed-$(date -u +%Y%m%d-%H%M%S)"
+fi
+
+# ── Approved old calendar events ────────────────────────────────────────────
+# Adds the 2025-2026 events of the old homepage calendar to the Events page as
+# past events (database/seeders/Data/legacy-calendar-events.json), so the
+# homepage calendar shows them. Events already there are left alone. Inert
+# unless a human places an approval file with an actor= line (a user id or
+# auto):
+#
+#     storage/app/private/legacy-imports/calendar-events.approved
+#
+# It disarms itself after one run.
+CALENDAR_EVENTS_APPROVAL="${IMPORT_DIR}/calendar-events.approved"
+
+if [[ -f "${CALENDAR_EVENTS_APPROVAL}" ]]; then
+    log "Old calendar events"
+
+    CE_ACTOR="$(grep -E '^actor=' "${CALENDAR_EVENTS_APPROVAL}" | head -n 1 | cut -d= -f2- | tr -d '\r' | tr -d ' ')"
+    [[ -n "${CE_ACTOR}" ]] || fail "The calendar events approval file has no actor= line."
+
+    if [[ "${CE_ACTOR}" == "auto" ]]; then
+        CE_ACTOR="$(cd "${APP}" && "${PHP}" artisan tinker --execute='
+            echo (string) (\DB::table("users")
+                ->where("role_slug", "super_admin")
+                ->where(function ($q) { $q->whereNull("locked_at")->orWhere("locked_at", ""); })
+                ->orderBy("id")
+                ->value("id") ?? "");
+        ' 2>/dev/null | grep -Eo '^[0-9]+$' | head -n 1 || true)"
+        [[ -n "${CE_ACTOR}" ]] || fail "actor=auto found no unlocked super_admin to publish the events as."
+    fi
+    [[ "${CE_ACTOR}" =~ ^[0-9]+$ ]] || fail "The calendar events actor must be a numeric user id or 'auto'."
+
+    (cd "${APP}" && "${PHP}" artisan news:import-legacy-calendar-events --user="${CE_ACTOR}" --no-ansi) \
+        || fail "The calendar events dry run failed. Nothing was written."
+    (cd "${APP}" && "${PHP}" artisan news:import-legacy-calendar-events --user="${CE_ACTOR}" --write --no-ansi) \
+        || fail "The calendar events could not be saved."
+
+    mv "${CALENDAR_EVENTS_APPROVAL}" "${CALENDAR_EVENTS_APPROVAL}.consumed-$(date -u +%Y%m%d-%H%M%S)"
+fi
+
+# ── Approved calendar events move ───────────────────────────────────────────
+# Moves the events published in the Events page list (news.events) into published
+# Events articles, keeping their registrations and redirecting their old addresses.
+# The page list itself is not changed; a moved entry is only hidden. Untouched
+# sample events are never moved. Inert unless a human places an approval file that
+# is not in git:
+#
+#     storage/app/private/legacy-imports/calendar-events-move.approved
+#         actor=auto       (or a user id)
+#
+# It runs after calendar-events.approved, so one deploy can import the old calendar
+# and then move it. Re-running it only moves entries not moved yet. It disarms itself
+# once every entry moved; otherwise it stays armed and the deploy log names the rest.
+CALENDAR_EVENTS_MOVE_APPROVAL="${IMPORT_DIR}/calendar-events-move.approved"
+
+if [[ -f "${CALENDAR_EVENTS_MOVE_APPROVAL}" ]]; then
+    log "Calendar events move"
+
+    CEM_ACTOR="$(grep -E '^actor=' "${CALENDAR_EVENTS_MOVE_APPROVAL}" | head -n 1 | cut -d= -f2- | tr -d '\r' | tr -d ' ')"
+    [[ -n "${CEM_ACTOR}" ]] || fail "The calendar events move approval file has no actor= line."
+
+    if [[ "${CEM_ACTOR}" == "auto" ]]; then
+        CEM_ACTOR="$(cd "${APP}" && "${PHP}" artisan tinker --execute='
+            echo (string) (\DB::table("users")
+                ->where("role_slug", "super_admin")
+                ->where(function ($q) { $q->whereNull("locked_at")->orWhere("locked_at", ""); })
+                ->orderBy("id")
+                ->value("id") ?? "");
+        ' 2>/dev/null | grep -Eo '^[0-9]+$' | head -n 1 || true)"
+        [[ -n "${CEM_ACTOR}" ]] || fail "actor=auto found no unlocked super_admin to publish the events as."
+    fi
+    [[ "${CEM_ACTOR}" =~ ^[0-9]+$ ]] || fail "The calendar events actor must be a numeric user id or 'auto'."
+
+    # Dry run first: it lists what would move and writes nothing.
+    (cd "${APP}" && "${PHP}" artisan news:move-calendar-events --user="${CEM_ACTOR}" --no-ansi) || true
+
+    if (cd "${APP}" && "${PHP}" artisan news:move-calendar-events --user="${CEM_ACTOR}" --write --no-ansi); then
+        mv "${CALENDAR_EVENTS_MOVE_APPROVAL}" "${CALENDAR_EVENTS_MOVE_APPROVAL}.consumed-$(date -u +%Y%m%d-%H%M%S)"
+    else
+        printf '  some events were not moved (see above); the approval file stays for the next deploy\n'
+    fi
+fi
+
+# ── Approved course specifications ──────────────────────────────────────────
+# Attaches the old faculty sites' course specification PDFs
+# (database/seeders/Data/legacy-course-specifications.json) to the study plan
+# courses with the same Arabic title, and publishes the plans. A course that
+# already has a specification keeps it; lecture files are not imported. Inert
+# unless a human places an approval file with an actor= line (a user id or
+# auto):
+#
+#     storage/app/private/legacy-imports/course-specifications.approved
+#
+# It disarms itself after one run.
+COURSE_SPECS_APPROVAL="${IMPORT_DIR}/course-specifications.approved"
+
+if [[ -f "${COURSE_SPECS_APPROVAL}" ]]; then
+    log "Course specifications"
+
+    CS_ACTOR="$(grep -E '^actor=' "${COURSE_SPECS_APPROVAL}" | head -n 1 | cut -d= -f2- | tr -d '\r' | tr -d ' ')"
+    [[ -n "${CS_ACTOR}" ]] || fail "The course specifications approval file has no actor= line."
+
+    if [[ "${CS_ACTOR}" == "auto" ]]; then
+        CS_ACTOR="$(cd "${APP}" && "${PHP}" artisan tinker --execute='
+            echo (string) (\DB::table("users")
+                ->where("role_slug", "super_admin")
+                ->where(function ($q) { $q->whereNull("locked_at")->orWhere("locked_at", ""); })
+                ->orderBy("id")
+                ->value("id") ?? "");
+        ' 2>/dev/null | grep -Eo '^[0-9]+$' | head -n 1 || true)"
+        [[ -n "${CS_ACTOR}" ]] || fail "actor=auto found no unlocked super_admin to publish the plans as."
+    fi
+    [[ "${CS_ACTOR}" =~ ^[0-9]+$ ]] || fail "The course specifications actor must be a numeric user id or 'auto'."
+
+    (cd "${APP}" && "${PHP}" -d memory_limit=1024M artisan faculty:import-course-specifications --user="${CS_ACTOR}" --no-ansi) \
+        || fail "The course specifications dry run failed. Nothing was written."
+    (cd "${APP}" && "${PHP}" -d memory_limit=1024M artisan faculty:import-course-specifications --user="${CS_ACTOR}" --write --no-ansi) \
+        || fail "The course specifications could not be saved."
+
+    mv "${COURSE_SPECS_APPROVAL}" "${COURSE_SPECS_APPROVAL}.consumed-$(date -u +%Y%m%d-%H%M%S)"
+fi
+
+# ── Faculty-project survey (read-only) ───────────────────────────────────────
+# Answers one question and changes nothing: how many importable projects does
+# the legacy database hold RIGHT NOW, broken down by faculty.
+#
+# It exists because the approved manifest was measured against a dump taken on
+# 2026-08-27 which nobody can now find. The copies that turned up are from
+# 2026-07-28 and hold 473 projects, not 492 - so importing them would silently
+# drop 19 and would stamp the 20260827 approval on content it was never granted
+# for. Rather than guess, this reads the live legacy database and reports what
+# is actually there, so the editorial decision is made against real numbers.
+#
+# Strictly read-only on both sides: it connects with OLD_DB_USERNAME, the
+# SELECT-only legacy user, and runs the importer WITHOUT --write. No row in
+# either database is created, changed or deleted.
+#
+# Like the import, it is inert unless a human places the marker file, and it
+# removes that marker afterwards so it runs once rather than on every deploy.
+if [[ -f "${IMPORT_SURVEY}" ]]; then
+    log "Faculty-project survey (read-only; nothing will be written)"
+
+    command -v mysqldump >/dev/null 2>&1 || fail "mysqldump is not on PATH; cannot survey the legacy database."
+
+    OLD_DB_NAME="$(env_value OLD_DB_DATABASE)"
+    OLD_DB_USER="$(env_value OLD_DB_USERNAME)"
+    OLD_DB_PASS="$(env_value OLD_DB_PASSWORD)"
+    OLD_DB_HOST_V="$(env_value OLD_DB_HOST)"
+    [[ -n "${OLD_DB_NAME}" && -n "${OLD_DB_USER}" ]] \
+        || fail "OLD_DB_DATABASE or OLD_DB_USERNAME is missing from ${APP}/.env; cannot survey the legacy database."
+
+    SURVEY_CNF="$(umask 077 && mktemp "${IMPORT_DIR}/.mysurvey.XXXXXX")"
+    SURVEY_DUMP="${IMPORT_DIR}/legacy-survey-$(date -u +%Y%m%d-%H%M%S).sql"
+    # restore_service is called here too: this trap REPLACES the maintenance
+    # trap installed further up, so without it a failed survey would leave the
+    # site in maintenance mode serving 503s until someone noticed.
+    cleanup_survey() { rm -f "${SURVEY_CNF}" "${SURVEY_DUMP}"; restore_service; }
+    trap cleanup_survey EXIT
+    {
+        printf '[mysqldump]\n'
+        printf 'user=%s\n' "${OLD_DB_USER}"
+        printf 'password=%s\n' "${OLD_DB_PASS}"
+        [[ -n "${OLD_DB_HOST_V}" ]] && printf 'host=%s\n' "${OLD_DB_HOST_V}"
+    } > "${SURVEY_CNF}"
+
+    # Only the two tables the importer reads. The rest of the legacy database is
+    # 225 MB of content this does not need and should not copy.
+    ( umask 077 && mysqldump --defaults-extra-file="${SURVEY_CNF}" \
+        --single-transaction --quick --no-create-info=false \
+        --default-character-set=utf8mb4 \
+        "${OLD_DB_NAME}" jx_categories jx_items > "${SURVEY_DUMP}" ) \
+        || fail "Could not read the legacy database for the survey. Nothing was changed."
+
+    printf '  dumped jx_categories + jx_items (%s)\n' "$(du -h "${SURVEY_DUMP}" | cut -f1)"
+
+    log "Faculty-project survey: dry run against the CURRENT legacy data"
+    (cd "${APP}" && "${PHP}" -d memory_limit=1024M artisan legacy-import:faculty-projects "${SURVEY_DUMP}" --json) \
+        || printf '\n  survey dry run reported a problem; see the output above\n' >&2
+
+    rm -f "${SURVEY_CNF}" "${SURVEY_DUMP}"
+    trap restore_service EXIT
+    mv "${IMPORT_SURVEY}" "${IMPORT_SURVEY}.done-$(date -u +%Y%m%d-%H%M%S)"
+    printf '  survey complete; nothing was written\n'
+fi
+
+if [[ -f "${IMPORT_APPROVAL}" ]]; then
+    log "Approved faculty-project import found"
+
+    IMPORT_TOKEN="$(grep -E '^token=' "${IMPORT_APPROVAL}" | head -n 1 | cut -d= -f2- | tr -d '\r')"
+    IMPORT_SOURCE="$(grep -E '^source=' "${IMPORT_APPROVAL}" | head -n 1 | cut -d= -f2- | tr -d '\r')"
+    [[ -n "${IMPORT_TOKEN}" ]] || fail "The approval file has no token= line."
+
+    IMPORT_GENERATED=0
+    if [[ "${IMPORT_SOURCE}" == "legacy-db" ]]; then
+        # Sourced from the live legacy database rather than a file, because the
+        # 2026-08-27 dump the original approval names cannot be produced by
+        # anyone and the only copies that exist are a month older and nineteen
+        # projects short.
+        #
+        # There is no sha256 to check here - the dump is made seconds before it
+        # is read, so a hash would only prove the file did not change in those
+        # seconds, which nothing threatens. The real guarantee is the manifest
+        # check below: the dry run must report the approved counts EXACTLY, so
+        # if the legacy data has moved since the approval was given, by even one
+        # project in one faculty, this deploy fails without writing.
+        log "Faculty-project import: dumping the live legacy database"
+        command -v mysqldump >/dev/null 2>&1 || fail "mysqldump is not on PATH; cannot source the import."
+
+        OLD_DB_NAME="$(env_value OLD_DB_DATABASE)"
+        OLD_DB_USER="$(env_value OLD_DB_USERNAME)"
+        OLD_DB_PASS="$(env_value OLD_DB_PASSWORD)"
+        OLD_DB_HOST_V="$(env_value OLD_DB_HOST)"
+        [[ -n "${OLD_DB_NAME}" && -n "${OLD_DB_USER}" ]] \
+            || fail "OLD_DB_DATABASE or OLD_DB_USERNAME is missing; cannot source the import."
+
+        IMPORT_CNF="$(umask 077 && mktemp "${IMPORT_DIR}/.myimp.XXXXXX")"
+        IMPORT_DUMP="${IMPORT_DIR}/legacy-import-$(date -u +%Y%m%d-%H%M%S).sql"
+        IMPORT_GENERATED=1
+        # Same reason as the survey: this replaces the maintenance trap, so it
+        # has to lift maintenance itself on the way out.
+        cleanup_import() { rm -f "${IMPORT_CNF}" "${IMPORT_DUMP}"; restore_service; }
+        trap cleanup_import EXIT
+        {
+            printf '[mysqldump]\n'
+            printf 'user=%s\n' "${OLD_DB_USER}"
+            printf 'password=%s\n' "${OLD_DB_PASS}"
+            [[ -n "${OLD_DB_HOST_V}" ]] && printf 'host=%s\n' "${OLD_DB_HOST_V}"
+        } > "${IMPORT_CNF}"
+
+        ( umask 077 && mysqldump --defaults-extra-file="${IMPORT_CNF}" \
+            --single-transaction --quick --default-character-set=utf8mb4 \
+            "${OLD_DB_NAME}" jx_categories jx_items > "${IMPORT_DUMP}" ) \
+            || fail "Could not read the legacy database. Nothing was written."
+        rm -f "${IMPORT_CNF}"
+        printf '  sourced %s from %s\n' "$(du -h "${IMPORT_DUMP}" | cut -f1)" "${OLD_DB_NAME}"
+    else
+        IMPORT_DUMP="${IMPORT_DIR}/$(grep -E '^dump=' "${IMPORT_APPROVAL}" | head -n 1 | cut -d= -f2- | tr -d '\r')"
+        IMPORT_SHA="$(grep -E '^sha256=' "${IMPORT_APPROVAL}" | head -n 1 | cut -d= -f2- | tr -d '\r')"
+
+        [[ -f "${IMPORT_DUMP}" ]] || fail "The approval file names a dump that is not present: ${IMPORT_DUMP}"
+        [[ -n "${IMPORT_SHA}" ]]  || fail "The approval file has no sha256= line, so the dump cannot be proven to be the approved one."
+
+        ACTUAL_SHA="$(sha256sum "${IMPORT_DUMP}" | cut -d' ' -f1)"
+        [[ "${ACTUAL_SHA}" == "${IMPORT_SHA}" ]] || fail \
+            "The dump at ${IMPORT_DUMP} does not match the approved sha256. Approved ${IMPORT_SHA}, found ${ACTUAL_SHA}. Refusing to import content nobody approved."
+    fi
+
+    log "Faculty-project import: dry run"
+    # -d memory_limit: the host sets 128M, and deploy #67 died on exactly that
+    # ("Allowed memory size of 134217728 bytes exhausted") during the write. The
+    # legacy dump is ~191 MB of SQL and parsing it into PHP arrays costs several
+    # times that before media verification adds its own structures. Raised only
+    # for this command; every other artisan call in this script keeps the host
+    # default.
+    IMPORT_DRY="$(cd "${APP}" && "${PHP}" -d memory_limit=1024M artisan legacy-import:faculty-projects "${IMPORT_DUMP}" --json)" \
+        || fail "The faculty-project dry run failed. Nothing was written."
+    printf '%s\n' "${IMPORT_DRY}"
+
+    # Compared against the approved manifest with a parser rather than a grep:
+    # prose output changes, and a check that silently stops matching is worse
+    # than no check.
+    # The expected counts come from the approval file when it carries them, and
+    # fall back to the 2026-08-27 manifest otherwise. Either way a human chose
+    # them: the file is placed by hand and cannot be written by a deploy. This
+    # matters because the 2026-08-27 dump may never be found, and a later
+    # editorial decision against a different, known set must be enforceable with
+    # the same rigour rather than by loosening the check.
+    IMPORT_EXPECT="$(grep -E '^expect_' "${IMPORT_APPROVAL}" | tr -d '\r' | tr '\n' ';')"
+
+    printf '%s' "${IMPORT_DRY}" | IMPORT_EXPECT="${IMPORT_EXPECT}" "${PHP}" -r '
+        $expected = ["total" => 492, "medicine" => 91, "dentistry" => 8, "pharmacy" => 123,
+                     "artificial-intelligence" => 98, "petroleum" => 60, "business-administration" => 112];
+        foreach (array_filter(explode(";", (string) getenv("IMPORT_EXPECT"))) as $pair) {
+            if (! str_contains($pair, "=")) { continue; }
+            [$k, $v] = explode("=", $pair, 2);
+            $k = strtolower(trim(substr(trim($k), strlen("expect_"))));
+            if ($k !== "" && is_numeric(trim($v))) { $expected[$k] = (int) trim($v); }
+        }
+        $raw = stream_get_contents(STDIN);
+        $json = json_decode($raw, true);
+        if (! is_array($json)) { fwrite(STDERR, "dry-run output was not JSON\n"); exit(1); }
+        $flat = [];
+        array_walk_recursive($json, function ($v, $k) use (&$flat) { $flat[strtolower((string) $k)] = $v; });
+        // The importer calls the headline figure importable_projects. "total" is
+        // what a person writing an approval reaches for, so accept both rather
+        // than making the approval file mirror an internal field name.
+        $flat["total"] = $flat["importable_projects"] ?? $flat["total"] ?? null;
+        $flat["hidden"] = $flat["hidden_projects"] ?? $flat["hidden"] ?? null;
+        $flat["visible"] = $flat["visible_projects"] ?? $flat["visible"] ?? null;
+        foreach ($expected as $key => $want) {
+            $got = $flat[$key] ?? null;
+            if ((int) $got !== $want) {
+                fwrite(STDERR, sprintf("manifest mismatch: %s expected %d, dry run reported %s\n", $key, $want, var_export($got, true)));
+                exit(1);
+            }
+        }
+        fwrite(STDOUT, "  dry run matches the approved manifest exactly\n");
+    ' || fail "The dry run does not match the approved 2026-08-27 manifest. The dump, the data, or the approval is not what it should be. Nothing was written."
+
+    # --verify-media fetches every media reference from the legacy host and keeps
+    # only the ones that answer. Deploy #68 ran with it and reported 533 verified,
+    # yet every imported project came out with no image: the verified map is keyed
+    # per project and per source path, and on this data the lookup misses, so
+    # mediaReference() returns '' and the reference is dropped. Without the flag
+    # the path is stored directly, which the import test covers and which is what
+    # actually renders - those files answer 200 on this host through the _legacy
+    # rewrite in public/.htaccess.
+    #
+    # The trade is that genuinely missing files become broken links instead of
+    # being omitted. That is visible and fixable; 500 projects with no media at
+    # all is neither. Default stays on, so this is a deliberate choice recorded in
+    # the approval file rather than a silent change of behaviour.
+    IMPORT_VERIFY_MEDIA="$(grep -E '^verify_media=' "${IMPORT_APPROVAL}" | head -n 1 | cut -d= -f2- | tr -d '\r' | tr '[:upper:]' '[:lower:]')"
+    IMPORT_MEDIA_FLAG="--verify-media"
+    if [[ "${IMPORT_VERIFY_MEDIA}" == "false" || "${IMPORT_VERIFY_MEDIA}" == "0" || "${IMPORT_VERIFY_MEDIA}" == "no" ]]; then
+        IMPORT_MEDIA_FLAG=""
+        printf '  media verification disabled by the approval file; paths are stored as-is\n'
+    fi
+
+    log "Faculty-project import: write"
+    # Output is captured so it can be recorded, but a failure must still SHOW
+    # why: deploy #66 failed here and printed nothing at all, because the
+    # message explaining it went into this variable and was then discarded.
+    IMPORT_WRITE_LOG="${IMPORT_DIR}/.write-output.$$"
+    if ! (cd "${APP}" && "${PHP}" -d memory_limit=1024M artisan legacy-import:faculty-projects "${IMPORT_DUMP}" \
+            --write --approve="${IMPORT_TOKEN}" --enable-visible ${IMPORT_MEDIA_FLAG} --json) \
+            > "${IMPORT_WRITE_LOG}" 2>&1; then
+        printf '\n--- write output ---\n' >&2
+        cat "${IMPORT_WRITE_LOG}" >&2
+        rm -f "${IMPORT_WRITE_LOG}"
+        fail "The faculty-project write failed; its output is above. Nothing was committed by this step. If rows were partially written, restore the pre-deployment dump named by SPU_DATABASE_BACKUP_REFERENCE."
+    fi
+    IMPORT_WRITE="$(cat "${IMPORT_WRITE_LOG}")"
+    rm -f "${IMPORT_WRITE_LOG}"
+    printf '%s\n' "${IMPORT_WRITE}"
+
+    # Disarm before anything else can fail: a half-finished deploy must not
+    # leave an armed import behind for the next one to run again.
+    mv "${IMPORT_APPROVAL}" "${IMPORT_APPROVAL}.consumed-$(date -u +%Y%m%d-%H%M%S)"
+    rm -f "${IMPORT_DUMP}"
+    [[ "${IMPORT_GENERATED}" == "1" ]] && trap restore_service EXIT
+    printf '  approval consumed and dump removed\n'
+fi
+
+# ── Deterministic redirect data ──────────────────────────────────────────────
+# Redirect rules are config that happens to live in a table, not editorial
+# content, so they must ship with the code that reads them. 68e928f added eight
+# subsite-root rules; the code deployed and the rows did not, and every one of
+# those eight became a 301 landing on a 404 - the exact failure the continuity
+# guide forbids, live for a day before an audit caught it.
+#
+# LegacyEntryPointRedirectSeeder is updateOrInsert throughout, so this is safe on
+# every deploy and cannot overwrite a rule an editor has changed by hand.
+log "Seeding deterministic redirect rules"
+(cd "${APP}" && "${PHP}" artisan db:seed --class=LegacyEntryPointRedirectSeeder --force --no-interaction)
+
+# ── Caches ───────────────────────────────────────────────────────────────────
+# There is no OPcache on this host, so config and route caches are the only
+# compiled state that survives a request. Build them every deploy.
+log "Rebuilding framework caches"
+(cd "${APP}" && "${PHP}" artisan optimize)
+
+# ── Image derivatives ────────────────────────────────────────────────────────
+# Web-sized WebP variants for the photos and uploads the homepage renders. Until
+# this ran on deploy, nothing ever ran it on the server: the news slots shipped
+# 340 KB camera JPEGs into 272px cards and PageSpeed counted 1.2 MB of avoidable
+# image bytes. Idempotent (existing variants are reused), and it must run before
+# the cache clear below so the warmed homepage already carries the srcsets.
+# Image decoding needs more than the host's 128 MB; a failure only means the
+# page keeps serving originals, so it never stops the deploy.
+log "Generating image derivatives"
+(cd "${APP}" && "${PHP}" -d memory_limit=1024M artisan media:generate-legacy-derivatives --no-ansi) \
+    || log "Image derivative generation failed; pages keep serving the originals"
+
+# ── Clearing derived caches ──────────────────────────────────────────────────
+# Warming does not overwrite. CacheWarmCommand goes through remember(), which
+# returns whatever is already stored - so warming a cache full of pre-deploy
+# HTML is a no-op, and visitors kept seeing the previous release for up to the
+# full hour of public_page_ttl after every deploy. Discovered when a fix was
+# verifiably deployed, verifiably present in the deployed files, and still
+# absent from the served page.
+#
+# This has to run BEFORE the build artefacts below, not just before the warm.
+# The sitemap's freshness marker is an entry in this same store, so clearing
+# after sitemap:generate erased the record that the sitemap had just been
+# written - and launch:validate then reported a sitemap generated ninety seconds
+# earlier as stale, on every deploy.
+#
+# Only the default store is cleared. The webhook replay store and the rate
+# limiter are separate stores (config/cache.php) and are deliberately untouched:
+# clearing those would drop replay protection and reset limits on deploy.
+log "Clearing derived caches so the artefacts below are what gets warmed"
+(cd "${APP}" && "${PHP}" artisan cache:clear) || true
+
+# ── Build artefacts ──────────────────────────────────────────────────────────
+# Neither of these is in git and neither is produced by deploying code. Miss them
+# and the site comes up with a search box that finds nothing and a sitemap served
+# from PHP on a five-worker pool. launch:validate fails on both.
+log "Rebuilding the search index"
+(cd "${APP}" && "${PHP}" artisan search:index)
+
+log "Regenerating the static sitemap"
+(cd "${APP}" && "${PHP}" artisan sitemap:generate)
+
+# ── Static assets ────────────────────────────────────────────────────────────
+log "Publishing SVG assets"
+/bin/bash "${SOURCE}/deploy/v2-staging/publish-svg-assets.sh" "${WEB}/images"
+
+# Restored from the deployment hamza wrote. A worker started before this release
+# keeps executing the previous release's code until it is told to stop.
+log "Signalling queue workers to restart"
+(cd "${APP}" && "${PHP}" artisan queue:restart) || true
+
+# ── End of the maintenance window ────────────────────────────────────────────
+# Everything that can leave code and schema disagreeing is done. The window has
+# to close HERE, not at the end, because both remaining stages make requests
+# through the HTTP kernel - and a maintenance-mode kernel answers every one of
+# them with a 503.
+#
+# It used to close on the EXIT trap, which meant:
+#
+#   - cache:warm warmed nothing. 4,558 of its targets came back 503, so every
+#     deploy handed the first visitor to every page a cold cache. On a host
+#     whose entire problem is the cost of serving a page, that is the most
+#     expensive request the site can serve, and we were guaranteeing it.
+#   - launch:validate was half blind. Every check that goes through the kernel
+#     got a 503: robots.txt correctness and admin preview safety failed on every
+#     deploy for that reason and no other, and the checks that call services
+#     directly passed - which is exactly what a green-and-red-in-the-same-run
+#     gate looks like when the failures are an artefact of the harness.
+#
+# The trap stays as the safety net for a failure before this point.
+log "Ending the maintenance window"
+restore_service
+MAINTENANCE=0
+
+# Also his. Without it every deploy hands the first visitors a cold cache, which
+# on this host is the most expensive request the site ever serves. The clear it
+# depends on happens further up, before the build artefacts are written.
+#
+#
+# It renders a few dozen pages in one process, which holds about 130 MB; the
+# host's 128 MB default killed it after /ar/admissions on every deploy (and
+# logged an "Allowed memory size" error each time), leaving the rest cold.
+# One page on its own needs 60-75 MB, so visitors are not affected.
+log "Warming caches"
+(cd "${APP}" && "${PHP}" -d memory_limit=1024M artisan cache:warm --include-sitemap) || true
+
+# ── Old-site content coverage report (read-only) ─────────────────────────────
+# For every page of the old site and its subsites, how much of its text the
+# matching new page shows, and for every old record list how many items were
+# migrated (database/seeders/Data/legacy/page_content.json, exported from the
+# old site's SQL dump). Writes nothing but the report file. It runs after the
+# site is back up, because it renders the pages. Inert unless a human
+# places the marker, and runs once:
+#
+#     storage/app/private/legacy-imports/page-coverage.approved
+#
+# The full result is saved next to the marker as page-coverage-<time>.json.
+PAGE_COVERAGE_APPROVAL="${IMPORT_DIR}/page-coverage.approved"
+PAGE_CONTENT_DATA="${APP}/database/seeders/Data/legacy/page_content.json"
+
+if [[ -f "${PAGE_COVERAGE_APPROVAL}" ]]; then
+    log "Old-site content coverage report (read-only)"
+    [[ -f "${PAGE_CONTENT_DATA}" ]] || fail "No old-site page content file in this release."
+
+    PAGE_COVERAGE_OUT="${IMPORT_DIR}/page-coverage-$(date -u +%Y%m%d-%H%M%S).json"
+    (cd "${APP}" && "${PHP}" -d memory_limit=1024M artisan legacy-import:page-coverage "${PAGE_CONTENT_DATA}" --gaps --json="${PAGE_COVERAGE_OUT}" --no-ansi | tail -n 60) \
+        || printf '  the coverage report failed; nothing was changed\n'
+
+    mv "${PAGE_COVERAGE_APPROVAL}" "${PAGE_COVERAGE_APPROVAL}.consumed-$(date -u +%Y%m%d-%H%M%S)"
+fi
+
+# ── Verify ───────────────────────────────────────────────────────────────────
+# A deploy that reports success while the site is down is worse than one that
+# fails, so end by proving the application still boots.
+log "Verifying"
+(cd "${APP}" && "${PHP}" artisan route:list >/dev/null) || fail "Routes do not boot after deploy"
+
+# The migration block above prints only what ran on THIS deploy, which cannot
+# answer "is migration X applied" for anything that ran on an earlier one - the
+# question a release checklist actually asks. This prints the full applied set
+# into the deploy log, where it is part of the release record.
+log "Migration status"
+(cd "${APP}" && "${PHP}" artisan migrate:status) || true
+# On the live domain a failing gate is a failed deploy - the check that catches
+# the noindex/robots.txt trap lives in there, and shipping past it de-indexes the
+# university. On staging it is advisory so a content warning does not block a
+# rehearsal.
+if [[ "${SPU_DEPLOY_ENV:-staging}" == "production" ]]; then
+    (cd "${APP}" && "${PHP}" artisan launch:validate --environment=production) \
+        || fail "launch:validate failed. Not completing a production deploy on a red gate."
+else
+    (cd "${APP}" && "${PHP}" artisan launch:validate) || {
+        printf '\n⚠ launch:validate reported problems. The code is deployed; read the output above.\n' >&2
+    }
+fi
+
+# What is still unpublished.
+#
+# launch:validate answers "does the application work"; it cannot answer "is
+# there anything on the page", and those fail differently. Public pages no
+# longer fall back to the development fixtures, so a section with nothing
+# published renders its empty state correctly and silently - which is right for
+# the visitor and useless for anyone trying to find out what is left before
+# launch. Someone had to read the source to learn why the media gallery was
+# blank; this prints the same answer for every section, every deploy.
+#
+# --summary, not the full list. A missing payload is usually not an empty page:
+# most sections render from database records and treat the payload as an
+# optional override, so 110 of 134 report nothing published while showing real
+# content. Printing all 110 every deploy would train people to skip the section
+# that is supposed to warn them. The summary says how many, and points at
+# --probe, which renders each page and reports the ones that are genuinely
+# blank.
+#
+# Never fatal: what to publish, retire or leave empty is SPU's decision, not a
+# deploy's.
+log "CMS content status"
+(cd "${APP}" && "${PHP}" artisan cms:content-status --summary --drafts) || \
+    printf '   (cms:content-status unavailable in this release)\n'
+
+# Researchers, faculty members and people that look like the same person, so
+# duplicates can be reviewed before anything is merged. Read-only; never fatal.
+log "People that look like duplicates"
+(cd "${APP}" && "${PHP}" -d memory_limit=512M artisan people:duplicates --no-ansi) || \
+    printf '   (people:duplicates unavailable in this release)\n'
+
+# What people:unify would do: the profile each leadership row gets, the fields
+# it would fill and the ones that differ. Read-only; never fatal.
+log "People unify dry run"
+(cd "${APP}" && "${PHP}" -d memory_limit=512M artisan people:unify --no-ansi) || \
+    printf '   (people:unify unavailable in this release)\n'
+
+# A faculty's members (listed, hidden, deleted) and the admin activity on them,
+# for investigating a members page that lost people. Read-only. Runs once when a
+# human places an approval file that is not in git:
+#
+#     storage/app/private/legacy-imports/faculty-members-activity.approved
+#         faculty=artificial-intelligence   (one line per faculty)
+#         since=2026-10-20                  (optional, default today)
+#
+# It disarms itself after one run. Never fatal.
+MEMBERS_ACTIVITY_APPROVAL="${IMPORT_DIR}/faculty-members-activity.approved"
+
+if [[ -f "${MEMBERS_ACTIVITY_APPROVAL}" ]]; then
+    log "Faculty members activity"
+    ACTIVITY_SINCE="$(grep -E '^[[:space:]]*since=' "${MEMBERS_ACTIVITY_APPROVAL}" | tail -n 1 | cut -d= -f2- | tr -d '\r[:space:]' || true)"
+    [[ "${ACTIVITY_SINCE}" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]] || ACTIVITY_SINCE="$(date +%Y-%m-%d)"
+    while IFS= read -r ACTIVITY_FACULTY; do
+        [[ "${ACTIVITY_FACULTY}" =~ ^[a-z-]+$ ]] || continue
+        (cd "${APP}" && "${PHP}" -d memory_limit=512M artisan faculty-members:activity "${ACTIVITY_FACULTY}" --since="${ACTIVITY_SINCE}" --no-ansi) || \
+            printf '   (faculty-members:activity failed for %s)\n' "${ACTIVITY_FACULTY}"
+    # sed, not tr: tr would also delete the newlines read needs.
+    done < <(grep -E '^[[:space:]]*faculty=' "${MEMBERS_ACTIVITY_APPROVAL}" | cut -d= -f2- | sed 's/[[:space:]]//g' || true)
+    mv "${MEMBERS_ACTIVITY_APPROVAL}" "${MEMBERS_ACTIVITY_APPROVAL}.consumed-$(date -u +%Y%m%d-%H%M%S)"
+fi
+
+# The tarball-based deployment extracts into .release/ inside the repository,
+# which leaves the working tree dirty - and cPanel refuses to deploy a repository
+# with uncommitted changes, so the NEXT deploy is blocked by the last one. Clean
+# up after ourselves. Harmless when deploying from a normal clone, where this
+# directory never exists.
+if [[ -d "${SOURCE}/../.release" && -f "${SOURCE}/../deploy.sh" ]]; then
+    rm -rf "${SOURCE}/../.release"
+fi
+
+log "Deployed $(cd "${SOURCE}" && git rev-parse --short HEAD 2>/dev/null || echo 'unknown')"

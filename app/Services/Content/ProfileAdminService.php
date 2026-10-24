@@ -1,0 +1,766 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Services\Content;
+
+use App\Contracts\Auth\AdminAccessServiceInterface;
+use App\Contracts\Content\ProfileAdminServiceInterface;
+use App\Contracts\Faculty\FacultyStudyPlanLinkServiceInterface;
+use App\Contracts\Media\MediaServiceInterface;
+use App\Contracts\Shared\AuditServiceInterface;
+use App\Contracts\Shared\CacheServiceInterface;
+use App\DTOs\Content\EducationDataDTO;
+use App\DTOs\Content\FacultyMemberDataDTO;
+use App\DTOs\Content\FacultyMemberTranslationDataDTO;
+use App\DTOs\Content\LocalizedEducationDataDTO;
+use App\DTOs\Content\PersonDataDTO;
+use App\DTOs\Content\PersonTranslationDataDTO;
+use App\Enums\PublicationStatus;
+use App\Models\Cms\CmsDraft;
+use App\Models\Faculty\Department;
+use App\Models\Faculty\Faculty;
+use App\Models\Person\FacultyMember;
+use App\Models\Person\FacultyMemberEducation;
+use App\Models\Person\FacultyMemberTranslation;
+use App\Models\Person\Person;
+use App\Models\Person\PersonAppointment;
+use App\Models\Person\PersonEducation;
+use App\Models\Person\PersonTranslation;
+use App\Models\User\User;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
+
+final class ProfileAdminService implements ProfileAdminServiceInterface
+{
+    public function __construct(
+        private readonly AuditServiceInterface $auditService,
+        private readonly CacheServiceInterface $cacheService,
+        private readonly MediaServiceInterface $mediaService,
+        private readonly AdminAccessServiceInterface $access,
+        private readonly FacultyStudyPlanLinkServiceInterface $studyPlanLinkService,
+    ) {}
+
+    /** @return array<int, string> */
+    public function facultyOptions(int $userId): array
+    {
+        $user = User::query()->findOrFail($userId);
+        $query = Faculty::query()->enabled()->with('translations')->orderBy('sort_order');
+
+        if ($user->hasFacultyLimit()) {
+            $scopes = $this->access->facultyScopeValues($user);
+            $query->where(function ($facultyQuery) use ($scopes): void {
+                $facultyQuery->whereIn('faculty_scope_slug', $scopes)
+                    ->orWhereIn('public_slug', $scopes)
+                    ->orWhereIn('slug', $scopes);
+            });
+        } elseif (! $this->access->canAny($user, ['faculty_members.view', 'people.view'])) {
+            throw new AuthorizationException('You are not authorized to view faculty profile options.');
+        }
+
+        $locale = app()->getLocale() === 'ar' ? 'ar' : 'en';
+
+        return $query->get()->mapWithKeys(fn (Faculty $faculty): array => [
+            (int) $faculty->getKey() => $faculty->translations->firstWhere('locale', $locale)?->name
+                ?? $faculty->translations->firstWhere('locale', $locale === 'ar' ? 'en' : 'ar')?->name
+                ?? (string) $faculty->slug,
+        ])->all();
+    }
+
+    public function profileOptions(string $search, int $userId, array $includeIds = []): array
+    {
+        $user = User::query()->findOrFail($userId);
+        if (! $this->access->canAny($user, ['faculty_members.view', 'people.view'])) {
+            throw new AuthorizationException('You are not authorized to view profile options.');
+        }
+
+        $search = trim($search);
+        $locale = app()->getLocale() === 'ar' ? 'ar' : 'en';
+        $label = function (FacultyMember $member) use ($locale): string {
+            $name = $member->translations->firstWhere('locale', $locale)?->full_name
+                ?? $member->translations->firstWhere('locale', $locale === 'ar' ? 'en' : 'ar')?->full_name
+                ?? (string) $member->slug;
+            $faculty = $member->faculty?->translations->firstWhere('locale', $locale)?->name;
+
+            return trim((string) $name).($faculty !== null ? ' ('.$faculty.')' : '');
+        };
+
+        $matches = FacultyMember::query()
+            ->with(['translations', 'faculty.translations'])
+            ->when($search !== '', fn ($query) => $query->where(fn ($inner) => $inner
+                ->where('slug', 'like', '%'.$search.'%')
+                ->orWhereHas('translations', fn ($translation) => $translation->where('full_name', 'like', '%'.$search.'%'))))
+            ->orderBy('sort_order')
+            ->limit(50)
+            ->get();
+        $included = $includeIds === [] ? collect() : FacultyMember::query()->with(['translations', 'faculty.translations'])->whereKey($includeIds)->get();
+
+        return $included->concat($matches)
+            ->unique(fn (FacultyMember $member): int => (int) $member->getKey())
+            ->mapWithKeys(fn (FacultyMember $member): array => [(int) $member->getKey() => $label($member)])
+            ->all();
+    }
+
+    public function teacherOptions(string $facultyScope, int $userId): array
+    {
+        $user = User::query()->findOrFail($userId);
+        if (! $this->access->canAny($user, ['faculty_members.view', 'people.view'])) {
+            throw new AuthorizationException('You are not authorized to view profile options.');
+        }
+
+        $facultyId = Faculty::query()
+            ->where(fn ($query) => $query->where('faculty_scope_slug', $facultyScope)->orWhere('public_slug', $facultyScope)->orWhere('slug', $facultyScope))
+            ->value('id');
+        $locale = app()->getLocale() === 'ar' ? 'ar' : 'en';
+        $options = ['faculty' => [], 'other' => []];
+
+        foreach (FacultyMember::query()->with('translations')->get() as $member) {
+            $name = $member->translations->firstWhere('locale', $locale)?->full_name
+                ?? $member->translations->firstWhere('locale', $locale === 'ar' ? 'en' : 'ar')?->full_name
+                ?? (string) $member->slug;
+            $group = $facultyId !== null && (int) $member->faculty_id === (int) $facultyId ? 'faculty' : 'other';
+            $options[$group][(int) $member->getKey()] = trim((string) $name);
+        }
+
+        foreach ($options as $group => $names) {
+            asort($names, SORT_NATURAL | SORT_FLAG_CASE);
+            $options[$group] = $names;
+        }
+
+        return $options;
+    }
+
+    public function facultyIdForScope(string $scope, int $userId): ?int
+    {
+        $allowedIds = array_keys($this->facultyOptions($userId));
+        if ($allowedIds === []) {
+            return null;
+        }
+
+        $faculty = Faculty::query()
+            ->whereIn('id', $allowedIds)
+            ->where(function ($query) use ($scope): void {
+                $query->where('faculty_scope_slug', $scope)
+                    ->orWhere('public_slug', $scope)
+                    ->orWhere('slug', $scope);
+            })
+            ->first();
+
+        return $faculty instanceof Faculty ? (int) $faculty->getKey() : null;
+    }
+
+    /** @return array<int, string> */
+    public function departmentOptions(?int $facultyId, int $userId): array
+    {
+        $user = User::query()->findOrFail($userId);
+        $query = Department::query()
+            ->with('translations')
+            ->when($facultyId !== null, fn ($departmentQuery) => $departmentQuery->where('faculty_id', $facultyId));
+
+        if ($user->hasFacultyLimit()) {
+            $scopes = $this->access->facultyScopeValues($user);
+            $query->whereHas('faculty', function ($facultyQuery) use ($scopes): void {
+                $facultyQuery->whereIn('faculty_scope_slug', $scopes)
+                    ->orWhereIn('public_slug', $scopes)
+                    ->orWhereIn('slug', $scopes);
+            });
+        } elseif (! $this->access->canAny($user, ['faculty_members.view', 'people.view'])) {
+            throw new AuthorizationException('You are not authorized to view department profile options.');
+        }
+
+        return $query->get()->mapWithKeys(fn (Department $department): array => [
+            (int) $department->getKey() => $department->translations->firstWhere('locale', 'ar')?->name
+                ?? $department->translations->first()?->name
+                ?? '#'.$department->getKey(),
+        ])->all();
+    }
+
+    public function specializationOptions(?int $facultyId): array
+    {
+        $facultySlug = $facultyId === null ? null : Faculty::query()->whereKey($facultyId)->value('public_slug');
+
+        return is_string($facultySlug) && $facultySlug !== ''
+            ? $this->studyPlanLinkService->programNames($facultySlug, app()->getLocale() === 'ar' ? 'ar' : 'en')
+            : [];
+    }
+
+    public function nextPersonSortOrder(): int
+    {
+        return ((int) (Person::query()->max('sort_order') ?? 0)) + 10;
+    }
+
+    public function nextFacultyMemberSortOrder(): int
+    {
+        return ((int) (FacultyMember::query()->max('sort_order') ?? 0)) + 10;
+    }
+
+    public function getPersonData(int $id): ?PersonDataDTO
+    {
+        $person = Person::query()->with(['translations', 'educations.translations'])->find($id);
+
+        return $person instanceof Person ? $this->mapPersonData($person) : null;
+    }
+
+    public function createPerson(PersonDataDTO $data, int $userId): PersonDataDTO
+    {
+        $this->authorizePersonManagement($userId, 'create');
+        $this->validatePersonData($data);
+
+        $person = DB::transaction(function () use ($data): Person {
+            $person = Person::query()->create($this->personAttributes($data));
+            $this->syncPersonTranslations($person, $data->translations);
+            $this->syncPersonEducations($person, $data->educations);
+
+            return $person;
+        });
+
+        $id = (int) $person->getKey();
+        $this->auditService->log('person.created', $userId, Person::class, $id);
+        $this->invalidatePublicProfiles();
+
+        return $this->getPersonData($id) ?? throw new \RuntimeException('Created person could not be reloaded.');
+    }
+
+    public function updatePerson(int $id, PersonDataDTO $data, int $userId): bool
+    {
+        $this->authorizePersonManagement($userId, 'update');
+        $this->validatePersonData($data);
+
+        DB::transaction(function () use ($id, $data): void {
+            $person = Person::query()->findOrFail($id);
+            $person->update($this->personAttributes($data));
+            $this->syncPersonTranslations($person, $data->translations);
+            $this->syncPersonEducations($person, $data->educations);
+        });
+
+        $this->auditService->log('person.updated', $userId, Person::class, $id);
+        $this->invalidatePublicProfiles();
+
+        return true;
+    }
+
+    public function getFacultyMemberData(int $id): ?FacultyMemberDataDTO
+    {
+        $member = FacultyMember::query()->with(['translations', 'educations.translations'])->find($id);
+
+        return $member instanceof FacultyMember ? $this->mapFacultyMemberData($member) : null;
+    }
+
+    public function createFacultyMember(FacultyMemberDataDTO $data, int $userId): FacultyMemberDataDTO
+    {
+        $this->validateFacultyMemberData($data);
+        $this->authorizeFacultyScope($data, $userId, 'create');
+        $this->validateFacultyMedia($data, $userId);
+
+        $member = DB::transaction(function () use ($data): FacultyMember {
+            $member = FacultyMember::query()->create($this->facultyMemberAttributes($data));
+            $this->syncFacultyMemberTranslations($member, $data->translations);
+            $this->syncFacultyMemberEducations($member, $data->educations);
+
+            return $member;
+        });
+
+        $id = (int) $member->getKey();
+        $this->auditService->log('faculty_member.created', $userId, FacultyMember::class, $id);
+        $this->invalidatePublicProfiles();
+
+        return $this->getFacultyMemberData($id) ?? throw new \RuntimeException('Created faculty member could not be reloaded.');
+    }
+
+    public function updateFacultyMember(int $id, FacultyMemberDataDTO $data, int $userId): bool
+    {
+        $this->validateFacultyMemberData($data);
+        $this->authorizeExistingFacultyMember($id, $userId, 'update');
+        $this->authorizeFacultyScope($data, $userId, 'update');
+        $this->validateFacultyMedia($data, $userId);
+
+        DB::transaction(function () use ($id, $data): void {
+            $member = FacultyMember::query()->findOrFail($id);
+            $member->update($this->facultyMemberAttributes($data));
+            $this->syncFacultyMemberTranslations($member, $data->translations);
+            $this->syncFacultyMemberEducations($member, $data->educations);
+        });
+
+        $this->auditService->log('faculty_member.updated', $userId, FacultyMember::class, $id);
+        $this->invalidatePublicProfiles();
+
+        return true;
+    }
+
+    /** @param array<int, int> $ids */
+    public function deleteFacultyMembers(array $ids, int $userId): int
+    {
+        $ids = array_values(array_unique(array_filter(array_map('intval', $ids), static fn (int $id): bool => $id > 0)));
+        if ($ids === []) {
+            return 0;
+        }
+
+        // Authorize the whole selection first, so a faculty editor cannot
+        // delete part of a selection that reaches into another faculty.
+        foreach ($ids as $id) {
+            $this->authorizeExistingFacultyMember($id, $userId, 'delete');
+        }
+
+        $deleted = DB::transaction(function () use ($ids, $userId): array {
+            $deleted = [];
+            foreach (FacultyMember::query()->whereKey($ids)->get() as $member) {
+                $id = (int) $member->getKey();
+
+                // A pending draft or schedule must not bring the member back.
+                CmsDraft::query()
+                    ->where('target_key', 'entity.faculty-member.'.$id)
+                    ->whereIn('status', [PublicationStatus::Draft->value, PublicationStatus::Scheduled->value])
+                    ->update([
+                        'status' => PublicationStatus::Superseded->value,
+                        'scheduled_at' => null,
+                        'updated_by' => $userId,
+                    ]);
+
+                // A member linked to a canonical person is shown through that
+                // person's appointment, so take it off this faculty as well.
+                if ($member->person_id !== null && $member->faculty_id !== null) {
+                    PersonAppointment::query()
+                        ->where('person_id', $member->person_id)
+                        ->where('type', 'faculty_member')
+                        ->where('faculty_id', $member->faculty_id)
+                        ->update(['is_enabled' => false]);
+                }
+
+                $member->delete();
+                $deleted[] = $id;
+            }
+
+            return $deleted;
+        });
+
+        foreach ($deleted as $id) {
+            $this->auditService->log('faculty_member.deleted', $userId, FacultyMember::class, $id);
+        }
+
+        if ($deleted !== []) {
+            $this->invalidatePublicProfiles();
+        }
+
+        return count($deleted);
+    }
+
+    /** @return array<string, mixed> */
+    private function personAttributes(PersonDataDTO $data): array
+    {
+        return [
+            'slug' => $data->slug,
+            'category' => $data->category,
+            'title' => $data->title,
+            'position' => $data->position,
+            'faculty_scope_slug' => $data->facultyScopeSlug,
+            'image' => $data->image,
+            'email' => $data->email,
+            'phone' => $data->phone,
+            'office_location' => $data->officeLocation,
+            'profile_url' => '/about/profile/'.$data->slug,
+            'social_links' => $data->socialLinks,
+            'sort_order' => $data->sortOrder,
+            'is_enabled' => $data->isEnabled,
+        ];
+    }
+
+    /** @param array<int, PersonTranslationDataDTO> $translations */
+    private function syncPersonTranslations(Person $person, array $translations): void
+    {
+        foreach ($translations as $translation) {
+            $person->translations()->updateOrCreate(
+                ['locale' => $translation->locale],
+                [
+                    'name' => $translation->name,
+                    'role' => $translation->role,
+                    'bio' => $translation->bio,
+                    'quote' => $translation->quote,
+                ],
+            );
+        }
+    }
+
+    /** @param array<int, EducationDataDTO> $educations */
+    private function syncPersonEducations(Person $person, array $educations): void
+    {
+        $keptIds = [];
+
+        foreach ($educations as $educationData) {
+            $education = $educationData->id !== null
+                ? PersonEducation::query()->where('person_id', $person->getKey())->findOrFail($educationData->id)
+                : new PersonEducation(['person_id' => (int) $person->getKey()]);
+
+            $education->fill([
+                'sort_order' => $educationData->sortOrder,
+                'is_enabled' => $educationData->isEnabled,
+            ]);
+            $education->person()->associate($person);
+            $education->save();
+            $keptIds[] = (int) $education->getKey();
+
+            foreach ($educationData->translations as $translation) {
+                $education->translations()->updateOrCreate(
+                    ['locale' => $translation->locale],
+                    $this->educationTranslationAttributes($translation),
+                );
+            }
+        }
+
+        $query = $person->educations();
+        if ($keptIds !== []) {
+            $query->whereNotIn('id', $keptIds);
+        }
+        $query->delete();
+    }
+
+    /** @return array<string, mixed> */
+    private function facultyMemberAttributes(FacultyMemberDataDTO $data): array
+    {
+        return [
+            'slug' => $data->slug,
+            'faculty_id' => $data->facultyId,
+            'department_id' => $data->departmentId,
+            'specialization_id' => $data->specializationId,
+            'email' => $data->email,
+            'phone' => $data->phone,
+            'office_location' => $data->officeLocation,
+            'photo_media_id' => $data->photoMediaId,
+            'cv_media_id' => $data->cvMediaId,
+            'social_links' => $data->socialLinks,
+            'sort_order' => $data->sortOrder,
+            'is_enabled' => $data->isEnabled,
+        ];
+    }
+
+    /** @param array<int, FacultyMemberTranslationDataDTO> $translations */
+    private function syncFacultyMemberTranslations(FacultyMember $member, array $translations): void
+    {
+        foreach ($translations as $translation) {
+            $member->translations()->updateOrCreate(
+                ['locale' => $translation->locale],
+                [
+                    'full_name' => $translation->fullName,
+                    'title' => $translation->title,
+                    'position' => $translation->position,
+                    'bio' => $translation->bio,
+                    'specializations' => $translation->specializations,
+                ],
+            );
+        }
+    }
+
+    /** @param array<int, EducationDataDTO> $educations */
+    private function syncFacultyMemberEducations(FacultyMember $member, array $educations): void
+    {
+        $keptIds = [];
+
+        foreach ($educations as $educationData) {
+            $education = $educationData->id !== null
+                ? FacultyMemberEducation::query()->where('faculty_member_id', $member->getKey())->findOrFail($educationData->id)
+                : new FacultyMemberEducation(['faculty_member_id' => (int) $member->getKey()]);
+
+            $education->fill([
+                'sort_order' => $educationData->sortOrder,
+                'is_enabled' => $educationData->isEnabled,
+            ]);
+            $education->facultyMember()->associate($member);
+            $education->save();
+            $keptIds[] = (int) $education->getKey();
+
+            foreach ($educationData->translations as $translation) {
+                $education->translations()->updateOrCreate(
+                    ['locale' => $translation->locale],
+                    $this->educationTranslationAttributes($translation),
+                );
+            }
+        }
+
+        $query = $member->educations();
+        if ($keptIds !== []) {
+            $query->whereNotIn('id', $keptIds);
+        }
+        $query->delete();
+    }
+
+    /** @return array<string, mixed> */
+    private function educationTranslationAttributes(LocalizedEducationDataDTO $translation): array
+    {
+        return [
+            'degree' => $translation->degree,
+            'institution' => $translation->institution,
+            'field_of_study' => $translation->fieldOfStudy,
+            'year_start' => $translation->yearStart,
+            'year_end' => $translation->yearEnd,
+            'description' => $translation->description,
+        ];
+    }
+
+    private function validatePersonData(PersonDataDTO $data): void
+    {
+        $this->validateLocales($data->translations, 'translations');
+        $this->validateEducations($data->educations);
+    }
+
+    private function validateFacultyMemberData(FacultyMemberDataDTO $data): void
+    {
+        $this->validateLocales($data->translations, 'translations');
+        $this->validateEducations($data->educations);
+
+        if ($data->facultyId === null || ! Faculty::query()->whereKey($data->facultyId)->exists()) {
+            throw ValidationException::withMessages([
+                'faculty_id' => 'A valid faculty is required.',
+            ]);
+        }
+
+        if ($data->departmentId !== null) {
+            $validDepartment = $data->facultyId !== null
+                && Department::query()->whereKey($data->departmentId)->where('faculty_id', $data->facultyId)->exists();
+
+            if (! $validDepartment) {
+                throw ValidationException::withMessages([
+                    'department_id' => 'The selected department must belong to the selected faculty.',
+                ]);
+            }
+        }
+
+        if ($data->specializationId !== null && ! array_key_exists($data->specializationId, $this->specializationOptions($data->facultyId))) {
+            throw ValidationException::withMessages([
+                'specialization_id' => 'The selected specialization must be a program of the faculty\'s study plan.',
+            ]);
+        }
+    }
+
+    private function authorizeFacultyScope(FacultyMemberDataDTO $data, int $userId, string $action): void
+    {
+        $user = User::query()->findOrFail($userId);
+        if (! $this->access->can($user, 'faculty_members.'.$action)) {
+            throw new AuthorizationException('You are not authorized to manage faculty members.');
+        }
+
+        if (! $this->access->hasFacultyLimit($user)) {
+            return;
+        }
+
+        $scopes = $this->access->facultyScopeValues($user);
+        $hasScope = $data->facultyId !== null
+            && Faculty::query()
+                ->whereKey($data->facultyId)
+                ->where(function ($query) use ($scopes): void {
+                    $query->whereIn('faculty_scope_slug', $scopes)
+                        ->orWhereIn('public_slug', $scopes)
+                        ->orWhereIn('slug', $scopes);
+                })
+                ->exists();
+
+        if (! $hasScope) {
+            throw new AuthorizationException('You may only manage faculty members in your granted faculties.');
+        }
+    }
+
+    private function authorizeExistingFacultyMember(int $memberId, int $userId, string $action): void
+    {
+        $user = User::query()->findOrFail($userId);
+        if (! $this->access->can($user, 'faculty_members.'.$action)) {
+            throw new AuthorizationException('You are not authorized to manage faculty members.');
+        }
+
+        if (! $this->access->hasFacultyLimit($user)) {
+            return;
+        }
+
+        $scopes = $this->access->facultyScopeValues($user);
+        $allowed = FacultyMember::query()
+            ->whereKey($memberId)
+            ->whereHas('faculty', function ($query) use ($scopes): void {
+                $query->whereIn('faculty_scope_slug', $scopes)
+                    ->orWhereIn('public_slug', $scopes)
+                    ->orWhereIn('slug', $scopes);
+            })
+            ->exists();
+
+        if (! $allowed) {
+            throw new AuthorizationException('You may only update faculty members in your granted faculties.');
+        }
+    }
+
+    private function authorizePersonManagement(int $userId, string $action): void
+    {
+        $user = User::query()->findOrFail($userId);
+
+        if (! $this->access->can($user, 'people.'.$action)) {
+            throw new AuthorizationException('You are not authorized to manage university profiles.');
+        }
+    }
+
+    private function validateFacultyMedia(FacultyMemberDataDTO $data, int $userId): void
+    {
+        foreach ([
+            'photo_media_id' => [$data->photoMediaId, 'image/'],
+            'cv_media_id' => [$data->cvMediaId, 'application/'],
+        ] as $field => [$mediaId, $expectedMimePrefix]) {
+            if ($mediaId === null) {
+                continue;
+            }
+
+            $media = $this->mediaService->find($mediaId, $userId);
+            if ($media === null || $media->libraryScope !== 'main' || ! str_starts_with($media->mimeType, $expectedMimePrefix)) {
+                throw ValidationException::withMessages([
+                    $field => 'The selected media file is unavailable or has the wrong type.',
+                ]);
+            }
+        }
+    }
+
+    /** @param array<int, PersonTranslationDataDTO|FacultyMemberTranslationDataDTO> $translations */
+    private function validateLocales(array $translations, string $field): void
+    {
+        $locales = collect($translations)->map(fn ($translation): string => $translation->locale)->sort()->values()->all();
+
+        if ($locales !== ['ar', 'en']) {
+            throw ValidationException::withMessages([
+                $field => 'Exactly one Arabic and one English translation are required.',
+            ]);
+        }
+    }
+
+    /** @param array<int, EducationDataDTO> $educations */
+    private function validateEducations(array $educations): void
+    {
+        foreach ($educations as $index => $education) {
+            $this->validateLocales($education->translations, "educations.{$index}.translations");
+
+            foreach ($education->translations as $translationIndex => $translation) {
+                if (trim($translation->degree) === '') {
+                    throw ValidationException::withMessages([
+                        "educations.{$index}.translations.{$translationIndex}.degree" => 'The degree is required.',
+                    ]);
+                }
+
+                if ($translation->yearStart !== null && $translation->yearEnd !== null && $translation->yearEnd < $translation->yearStart) {
+                    throw ValidationException::withMessages([
+                        "educations.{$index}.translations.{$translationIndex}.year_end" => 'The end year must not be before the start year.',
+                    ]);
+                }
+            }
+        }
+    }
+
+    private function mapPersonData(Person $person): PersonDataDTO
+    {
+        return new PersonDataDTO(
+            id: (int) $person->getKey(),
+            slug: (string) $person->slug,
+            category: (string) $person->category,
+            title: $person->title,
+            position: $person->position,
+            facultyScopeSlug: $person->faculty_scope_slug,
+            image: $person->image,
+            email: $person->email,
+            phone: $person->phone,
+            officeLocation: $person->office_location,
+            profileUrl: $person->profile_url,
+            socialLinks: is_array($person->social_links) ? $person->social_links : null,
+            sortOrder: (int) $person->sort_order,
+            isEnabled: (bool) $person->is_enabled,
+            translations: $person->translations->map(fn (PersonTranslation $translation): PersonTranslationDataDTO => new PersonTranslationDataDTO(
+                locale: (string) $translation->locale,
+                name: (string) $translation->name,
+                role: (string) $translation->role,
+                bio: $translation->bio,
+                quote: $translation->quote,
+            ))->values()->all(),
+            educations: $person->educations->map(fn (PersonEducation $education): EducationDataDTO => $this->mapPersonEducationData($education))->values()->all(),
+        );
+    }
+
+    private function mapFacultyMemberData(FacultyMember $member): FacultyMemberDataDTO
+    {
+        return new FacultyMemberDataDTO(
+            id: (int) $member->getKey(),
+            slug: (string) $member->slug,
+            facultyId: $member->faculty_id !== null ? (int) $member->faculty_id : null,
+            departmentId: $member->department_id !== null ? (int) $member->department_id : null,
+            email: $member->email,
+            phone: $member->phone,
+            officeLocation: $member->office_location,
+            photoMediaId: $member->photo_media_id !== null ? (int) $member->photo_media_id : null,
+            cvMediaId: $member->cv_media_id !== null ? (int) $member->cv_media_id : null,
+            socialLinks: is_array($member->social_links) ? $member->social_links : null,
+            sortOrder: (int) $member->sort_order,
+            isEnabled: (bool) $member->is_enabled,
+            translations: $member->translations->map(fn (FacultyMemberTranslation $translation): FacultyMemberTranslationDataDTO => new FacultyMemberTranslationDataDTO(
+                locale: (string) $translation->locale,
+                fullName: (string) $translation->full_name,
+                title: $translation->title,
+                position: $translation->position,
+                bio: $translation->bio,
+                specializations: $this->normalizeSpecializations($translation->specializations),
+            ))->values()->all(),
+            educations: $member->educations->map(fn (FacultyMemberEducation $education): EducationDataDTO => $this->mapFacultyEducationData($education))->values()->all(),
+            specializationId: $member->specialization_id !== null ? (string) $member->specialization_id : null,
+        );
+    }
+
+    private function mapPersonEducationData(PersonEducation $education): EducationDataDTO
+    {
+        return new EducationDataDTO(
+            id: (int) $education->getKey(),
+            sortOrder: (int) $education->sort_order,
+            isEnabled: (bool) $education->is_enabled,
+            translations: $education->translations->map(fn ($translation): LocalizedEducationDataDTO => $this->mapEducationTranslationData($translation))->values()->all(),
+        );
+    }
+
+    private function mapFacultyEducationData(FacultyMemberEducation $education): EducationDataDTO
+    {
+        return new EducationDataDTO(
+            id: (int) $education->getKey(),
+            sortOrder: (int) $education->sort_order,
+            isEnabled: (bool) $education->is_enabled,
+            translations: $education->translations->map(fn ($translation): LocalizedEducationDataDTO => $this->mapEducationTranslationData($translation))->values()->all(),
+        );
+    }
+
+    private function mapEducationTranslationData(mixed $translation): LocalizedEducationDataDTO
+    {
+        return new LocalizedEducationDataDTO(
+            locale: (string) $translation->locale,
+            degree: (string) $translation->degree,
+            institution: $translation->institution,
+            fieldOfStudy: $translation->field_of_study,
+            yearStart: $translation->year_start !== null ? (int) $translation->year_start : null,
+            yearEnd: $translation->year_end !== null ? (int) $translation->year_end : null,
+            description: $translation->description,
+        );
+    }
+
+    /** @return array<int, string>|null */
+    private function normalizeSpecializations(mixed $values): ?array
+    {
+        if (is_string($values)) {
+            $values = preg_split('/[,;|،\r\n]+/u', $values) ?: [];
+        }
+
+        if (! is_array($values)) {
+            return null;
+        }
+
+        $normalized = collect($values)
+            ->map(static fn (mixed $value): mixed => is_array($value) ? ($value['name'] ?? null) : $value)
+            ->filter(static fn (mixed $value): bool => is_string($value) && trim($value) !== '')
+            ->map(static fn (string $value): string => trim($value))
+            ->unique()
+            ->values()
+            ->all();
+
+        return $normalized !== [] ? $normalized : null;
+    }
+
+    private function invalidatePublicProfiles(): void
+    {
+        if (! $this->cacheService->flushTags(['public-pages', 'public-shell', 'about', 'facilities', 'seo', 'sitemap'])) {
+            $this->cacheService->flushAll();
+        }
+    }
+}

@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace App\Services\Placeholders;
 
-use App\Contracts\SettingsServiceInterface;
-use App\DTOs\ApplyCtaSettingsDTO;
-use App\DTOs\EmergencyNoticeDTO;
-use App\DTOs\FooterSettingsDTO;
-use App\DTOs\PageSeoDTO;
-use App\DTOs\PublicSettingsDTO;
-use App\DTOs\SettingsDTO;
-use App\DTOs\SocialContactSettingsDTO;
+use App\Contracts\Settings\SettingsServiceInterface;
+use App\DTOs\Seo\PageSeoDTO;
+use App\DTOs\Settings\ApplyCtaSettingsDTO;
+use App\DTOs\Settings\EmergencyNoticeDTO;
+use App\DTOs\Settings\FooterSettingsDTO;
+use App\DTOs\Settings\PublicSettingsDTO;
+use App\DTOs\Settings\SettingsDTO;
+use App\DTOs\Settings\SocialContactSettingsDTO;
 use BadMethodCallException;
 
 /**
@@ -29,7 +29,7 @@ final class SettingsServicePlaceholder implements SettingsServiceInterface
         throw new BadMethodCallException(__METHOD__.' is not implemented.');
     }
 
-    public function updateGroup(SettingsDTO $values, string $group, ?string $locale = null, ?int $userId = null): bool
+    public function updateGroup(SettingsDTO $values, int $userId): bool
     {
         throw new BadMethodCallException(__METHOD__.' is not implemented.');
     }

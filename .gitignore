@@ -1,8 +1,10 @@
 *.log
 .DS_Store
 .env
+.env.testing
 .env.backup
 .env.production
+.env.example
 .phpactor.json
 .phpunit.result.cache
 /.fleet
@@ -13,7 +15,16 @@
 /.zed
 /auth.json
 /node_modules
-/public/build
+# public/build IS committed. Normally build output does not belong in git, but
+# this deploys through cPanel Git Version Control to a host with no Node, so the
+# clone is what ships. Ignoring it meant every release needed a manual upload
+# that nothing enforced, and a missing asset directory does not error - it
+# renders the whole site unstyled.
+#
+# Rebuild with `php artisan view:clear && npm run build` (view:clear first, or
+# stale compiled views keep ~26KB of dead CSS alive - deploy README 8.2) and
+# commit the result as part of the release.
+# /public/build
 /public/hot
 /public/storage
 /storage/*.key
@@ -22,3 +33,32 @@
 Homestead.json
 Homestead.yaml
 Thumbs.db
+/Docs/STUDENT_GUIDE
+/.kiro
+FINAL_AUDIT_REPORT
+FINAL_AUDIT_REPORT.md
+Docs/FULL_STACK_PERFORMANCE_SECURITY_ARCHITECTURE_AUDIT.md
+Docs/audit-remediation-plan.md
+TODO.md
+/STUDENT_GUIDE
+/Thesis
+
+
+# Agent worktrees are local scratch, never part of a release.
+.claude/worktrees/
+
+# Generated at deploy time by `sitemap:generate`.
+/public/sitemap.xml
+/public/sitemaps
+
+# Never commit this. Apache's front controller only reaches Laravel when no
+# physical file matches, so a committed robots.txt silently shadows
+# SitemapController@robots and ships `Allow: /` to whatever host it lands on.
+# The staging overlay places its own disallow-all copy on the host.
+/public/robots.txt
+
+# Legacy media mount; symlinked on the server, never committed.
+/public/downloads
+
+# Authoritative legacy production dump; upload separately for one-time imports.
+/spuedu_db (1).sql

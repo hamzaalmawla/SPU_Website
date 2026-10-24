@@ -1,0 +1,807 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Services\Shared;
+
+use App\Contracts\Legacy\LegacyQueryRedirectResolverInterface;
+use App\Contracts\Legacy\LegacyUrlNormalizerInterface;
+use App\Contracts\Shared\CacheServiceInterface;
+use App\Contracts\Shared\ContinuityServiceInterface;
+use App\DTOs\Legacy\PatternRuleDTO;
+use App\DTOs\Legacy\RedirectResultDTO;
+use App\DTOs\Legacy\RedirectRuleDTO;
+use App\DTOs\Legacy\UnresolvedRequestDTO;
+use App\DTOs\Media\FileInventoryItemDTO;
+use App\DTOs\Shared\ValidationMessageDTO;
+use App\DTOs\Shared\ValidationResultDTO;
+use App\Models\Legacy\LegacyExactRedirect;
+use App\Models\Legacy\LegacyFileInventory;
+use App\Models\Legacy\LegacyPatternRule;
+use App\Models\Page\UnresolvedLegacyRequest;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Log;
+
+final class ContinuityService implements ContinuityServiceInterface
+{
+    private const MAX_REDIRECT_HOPS = 5;
+
+    private const CACHE_TTL = 3600;
+
+    public function __construct(
+        private readonly CacheServiceInterface $cacheService,
+        private readonly LegacyQueryRedirectResolverInterface $legacyQueryRedirectResolver,
+        private readonly LegacyUrlNormalizerInterface $legacyUrlNormalizer,
+    ) {}
+
+    public function resolveRedirect(
+        string $path,
+        ?string $queryString = null,
+        ?string $preferredLocale = null,
+    ): ?RedirectResultDTO {
+        $requestedPath = '/'.ltrim($path, '/');
+        $indexPath = $this->legacyDirectoryIndex($requestedPath, $queryString);
+
+        // A directory spelling is tried as its index.php first, because that is
+        // what Apache served. When that names nothing precise, the directory's
+        // own handling still applies, so no URL loses the destination it had.
+        if ($indexPath !== $requestedPath) {
+            $precise = $this->resolvePath($indexPath, $queryString, $preferredLocale, retiredFallback: false);
+
+            if ($precise !== null) {
+                return $precise;
+            }
+        }
+
+        return $this->resolvePath($requestedPath, $queryString, $preferredLocale, retiredFallback: true);
+    }
+
+    private function resolvePath(
+        string $normalizedPath,
+        ?string $queryString,
+        ?string $preferredLocale,
+        bool $retiredFallback,
+    ): ?RedirectResultDTO {
+        if ($this->isUnsupportedLanguageFallback($normalizedPath, $queryString)) {
+            return $this->resolveRetiredLanguage($normalizedPath, $queryString, $retiredFallback);
+        }
+
+        if ($this->isUnknownLegacyLanguage($normalizedPath, $queryString)) {
+            return null;
+        }
+
+        if ($this->isPrivateMembersArchive($normalizedPath, $queryString)) {
+            // The old /members/ archive stays private: it must never resolve to an
+            // imported staff record, and LegacyQueryResolverRegistry enforces that
+            // by offering these URLs only to the section-level resolver. What the
+            // URL may still do is reach the public section that replaced it — the
+            // staff directory or the publications index — both already public.
+            // Returning a blanket null here would send ~3,400 old URLs to a 404
+            // for a privacy reason that the resolver layer already handles.
+            return $this->legacyQueryRedirectResolver->resolve($normalizedPath, $queryString);
+        }
+
+        $referenceAlias = $this->resolveReferenceHtmlAlias($normalizedPath, $queryString, $preferredLocale);
+
+        if ($referenceAlias !== null) {
+            return $referenceAlias;
+        }
+
+        return $this->followRedirectChain($normalizedPath, $queryString);
+    }
+
+    public function resolveFileContinuity(string $path): ?string
+    {
+        $normalizedPath = '/'.ltrim($path, '/');
+
+        if ($this->isPrivateMembersArchive($normalizedPath, null)) {
+            return null;
+        }
+
+        $entry = LegacyFileInventory::query()
+            ->mapped()
+            ->whereRaw('LOWER(legacy_path) = ?', [mb_strtolower($normalizedPath)])
+            ->first();
+
+        return $entry?->current_path;
+    }
+
+    /**
+     * Apache answered a directory with its index.php, so the old site served
+     * /?cat_id=…&dir=items… and /alumni/?dir=items… exactly as it served the
+     * same query on /index.php and /alumni/index.php. Crawlers and backlinks
+     * hold tens of thousands of these spellings. Laravel sees only the
+     * directory, so they reached the homepage or a 404 instead of the record.
+     *
+     * Only a legacy router query is rewritten - a bare directory, or one
+     * carrying tracking parameters alone, keeps its normal handling. /admin is
+     * absent because the Filament panel owns it (maintenance guide §13.5).
+     */
+    private function legacyDirectoryIndex(string $path, ?string $queryString): string
+    {
+        if ($queryString === null || trim($queryString) === '') {
+            return $path;
+        }
+
+        if (preg_match('#^/(?:(?:med|dent|pharm|info|petrol|research|hospital|dent_clinic|alumni|clubs|members)/?)?$#', $path) !== 1) {
+            return $path;
+        }
+
+        $params = $this->legacyUrlNormalizer->normalize('/index.php', $queryString)->params;
+
+        if (array_intersect_key($params, array_flip(['page', 'dir', 'service', 'cat_id', 'lang', 'ex'])) === []) {
+            return $path;
+        }
+
+        return rtrim($path, '/').'/index.php';
+    }
+
+    /**
+     * The old CMS rendered every record in FR (3), ES (6) and DE (7) as well,
+     * but those pages carried the record's English or Arabic fallback under a
+     * translated menu, or an "under construction" notice. Search engines and
+     * backlink crawlers indexed them all — they are three fifths of the old
+     * sitemap. Sending each one to the English homepage reads as a soft 404
+     * and throws away the equity of the record the URL named.
+     *
+     * The closest equivalent is the same record in English, so the URL is
+     * resolved exactly as its lang=2 twin would be — exact rules, typed
+     * resolvers, patterns, and the private members boundary all apply
+     * unchanged. Only when that twin has no destination does the approved
+     * temporary fallback to /en remain.
+     */
+    private function resolveRetiredLanguage(string $path, ?string $queryString, bool $fallback = true): ?RedirectResultDTO
+    {
+        $englishQuery = $this->withLegacyLanguage($queryString, 2);
+
+        if ($englishQuery !== null) {
+            $equivalent = $this->isPrivateMembersArchive($path, $englishQuery)
+                ? $this->legacyQueryRedirectResolver->resolve($path, $englishQuery)
+                : $this->followRedirectChain($path, $englishQuery);
+
+            if ($equivalent !== null) {
+                return new RedirectResultDTO(
+                    statusCode: $equivalent->statusCode,
+                    destinationUrl: $equivalent->destinationUrl,
+                    matchType: 'retired_language_equivalent',
+                );
+            }
+        }
+
+        return $fallback ? $this->legacyQueryRedirectResolver->resolve($path, $queryString) : null;
+    }
+
+    private function withLegacyLanguage(?string $queryString, int $languageId): ?string
+    {
+        if ($queryString === null || trim($queryString) === '') {
+            return null;
+        }
+
+        $rewritten = preg_replace('/(^|&)lang=[^&]*/', '${1}lang='.$languageId, $queryString, -1, $count);
+
+        return is_string($rewritten) && $count > 0 ? $rewritten : null;
+    }
+
+    private function isPrivateMembersArchive(string $path, ?string $queryString): bool
+    {
+        if (config('old_database.members_continuity_policy') !== 'private_archive') {
+            return false;
+        }
+
+        $normalized = $this->legacyUrlNormalizer->normalize($path, $queryString);
+
+        return $normalized->subsite->key === 'members'
+            && $normalized->language->isSupportedLocale;
+    }
+
+    private function isUnsupportedLanguageFallback(string $path, ?string $queryString): bool
+    {
+        $normalized = $this->legacyUrlNormalizer->normalize($path, $queryString);
+        $languageIds = config('old_database.unsupported_language_continuity.old_language_ids', [3, 6, 7]);
+
+        return $normalized->requestType === 'legacy_router'
+            && ! $normalized->language->isSupportedLocale
+            && is_array($languageIds)
+            && in_array($normalized->language->oldLanguageId, $languageIds, true);
+    }
+
+    private function isUnknownLegacyLanguage(string $path, ?string $queryString): bool
+    {
+        $normalized = $this->legacyUrlNormalizer->normalize($path, $queryString);
+        $languageIds = config('old_database.unsupported_language_continuity.old_language_ids', [3, 6, 7]);
+
+        return $normalized->requestType === 'legacy_router'
+            && ! $normalized->language->isSupportedLocale
+            && is_array($languageIds)
+            && ! in_array($normalized->language->oldLanguageId, $languageIds, true);
+    }
+
+    public function logUnresolved(UnresolvedRequestDTO $request): bool
+    {
+        try {
+            $now = now();
+
+            $existing = UnresolvedLegacyRequest::query()
+                ->where('url_hash', hash('sha256', $request->url))
+                ->where('method', $request->method)
+                ->latest('id')
+                ->first();
+
+            if ($existing instanceof UnresolvedLegacyRequest) {
+                $existing->forceFill([
+                    'query_string' => $request->queryString,
+                    'referrer' => $request->referrer,
+                    'resolved_locale' => $request->resolvedLocale,
+                    'request_type' => $request->requestType,
+                    'normalized_json' => $request->normalized,
+                    'handler' => $request->handler,
+                    'outcome' => $request->outcome,
+                    'subsite' => $request->subsite,
+                    'old_site_id' => $request->oldSiteId,
+                    'old_language_id' => $request->oldLanguageId,
+                    'old_language_symbol' => $request->oldLanguageSymbol,
+                    'hit_count' => $existing->hit_count + 1,
+                    'last_seen_at' => $now,
+                ])->save();
+            } else {
+                UnresolvedLegacyRequest::query()->create([
+                    'url' => $request->url,
+                    'url_hash' => hash('sha256', $request->url),
+                    'query_string' => $request->queryString,
+                    'method' => $request->method,
+                    'referrer' => $request->referrer,
+                    'resolved_locale' => $request->resolvedLocale,
+                    'request_type' => $request->requestType,
+                    'normalized_json' => $request->normalized,
+                    'handler' => $request->handler,
+                    'outcome' => $request->outcome,
+                    'subsite' => $request->subsite,
+                    'old_site_id' => $request->oldSiteId,
+                    'old_language_id' => $request->oldLanguageId,
+                    'old_language_symbol' => $request->oldLanguageSymbol,
+                    'hit_count' => 1,
+                    'first_seen_at' => $now,
+                    'last_seen_at' => $now,
+                    'created_at' => $now,
+                ]);
+            }
+
+            return true;
+        } catch (\Throwable $e) {
+            Log::warning('Failed to log unresolved legacy request', [
+                'url' => $request->url,
+                'error' => $e->getMessage(),
+            ]);
+
+            return false;
+        }
+    }
+
+    public function getExactRedirects(): Collection
+    {
+        return LegacyExactRedirect::query()
+            ->orderBy('id')
+            ->get()
+            ->map(fn (LegacyExactRedirect $rule): RedirectRuleDTO => new RedirectRuleDTO(
+                id: (int) $rule->getKey(),
+                legacyPath: (string) $rule->legacy_path,
+                destinationUrl: (string) $rule->destination_url,
+                statusCode: (int) $rule->status_code,
+                locale: $rule->locale,
+                isActive: (bool) $rule->is_active,
+                querySignature: $rule->query_signature,
+            ));
+    }
+
+    public function getPatternRules(): Collection
+    {
+        return LegacyPatternRule::query()
+            ->ordered()
+            ->get()
+            ->map(fn (LegacyPatternRule $rule): PatternRuleDTO => new PatternRuleDTO(
+                id: (int) $rule->getKey(),
+                pattern: (string) $rule->pattern,
+                replacement: (string) $rule->replacement,
+                statusCode: (int) $rule->status_code,
+                priority: (int) $rule->priority,
+                isActive: (bool) $rule->is_active,
+            ));
+    }
+
+    public function validateRedirectRules(): ValidationResultDTO
+    {
+        $errors = [];
+
+        $this->detectDuplicateExactPaths($errors);
+        $this->detectConflictingPatterns($errors);
+        $this->detectUnsafeDestinations($errors);
+        $this->detectPotentialLoops($errors);
+        $this->detectInvalidReferenceHtmlAliases($errors);
+
+        return new ValidationResultDTO(
+            isValid: $errors === [],
+            errors: $errors,
+        );
+    }
+
+    public function getUnresolvedRequests(array $filters = []): Collection
+    {
+        // Ordered by hit_count, because the question this answers after cutover
+        // is "which broken URL is costing us most", and that is a matter of how
+        // many people arrive on it - not of which was seen most recently. A URL
+        // a crawler touched once and one an external site still links to are
+        // indistinguishable by last_seen_at. last_seen_at stays as the
+        // tie-breaker so equally-hit rows come back newest first.
+        $query = UnresolvedLegacyRequest::query()
+            ->orderByDesc('hit_count')
+            ->orderByDesc('last_seen_at');
+
+        if (isset($filters['since']) && is_string($filters['since'])) {
+            $query->where('last_seen_at', '>=', $filters['since']);
+        }
+
+        if (isset($filters['type']) && is_string($filters['type'])) {
+            $query->where('request_type', $filters['type']);
+        }
+
+        return $query->get()->map(fn (UnresolvedLegacyRequest $record): UnresolvedRequestDTO => new UnresolvedRequestDTO(
+            url: (string) $record->url,
+            queryString: $record->query_string,
+            method: (string) $record->method,
+            referrer: $record->referrer,
+            resolvedLocale: $record->resolved_locale,
+            requestType: (string) $record->request_type,
+            timestamp: $record->last_seen_at?->toIso8601String() ?? '',
+            hitCount: (int) $record->hit_count,
+        ));
+    }
+
+    public function getFileInventory(): Collection
+    {
+        return LegacyFileInventory::query()
+            ->orderBy('id')
+            ->get()
+            ->map(fn (LegacyFileInventory $entry): FileInventoryItemDTO => new FileInventoryItemDTO(
+                id: (int) $entry->getKey(),
+                legacyPath: (string) $entry->legacy_path,
+                currentPath: $entry->current_path,
+                mediaAssetId: $entry->media_asset_id !== null ? (int) $entry->media_asset_id : null,
+                status: (string) $entry->status,
+            ));
+    }
+
+    private function resolveReferenceHtmlAlias(
+        string $path,
+        ?string $queryString,
+        ?string $preferredLocale,
+    ): ?RedirectResultDTO {
+        $explicitLocale = null;
+        $aliasPath = $path;
+
+        if (preg_match('#^/(ar|en)(/.*)$#', $path, $matches) === 1) {
+            $explicitLocale = $matches[1];
+            $aliasPath = $matches[2];
+        }
+
+        /** @var array<string, string> $aliases */
+        $aliases = config('reference_html_aliases', []);
+        $destination = $aliases[$aliasPath] ?? null;
+
+        if (! is_string($destination)) {
+            return null;
+        }
+
+        $locale = $explicitLocale ?? (in_array($preferredLocale, ['ar', 'en'], true) ? $preferredLocale : 'ar');
+        $localizedDestination = '/'.$locale.($destination === '/' ? '' : '/'.ltrim($destination, '/'));
+
+        if ($queryString !== null && $queryString !== '') {
+            $localizedDestination .= '?'.$queryString;
+        }
+
+        return new RedirectResultDTO(
+            statusCode: $explicitLocale === null ? 302 : 301,
+            destinationUrl: $localizedDestination,
+            matchType: 'reference_html_alias',
+        );
+    }
+
+    /**
+     * Follow the redirect chain, detecting loops and enforcing max hops.
+     */
+    private function followRedirectChain(string $path, ?string $queryString): ?RedirectResultDTO
+    {
+        $visited = [];
+        $currentPath = $path;
+        $lastResult = null;
+
+        for ($hop = 0; $hop < self::MAX_REDIRECT_HOPS; $hop++) {
+            if (in_array($currentPath, $visited, true)) {
+                Log::warning('Redirect loop detected', ['chain' => $visited, 'looping_path' => $currentPath]);
+
+                return $lastResult;
+            }
+
+            $visited[] = $currentPath;
+
+            $result = $this->resolveExactMatch($currentPath, $hop === 0 ? $queryString : null)
+                ?? $this->resolveLegacyQueryMatch($currentPath, $hop === 0 ? $queryString : null)
+                ?? $this->resolvePatternMatch($currentPath);
+
+            if ($result === null) {
+                return $lastResult;
+            }
+
+            $lastResult = $result;
+
+            $destinationPath = parse_url($result->destinationUrl, PHP_URL_PATH);
+
+            if (! is_string($destinationPath) || $destinationPath === '') {
+                return $lastResult;
+            }
+
+            $currentPath = '/'.ltrim($destinationPath, '/');
+        }
+
+        return $lastResult;
+    }
+
+    private function resolveLegacyQueryMatch(string $path, ?string $queryString): ?RedirectResultDTO
+    {
+        if ($queryString === null || trim($queryString) === '') {
+            return null;
+        }
+
+        return $this->legacyQueryRedirectResolver->resolve($path, $queryString);
+    }
+
+    private function resolveExactMatch(string $path, ?string $queryString): ?RedirectResultDTO
+    {
+        $querySignature = $this->querySignature($path, $queryString);
+        $isLegacyRouter = in_array(mb_strtolower(basename($path)), ['index.php', 'windex.php'], true);
+        $cacheKey = 'continuity:exact:'.md5($path.'?'.$querySignature);
+
+        $rule = $this->cacheService->tags('continuity')->remember(
+            $cacheKey,
+            fn () => LegacyExactRedirect::query()
+                ->active()
+                ->whereRaw('LOWER(legacy_path) = ?', [mb_strtolower($path)])
+                ->where(function ($query) use ($querySignature, $isLegacyRouter): void {
+                    if ($querySignature !== '') {
+                        $query->where('query_signature', $querySignature);
+
+                        if (! $isLegacyRouter) {
+                            $query->orWhereNull('query_signature')->orWhere('query_signature', '');
+                        }
+
+                        return;
+                    }
+
+                    $query->whereNull('query_signature')->orWhere('query_signature', '');
+                })
+                ->orderByRaw('CASE WHEN query_signature IS NULL OR query_signature = ? THEN 1 ELSE 0 END', [''])
+                ->orderBy('id')
+                ->first(),
+            self::CACHE_TTL,
+        );
+
+        if (! $rule instanceof LegacyExactRedirect) {
+            return null;
+        }
+
+        $rule->increment('hit_count');
+        $rule->update(['last_hit_at' => now()]);
+
+        $destinationUrl = (string) $rule->destination_url;
+
+        if (! $this->isAllowedDestination($destinationUrl)) {
+            Log::warning('Blocked unsafe exact redirect destination', [
+                'rule_id' => $rule->getKey(),
+                'path' => $path,
+                'destination' => $destinationUrl,
+            ]);
+
+            return null;
+        }
+
+        $destinationUrl = $this->sanitizeDestination($destinationUrl);
+
+        return new RedirectResultDTO(
+            statusCode: (int) $rule->status_code,
+            destinationUrl: $destinationUrl,
+            matchType: 'exact',
+        );
+    }
+
+    private function querySignature(string $path, ?string $queryString): string
+    {
+        if ($queryString === null || trim($queryString) === '') {
+            return '';
+        }
+
+        $params = $this->legacyUrlNormalizer->normalize($path, $queryString)->params;
+        ksort($params);
+
+        return http_build_query($params, '', '&', PHP_QUERY_RFC3986);
+    }
+
+    private function resolvePatternMatch(string $path): ?RedirectResultDTO
+    {
+        $rules = LegacyPatternRule::query()
+            ->active()
+            ->ordered()
+            ->get();
+
+        foreach ($rules as $rule) {
+            try {
+                $pattern = (string) $rule->pattern;
+
+                if (@preg_match($pattern, $path, $matches) === 1) {
+                    $destination = (string) $rule->replacement;
+
+                    foreach ($matches as $index => $match) {
+                        $destination = str_replace('$'.$index, $match, $destination);
+                    }
+
+                    if (! $this->isAllowedDestination($destination)) {
+                        Log::warning('Blocked unsafe pattern redirect destination', [
+                            'rule_id' => $rule->getKey(),
+                            'path' => $path,
+                            'destination' => $destination,
+                        ]);
+
+                        return null;
+                    }
+
+                    $destination = $this->sanitizeDestination($destination);
+
+                    $rule->increment('hit_count');
+                    $rule->update(['last_hit_at' => now()]);
+
+                    return new RedirectResultDTO(
+                        statusCode: (int) $rule->status_code,
+                        destinationUrl: $destination,
+                        matchType: 'pattern',
+                    );
+                }
+            } catch (\Throwable $e) {
+                Log::warning('Invalid pattern rule skipped', [
+                    'rule_id' => $rule->getKey(),
+                    'pattern' => $rule->pattern,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @param  array<int, ValidationMessageDTO>  $errors
+     */
+    private function detectUnsafeDestinations(array &$errors): void
+    {
+        foreach (LegacyExactRedirect::query()->active()->get() as $redirect) {
+            $destination = (string) $redirect->destination_url;
+
+            if ($this->isAllowedDestination($destination)) {
+                continue;
+            }
+
+            $errors[] = new ValidationMessageDTO(
+                field: 'legacy_exact_redirects',
+                messages: ["Unsafe redirect destination '{$destination}' (rule {$redirect->getKey()})"],
+            );
+        }
+
+        foreach (LegacyPatternRule::query()->active()->get() as $rule) {
+            $destination = (string) $rule->replacement;
+
+            if ($this->isAllowedDestination($destination)) {
+                continue;
+            }
+
+            $errors[] = new ValidationMessageDTO(
+                field: 'legacy_pattern_rules',
+                messages: ["Unsafe pattern redirect destination '{$destination}' (rule {$rule->getKey()})"],
+            );
+        }
+    }
+
+    /**
+     * @param  array<int, ValidationMessageDTO>  $errors
+     */
+    private function detectDuplicateExactPaths(array &$errors): void
+    {
+        $redirects = LegacyExactRedirect::query()
+            ->active()
+            ->get()
+            ->groupBy(fn (LegacyExactRedirect $r): string => mb_strtolower((string) $r->legacy_path).'?'.(string) $r->query_signature);
+
+        foreach ($redirects as $path => $group) {
+            if ($group->count() > 1) {
+                $ids = $group->pluck('id')->implode(', ');
+                $errors[] = new ValidationMessageDTO(
+                    field: 'legacy_exact_redirects',
+                    messages: ["Duplicate legacy_path '{$path}' found in rules: {$ids}"],
+                );
+            }
+        }
+    }
+
+    /**
+     * @param  array<int, ValidationMessageDTO>  $errors
+     */
+    private function detectConflictingPatterns(array &$errors): void
+    {
+        $patterns = LegacyPatternRule::query()
+            ->active()
+            ->ordered()
+            ->get();
+
+        $seen = [];
+
+        foreach ($patterns as $rule) {
+            $key = mb_strtolower((string) $rule->pattern);
+
+            if (isset($seen[$key]) && $seen[$key] !== (string) $rule->replacement) {
+                $errors[] = new ValidationMessageDTO(
+                    field: 'legacy_pattern_rules',
+                    messages: ["Conflicting pattern '{$rule->pattern}' has different replacements (rule {$rule->getKey()})"],
+                );
+            }
+
+            $seen[$key] = (string) $rule->replacement;
+        }
+    }
+
+    /**
+     * @param  array<int, ValidationMessageDTO>  $errors
+     */
+    private function detectPotentialLoops(array &$errors): void
+    {
+        $redirects = LegacyExactRedirect::query()
+            ->active()
+            ->get();
+
+        $pathMap = [];
+
+        foreach ($redirects as $redirect) {
+            $source = mb_strtolower((string) $redirect->legacy_path);
+            $destPath = parse_url((string) $redirect->destination_url, PHP_URL_PATH);
+
+            if (is_string($destPath)) {
+                $pathMap[$source] = mb_strtolower('/'.ltrim($destPath, '/'));
+            }
+        }
+
+        foreach ($pathMap as $startPath => $destination) {
+            $visited = [$startPath];
+            $current = $destination;
+
+            for ($i = 0; $i < self::MAX_REDIRECT_HOPS; $i++) {
+                if (in_array($current, $visited, true)) {
+                    $chain = implode(' → ', [...$visited, $current]);
+                    $errors[] = new ValidationMessageDTO(
+                        field: 'legacy_exact_redirects',
+                        messages: ["Potential redirect loop detected: {$chain}"],
+                    );
+                    break;
+                }
+
+                if (! isset($pathMap[$current])) {
+                    break;
+                }
+
+                $visited[] = $current;
+                $current = $pathMap[$current];
+            }
+        }
+    }
+
+    /**
+     * @param  array<int, ValidationMessageDTO>  $errors
+     */
+    private function detectInvalidReferenceHtmlAliases(array &$errors): void
+    {
+        $aliases = config('reference_html_aliases', []);
+
+        if (! is_array($aliases)) {
+            $errors[] = new ValidationMessageDTO(
+                field: 'reference_html_aliases',
+                messages: ['Reference HTML aliases must be an array.'],
+            );
+
+            return;
+        }
+
+        foreach ($aliases as $source => $destination) {
+            $validSource = is_string($source)
+                && str_starts_with($source, '/')
+                && str_ends_with($source, '.html')
+                && ! str_contains($source, '\\')
+                && preg_match('/[\x00-\x1F\x7F]/', $source) !== 1;
+            $validDestination = is_string($destination)
+                && str_starts_with($destination, '/')
+                && ! str_starts_with($destination, '//')
+                && ! str_contains($destination, '\\')
+                && parse_url($destination, PHP_URL_SCHEME) === null
+                && parse_url($destination, PHP_URL_HOST) === null
+                && parse_url($destination, PHP_URL_QUERY) === null
+                && parse_url($destination, PHP_URL_FRAGMENT) === null
+                && preg_match('/[\x00-\x1F\x7F]/', $destination) !== 1;
+
+            if ($validSource && $validDestination) {
+                continue;
+            }
+
+            $errors[] = new ValidationMessageDTO(
+                field: 'reference_html_aliases',
+                messages: ["Unsafe reference alias '{$source}' => '{$destination}'."],
+            );
+        }
+    }
+
+    /**
+     * Validate that a redirect destination is safe (internal or allowlisted).
+     *
+     * Relative paths are always allowed. Absolute URLs must target spu.edu.sy,
+     * a subdomain thereof, or an explicitly allowlisted external host.
+     */
+    private function isAllowedDestination(string $url): bool
+    {
+        $parsed = parse_url($url);
+
+        if ($parsed === false) {
+            return false;
+        }
+
+        $scheme = strtolower((string) ($parsed['scheme'] ?? ''));
+
+        if ($scheme !== '' && ! in_array($scheme, ['http', 'https'], true)) {
+            return false;
+        }
+
+        // Relative paths are always allowed.
+        if (! isset($parsed['host'])) {
+            return $scheme === '';
+        }
+
+        $host = strtolower($parsed['host']);
+
+        /** @var array<int, string> $allowedHosts */
+        $allowedHosts = config('continuity.allowed_redirect_hosts', ['spu.edu.sy']);
+
+        if (in_array($host, $allowedHosts, true)) {
+            return true;
+        }
+
+        // Allow subdomains of spu.edu.sy.
+        if (str_ends_with($host, '.spu.edu.sy')) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Strip query string and fragment from a redirect destination URL.
+     *
+     * Preserves scheme, host, and path only.
+     */
+    private function sanitizeDestination(string $url): string
+    {
+        $parsed = parse_url($url);
+
+        // Relative path — strip query/fragment only.
+        if (! isset($parsed['host'])) {
+            return $parsed['path'] ?? '/';
+        }
+
+        $scheme = $parsed['scheme'] ?? 'https';
+        $host = $parsed['host'];
+        $port = isset($parsed['port']) ? ':'.$parsed['port'] : '';
+        $path = $parsed['path'] ?? '/';
+
+        return "{$scheme}://{$host}{$port}{$path}";
+    }
+}

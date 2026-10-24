@@ -1,0 +1,15 @@
+{
+  "name": "Syrian Private University",
+  "short_name": "SPU",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#202759",
+  "icons": [
+    {
+      "src": "/images/single-logo.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

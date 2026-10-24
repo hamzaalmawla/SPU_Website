@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Http\Middleware;
 
-use App\Contracts\CacheServiceInterface;
+use App\Contracts\Shared\CacheServiceInterface;
+use App\Support\AdminPath;
+use BadMethodCallException;
 use Closure;
 use Illuminate\Contracts\Auth\Factory as AuthFactory;
 use Illuminate\Http\Request;
@@ -18,6 +20,54 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
  */
 final class CachePublicPages
 {
+    /**
+     * Stand-in written into cached HTML in place of the CSRF token.
+     *
+     * The public layout renders <meta name="csrf-token"> on every page, and
+     * resources/js/alpine/dynamicFormStore.js sends it as X-CSRF-TOKEN. Caching
+     * the rendered token would hand one visitor's per-session token to everyone
+     * who hits the cache, so every AJAX form post from a cached page would fail
+     * CSRF with a 419. The token is swapped out on the way into the cache and
+     * back in, per request, on the way out.
+     */
+    private const CSRF_PLACEHOLDER = '__SPU_CSRF_TOKEN_PLACEHOLDER__';
+
+    private const BROWSER_CACHE_CONTROL = 'private, no-store, max-age=0';
+
+    /**
+     * These are the query parameters used by public routes when a route name
+     * is not available (for example, when this middleware is tested directly).
+     * Named routes below narrow this list further to avoid irrelevant query
+     * values fragmenting otherwise identical page caches.
+     *
+     * @var list<string>
+     */
+    private const SUPPORTED_QUERY_PARAMETERS = [
+        'academic_phase',
+        'category',
+        'course',
+        'department',
+        'event',
+        'expertise',
+        'faculty',
+        'id',
+        'job',
+        'lab',
+        'month',
+        'page',
+        'q',
+        'search',
+        'semester',
+        'slug',
+        'source',
+        'status',
+        'tab',
+        'theme',
+        'topic',
+        'type',
+        'year',
+    ];
+
     public function __construct(
         private readonly CacheServiceInterface $cacheService,
         private readonly AuthFactory $authFactory,
@@ -35,7 +85,9 @@ final class CachePublicPages
         $cacheHit = true;
         $freshResponse = null;
 
-        $cachedPayload = $this->cacheService->remember(
+        $cacheService = $this->taggedCacheService($request);
+
+        $cachedPayload = $cacheService->remember(
             $this->buildCacheKey($request),
             function () use (&$cacheHit, &$freshResponse, $next, $request): ?array {
                 $cacheHit = false;
@@ -63,7 +115,11 @@ final class CachePublicPages
             return true;
         }
 
-        if ($request->is('admin') || $request->is('admin/*')) {
+        if ($this->hasSessionState($request) || $this->hasPrivateRequestHeaders($request)) {
+            return true;
+        }
+
+        if (AdminPath::matches($request)) {
             return true;
         }
 
@@ -71,7 +127,68 @@ final class CachePublicPages
             return true;
         }
 
+        if (in_array($request->route()?->getName(), [
+            'public.contact',
+            'public.e-services.suggestions-complaints',
+            'public.news.events-list.register',
+            'public.news.register',
+            'public.research.conferences.register',
+            // Search results are per-query and effectively unbounded in
+            // variation. Caching whole rendered pages for arbitrary visitor
+            // input would fill the page cache with single-use entries; the
+            // search service caches its own ranked id list instead.
+            'public.search',
+            // The achievement archive has multi-value category filters and
+            // returns HTML fragments for AJAX requests. Its service query is
+            // already bounded and must not collide with the full-page cache.
+            'public.achievements.index',
+        ], true)) {
+            return true;
+        }
+
+        if ($request->is('*/e-services/suggestions-complaints')) {
+            return true;
+        }
+
         return $this->isPreviewRequest($request);
+    }
+
+    private function hasSessionState(Request $request): bool
+    {
+        if (! $request->hasSession()) {
+            return false;
+        }
+
+        $session = $request->session();
+
+        if ($session->hasOldInput() || $session->has('errors')) {
+            return true;
+        }
+
+        foreach (['_flash.old', '_flash.new'] as $flashKey) {
+            if (is_array($session->get($flashKey, [])) && $session->get($flashKey, []) !== []) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function hasPrivateRequestHeaders(Request $request): bool
+    {
+        if ($request->headers->has('Authorization')) {
+            return true;
+        }
+
+        foreach (['Cache-Control', 'Pragma'] as $header) {
+            $value = $request->headers->get($header);
+
+            if (is_string($value) && preg_match('/(?:^|,)\s*(?:no-cache|no-store)(?:\s*=\s*[^,]*)?\s*(?:,|$)/i', $value) === 1) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private function isPreviewRequest(Request $request): bool
@@ -97,7 +214,7 @@ final class CachePublicPages
     private function buildCacheKey(Request $request): string
     {
         $locale = $request->route('locale');
-        $normalizedQuery = $this->normalizeQuery($request->query());
+        $normalizedQuery = $this->normalizeQuery($request);
         $queryString = http_build_query($normalizedQuery);
 
         return 'public_pages:'.sha1(implode('|', [
@@ -107,21 +224,115 @@ final class CachePublicPages
         ]));
     }
 
-    /**
-     * @param  array<string, mixed>  $query
-     * @return array<string, mixed>
-     */
-    private function normalizeQuery(array $query): array
+    private function taggedCacheService(Request $request): CacheServiceInterface
     {
-        ksort($query);
+        $locale = $request->route('locale');
+        $tags = ['public-pages', 'public-shell'];
 
-        foreach ($query as $key => $value) {
-            if (is_array($value)) {
-                $query[$key] = $this->normalizeQuery($value);
+        if (is_string($locale) && $locale !== '') {
+            $tags[] = 'public-shell:'.$locale;
+        }
+
+        try {
+            return $this->cacheService->tags($tags);
+        } catch (BadMethodCallException) {
+            return $this->cacheService;
+        }
+    }
+
+    /**
+     * @return array<string, string|int>
+     */
+    private function normalizeQuery(Request $request): array
+    {
+        $allowedParameters = $this->supportedQueryParameters($request);
+        $query = [];
+
+        foreach ($allowedParameters as $key) {
+            if (! array_key_exists($key, $request->query())) {
+                continue;
+            }
+
+            $value = $this->canonicalQueryValue($key, $request->query($key));
+
+            if ($value !== null) {
+                $query[$key] = $value;
             }
         }
 
+        ksort($query);
+
         return $query;
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function supportedQueryParameters(Request $request): array
+    {
+        $routeName = $request->route()?->getName();
+
+        if (! is_string($routeName)) {
+            return self::SUPPORTED_QUERY_PARAMETERS;
+        }
+
+        return match ($routeName) {
+            'public.alumni.index' => ['q', 'year', 'faculty', 'department', 'page'],
+            'public.about.leadership' => ['faculty'],
+            'public.about.directorates.staff' => ['faculty', 'page'],
+            'public.about.partnerships' => ['category', 'q', 'page'],
+            'public.about.profile' => ['source'],
+            'public.admissions.section' => $request->route('section') === 'documents' ? ['tab'] : [],
+            'public.campus-life.career-development.jobs' => ['q', 'category', 'type', 'page'],
+            'public.campus-life.career-development.jobs.apply' => ['job'],
+            'public.faculties.subpage' => match ($request->route('subpage')) {
+                'alumni', 'valedictorians' => ['q', 'year', 'department', 'faculty', 'semester', 'academic_phase', 'page'],
+                'projects', 'research' => ['page'],
+                'labs' => ['lab', 'page'],
+                default => [],
+            },
+            'public.faculties.study-plan' => ['department'],
+            'public.faculties.study-plan.course' => ['department', 'course', 'type'],
+            'public.news.articles' => ['type', 'category', 'search', 'page'],
+            'public.news.agreements' => ['search', 'page'],
+            'public.news.society-events' => ['search', 'page'],
+            'public.news.announcements' => ['category'],
+            'public.news.events' => ['month', 'type'],
+            'public.news.events-list' => ['category'],
+            'public.news.events-list.register', 'public.news.events-list.past' => ['event'],
+            'public.news.gallery' => ['category', 'page'],
+            'public.research.repository', 'public.research.publications.index' => ['q', 'faculty', 'type', 'year', 'page'],
+            'public.research.projects.index' => ['q', 'status', 'faculty', 'theme', 'page'],
+            'public.research.researchers.index' => ['q', 'faculty', 'expertise', 'page'],
+            'public.research.expert-finder' => ['q', 'faculty', 'page'],
+            'public.research.conferences.register' => ['event'],
+            default => [],
+        };
+    }
+
+    private function canonicalQueryValue(string $key, mixed $value): string|int|null
+    {
+        if (! is_scalar($value)) {
+            return null;
+        }
+
+        $value = (string) $value;
+
+        if ($key === 'page') {
+            $page = filter_var($value, FILTER_VALIDATE_INT);
+
+            return is_int($page) && $page > 1 ? $page : null;
+        }
+
+        if ($key === 'q') {
+            $value = trim($value);
+        }
+
+        if ($key === 'source' && ! in_array($value, ['person', 'faculty-member'], true)) {
+            return null;
+        }
+
+        return $value === '' ? null : $value;
     }
 
     private function serializeResponse(Request $request, Response $response): ?array
@@ -133,7 +344,7 @@ final class CachePublicPages
         return [
             'status' => $response->getStatusCode(),
             'headers' => $this->filterHeaders($response),
-            'content' => (string) $response->getContent(),
+            'content' => $this->maskCsrfToken($request, (string) $response->getContent()),
         ];
     }
 
@@ -159,7 +370,32 @@ final class CachePublicPages
     {
         $headers = $response->headers->all();
 
-        unset($headers['cache-control'], $headers['date'], $headers['set-cookie'], $headers['x-cache']);
+        // content-length must not survive into the cache: restoring a cached
+        // response expands the CSRF placeholder into a full token, so a stored
+        // length would describe the body before that substitution and truncate
+        // it. Symfony does not currently set the header, which is exactly why
+        // this is worth closing now rather than discovering later.
+        //
+        // content-encoding, transfer-encoding and content-range describe how a
+        // body was framed on one specific wire, and the body stored here is
+        // plain text that still has a CSRF placeholder substituted into it on
+        // every read. Storing any of them would describe the wrong thing.
+        //
+        // CompressPublicResponses runs outermost, so today nothing encoded ever
+        // reaches this method. Unsetting them anyway turns that ordering from a
+        // convention into a guarantee: move compression inside this group by
+        // accident and the result is a wasteful cache entry, not a site-wide
+        // break where every cached page ships a corrupted CSRF token.
+        unset(
+            $headers['cache-control'],
+            $headers['date'],
+            $headers['set-cookie'],
+            $headers['x-cache'],
+            $headers['content-length'],
+            $headers['content-encoding'],
+            $headers['transfer-encoding'],
+            $headers['content-range'],
+        );
 
         return $headers;
     }
@@ -169,7 +405,7 @@ final class CachePublicPages
      */
     private function restoreResponse(array $payload): Response
     {
-        $response = new HttpResponse($payload['content'], $payload['status']);
+        $response = new HttpResponse($this->restoreCsrfToken($payload['content']), $payload['status']);
 
         foreach ($payload['headers'] as $name => $values) {
             foreach ($values as $value) {
@@ -180,9 +416,39 @@ final class CachePublicPages
         return $response;
     }
 
+    /**
+     * Replace this request's CSRF token with a placeholder before caching.
+     *
+     * The token is a 40-character random string, so an exact replace cannot
+     * collide with page content.
+     */
+    private function maskCsrfToken(Request $request, string $content): string
+    {
+        $token = $request->hasSession() ? $request->session()->token() : null;
+
+        if (! is_string($token) || $token === '') {
+            return $content;
+        }
+
+        return str_replace($token, self::CSRF_PLACEHOLDER, $content);
+    }
+
+    /**
+     * Put the current visitor's own CSRF token back into cached HTML.
+     */
+    private function restoreCsrfToken(string $content): string
+    {
+        if (! str_contains($content, self::CSRF_PLACEHOLDER)) {
+            return $content;
+        }
+
+        return str_replace(self::CSRF_PLACEHOLDER, csrf_token(), $content);
+    }
+
     private function withCacheHeader(Response $response, string $value): Response
     {
         $response->headers->set('X-Cache', $value);
+        $response->headers->set('Cache-Control', self::BROWSER_CACHE_CONTROL);
 
         return $response;
     }

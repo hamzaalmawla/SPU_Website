@@ -1,0 +1,84 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Models\Media;
+
+use App\Models\Page\PageSeoMeta;
+use App\Models\User\User;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
+
+class MediaAsset extends Model
+{
+    use HasFactory, SoftDeletes;
+
+    /**
+     * @var list<string>
+     */
+    protected $fillable = [
+        'disk',
+        'directory',
+        'filename',
+        'original_name',
+        'mime_type',
+        'extension',
+        'size_bytes',
+        'checksum',
+        'media_type',
+        'library_scope',
+        'metadata_status',
+        'promoted_from_media_id',
+        'width',
+        'height',
+        'focal_x',
+        'focal_y',
+        'display_fit',
+        'alt_text_ar',
+        'alt_text_en',
+        'caption_ar',
+        'caption_en',
+        'title_ar',
+        'title_en',
+        'path',
+        'source_path',
+        'reviewed_at',
+        'reviewed_by',
+        'webp_path',
+        'srcset_json',
+        'uploaded_by',
+        'faculty_scope_slug',
+    ];
+
+    protected function casts(): array
+    {
+        return [
+            'size_bytes' => 'integer',
+            'width' => 'integer',
+            'height' => 'integer',
+            'focal_x' => 'float',
+            'focal_y' => 'float',
+            'srcset_json' => 'array',
+            'reviewed_at' => 'datetime',
+            'deleted_at' => 'datetime',
+        ];
+    }
+
+    public function uploadedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'uploaded_by');
+    }
+
+    public function seoMeta(): HasMany
+    {
+        return $this->hasMany(PageSeoMeta::class, 'og_image_media_id');
+    }
+
+    public function promotedFrom(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'promoted_from_media_id');
+    }
+}

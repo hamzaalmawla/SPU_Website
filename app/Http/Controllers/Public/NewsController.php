@@ -1,0 +1,395 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Http\Controllers\Public;
+
+use App\Contracts\Navigation\NavigationServiceInterface;
+use App\Contracts\News\NewsArticleEventServiceInterface;
+use App\Contracts\News\NewsServiceInterface;
+use App\Contracts\Seo\SeoMetadataServiceInterface;
+use App\Contracts\Seo\StructuredDataServiceInterface;
+use App\Contracts\Settings\SettingsServiceInterface;
+use App\DTOs\Navigation\LanguageSwitchLinkDTO;
+use App\Http\Controllers\Controller;
+use Illuminate\Contracts\View\View;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Http\Response;
+
+final class NewsController extends Controller
+{
+    public function __construct(
+        private readonly NewsServiceInterface $newsService,
+        private readonly NavigationServiceInterface $navigationService,
+        private readonly SettingsServiceInterface $settingsService,
+        private readonly SeoMetadataServiceInterface $seoMetadataService,
+        private readonly StructuredDataServiceInterface $structuredDataService,
+        private readonly NewsArticleEventServiceInterface $articleEvents,
+    ) {}
+
+    public function index(Request $request, string $locale): View
+    {
+        $page = $this->newsService->getIndexPageContent($locale);
+
+        $latest = $this->newsService->getLatestArticleCards($locale, 5, 'news');
+        $announcements = $this->newsService->getLatestArticleCards($locale, 3, 'announcement');
+        $featured = $this->newsService->getFeaturedArticles($locale, 1)->first() ?? $latest->first() ?? $announcements->first();
+
+        return view('public.news.index', $this->sharedPayload($request, $locale, '/news', [
+            'page' => $page,
+            'featured' => $featured,
+            'lastNews' => $latest,
+            'announcements' => $announcements,
+            'events' => $this->newsService->listNewsEvents($locale)->take(3)->values(),
+            'pageTitle' => (string) ($page['pageTitle'] ?? ''),
+            'pageDescription' => (string) ($page['pageDescription'] ?? ''),
+            'seo' => $this->seo($locale, '/news', (string) ($page['pageTitle'] ?? ''), (string) ($page['pageDescription'] ?? ''), (string) ($page['heroImage'] ?? '')),
+        ], $this->newsTrail($locale)));
+    }
+
+    public function articles(Request $request, string $locale): View
+    {
+        $page = $this->newsService->getArticlesPageContent($locale);
+        // News and announcements share one listing; ?type= narrows it. Anything
+        // else (missing, empty, unknown) means both.
+        $type = in_array($request->query('type'), ['news', 'announcement'], true) ? (string) $request->query('type') : null;
+
+        return view('public.news.articles', $this->sharedPayload($request, $locale, '/news/articles', [
+            'articles' => $this->newsService->listPublicArticles($locale, array_filter([
+                'category' => $request->query('category'),
+                'categoryType' => $type,
+                'categoryTypes' => $type === null ? ['news', 'announcement'] : null,
+                'search' => $request->query('search'),
+            ], static fn (mixed $value): bool => $value !== null), max(1, (int) $request->query('page', 1)), 9),
+            'categories' => $this->newsService->getListingFilterCategories($locale, $type),
+            'typeFilter' => true,
+            'activeType' => $type,
+            'activeCategory' => is_string($request->query('category')) ? (string) $request->query('category') : null,
+            'search' => is_string($request->query('search')) ? (string) $request->query('search') : '',
+            'page' => $page,
+            'pageTitle' => (string) $page['title'],
+            'pageDescription' => (string) $page['summary'],
+            'seo' => $this->seo($locale, '/news/articles', (string) $page['seoTitle'], (string) $page['seoDescription'], (string) $page['seoImage']),
+        ], $this->newsTrail($locale, $locale === 'ar' ? 'المقالات' : 'Articles', '/news/articles')));
+    }
+
+    public function agreements(Request $request, string $locale): View
+    {
+        $page = $this->newsService->getAgreementsPageContent($locale);
+
+        return view('public.news.articles', $this->sharedPayload($request, $locale, '/news/agreements', [
+            'articles' => $this->newsService->listPublicArticles($locale, [
+                'category' => 'agreements',
+                'categoryType' => 'news',
+                'search' => $request->query('search'),
+            ], max(1, (int) $request->query('page', 1)), 9),
+            'categories' => collect(),
+            'activeCategory' => null,
+            'search' => is_string($request->query('search')) ? (string) $request->query('search') : '',
+            'listingPath' => '/news/agreements',
+            'page' => $page,
+            'pageTitle' => (string) $page['title'],
+            'pageDescription' => (string) $page['summary'],
+            'seo' => $this->seo($locale, '/news/agreements', (string) $page['seoTitle'], (string) $page['seoDescription'], (string) $page['seoImage']),
+        ], $this->newsTrail($locale, $locale === 'ar' ? 'الاتفاقيات ومذكرات التفاهم' : 'Agreements and Memoranda of Understanding', '/news/agreements')));
+    }
+
+    public function societyEvents(Request $request, string $locale): View
+    {
+        $page = $this->newsService->getSocietyEventsPageContent($locale);
+
+        return view('public.news.articles', $this->sharedPayload($request, $locale, '/news/society-events', [
+            'articles' => $this->newsService->listPublicArticles($locale, [
+                'category' => 'society-events',
+                'categoryType' => 'news',
+                'search' => $request->query('search'),
+            ], max(1, (int) $request->query('page', 1)), 9),
+            'categories' => collect(),
+            'activeCategory' => null,
+            'search' => is_string($request->query('search')) ? (string) $request->query('search') : '',
+            'listingPath' => '/news/society-events',
+            'page' => $page,
+            'pageTitle' => (string) $page['title'],
+            'pageDescription' => (string) $page['summary'],
+            'seo' => $this->seo($locale, '/news/society-events', (string) $page['seoTitle'], (string) $page['seoDescription'], (string) $page['seoImage']),
+        ], $this->newsTrail($locale, $locale === 'ar' ? 'فعاليات المجتمع' : "Society's Events", '/news/society-events')));
+    }
+
+    /**
+     * Announcements no longer have their own page: they are listed with the news
+     * at /news/articles. The old address was published and is linked from the
+     * old site's resolver and from menus, so it redirects to that listing with
+     * the announcements filter applied, keeping a category filter if one was set.
+     */
+    public function announcements(Request $request, string $locale): RedirectResponse
+    {
+        $query = ['type' => 'announcement'];
+
+        // The default "announcements" category is what the type filter already selects.
+        if (is_string($request->query('category')) && ! in_array($request->query('category'), ['', 'announcements'], true)) {
+            $query['category'] = (string) $request->query('category');
+        }
+
+        return redirect('/'.$locale.'/news/articles?'.http_build_query($query, '', '&', PHP_QUERY_RFC3986), 301);
+    }
+
+    public function events(Request $request, string $locale): View
+    {
+        $page = $this->newsService->getEventsPageContent($locale);
+        $calendar = $this->newsService->getNewsEventCalendar(
+            $locale,
+            is_string($request->query('month')) ? $request->query('month') : null,
+            is_string($request->query('type')) && $request->query('type') !== '' ? $request->query('type') : null,
+        );
+
+        return view('public.news.events-calendar', $this->sharedPayload($request, $locale, '/news/events', [
+            'page' => $page,
+            'month' => $calendar['month'],
+            'monthLabel' => $calendar['monthLabel'],
+            'previousMonth' => $calendar['previousMonth'],
+            'nextMonth' => $calendar['nextMonth'],
+            'events' => $calendar['events'],
+            'days' => $calendar['days'],
+            'types' => $calendar['types'],
+            'activeType' => $calendar['type'],
+            // Previous/next walk the calendar without end - a crawler following
+            // them reached the 1760s and the 2200s. Each month view already
+            // canonicalises to the calendar itself; noindex keeps the empty
+            // months out of the index while their event links stay followed.
+            'seo' => $this->seo($locale, '/news/events', (string) $page['calendarTitle'], (string) $page['summary'], (string) $page['heroImage'], $request->has('month') || $request->has('type') ? 'noindex,follow' : 'index,follow'),
+        ]));
+    }
+
+    public function eventsList(Request $request, string $locale): View
+    {
+        $page = $this->newsService->getEventsPageContent($locale);
+        $category = is_string($request->query('category')) && $request->query('category') !== '' ? $request->query('category') : null;
+
+        return view('public.news.events-list', $this->sharedPayload($request, $locale, '/news/events-list', [
+            'page' => $page,
+            'activeCategory' => $category,
+            'upcomingEvents' => $this->newsService->listNewsEvents($locale, false, $category),
+            'pastEvents' => $this->newsService->listNewsEvents($locale, true),
+            'seo' => $this->seo($locale, '/news/events-list', (string) $page['title'], (string) $page['summary'], (string) $page['heroImage']),
+        ]));
+    }
+
+    public function eventRegistration(Request $request, string $locale): View|RedirectResponse
+    {
+        $eventId = is_string($request->query('event')) ? $request->query('event') : '';
+        $moved = $this->movedEventRedirect($locale, $eventId, true);
+        if ($moved !== null) {
+            return $moved;
+        }
+        $page = $this->newsService->getEventsPageContent($locale);
+        $event = $this->newsService->findNewsEvent($eventId, $locale, false);
+        $event = $event?->isRegisterable === true ? $event : null;
+        $switchPath = '/news/events-list/register'.($eventId !== '' ? '?event='.rawurlencode($eventId) : '');
+
+        return view('public.news.event-registration', $this->sharedPayload($request, $locale, $switchPath, [
+            'page' => $page,
+            'event' => $event,
+            'seo' => $this->seo($locale, '/news/events-list/register', (string) $page['registrationTitle'], (string) $page['registrationInfo'], null, 'noindex,follow'),
+        ]));
+    }
+
+    public function pastEvent(Request $request, string $locale): View|RedirectResponse
+    {
+        $eventId = is_string($request->query('event')) ? $request->query('event') : '';
+        $moved = $this->movedEventRedirect($locale, $eventId, false);
+        if ($moved !== null) {
+            return $moved;
+        }
+        $page = $this->newsService->getEventsPageContent($locale);
+        $event = $this->newsService->findNewsEvent($eventId, $locale, true);
+        $switchPath = '/news/events-list/past'.($eventId !== '' ? '?event='.rawurlencode($eventId) : '');
+
+        return view('public.news.past-event', $this->sharedPayload($request, $locale, $switchPath, [
+            'page' => $page,
+            'event' => $event,
+            'seo' => $this->seo($locale, '/news/events-list/past', $event?->title ?? (string) $page['notFoundTitle'], $event?->summary ?? (string) $page['notFoundText'], $event?->imageUrl),
+        ]));
+    }
+
+    public function eventDetail(Request $request, string $locale, string $event): View|RedirectResponse
+    {
+        $moved = $this->movedEventRedirect($locale, $event, false);
+        if ($moved !== null) {
+            return $moved;
+        }
+        $page = $this->newsService->getEventsPageContent($locale);
+        $newsEvent = $this->newsService->findNewsEvent($event, $locale);
+        abort_if($newsEvent === null, 404);
+        $path = '/news/events-list/'.rawurlencode($event);
+
+        return view('public.news.event-detail', $this->sharedPayload($request, $locale, $path, [
+            'page' => $page,
+            'event' => $newsEvent,
+            'seo' => $this->seo($locale, $path, $newsEvent->title, $newsEvent->summary, $newsEvent->imageUrl),
+        ]));
+    }
+
+    public function gallery(Request $request, string $locale): View
+    {
+        $category = is_string($request->query('category')) && $request->query('category') !== '' ? $request->query('category') : null;
+        $listing = $this->newsService->getGalleryListing($locale, $category, max(1, (int) $request->query('page', 1)), 8);
+        $page = $listing['page'];
+
+        return view('public.news.gallery', $this->sharedPayload($request, $locale, '/news/gallery', [
+            'page' => $page,
+            'featured' => $listing['featured'],
+            'galleryItems' => $listing['items'],
+            'activeCategory' => $category,
+            'seo' => $this->seo($locale, '/news/gallery', (string) $page['title'], (string) $page['summary'], (string) $page['heroImage']),
+        ], $this->newsTrail($locale, $locale === 'ar' ? 'معرض الصور' : 'Gallery', '/news/gallery')));
+    }
+
+    public function show(Request $request, string $locale, string $article): View
+    {
+        $newsArticle = $this->newsService->getPublicArticle($article, $locale);
+        abort_if($newsArticle === null, 404);
+        $trail = $this->newsTrail($locale, $newsArticle->title, '/news/'.$article);
+        $eventData = $newsArticle->event !== null
+            ? ['structuredData' => $this->structuredDataService->newsEvent($locale, $newsArticle, $trail)->data]
+            : [];
+
+        return view('public.news.show', $this->sharedPayload($request, $locale, '/news/'.$article, $eventData + [
+            'article' => $newsArticle,
+            'relatedArticles' => $this->newsService->getRelatedArticleCards($article, $locale, 3),
+            'adjacentArticles' => $this->newsService->getAdjacentArticleCards($article, $locale),
+            'hideFooterSocials' => true,
+            'seo' => $this->seo(
+                $locale,
+                '/news/'.$article,
+                $newsArticle->metaTitle ?? $newsArticle->title,
+                $newsArticle->metaDescription ?? $newsArticle->excerpt ?? $newsArticle->title,
+                $newsArticle->ogImage,
+                $newsArticle->robots,
+            ),
+        ], $trail));
+    }
+
+    public function articleRegistration(Request $request, string $locale, string $article): View
+    {
+        $newsArticle = $this->newsService->getPublicArticle($article, $locale);
+        // Seats and registration state are read fresh; the article may be cached.
+        $event = $newsArticle !== null ? $this->articleEvents->forArticle($newsArticle->id, $locale) : null;
+        abort_if($newsArticle === null || $event === null || ! $event->requiresRegistration, 404);
+        $path = '/news/'.$article.'/register';
+
+        return view('public.news.article-registration', $this->sharedPayload($request, $locale, $path, [
+            'article' => $newsArticle,
+            'event' => $event,
+            'seo' => $this->seo($locale, $path, $newsArticle->title, $newsArticle->excerpt ?? $newsArticle->title, $newsArticle->ogImage, 'noindex,follow'),
+        ], $this->newsTrail($locale, $newsArticle->title, '/news/'.$article)));
+    }
+
+    public function articleCalendar(string $locale, string $article): Response
+    {
+        $file = $this->articleEvents->calendarFile($article, $locale);
+        abort_if($file === null, 404);
+
+        return response($file, 200, [
+            'Content-Type' => 'text/calendar; charset=utf-8',
+            'Content-Disposition' => 'attachment; filename="spu-event-'.preg_replace('/[^A-Za-z0-9\-]/', '', $article).'.ics"',
+        ]);
+    }
+
+    public function redirectLegacyArticle(Request $request, string $locale): RedirectResponse
+    {
+        $identifier = $request->query('id');
+
+        // Same as the project alias: /news/article/index.html lands here with no
+        // id, and the news index answers the question the visitor was asking.
+        if (! is_string($identifier) || trim($identifier) === '') {
+            return redirect()->route('public.news.index', ['locale' => $locale], 301);
+        }
+
+        $article = $this->newsService->getPublicArticle(trim($identifier), $locale);
+        abort_if($article === null, 404);
+
+        return redirect($article->url, 301);
+    }
+
+    /**
+     * Old Events page list addresses of an entry moved into an article go to
+     * the article, or to its registration when it still takes registrations.
+     */
+    private function movedEventRedirect(string $locale, string $eventId, bool $registration): ?RedirectResponse
+    {
+        $articleId = $eventId !== '' ? ($this->articleEvents->movedEventArticleIds()[$eventId] ?? null) : null;
+        if ($articleId === null) {
+            return null;
+        }
+
+        $event = $registration ? $this->articleEvents->forArticle($articleId, $locale) : null;
+
+        return redirect($event?->registrationUrl ?? '/'.$locale.'/news/'.$articleId, 301);
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @param  array<int, array{name: string, url: string}>  $breadcrumbs  Crumbs after the implicit homepage crumb.
+     * @return array<string, mixed>
+     */
+    private function sharedPayload(Request $request, string $locale, string $path, array $payload, array $breadcrumbs = []): array
+    {
+        $defaults = [
+            'locale' => $locale,
+            'direction' => $locale === 'ar' ? 'rtl' : 'ltr',
+            'navigation' => $this->navigationService->getFullNavigationPayload($locale, $request->path()),
+            'settings' => $this->settingsService->getPublicSettings($locale),
+            'languageSwitch' => $this->languageSwitchLinks($locale, $path),
+            'isPreview' => false,
+        ];
+
+        if ($breadcrumbs !== []) {
+            $defaults['structuredData'] = $this->structuredDataService->breadcrumbs($locale, $breadcrumbs)->data;
+        }
+
+        return array_merge($defaults, $payload);
+    }
+
+    /**
+     * Build a breadcrumb trail rooted at the news section.
+     *
+     * @return array<int, array{name: string, url: string}>
+     */
+    private function newsTrail(string $locale, ?string $label = null, ?string $path = null): array
+    {
+        $trail = [[
+            'name' => $locale === 'ar' ? 'الأخبار' : 'News',
+            'url' => '/'.$locale.'/news',
+        ]];
+
+        if ($label !== null && $label !== '' && $path !== null && $path !== '') {
+            $trail[] = ['name' => $label, 'url' => '/'.$locale.$path];
+        }
+
+        return $trail;
+    }
+
+    private function seo(string $locale, string $path, string $title, string $description, ?string $image = null, string $robots = 'index,follow'): mixed
+    {
+        return $this->seoMetadataService->buildFallback($locale, [
+            'path' => '/'.$locale.$path,
+            'locale_paths' => ['ar' => '/ar'.$path, 'en' => '/en'.$path],
+            'title' => $title,
+            'meta_description' => $description,
+            'og_title' => $title,
+            'og_description' => $description,
+            'og_image' => $image,
+            'robots' => $robots,
+        ]);
+    }
+
+    /** @return array<int, LanguageSwitchLinkDTO> */
+    private function languageSwitchLinks(string $locale, string $path): array
+    {
+        return [
+            new LanguageSwitchLinkDTO('ar', 'AR', '/ar'.$path, $locale === 'ar'),
+            new LanguageSwitchLinkDTO('en', 'EN', '/en'.$path, $locale === 'en'),
+        ];
+    }
+}
