@@ -1891,33 +1891,93 @@ final class FacultyPageService implements FacultyPageServiceInterface
     /**
      * A student on the honor list in several semesters often has a photo on
      * only one record; the others reuse it. Students match by full name
-     * within the faculty's list, and a record's own photo always wins.
+     * within the faculty's list. A record's own photo wins, except that a
+     * media library photo (one an editor chose and framed) replaces an
+     * old-site photo on the student's other records, so they all show it.
      *
      * @param  array<int, array<string, mixed>>  $items
      * @return array<int, array<string, mixed>>
      */
     private function withSharedHonorPhotos(array $items): array
     {
+        $libraryImages = $this->libraryImageUrls(array_column($items, 'image'));
         $photos = [];
 
         foreach ($items as $item) {
             $key = $this->studentNameKey($item['title'] ?? null);
             $image = $item['image'] ?? null;
 
-            if ($key !== '' && is_string($image) && trim($image) !== '') {
-                $photos[$key] ??= $image;
+            if ($key === '' || ! is_string($image) || trim($image) === '') {
+                continue;
+            }
+
+            $isLibrary = isset($libraryImages[$image]);
+
+            if (! isset($photos[$key]) || ($isLibrary && ! $photos[$key]['library'])) {
+                $photos[$key] = ['image' => $image, 'library' => $isLibrary];
             }
         }
 
-        return array_map(function (array $item) use ($photos): array {
+        return array_map(function (array $item) use ($photos, $libraryImages): array {
             $image = $item['image'] ?? null;
+            $shared = $photos[$this->studentNameKey($item['title'] ?? null)] ?? null;
 
-            if (! is_string($image) || trim($image) === '') {
-                $item['image'] = $photos[$this->studentNameKey($item['title'] ?? null)] ?? $image;
+            if ($shared === null) {
+                return $item;
+            }
+
+            $hasOwn = is_string($image) && trim($image) !== '';
+
+            if (! $hasOwn || ($shared['library'] && ! isset($libraryImages[$image]))) {
+                $item['image'] = $shared['image'];
             }
 
             return $item;
         }, $items);
+    }
+
+    /**
+     * The given image URLs that are main media library images, as a set.
+     *
+     * @param  array<int, mixed>  $urls
+     * @return array<string, true>
+     */
+    private function libraryImageUrls(array $urls): array
+    {
+        $urls = array_values(array_unique(array_filter($urls, static fn (mixed $url): bool => is_string($url) && trim($url) !== '')));
+
+        if ($urls === []) {
+            return [];
+        }
+
+        $candidates = [];
+
+        foreach ($urls as $url) {
+            $path = ltrim(rawurldecode((string) (parse_url($url, PHP_URL_PATH) ?: $url)), '/');
+            $candidates[] = $path;
+            // A public-disk URL is "/storage/<path>"; the media row keeps "<path>".
+            $candidates[] = (string) preg_replace('#^storage/#', '', $path);
+        }
+
+        $candidates = array_values(array_unique(array_filter($candidates)));
+        $library = [];
+
+        MediaAsset::query()
+            ->where('library_scope', 'main')
+            ->where('media_type', 'image')
+            ->where(fn (Builder $query): Builder => $query->whereIn('path', $candidates)->orWhereIn('webp_path', $candidates))
+            ->get(['path', 'webp_path', 'disk'])
+            ->each(function (MediaAsset $asset) use (&$library): void {
+                foreach ([$asset->path, $asset->webp_path] as $path) {
+                    $url = MediaUrlResolver::resolve($path, $asset->disk);
+
+                    if (is_string($url) && $url !== '') {
+                        $library[$url] = true;
+                    }
+                }
+            });
+
+        return array_intersect_key($library, array_flip($urls));
     }
 
     private function studentNameKey(mixed $name): string
