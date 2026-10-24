@@ -176,7 +176,6 @@ class FacultyMemberResource extends Resource
                             ->numeric()
                             ->default(fn (): int => self::nextSortOrder())
                             ->minValue(0)
-                            ->step(10)
                             ->helperText(__('admin_resources.faculty_member.lower_numbers_appear_first_you_can_also_reorder_staff_from_t')),
                         Toggle::make('is_enabled')->label(__('admin_resources.faculty_member.eligible_for_public_display_after_publication'))->default(true),
                     ])->columns(2),

@@ -127,7 +127,6 @@ class PersonResource extends Resource
                     ->numeric()
                     ->default(fn (): int => self::nextSortOrder())
                     ->minValue(0)
-                    ->step(10)
                     ->helperText(__('admin_resources.person.lower_numbers_appear_first_you_can_also_reorder_people_from')),
                 Toggle::make('is_enabled')->label(__('admin_resources.person.visible_to_editors'))->default(true),
             ])->columns(2),
