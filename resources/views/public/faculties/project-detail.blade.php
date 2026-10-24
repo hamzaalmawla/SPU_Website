@@ -37,6 +37,7 @@
         $technologiesLabel = $isAr ? 'التقنيات' : 'Technologies';
         $teamLabel = $isAr ? 'الفريق' : 'Team';
         $supervisorLabel = $isAr ? 'المشرف' : 'Supervisor';
+        $supervisorsLabel = $isAr ? 'المشرفون' : 'Supervisors';
         $galleryLabel = $isAr ? 'معرض المشروع' : 'Project Gallery';
         $aboutLabel = $isAr ? 'نبذة عن المشروع' : 'About this project';
         $relatedLabel = $isAr ? 'مشاريع ذات صلة' : 'Related Projects';
@@ -132,16 +133,37 @@
                         </div>
                     </div>
 
-                    @if (! empty($project['supervisor']))
+                    @if (! empty($project['supervisors']))
+                        <div class="rounded-[6px] border border-slate-200 bg-white p-6 shadow-sm">
+                            <h3 class="text-[13px] font-bold uppercase tracking-[0.04em] text-slate-400">{{ count($project['supervisors']) > 1 ? $supervisorsLabel : $supervisorLabel }}</h3>
+                            <ul class="mt-3 space-y-3">
+                                @foreach ($project['supervisors'] as $supervisor)
+                                    <li>
+                                        <a href="{{ $supervisor['url'] }}" class="flex items-center gap-3 rounded-[6px] transition hover:opacity-80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-spu-blue">
+                                            @if (! empty($supervisor['image']))
+                                                <img src="{{ $supervisor['image'] }}" alt="" class="h-10 w-10 shrink-0 rounded-full object-cover" loading="lazy">
+                                            @else
+                                                <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-spu-blue text-[12px] font-bold text-white" aria-hidden="true">{{ $initials((string) $supervisor['name']) }}</div>
+                                            @endif
+                                            <div class="min-w-0">
+                                                <p class="text-[13px] font-bold text-spu-blue">{{ $supervisor['name'] }}</p>
+                                                <p class="text-[11px] text-slate-400">{{ $supervisorLabel }}</p>
+                                            </div>
+                                        </a>
+                                    </li>
+                                @endforeach
+                            </ul>
+                        </div>
+                    @elseif (! empty($project['supervisor']))
                         <div class="rounded-[6px] border border-slate-200 bg-white p-6 shadow-sm">
                             <h3 class="text-[13px] font-bold uppercase tracking-[0.04em] text-slate-400">{{ $supervisorLabel }}</h3>
-                            <a href="/{{ $locale }}" class="mt-3 flex items-center gap-3 transition hover:opacity-80">
-                                <div class="flex h-10 w-10 items-center justify-center rounded-full bg-spu-blue text-[12px] font-bold text-white">{{ $initials((string) $project['supervisor']) }}</div>
+                            <div class="mt-3 flex items-center gap-3">
+                                <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-spu-blue text-[12px] font-bold text-white" aria-hidden="true">{{ $initials((string) $project['supervisor']) }}</div>
                                 <div>
                                     <p class="text-[13px] font-bold text-spu-blue">{{ $project['supervisor'] }}</p>
                                     <p class="text-[11px] text-slate-400">{{ $supervisorLabel }}</p>
                                 </div>
-                            </a>
+                            </div>
                         </div>
                     @endif
 

@@ -1201,7 +1201,20 @@ trait ManagesFacultyHomepage
                         TextInput::make('title')->label(__('admin.faculty_workspace.editor.fields.project_name'))->required()->maxLength(180),
                         TextInput::make('tag')->label(__('admin.faculty_workspace.editor.fields.category'))->maxLength(120),
                         TextInput::make('team')->label(__('admin.faculty_workspace.editor.fields.team'))->maxLength(180),
-                        TextInput::make('supervisor')->label(__('admin.faculty_workspace.editor.fields.supervisor'))->maxLength(180),
+                        Select::make('supervisorMemberIds')
+                            ->label(__('admin.faculty_workspace.editor.fields.supervisors'))
+                            ->multiple()
+                            ->options(fn (): array => $this->departmentHeadOptions())
+                            ->searchable()
+                            ->helperText(__('admin.faculty_workspace.editor.help.project_supervisors'))
+                            ->columnSpanFull(),
+                        // Imported projects name a supervisor as plain text. It shows only
+                        // while no profile is picked, and the field only while it has text.
+                        TextInput::make('supervisor')
+                            ->label(__('admin.faculty_workspace.editor.fields.supervisor_text'))
+                            ->helperText(__('admin.faculty_workspace.editor.help.supervisor_text'))
+                            ->maxLength(180)
+                            ->visible(fn (mixed $state): bool => is_string($state) && trim($state) !== ''),
                         TextInput::make('academicYear')->label(__('admin.faculty_workspace.editor.fields.academic_year'))->maxLength(40),
                         TextInput::make('status')->label(__('admin.faculty_workspace.editor.fields.status'))->maxLength(80),
                         MediaPicker::image('image', __('admin.faculty_workspace.editor.fields.image')),
@@ -1687,6 +1700,10 @@ trait ManagesFacultyHomepage
             }
 
             if ($subpageSlug === 'projects') {
+                $item['supervisorMemberIds'] = array_values(array_unique(array_map('intval', array_filter(
+                    is_array($item['supervisorMemberIds'] ?? null) ? $item['supervisorMemberIds'] : [],
+                    static fn (mixed $id): bool => is_numeric($id) && (int) $id > 0,
+                ))));
                 $item['longDescription'] = collect($this->listOfArrays($item['longDescription'] ?? []))
                     ->map(static fn (array $paragraph): string => (string) ($paragraph['paragraph'] ?? $paragraph['body'] ?? ''))
                     ->filter()

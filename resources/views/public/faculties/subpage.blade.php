@@ -377,7 +377,16 @@
                                                     <dd class="mt-1 text-spu-blue">{{ $item['team'] }}</dd>
                                                 </div>
                                             @endif
-                                            @if (! empty($item['supervisor']))
+                                            @if (! empty($item['supervisors']))
+                                                <div>
+                                                    <dt class="text-slate-400">{{ count($item['supervisors']) > 1 ? ($isAr ? 'المشرفون' : 'Supervisors') : ($isAr ? 'المشرف' : 'Supervisor') }}</dt>
+                                                    <dd class="mt-1 flex flex-wrap gap-x-2 gap-y-1">
+                                                        @foreach ($item['supervisors'] as $supervisor)
+                                                            <a href="{{ $supervisor['url'] }}" class="text-spu-blue underline-offset-2 transition hover:text-spu-red hover:underline">{{ $supervisor['name'] }}</a>@if (! $loop->last)<span class="text-slate-300" aria-hidden="true">{{ $isAr ? '،' : ',' }}</span>@endif
+                                                        @endforeach
+                                                    </dd>
+                                                </div>
+                                            @elseif (! empty($item['supervisor']))
                                                 <div>
                                                     <dt class="text-slate-400">{{ $isAr ? 'المشرف' : 'Supervisor' }}</dt>
                                                     <dd class="mt-1 text-spu-blue">{{ $item['supervisor'] }}</dd>

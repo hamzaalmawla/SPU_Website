@@ -377,6 +377,7 @@ final class FacultyPageService implements FacultyPageServiceInterface
         }
 
         if ($subpageSlug === 'projects') {
+            $items = $this->withProjectSupervisors($faculty, $locale, $items);
             $items = $this->filteredProjectItems($items, $filters);
             [$items, $pagination] = $this->paginatedItems($items, $filters, self::FACULTY_LIST_PER_PAGE);
         }
@@ -1330,13 +1331,91 @@ final class FacultyPageService implements FacultyPageServiceInterface
             ? collect($this->arrayList($cmsContent['items'] ?? []))->keyBy('slug')
             : collect($this->projectItems($faculty, $locale))->keyBy('slug');
 
-        return $projects
+        return $this->withProjectSupervisors($faculty, $locale, $projects
             ->map(fn (array $project): array => [
                 ...$this->projectDetailPayload($faculty, $project, $locale),
                 'detailRoute' => $this->projectDetailRoute($faculty, $locale, (string) ($project['slug'] ?? '')),
             ])
             ->values()
+            ->all());
+    }
+
+    /**
+     * Adds each project's supervisors (name, photo and profile link) from
+     * their public faculty profiles. Editors pick them in each language's
+     * form; a project whose version in this language has none uses the
+     * other language's. A project with no linked supervisor keeps the older
+     * free-text `supervisor`.
+     *
+     * @param  array<int, array<string, mixed>>  $items
+     * @return array<int, array<string, mixed>>
+     */
+    private function withProjectSupervisors(Faculty $faculty, string $locale, array $items): array
+    {
+        $otherLocaleItems = null;
+        $wanted = [];
+        foreach ($items as $index => $item) {
+            $ids = $this->memberIdList($item['supervisorMemberIds'] ?? null);
+            if ($ids === []) {
+                $otherLocaleItems ??= $this->projectItemsBySlug($faculty, $this->otherLocale($locale));
+                $ids = $this->memberIdList($otherLocaleItems[(string) ($item['slug'] ?? '')]['supervisorMemberIds'] ?? null);
+            }
+            $wanted[$index] = $ids;
+        }
+
+        $cards = $this->publicMemberCards($locale, array_values(array_unique(array_merge([], ...array_values($wanted)))));
+        foreach ($items as $index => $item) {
+            $supervisors = [];
+            foreach ($wanted[$index] ?? [] as $memberId) {
+                if (isset($cards[$memberId])) {
+                    $supervisors[] = $cards[$memberId];
+                }
+            }
+            $items[$index]['supervisors'] = $supervisors;
+            $items[$index]['supervisorMemberIds'] = $wanted[$index] ?? [];
+            if ($supervisors !== []) {
+                $items[$index]['supervisor'] = implode($locale === 'ar' ? '، ' : ', ', array_column($supervisors, 'name'));
+            }
+        }
+
+        return $items;
+    }
+
+    /**
+     * The public projects in one language, keyed by slug: the published list,
+     * or the imported records while nothing has been published.
+     *
+     * @return array<string, array<string, mixed>>
+     */
+    private function projectItemsBySlug(Faculty $faculty, string $locale): array
+    {
+        $content = $this->publishedLocalizedPayload($this->targetKeyForSubpage($this->publicSlug($faculty), 'projects'), $locale);
+        $items = array_key_exists('items', $content ?? [])
+            ? $this->arrayList($content['items'] ?? [])
+            : $this->projectItems($faculty, $locale);
+
+        return collect($items)
+            ->filter(static fn (array $item): bool => (string) ($item['slug'] ?? '') !== '')
+            ->keyBy(static fn (array $item): string => (string) $item['slug'])
             ->all();
+    }
+
+    private function otherLocale(string $locale): string
+    {
+        return $locale === 'ar' ? 'en' : 'ar';
+    }
+
+    /** @return list<int> */
+    private function memberIdList(mixed $value): array
+    {
+        $ids = [];
+        foreach (is_array($value) ? $value : [] as $memberId) {
+            if (is_numeric($memberId) && (int) $memberId > 0 && ! in_array((int) $memberId, $ids, true)) {
+                $ids[] = (int) $memberId;
+            }
+        }
+
+        return $ids;
     }
 
     /** @param array<string, mixed> $project @return array<string, mixed> */
