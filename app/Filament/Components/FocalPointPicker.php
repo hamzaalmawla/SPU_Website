@@ -48,6 +48,24 @@ final class FocalPointPicker extends Field
         return $this->displayFitPath;
     }
 
+    /**
+     * The saved framing, printed into the markup so the first paint already
+     * shows it; otherwise the preview shows the whole image until Alpine starts.
+     *
+     * @return array{x: float, y: float, fit: string}
+     */
+    public function getInitialFraming(): array
+    {
+        $livewire = $this->getLivewire();
+        $percentage = static fn (mixed $value): float => is_numeric($value) ? max(0.0, min(100.0, (float) $value)) : 50.0;
+
+        return [
+            'x' => $percentage($this->getState()),
+            'y' => $percentage(data_get($livewire, $this->generateRelativeStatePath($this->focalYPath))),
+            'fit' => data_get($livewire, $this->generateRelativeStatePath($this->displayFitPath)) === 'contain' ? 'contain' : 'cover',
+        ];
+    }
+
     public function getImageUrl(): ?string
     {
         $url = $this->evaluate($this->imageUrl);

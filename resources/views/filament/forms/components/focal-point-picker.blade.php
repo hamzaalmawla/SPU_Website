@@ -2,6 +2,9 @@
     $imageUrl = $getImageUrl();
     $focalYStatePath = $generateRelativeStatePath($getFocalYPath());
     $displayFitStatePath = $generateRelativeStatePath($getDisplayFitPath());
+    $framing = $getInitialFraming();
+    $initialMarkerStyle = 'left:'.$framing['x'].'%;top:'.$framing['y'].'%;';
+    $initialPreviewStyle = 'object-fit:'.$framing['fit'].';object-position:'.$framing['x'].'% '.$framing['y'].'%;';
 @endphp
 
 <x-dynamic-component :component="$getFieldWrapperView()" :field="$field">
@@ -36,7 +39,7 @@
                         x-on:keydown="handleKeydown($event)"
                     >
                         <img src="{{ $imageUrl }}" alt="" class="spu-focal-picker__source-image" loading="lazy">
-                        <span class="spu-focal-picker__marker" x-bind:style="markerStyle" aria-hidden="true"></span>
+                        <span class="spu-focal-picker__marker" style="{{ $initialMarkerStyle }}" x-bind:style="markerStyle" aria-hidden="true"></span>
                     </div>
                 </div>
                 <div class="spu-focal-picker__toolbar">
@@ -50,7 +53,7 @@
                 <div class="spu-focal-picker__preview">
                     <span>{{ __('admin.media_picker.display_preview') }}</span>
                     <div class="spu-focal-picker__preview-frame">
-                        <img src="{{ $imageUrl }}" alt="" x-bind:style="previewStyle" loading="lazy">
+                        <img src="{{ $imageUrl }}" alt="" style="{{ $initialPreviewStyle }}" x-bind:style="previewStyle" loading="lazy">
                     </div>
                 </div>
                 <output class="sr-only" aria-live="polite" x-text="announcement"></output>

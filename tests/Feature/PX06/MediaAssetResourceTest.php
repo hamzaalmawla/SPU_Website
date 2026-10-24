@@ -4,13 +4,16 @@ declare(strict_types=1);
 
 namespace Tests\Feature\PX06;
 
+use App\Contracts\Media\MediaDisplaySettingsServiceInterface;
 use App\Filament\Resources\LegacyMediaAssetResource;
 use App\Filament\Resources\MediaAssetResource;
 use App\Filament\Resources\MediaAssetResource\Pages\BatchUploadMediaAssets;
 use App\Models\Media\MediaAsset;
 use App\Models\User\User;
+use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Cache;
 use Livewire\Livewire;
 use Tests\TestCase;
 
@@ -108,6 +111,50 @@ class MediaAssetResourceTest extends TestCase
             ->assertSee('img[src*="/storage/media/image/focused.jpg"]', false)
             ->assertSee('object-fit:contain!important', false)
             ->assertSee('object-position:25% 80%!important', false);
+    }
+
+    public function test_public_pages_load_the_framing_stylesheet_before_the_first_paint_at_a_versioned_url(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+        $this->createMediaAsset(['path' => 'media/image/framed.jpg', 'focal_x' => 30, 'focal_y' => 20]);
+        $displaySettings = app(MediaDisplaySettingsServiceInterface::class);
+        $version = $displaySettings->version();
+        $url = route('media.display-styles', ['v' => $version], false);
+
+        foreach (['ar', 'en'] as $locale) {
+            // A print stylesheet switched on load paints framed photos centred first.
+            $this->get('/'.$locale)
+                ->assertOk()
+                ->assertSee('<link rel="stylesheet" href="'.e(url($url)).'">', false)
+                ->assertDontSee('media="print" onload', false);
+        }
+
+        $cacheControl = (string) $this->get($url)->assertOk()->headers->get('Cache-Control');
+        $this->assertStringContainsString('immutable', $cacheControl);
+        $this->assertStringContainsString('max-age=31536000', $cacheControl);
+        $this->assertStringContainsString('no-cache', (string) $this->get('/media-display.css?v=stale')->headers->get('Cache-Control'));
+
+        MediaAsset::query()->where('path', 'media/image/framed.jpg')->update(['focal_y' => 70]);
+        Cache::flush();
+
+        $this->assertNotSame($version, $displaySettings->version());
+    }
+
+    public function test_image_edit_page_renders_the_saved_framing_before_scripts_run(): void
+    {
+        $this->actingAs($this->createUser('editor'));
+        $this->withSession(['admin_locale' => 'en']);
+        $asset = $this->createMediaAsset([
+            'path' => 'media/image/framed-edit.jpg',
+            'focal_x' => 25,
+            'focal_y' => 80,
+            'display_fit' => 'contain',
+        ]);
+
+        $this->get(MediaAssetResource::getUrl('edit', ['record' => $asset]))
+            ->assertOk()
+            ->assertSee('style="object-fit:contain;object-position:25% 80%;"', false)
+            ->assertSee('style="left:25%;top:80%;"', false);
     }
 
     public function test_image_edit_page_uses_visual_focal_point_control(): void

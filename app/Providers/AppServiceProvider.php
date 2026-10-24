@@ -416,7 +416,25 @@ class AppServiceProvider extends ServiceProvider
         });
         $this->registerPublicHomepageFooterComposer();
         $this->registerPublicAnalyticsComposer();
+        $this->registerMediaDisplayStylesComposer();
         $this->registerErrorPageComposer();
+    }
+
+    /**
+     * Supply the public layout with the media framing stylesheet's version, so
+     * it links a URL that browsers can cache until a framing changes.
+     */
+    private function registerMediaDisplayStylesComposer(): void
+    {
+        View::composer('layouts.public', function (ViewContract $view): void {
+            try {
+                $version = app(MediaDisplaySettingsServiceInterface::class)->version();
+            } catch (\Throwable) {
+                $version = null;
+            }
+
+            $view->with('mediaDisplayStylesVersion', $version);
+        });
     }
 
     /**

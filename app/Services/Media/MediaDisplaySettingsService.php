@@ -50,6 +50,15 @@ final class MediaDisplaySettingsService implements MediaDisplaySettingsServiceIn
         }, 3600);
     }
 
+    public function version(): string
+    {
+        return $this->cacheService->tags(['media', 'public-pages'])->remember(
+            'media:display-settings:version:v1',
+            fn (): string => substr(hash('sha256', $this->stylesheet()), 0, 16),
+            3600,
+        );
+    }
+
     private function urlPath(string $url): string
     {
         $path = parse_url($url, PHP_URL_PATH);
