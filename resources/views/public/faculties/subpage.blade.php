@@ -152,7 +152,7 @@
                         </div>
                         <div class="border-l-[3px] pl-9 rtl:border-l-0 rtl:border-r-[3px] rtl:pl-0 rtl:pr-9" style="border-color: {{ $accent }}">
                             <h2 class="text-[30px] font-bold leading-tight text-spu-blue md:text-[40px]">{{ $isAr ? 'رسالة العميد' : 'Dean Message' }}</h2>
-                            @php($deanName = $page->deanProfile?->name ?: ($dean['name'] ?? ($isAr ? ($dean['nameAr'] ?? '') : ($dean['nameEn'] ?? ''))))
+                            @php $deanName = $page->deanProfile?->name ?: ($dean['name'] ?? ($isAr ? ($dean['nameAr'] ?? '') : ($dean['nameEn'] ?? ''))); @endphp
                             @if ($page->deanProfile)
                                 <a href="{{ $page->deanProfile->path }}" class="mt-8 inline-flex text-sm font-bold text-spu-blue transition-colors hover:text-spu-red focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-spu-blue">{{ $deanName }}</a>
                             @else
@@ -562,7 +562,7 @@
                 </p>
                 <div class="mt-9 grid grid-cols-1 gap-x-8 gap-y-12 sm:grid-cols-2 lg:grid-cols-3">
                     @forelse ($page->items as $item)
-                        @php($isMemorial = (bool) ($item['isMemorial'] ?? false))
+                        @php $isMemorial = (bool) ($item['isMemorial'] ?? false); @endphp
                         <article class="honor-card" @if ($isMemorial) style="position: relative; border-color: rgba(236, 214, 160, 0.95); background: linear-gradient(180deg, #fffdf7 0%, #ffffff 54%); box-shadow: 0 14px 34px rgba(111, 22, 22, 0.10);" @endif>
                             @if ($isMemorial)
                                 <span aria-hidden="true" style="position: absolute; top: 10px; right: 10px; z-index: 3; display: inline-flex; gap: 2px; opacity: 0.95; filter: drop-shadow(0 4px 8px rgba(32, 39, 89, 0.14));">
