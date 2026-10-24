@@ -1,5 +1,5 @@
 {
-  "source": "Old site spu.edu.sy faculty sites: 'Specializations and Sections' pages (jx_categories 81, 181, 201, 229, 245, 270, 5268) and 'Laboratories' pages (105, 116, 211, 1463-1480). Arabic is the old text; English is the old site's English where it had one (cleaned of its machine-translation errors), otherwise a faithful translation. They replace the redesign's invented departments and labs. 'pages' are subpages the old site had that the redesign lacked (clinical cases 3043, pharmacy internship 1415, final exam schedules 5348/5357/6075/5345); their text is loaded by cms:import-page-texts from page_texts/faculty-pages.json. An empty 'labs' list means the old site lists no labs for that faculty, so the invented ones are switched off and the labs card is hidden. 'kind' marks a Basic Sciences department (default academic). The AI faculty's Basic Sciences department is not on the old sections page; it is added from the faculty council page, which lists its head.",
+  "source": "Old site spu.edu.sy faculty sites: 'Specializations and Sections' pages (jx_categories 81, 181, 201, 229, 245, 270, 5268) and 'Laboratories' pages (105, 116, 211, 1463-1480). Arabic is the old text; English is the old site's English where it had one (cleaned of its machine-translation errors), otherwise a faithful translation. They replace the redesign's invented departments and labs. 'pages' are subpages the old site had that the redesign lacked (clinical cases 3043, pharmacy internship 1415, final exam schedules 5348/5357/6075/5345); their text is loaded by cms:import-page-texts from page_texts/faculty-pages.json. An empty 'labs' list means the old site lists no labs for that faculty, so the invented ones are switched off and the labs card is hidden. 'kind' marks a Basic Sciences department (default academic). The AI faculty's Basic Sciences department is not on the old sections page; it is added from the faculty council page, which lists its head. 'specializationId' is the study plan program (plan.departments[].id) a department teaches; Business's MIS program (mis) has no department in the sources.",
   "faculties": {
     "medicine": {
       "departments": [
@@ -569,6 +569,7 @@
         },
         {
           "slug": "software-engineering-intelligent-information-systems",
+          "specializationId": "se",
           "nameAr": "قسم هندسة البرمجيات ونظم المعلومات الذكية",
           "nameEn": "Department of Software Engineering and Intelligent Information Systems",
           "descriptionAr": "",
@@ -576,6 +577,7 @@
         },
         {
           "slug": "ai-data-science",
+          "specializationId": "ai",
           "nameAr": "قسم هندسة الذكاء الاصطناعي وعلوم البيانات",
           "nameEn": "Department of Artificial Intelligence Engineering and Data Science",
           "descriptionAr": "",
@@ -583,6 +585,7 @@
         },
         {
           "slug": "intelligent-information-security",
+          "specializationId": "sec",
           "nameAr": "قسم هندسة نظم أمن المعلومات الذكية",
           "nameEn": "Department of Intelligent Information Security Systems Engineering",
           "descriptionAr": "",
@@ -590,6 +593,7 @@
         },
         {
           "slug": "robotics-intelligent-systems",
+          "specializationId": "ctrl",
           "nameAr": "قسم هندسة الروبوت والنظم الذكية",
           "nameEn": "Department of Robotics and Intelligent Systems Engineering",
           "descriptionAr": "",
@@ -597,6 +601,7 @@
         },
         {
           "slug": "intelligent-communications",
+          "specializationId": "comm",
           "nameAr": "قسم هندسة الاتصالات الذكية",
           "nameEn": "Department of Intelligent Communications Engineering",
           "descriptionAr": "",
@@ -604,6 +609,7 @@
         },
         {
           "slug": "intelligent-medical-engineering-bioinformatics",
+          "specializationId": "med",
           "nameAr": "قسم الهندسة الطبية الذكية والمعلوماتية الحيوية",
           "nameEn": "Department of Intelligent Medical Engineering and Bioinformatics",
           "descriptionAr": "",
@@ -736,6 +742,7 @@
       "departments": [
         {
           "slug": "human-resources",
+          "specializationId": "hr",
           "nameAr": "قسم الموارد البشرية",
           "nameEn": "Department of Human Resources",
           "descriptionAr": "",
@@ -743,6 +750,7 @@
         },
         {
           "slug": "accounting",
+          "specializationId": "accounting",
           "nameAr": "قسم المحاسبة",
           "nameEn": "Department of Accounting",
           "descriptionAr": "",
@@ -750,6 +758,7 @@
         },
         {
           "slug": "business-administration",
+          "specializationId": "management",
           "nameAr": "قسم إدارة الأعمال",
           "nameEn": "Department of Business Administration",
           "descriptionAr": "",
@@ -757,6 +766,7 @@
         },
         {
           "slug": "marketing",
+          "specializationId": "marketing",
           "nameAr": "قسم التسويق",
           "nameEn": "Department of Marketing",
           "descriptionAr": "",
@@ -764,6 +774,7 @@
         },
         {
           "slug": "finance-banking",
+          "specializationId": "finance",
           "nameAr": "قسم التمويل والمصارف",
           "nameEn": "Department of Finance and Banking",
           "descriptionAr": "",

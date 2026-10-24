@@ -17,6 +17,10 @@ The page stays `/{locale}/faculties/{faculty}/departments`, with the same CMS ta
 - Public rendering: `FacultyStudyPlanLinkServiceInterface::specializationItems` builds the list (with the department that teaches each one), and `FacultyPageService` adds the heads. The view shows the stats, then Specializations (cards, each with its Study Plan link), then Academic Departments.
 - Admin: the faculty page's Departments tab has the departments repeater (type, head picker grouped by this faculty or other faculties, code, summary; Advanced holds the specialization link, degree and keywords) and a Specializations repeater.
 - `departments.kind` column (migration `2026_10_24_000001`) for the record fallback used before a faculty's departments are first published. That migration marks the old site's Basic Sciences rows (petroleum, construction, dentistry Life Sciences) and adds **AI's Basic Sciences department** (`ai-basic-sciences`, first in order). `faculty_structure.json` carries the same, and `faculty:import-structure` writes `kind`.
+- **Business and AI links** (migration `2026_10_24_000002`, and `specializationId` per department in `faculty_structure.json`): each department records the program it teaches, in the departments page payload (`payload_json.departments[] = {slug, studyPlanDepartmentId}`), because the names are too different to match automatically.
+  - Business: Human Resources → `hr`, Accounting → `accounting`, Business Administration → `management`, Marketing → `marketing`, Finance & Banking → `finance`. **MIS (`mis`) is a specialization with no department.** It still shows as a specialization, just without a "Taught by" line.
+  - AI: each of the 6 departments → `se`, `ai`, `sec`, `ctrl`, `comm`, `med`. Basic Sciences → none.
+  - A link an editor already set is kept.
 - **Already-published departments pages** keep their published list until an editor adds Basic Sciences, kinds, heads and specializations, then publishes. Nothing is overwritten.
 
 ## 1. The problem

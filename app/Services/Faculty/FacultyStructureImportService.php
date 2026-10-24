@@ -82,7 +82,7 @@ final class FacultyStructureImportService implements FacultyStructureImportServi
         $publicSlug = (string) $faculty->public_slug;
         $departments = $this->listOf($data['departments'] ?? []);
         [$departmentsCreated, $departmentsDisabled] = $this->syncDepartments($faculty, $departments);
-        $this->replaceDepartmentsSummary($faculty, is_array($data['departmentsSummary'] ?? null) ? $data['departmentsSummary'] : []);
+        $this->replaceDepartmentsSummary($faculty, is_array($data['departmentsSummary'] ?? null) ? $data['departmentsSummary'] : [], $departments);
 
         $labs = array_key_exists('labs', $data) ? $this->listOf($data['labs']) : null;
         [$labsCreated, $labsDisabled] = $labs === null ? [0, 0] : $this->syncLabs($faculty, $labs);
@@ -196,11 +196,13 @@ final class FacultyStructureImportService implements FacultyStructureImportServi
     /**
      * The departments page's summary and payload came from the redesign's seed:
      * "sample data" wording, invented statistics and per-department extras keyed
-     * by the invented slugs. They go; the real summary replaces them.
+     * by the invented slugs. They go; the real summary replaces them, and each
+     * department's link to the specialization it teaches is kept by its slug.
      *
      * @param  array<string, mixed>  $summary
+     * @param  list<array<string, mixed>>  $departments
      */
-    private function replaceDepartmentsSummary(Faculty $faculty, array $summary): void
+    private function replaceDepartmentsSummary(Faculty $faculty, array $summary, array $departments): void
     {
         $page = FacultyPage::query()->where('faculty_id', $faculty->getKey())->where('slug', 'departments')->first();
 
@@ -209,6 +211,19 @@ final class FacultyStructureImportService implements FacultyStructureImportServi
         }
 
         $payload = collect(is_array($page->payload_json) ? $page->payload_json : [])->except(['stats', 'departments'])->all();
+        $links = [];
+
+        foreach ($departments as $item) {
+            $specializationId = trim((string) ($item['specializationId'] ?? ''));
+
+            if ($specializationId !== '') {
+                $links[] = ['slug' => $this->slug($item), 'studyPlanDepartmentId' => $specializationId];
+            }
+        }
+
+        if ($links !== []) {
+            $payload['departments'] = $links;
+        }
 
         foreach (self::LOCALES as $locale) {
             $text = trim((string) ($summary[$locale] ?? ''));
