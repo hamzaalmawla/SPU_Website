@@ -107,11 +107,46 @@ final class PeopleMergeTest extends TestCase
         $this->assertStringNotContainsString('/en/about/profile/hossam-shahrour-test', (string) $page);
     }
 
-    private function member(string $slug, Faculty $faculty, string $en, string $ar, ?string $bio = null, ?string $email = null): FacultyMember
+    public function test_a_leaders_profile_with_no_faculty_joins_their_faculty_profile_and_the_leadership_row_follows(): void
+    {
+        $petroleum = Faculty::query()->where('public_slug', 'petroleum')->firstOrFail();
+        $leaderProfile = $this->member('qasim-haddour-test', null, 'Qasim Haddour', 'قاسم حدور', bio: 'Leads the faculty.');
+        $facultyProfile = $this->member('prof-dr-qasim-haddour-test', $petroleum, 'Prof. Dr. Qasim Haddour', 'أ.د. قاسم حدور', bio: 'Reservoir engineering.');
+        $dean = Person::query()->create(['slug' => 'qasim-haddour-dean-test', 'category' => 'dean', 'faculty_member_id' => $leaderProfile->getKey(), 'is_enabled' => true, 'publication_status' => PublicationStatus::Published->value, 'published_at' => now()->subDay()]);
+        $dean->translations()->create(['locale' => 'en', 'name' => 'Qasim Haddour', 'role' => 'Dean']);
+
+        $dryRun = app(PeopleMergeServiceInterface::class)->merge(false, null);
+        $this->assertContains('Faculty member: keep M'.$facultyProfile->getKey().' /prof-dr-qasim-haddour-test <- M'.$leaderProfile->getKey().' /qasim-haddour-test', $dryRun->lines);
+
+        app(PeopleMergeServiceInterface::class)->merge(true, PeopleMergeService::APPROVAL_TOKEN);
+
+        $this->assertSoftDeleted($leaderProfile);
+        $this->assertNotSoftDeleted($facultyProfile);
+        $this->assertSame((int) $facultyProfile->getKey(), (int) $dean->refresh()->faculty_member_id);
+        $this->assertSame('Reservoir engineering.', $facultyProfile->translations()->where('locale', 'en')->value('bio'));
+        Cache::flush();
+        $this->get('/en/about/profile/qasim-haddour-test')->assertRedirect('/en/about/profile/prof-dr-qasim-haddour-test');
+    }
+
+    public function test_a_dean_without_a_profile_gets_one_in_their_faculty(): void
+    {
+        $person = Person::query()->create(['slug' => 'nadim-sarraj-dean-test', 'category' => 'dean', 'faculty_scope_slug' => 'petroleum', 'is_enabled' => true, 'publication_status' => PublicationStatus::Published->value, 'published_at' => now()->subDay()]);
+        $person->translations()->create(['locale' => 'en', 'name' => 'Nadim Sarraj Testname', 'role' => 'Dean']);
+        $person->translations()->create(['locale' => 'ar', 'name' => 'نديم سراج تيست', 'role' => 'العميد']);
+
+        Storage::fake('local');
+        app(PeopleUnifyServiceInterface::class)->unify(true, PeopleUnifyService::APPROVAL_TOKEN);
+
+        $profile = FacultyMember::query()->find($person->refresh()->faculty_member_id);
+        $this->assertInstanceOf(FacultyMember::class, $profile);
+        $this->assertSame((int) Faculty::query()->where('public_slug', 'petroleum')->value('id'), (int) $profile->faculty_id);
+    }
+
+    private function member(string $slug, ?Faculty $faculty, string $en, string $ar, ?string $bio = null, ?string $email = null): FacultyMember
     {
         $member = FacultyMember::query()->create([
             'slug' => $slug,
-            'faculty_id' => $faculty->getKey(),
+            'faculty_id' => $faculty?->getKey(),
             'email' => $email,
             'is_enabled' => true,
             'publication_status' => PublicationStatus::Published->value,

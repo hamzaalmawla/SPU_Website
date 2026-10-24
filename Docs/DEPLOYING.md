@@ -613,3 +613,10 @@ storage/app/private/legacy-imports/people-unify.approved
 empty fields, does not touch a profile or leadership row that has an unpublished draft, saves a JSON
 snapshot of every row it touches to `storage/app/private/people-unify/` first, and logs an audit entry per
 person. Plan and as-built notes: `Docs/PEOPLE_SINGLE_PROFILE_PLAN.md`.
+
+Every deploy log also has a "People merge dry run" section: faculty profiles entered twice (same name in
+the same faculty, or a leader's profile with no faculty and that person's faculty profile, where the
+faculty profile is kept and the leadership row moves to it), and researchers entered twice. After it has
+been read and approved, place `storage/app/private/legacy-imports/people-merge.approved`. The deploy runs
+`people:merge` with `--write` and renames the file to `people-merge.approved.consumed-<time>`. Merged-away
+records are soft-deleted and their profile addresses redirect to the kept one.

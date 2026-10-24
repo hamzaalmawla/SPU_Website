@@ -819,7 +819,8 @@ fi
 
 # ── Approved people merge ───────────────────────────────────────────────────
 # Merges researchers and faculty members entered twice (same name, same
-# faculty), as listed by people:duplicates. Merged-away records are soft-deleted and their profile
+# faculty, or a leader's profile with no faculty and their faculty profile), as
+# printed by the people merge dry run. Merged-away records are soft-deleted and their profile
 # addresses redirect to the kept profile; someone listed in two faculties is
 # left alone. Inert unless a human places an approval file not in git:
 #
@@ -832,7 +833,7 @@ if [[ -f "${PEOPLE_MERGE_APPROVAL}" ]]; then
     log "People merge"
     (cd "${APP}" && "${PHP}" -d memory_limit=512M artisan people:merge --no-ansi) \
         || fail "The people merge dry run failed. Nothing was changed."
-    (cd "${APP}" && "${PHP}" -d memory_limit=512M artisan people:merge --write --approve=people-merge-20261019 --no-ansi) \
+    (cd "${APP}" && "${PHP}" -d memory_limit=512M artisan people:merge --write --approve=people-merge-20261024 --no-ansi) \
         || fail "The people merge failed."
 
     mv "${PEOPLE_MERGE_APPROVAL}" "${PEOPLE_MERGE_APPROVAL}.consumed-$(date -u +%Y%m%d-%H%M%S)"
@@ -1577,6 +1578,12 @@ log "CMS content status"
 log "People that look like duplicates"
 (cd "${APP}" && "${PHP}" -d memory_limit=512M artisan people:duplicates --no-ansi) || \
     printf '   (people:duplicates unavailable in this release)\n'
+
+# What people:merge would merge if approved (the approval block above runs the
+# same list). Read-only; never fatal.
+log "People merge dry run"
+(cd "${APP}" && "${PHP}" -d memory_limit=512M artisan people:merge --no-ansi) || \
+    printf '   (people:merge unavailable in this release)\n'
 
 # What people:unify would do: the profile each leadership row gets, the fields
 # it would fill and the ones that differ. Read-only; never fatal.

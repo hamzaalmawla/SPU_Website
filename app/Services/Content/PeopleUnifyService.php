@@ -408,7 +408,8 @@ final class PeopleUnifyService implements PeopleUnifyServiceInterface
 
         $member = FacultyMember::query()->create([
             'slug' => $this->newProfileSlug($person),
-            'faculty_id' => $appointment?->faculty_id,
+            // A dean or other leader takes the faculty of any placement or of the row's scope.
+            'faculty_id' => $appointment?->faculty_id ?? $this->personFacultyId($person),
             'department_id' => $appointment?->department_id,
             'email' => $person->email,
             'phone' => $person->phone,

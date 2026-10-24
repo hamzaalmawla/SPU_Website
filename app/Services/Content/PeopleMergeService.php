@@ -29,11 +29,13 @@ use InvalidArgumentException;
  * profile by people:unify (PeopleUnifyServiceInterface), not here.
  *
  * Someone listed in two different faculties is left alone: that is usually
- * one person teaching in both.
+ * one person teaching in both. A profile with no faculty (a leader's, made
+ * from the leadership row) joins the faculty profile of the same name, which
+ * is kept, and the leadership row moves to it.
  */
 final class PeopleMergeService implements PeopleMergeServiceInterface
 {
-    public const APPROVAL_TOKEN = 'people-merge-20261019';
+    public const APPROVAL_TOKEN = 'people-merge-20261024';
 
     public function __construct(
         private readonly AuditServiceInterface $auditService,
@@ -115,7 +117,7 @@ final class PeopleMergeService implements PeopleMergeServiceInterface
 
         $groups = $this->groupBySameName($members, fn (FacultyMember $member): array => $member->translations->pluck('full_name')->filter()->map(fn (mixed $name): string => (string) $name)->all())
             ->filter(function (Collection $group) use (&$skipped): bool {
-                if ($group->pluck('faculty_id')->unique()->count() > 1) {
+                if ($group->pluck('faculty_id')->filter()->unique()->count() > 1) {
                     $skipped[] = $group->map(fn (FacultyMember $member): string => 'M'.$member->getKey().' /'.$member->slug)->implode(', ');
 
                     return false;
@@ -124,7 +126,7 @@ final class PeopleMergeService implements PeopleMergeServiceInterface
                 return true;
             })
             ->map(function (Collection $group): array {
-                $sorted = $group->sortByDesc(fn (FacultyMember $member): array => [$this->completeness($member), $this->nameLength($member)])->values();
+                $sorted = $group->sortByDesc(fn (FacultyMember $member): array => [$member->faculty_id !== null, $this->completeness($member), $this->nameLength($member)])->values();
 
                 return ['keep' => $sorted->first(), 'merge' => $sorted->slice(1)->values()];
             })
@@ -191,6 +193,7 @@ final class PeopleMergeService implements PeopleMergeServiceInterface
         }
         ResearchPublication::query()->where('faculty_member_id', $duplicate->getKey())->update(['faculty_member_id' => $keep->getKey()]);
         CouncilMember::query()->where('faculty_member_id', $duplicate->getKey())->update(['faculty_member_id' => $keep->getKey()]);
+        Person::query()->where('faculty_member_id', $duplicate->getKey())->update(['faculty_member_id' => $keep->getKey()]);
         Researcher::query()->where('faculty_member_id', $duplicate->getKey())->update(['faculty_member_id' => $keep->getKey()]);
 
         // A pending draft of the merged-away profile must not bring it back.
