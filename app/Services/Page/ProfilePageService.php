@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services\Page;
 
 use App\Contracts\Content\PersonIdentityServiceInterface;
+use App\Contracts\Faculty\FacultyStudyPlanLinkServiceInterface;
 use App\Contracts\Page\ProfilePageServiceInterface;
 use App\DTOs\Content\EducationDTO;
 use App\DTOs\Content\ProfilePageDTO;
@@ -38,6 +39,7 @@ final class ProfilePageService implements ProfilePageServiceInterface
 
     public function __construct(
         private readonly PersonIdentityServiceInterface $identityService,
+        private readonly FacultyStudyPlanLinkServiceInterface $studyPlanLinkService,
     ) {}
 
     public function getProfile(string $locale, string $source, string $slug): ?ProfilePageDTO
@@ -374,6 +376,7 @@ final class ProfilePageService implements ProfilePageServiceInterface
             seoDescription: is_string($bio) && trim($bio) !== '' ? $bio : $profile->seoDescription,
             seoImage: $image,
             path: $profile->path,
+            specializationName: $profile->specializationName,
         );
     }
 
@@ -428,6 +431,9 @@ final class ProfilePageService implements ProfilePageServiceInterface
             seoDescription: $translation->bio ?? (string) $translation->full_name,
             seoImage: $this->resolveFacultyMemberImage($member),
             path: '/'.$locale.'/about/profile/'.$member->slug,
+            specializationName: $member->specialization_id !== null && $member->faculty instanceof Faculty
+                ? ($this->studyPlanLinkService->programNames((string) $member->faculty->public_slug, $locale)[(string) $member->specialization_id] ?? null)
+                : null,
         );
     }
 

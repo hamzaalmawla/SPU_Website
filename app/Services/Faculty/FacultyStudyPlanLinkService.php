@@ -58,6 +58,18 @@ final class FacultyStudyPlanLinkService implements FacultyStudyPlanLinkServiceIn
         }, $items);
     }
 
+    public function programNames(string $facultySlug, string $locale): array
+    {
+        $names = [];
+
+        foreach ($this->effectiveDepartments($facultySlug) as $id => $program) {
+            $name = $locale === 'ar' ? ($program['nameAr'] ?: $program['nameEn']) : ($program['nameEn'] ?: $program['nameAr']);
+            $names[(string) $id] = $name !== '' ? $name : (string) $id;
+        }
+
+        return $names;
+    }
+
     public function specializationItems(string $facultySlug, string $locale, array $specializations, array $departmentItems): array
     {
         $programs = $this->effectiveDepartments($facultySlug);

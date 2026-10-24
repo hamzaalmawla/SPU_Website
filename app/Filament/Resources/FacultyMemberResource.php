@@ -164,6 +164,13 @@ class FacultyMemberResource extends Resource
                             ->searchable()
                             ->preload()
                             ->native(false),
+                        // Optional: only faculties whose study plan has programs offer it.
+                        Select::make('specialization_id')
+                            ->label(__('admin_resources.faculty_member.specialization'))
+                            ->helperText(__('admin_resources.faculty_member.specialization_help'))
+                            ->options(fn (Get $get): array => self::specializationOptions($get('faculty_id')))
+                            ->hidden(fn (Get $get): bool => self::specializationOptions($get('faculty_id')) === [])
+                            ->native(false),
                         TextInput::make('sort_order')
                             ->label(__('admin_resources.faculty_member.display_order'))
                             ->numeric()
@@ -376,6 +383,12 @@ class FacultyMemberResource extends Resource
         $scope = is_object($livewire) && property_exists($livewire, 'facultyScope') ? $livewire->facultyScope : null;
 
         return is_string($scope) ? trim($scope) : '';
+    }
+
+    /** @return array<string, string> */
+    private static function specializationOptions(mixed $facultyId): array
+    {
+        return app(ProfileAdminServiceInterface::class)->specializationOptions(is_numeric($facultyId) ? (int) $facultyId : null);
     }
 
     /** @param array<string, mixed> $data @return array<string, mixed> */

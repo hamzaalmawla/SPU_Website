@@ -21,6 +21,11 @@ The page stays `/{locale}/faculties/{faculty}/departments`, with the same CMS ta
   - Business: Human Resources → `hr`, Accounting → `accounting`, Business Administration → `management`, Marketing → `marketing`, Finance & Banking → `finance`. **MIS (`mis`) is a specialization with no department.** It still shows as a specialization, just without a "Taught by" line.
   - AI: each of the 6 departments → `se`, `ai`, `sec`, `ctrl`, `comm`, `med`. Basic Sciences → none.
   - A link an editor already set is kept.
+- **Academic staff** have both: the department (`faculty_members.department_id`, the main placement, as before) and an **optional specialization** (`faculty_members.specialization_id`, a study plan program id, migration `2026_10_24_000003`).
+  - The staff admin shows a "Specialization (optional)" picker under the department. It lists the faculty's study plan programs and is hidden when there are none.
+  - The value goes through the profile draft and publish workflow. It must be a program of the faculty's plan.
+  - The public profile shows "Specialization: <program name>" after the department.
+  - The staff intake form does not offer it yet.
 - **Already-published departments pages** keep their published list until an editor adds Basic Sciences, kinds, heads and specializations, then publishes. Nothing is overwritten.
 
 ## 1. The problem

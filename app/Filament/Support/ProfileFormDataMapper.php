@@ -73,6 +73,7 @@ final class ProfileFormDataMapper
                 ->values()
                 ->all(),
             educations: self::educationsFromArray($data['educations'] ?? null),
+            specializationId: self::nullableString($data['specialization_id'] ?? null),
         );
     }
 
@@ -111,6 +112,7 @@ final class ProfileFormDataMapper
             'slug' => $data->slug,
             'faculty_id' => $data->facultyId,
             'department_id' => $data->departmentId,
+            'specialization_id' => $data->specializationId,
             'email' => $data->email,
             'phone' => $data->phone,
             'office_location' => $data->officeLocation,

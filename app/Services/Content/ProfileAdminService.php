@@ -6,6 +6,7 @@ namespace App\Services\Content;
 
 use App\Contracts\Auth\AdminAccessServiceInterface;
 use App\Contracts\Content\ProfileAdminServiceInterface;
+use App\Contracts\Faculty\FacultyStudyPlanLinkServiceInterface;
 use App\Contracts\Media\MediaServiceInterface;
 use App\Contracts\Shared\AuditServiceInterface;
 use App\Contracts\Shared\CacheServiceInterface;
@@ -38,6 +39,7 @@ final class ProfileAdminService implements ProfileAdminServiceInterface
         private readonly CacheServiceInterface $cacheService,
         private readonly MediaServiceInterface $mediaService,
         private readonly AdminAccessServiceInterface $access,
+        private readonly FacultyStudyPlanLinkServiceInterface $studyPlanLinkService,
     ) {}
 
     /** @return array<int, string> */
@@ -172,6 +174,15 @@ final class ProfileAdminService implements ProfileAdminServiceInterface
                 ?? $department->translations->first()?->name
                 ?? '#'.$department->getKey(),
         ])->all();
+    }
+
+    public function specializationOptions(?int $facultyId): array
+    {
+        $facultySlug = $facultyId === null ? null : Faculty::query()->whereKey($facultyId)->value('public_slug');
+
+        return is_string($facultySlug) && $facultySlug !== ''
+            ? $this->studyPlanLinkService->programNames($facultySlug, app()->getLocale() === 'ar' ? 'ar' : 'en')
+            : [];
     }
 
     public function nextPersonSortOrder(): int
@@ -410,6 +421,7 @@ final class ProfileAdminService implements ProfileAdminServiceInterface
             'slug' => $data->slug,
             'faculty_id' => $data->facultyId,
             'department_id' => $data->departmentId,
+            'specialization_id' => $data->specializationId,
             'email' => $data->email,
             'phone' => $data->phone,
             'office_location' => $data->officeLocation,
@@ -510,6 +522,12 @@ final class ProfileAdminService implements ProfileAdminServiceInterface
                     'department_id' => 'The selected department must belong to the selected faculty.',
                 ]);
             }
+        }
+
+        if ($data->specializationId !== null && ! array_key_exists($data->specializationId, $this->specializationOptions($data->facultyId))) {
+            throw ValidationException::withMessages([
+                'specialization_id' => 'The selected specialization must be a program of the faculty\'s study plan.',
+            ]);
         }
     }
 
@@ -680,6 +698,7 @@ final class ProfileAdminService implements ProfileAdminServiceInterface
                 specializations: $this->normalizeSpecializations($translation->specializations),
             ))->values()->all(),
             educations: $member->educations->map(fn (FacultyMemberEducation $education): EducationDataDTO => $this->mapFacultyEducationData($education))->values()->all(),
+            specializationId: $member->specialization_id !== null ? (string) $member->specialization_id : null,
         );
     }
 

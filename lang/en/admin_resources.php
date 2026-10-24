@@ -112,6 +112,8 @@ return [
         'english_full_name' => 'English full name',
         'english_position' => 'English position',
         'english_specializations' => 'English specializations',
+        'specialization' => 'Specialization (optional)',
+        'specialization_help' => 'The study plan program this staff member teaches in, if the faculty has several. The department above is the main placement.',
         'english_title' => 'English title',
         'faculty' => 'Faculty',
         'generated_after_entering_the_english_name' => 'Generated after entering the English name',

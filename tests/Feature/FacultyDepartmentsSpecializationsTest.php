@@ -4,10 +4,15 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Contracts\Cms\AboutEntityCmsServiceInterface;
 use App\Contracts\Cms\CmsWorkflowServiceInterface;
+use App\Contracts\Content\ProfileAdminServiceInterface;
+use App\Contracts\Faculty\FacultyStudyPlanLinkServiceInterface;
 use App\Contracts\Page\FacultyPageServiceInterface;
+use App\DTOs\Cms\AboutEntityCmsDataDTO;
 use App\Enums\PublicationStatus;
 use App\Filament\Pages\ManageArtificialIntelligenceFaculty;
+use App\Models\Faculty\Department;
 use App\Models\Faculty\Faculty;
 use App\Models\Person\FacultyMember;
 use App\Models\User\User;
@@ -160,6 +165,51 @@ final class FacultyDepartmentsSpecializationsTest extends TestCase
             ->assertSee('الاختصاصات')
             ->assertSee('نوع القسم')
             ->assertSee('رئيس القسم');
+    }
+
+    public function test_a_staff_member_has_a_department_and_an_optional_specialization(): void
+    {
+        $faculty = Faculty::query()->where('public_slug', 'artificial-intelligence')->firstOrFail();
+        $department = Department::query()->where('faculty_id', $faculty->getKey())->where('is_enabled', true)->orderBy('sort_order')->firstOrFail();
+        $programName = app(FacultyStudyPlanLinkServiceInterface::class)->programNames('artificial-intelligence', 'en')['ai'] ?? null;
+        $this->assertNotNull($programName);
+        $this->assertArrayHasKey('ai', app(ProfileAdminServiceInterface::class)->specializationOptions((int) $faculty->getKey()));
+
+        $entities = app(AboutEntityCmsServiceInterface::class);
+        $workflow = app(CmsWorkflowServiceInterface::class);
+        $payload = [
+            'slug' => 'staff-with-specialization',
+            'faculty_id' => (int) $faculty->getKey(),
+            'department_id' => (int) $department->getKey(),
+            'specialization_id' => null,
+            'is_enabled' => true,
+            'translations' => [
+                ['locale' => 'ar', 'full_name' => 'د. سلمى المختصة', 'position' => 'مدرسة'],
+                ['locale' => 'en', 'full_name' => 'Dr. Salma Specialist', 'position' => 'Lecturer'],
+            ],
+            'educations' => [],
+        ];
+
+        $prepared = $entities->prepareDraft(new AboutEntityCmsDataDTO('faculty-member', null, $payload), (int) $this->admin->getKey());
+        $targetKey = (string) $prepared->targetKey;
+        // The specialization is optional: none is fine, but it must be a program of the plan.
+        $this->assertTrue($workflow->readiness($targetKey, $prepared->payload)->isReady);
+        $readiness = $workflow->readiness($targetKey, [...$prepared->payload, 'specialization_id' => 'no-such-program']);
+        $this->assertFalse($readiness->isReady);
+        $this->assertArrayHasKey('specialization_id', $readiness->errors);
+
+        $workflow->saveDraft($targetKey, [...$prepared->payload, 'specialization_id' => 'ai'], (int) $this->admin->getKey());
+        $this->assertTrue($workflow->publish($targetKey, (int) $this->admin->getKey()));
+
+        $member = FacultyMember::query()->findOrFail($prepared->entityId);
+        $this->assertSame((int) $department->getKey(), (int) $member->department_id);
+        $this->assertSame('ai', $member->specialization_id);
+
+        $departmentName = (string) $department->translations()->where('locale', 'en')->value('name');
+        $this->get('/en/about/profile/staff-with-specialization')
+            ->assertOk()
+            ->assertSee($departmentName)
+            ->assertSee('Specialization: '.$programName);
     }
 
     private function member(string $slug, string $en, string $ar, int $facultyId): FacultyMember

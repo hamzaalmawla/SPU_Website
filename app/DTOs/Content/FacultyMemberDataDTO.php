@@ -26,5 +26,6 @@ final readonly class FacultyMemberDataDTO
         public bool $isEnabled,
         public array $translations,
         public array $educations,
+        public ?string $specializationId = null,
     ) {}
 }

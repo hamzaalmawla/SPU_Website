@@ -6,6 +6,7 @@
     $title = $profile['title'] ?? null;
     $facultyName = $profile['facultyName'] ?? null;
     $departmentName = $profile['departmentName'] ?? null;
+    $specializationName = $profile['specializationName'] ?? null;
     
     // For bio: handle array of paragraphs or string
     $biography = $profile['biography'] ?? [];
@@ -79,6 +80,10 @@
                     @if ($departmentName !== null && $departmentName !== '' && $departmentName !== $facultyName)
                         <span class="text-spu-blue/30">•</span>
                         <span class="text-sm font-semibold text-spu-blue">{{ $departmentName }}</span>
+                    @endif
+                    @if ($specializationName !== null && $specializationName !== '')
+                        <span class="text-spu-blue/30">•</span>
+                        <span class="text-sm font-semibold text-spu-blue">{{ $isAr ? 'الاختصاص' : 'Specialization' }}: {{ $specializationName }}</span>
                     @endif
                 </div>
 

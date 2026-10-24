@@ -39,5 +39,6 @@ final readonly class ProfilePageDTO
         public string $seoDescription,
         public ?string $seoImage,
         public string $path,
+        public ?string $specializationName = null,
     ) {}
 }

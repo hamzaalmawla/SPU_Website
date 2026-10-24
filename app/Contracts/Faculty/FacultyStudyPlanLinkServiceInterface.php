@@ -23,6 +23,13 @@ interface FacultyStudyPlanLinkServiceInterface
      * @param  array<int, array<string, mixed>>  $departmentItems  enriched department rows, to name the teaching department
      * @return array<int, array<string, mixed>>
      */
+    /**
+     * The programs (specializations) of a faculty's published study plan, id => name in the locale.
+     *
+     * @return array<string, string>
+     */
+    public function programNames(string $facultySlug, string $locale): array;
+
     public function specializationItems(string $facultySlug, string $locale, array $specializations, array $departmentItems): array;
 
     /**

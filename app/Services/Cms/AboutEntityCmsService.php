@@ -7,6 +7,7 @@ namespace App\Services\Cms;
 use App\Contracts\Auth\AdminAccessServiceInterface;
 use App\Contracts\Cms\AboutEntityCmsServiceInterface;
 use App\Contracts\Content\PersonIdentityServiceInterface;
+use App\Contracts\Faculty\FacultyStudyPlanLinkServiceInterface;
 use App\Contracts\Media\MediaServiceInterface;
 use App\DTOs\Cms\AboutEntityCmsDataDTO;
 use App\DTOs\Cms\CmsTargetDTO;
@@ -47,6 +48,7 @@ final class AboutEntityCmsService implements AboutEntityCmsServiceInterface
         private readonly MediaServiceInterface $mediaService,
         private readonly AdminAccessServiceInterface $access,
         private readonly PersonIdentityServiceInterface $identityService,
+        private readonly FacultyStudyPlanLinkServiceInterface $studyPlanLinkService,
     ) {}
 
     public function prepareDraft(AboutEntityCmsDataDTO $data, int $userId): AboutEntityCmsDataDTO
@@ -421,6 +423,7 @@ final class AboutEntityCmsService implements AboutEntityCmsServiceInterface
             seoDescription: $bio ?? $name,
             seoImage: $image,
             path: '/'.$locale.'/about/profile/'.$slug,
+            specializationName: $this->specializationName($this->nullableInt($payload['faculty_id'] ?? null), $this->nullableString($payload['specialization_id'] ?? null), $locale),
         );
     }
 
@@ -646,6 +649,7 @@ final class AboutEntityCmsService implements AboutEntityCmsServiceInterface
             'slug' => $this->requiredString($payload, 'slug'),
             'faculty_id' => $this->nullableInt($payload['faculty_id'] ?? null),
             'department_id' => $this->nullableInt($payload['department_id'] ?? null),
+            'specialization_id' => $this->nullableString($payload['specialization_id'] ?? null),
             'email' => $this->nullableString($payload['email'] ?? null),
             'phone' => $this->nullableString($payload['phone'] ?? null),
             'office_location' => $this->nullableString($payload['office_location'] ?? null),
@@ -850,6 +854,7 @@ final class AboutEntityCmsService implements AboutEntityCmsServiceInterface
             'slug' => $member->slug,
             'faculty_id' => $member->faculty_id,
             'department_id' => $member->department_id,
+            'specialization_id' => $member->specialization_id,
             'email' => $member->email,
             'phone' => $member->phone,
             'office_location' => $member->office_location,
@@ -1058,6 +1063,10 @@ final class AboutEntityCmsService implements AboutEntityCmsServiceInterface
             }
             if ($departmentId !== null && ($facultyId === null || ! Department::query()->whereKey($departmentId)->where('faculty_id', $facultyId)->exists())) {
                 $errors['department_id'][] = 'The selected department must belong to the selected faculty.';
+            }
+            $specializationId = $this->nullableString($payload['specialization_id'] ?? null);
+            if ($specializationId !== null && $this->specializationName($facultyId, $specializationId, 'en') === null) {
+                $errors['specialization_id'][] = 'The selected specialization must be a program of the faculty\'s study plan.';
             }
 
             $this->appendMediaErrors($errors, 'photo_media_id', $payload['photo_media_id'] ?? null, 'image/');
@@ -1397,6 +1406,20 @@ final class AboutEntityCmsService implements AboutEntityCmsServiceInterface
         $translation = $translations[$locale] ?? $translations[$locale === 'ar' ? 'en' : 'ar'] ?? null;
 
         return is_array($translation) ? $translation : null;
+    }
+
+    /** The name of a program of the faculty's study plan, or null when it is not one. */
+    private function specializationName(?int $facultyId, ?string $programId, string $locale): ?string
+    {
+        if ($facultyId === null || $programId === null) {
+            return null;
+        }
+
+        $facultySlug = Faculty::query()->whereKey($facultyId)->value('public_slug');
+
+        return is_string($facultySlug) && $facultySlug !== ''
+            ? ($this->studyPlanLinkService->programNames($facultySlug, $locale)[$programId] ?? null)
+            : null;
     }
 
     private function facultyName(?int $facultyId, string $locale): ?string

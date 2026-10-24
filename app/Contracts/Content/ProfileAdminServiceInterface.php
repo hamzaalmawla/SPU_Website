@@ -34,6 +34,13 @@ interface ProfileAdminServiceInterface
     /** @return array<int, string> */
     public function departmentOptions(?int $facultyId, int $userId): array;
 
+    /**
+     * The specializations (study plan programs) a staff member of this faculty can be given; optional.
+     *
+     * @return array<string, string>
+     */
+    public function specializationOptions(?int $facultyId): array;
+
     public function nextPersonSortOrder(): int;
 
     public function nextFacultyMemberSortOrder(): int;

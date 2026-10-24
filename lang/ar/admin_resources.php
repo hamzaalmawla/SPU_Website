@@ -112,6 +112,8 @@ return [
         'english_full_name' => 'الاسم الكامل بالإنجليزية',
         'english_position' => 'المنصب بالإنجليزية',
         'english_specializations' => 'الاختصاصات بالإنجليزية',
+        'specialization' => 'الاختصاص (اختياري)',
+        'specialization_help' => 'برنامج الخطة الدراسية الذي يدرّس فيه عضو الهيئة إن كان للكلية أكثر من برنامج. القسم أعلاه هو التبعية الأساسية.',
         'english_title' => 'اللقب بالإنجليزية',
         'faculty' => 'الكلية',
         'generated_after_entering_the_english_name' => 'يُولَّد بعد إدخال الاسم الإنجليزي',

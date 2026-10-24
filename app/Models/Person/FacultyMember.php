@@ -25,6 +25,7 @@ class FacultyMember extends Model
         'slug',
         'faculty_id',
         'department_id',
+        'specialization_id',
         'email',
         'phone',
         'office_location',
