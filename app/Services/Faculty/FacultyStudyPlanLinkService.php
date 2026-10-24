@@ -46,14 +46,12 @@ final class FacultyStudyPlanLinkService implements FacultyStudyPlanLinkServiceIn
                 ? $explicitId
                 : $this->exactDepartmentMatch((string) ($item['title'] ?? ''), $locale, $departments);
 
-            // A department that teaches no specialization keeps the faculty's one plan as its link;
-            // when the faculty has several specializations there is no single plan to point to.
+            // The study plan is optional: a department without one (Basic Sciences, most
+            // clinical departments) shows no study plan link.
             return [
                 ...$item,
                 'studyPlanDepartmentId' => $departmentId,
-                'studyPlanUrl' => $departmentId !== null
-                    ? $studyPlanUrl.'?department='.rawurlencode($departmentId)
-                    : (count($departments) > 1 ? null : $studyPlanUrl),
+                'studyPlanUrl' => $departmentId !== null ? $studyPlanUrl.'?department='.rawurlencode($departmentId) : null,
             ];
         }, $items);
     }
@@ -68,55 +66,6 @@ final class FacultyStudyPlanLinkService implements FacultyStudyPlanLinkServiceIn
         }
 
         return $names;
-    }
-
-    public function specializationItems(string $facultySlug, string $locale, array $specializations, array $departmentItems): array
-    {
-        $programs = $this->effectiveDepartments($facultySlug);
-        $studyPlanUrl = '/'.$locale.'/faculties/'.$this->canonicalFacultySlug($facultySlug).'/study-plan';
-        $rows = array_values(array_filter(
-            $specializations,
-            static fn (mixed $row): bool => is_array($row) && isset($programs[trim((string) ($row['studyPlanDepartmentId'] ?? ''))]),
-        ));
-
-        if ($rows === []) {
-            if (count($programs) < 2) {
-                return [];
-            }
-
-            $rows = array_map(static fn (string $id): array => ['studyPlanDepartmentId' => $id], array_map('strval', array_keys($programs)));
-        }
-
-        $teachingDepartments = [];
-        foreach ($departmentItems as $department) {
-            $id = is_array($department) ? (string) ($department['studyPlanDepartmentId'] ?? '') : '';
-            if ($id !== '' && ! isset($teachingDepartments[$id])) {
-                $teachingDepartments[$id] = ['slug' => (string) ($department['slug'] ?? ''), 'title' => (string) ($department['title'] ?? '')];
-            }
-        }
-
-        $suffix = $locale === 'ar' ? 'Ar' : 'En';
-        $otherSuffix = $locale === 'ar' ? 'En' : 'Ar';
-
-        return array_map(function (array $row) use ($programs, $studyPlanUrl, $teachingDepartments, $suffix, $otherSuffix): array {
-            $id = trim((string) $row['studyPlanDepartmentId']);
-            $program = $programs[$id];
-            $title = trim((string) ($row['title'] ?? ''));
-            $summary = trim((string) ($row['summary'] ?? ''));
-            $degrees = trim((string) ($row['degrees'] ?? ''));
-
-            return [
-                'slug' => trim((string) ($row['slug'] ?? '')) ?: 'specialization-'.$id,
-                'studyPlanDepartmentId' => $id,
-                'title' => $title !== '' ? $title : ($program['name'.$suffix] !== '' ? $program['name'.$suffix] : $program['name'.$otherSuffix]),
-                'summary' => $summary !== '' ? $summary : $program['summary'.$suffix],
-                'degrees' => $degrees !== '' ? $degrees : null,
-                'tags' => array_values(array_filter(is_array($row['tags'] ?? null) ? $row['tags'] : [], static fn (mixed $tag): bool => is_string($tag) && trim($tag) !== '')),
-                'credits' => $program['totalCredits'],
-                'studyPlanUrl' => $studyPlanUrl.'?department='.rawurlencode($id),
-                'department' => $teachingDepartments[$id] ?? null,
-            ];
-        }, $rows);
     }
 
     public function validationErrors(string $targetKey, array $payload): array
@@ -159,30 +108,6 @@ final class FacultyStudyPlanLinkService implements FacultyStudyPlanLinkServiceIn
 
         if (($localeMappings['ar'] ?? []) !== ($localeMappings['en'] ?? [])) {
             $errors['translations'][] = 'Department Study Plan mappings must match across Arabic and English.';
-        }
-
-        $localeSpecializations = [];
-        foreach (['ar', 'en'] as $locale) {
-            $translation = is_array($payload['translations'][$locale] ?? null) ? $payload['translations'][$locale] : [];
-            $ids = [];
-
-            foreach (is_array($translation['specializations'] ?? null) ? $translation['specializations'] : [] as $row) {
-                $id = is_array($row) ? trim((string) ($row['studyPlanDepartmentId'] ?? '')) : '';
-
-                if (! isset($validIds[$id])) {
-                    $errors[$locale][] = 'Every specialization must be a program of the currently published study plan.';
-                } elseif (in_array($id, $ids, true)) {
-                    $errors[$locale][] = 'Each study plan program can be listed as a specialization only once.';
-                }
-
-                $ids[] = $id;
-            }
-
-            $localeSpecializations[$locale] = $ids;
-        }
-
-        if (($localeSpecializations['ar'] ?? []) !== ($localeSpecializations['en'] ?? [])) {
-            $errors['translations'][] = 'The specializations must be the same programs, in the same order, in Arabic and English.';
         }
 
         return $errors;

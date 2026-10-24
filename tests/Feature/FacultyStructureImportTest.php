@@ -68,7 +68,7 @@ final class FacultyStructureImportTest extends TestCase
         self::assertSame(0, $again->faculties['medicine']['departmentsDisabled']);
     }
 
-    public function test_business_and_ai_departments_link_to_the_specializations_they_teach(): void
+    public function test_business_and_ai_departments_link_to_the_study_plans_they_teach(): void
     {
         app(FacultyStructureImportServiceInterface::class)->import($this->structure(), true);
         $facilities = app(FacultyPageServiceInterface::class);
@@ -82,24 +82,21 @@ final class FacultyStructureImportTest extends TestCase
         self::assertSame('finance', $links['finance-banking']);
         self::assertSame('marketing', $links['marketing']);
         self::assertNull($links['human-resources']);
-        self::assertSame(
-            ['management', 'accounting', 'finance', 'marketing'],
-            array_column($business->detail['specializations'], 'studyPlanDepartmentId'),
-        );
-        self::assertSame('business-administration', collect($business->detail['specializations'])->firstWhere('studyPlanDepartmentId', 'management')['department']['slug']);
+        // A department whose plan is not in the published study plan shows no study plan button.
+        self::assertNull(collect($business->items)->firstWhere('slug', 'human-resources')['studyPlanUrl']);
 
         $this->get('/ar/faculties/business-administration/departments')
             ->assertOk()
-            ->assertSee('الاختصاصات')
             ->assertSee('قسم التمويل والمصارف')
-            ->assertSee('يدرّس اختصاص:')
-            ->assertSee('href="/ar/faculties/business-administration/study-plan?department=finance"', false);
+            ->assertSee('href="/ar/faculties/business-administration/study-plan?department=finance"', false)
+            ->assertDontSee('id="specializations"', false);
 
         $ai = $facilities->getSubpage('artificial-intelligence', 'departments', 'en');
         self::assertNotNull($ai);
         self::assertSame('ai-basic-sciences', $ai->items[0]['slug']);
         self::assertSame('basic_sciences', $ai->items[0]['kind']);
         self::assertNull($ai->items[0]['studyPlanDepartmentId']);
+        self::assertNull($ai->items[0]['studyPlanUrl']);
         self::assertSame('ai', collect($ai->items)->firstWhere('slug', 'ai-data-science')['studyPlanDepartmentId']);
     }
 

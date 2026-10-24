@@ -1119,14 +1119,14 @@ trait ManagesFacultyHomepage
                             ->searchable()
                             ->helperText(__('admin.faculty_workspace.editor.help.department_head')),
                         TextInput::make('code')->label(__('admin.faculty_workspace.editor.fields.department_code'))->maxLength(40),
+                        Select::make('studyPlanDepartmentId')
+                            ->label(__('admin.faculty_workspace.editor.fields.study_plan_link'))
+                            ->options(fn (): array => $this->departmentStudyPlanOptions())
+                            ->searchable()
+                            ->placeholder(__('admin.faculty_workspace.editor.fields.no_study_plan'))
+                            ->helperText(__('admin.faculty_workspace.editor.help.study_plan_link')),
                         Textarea::make('summary')->label(__('admin.faculty_workspace.editor.fields.summary'))->rows(3)->columnSpanFull(),
                         Section::make(__('admin.faculty_workspace.editor.sections.advanced'))->collapsed()->schema([
-                            Select::make('studyPlanDepartmentId')
-                                ->label(__('admin.faculty_workspace.editor.fields.study_plan_link'))
-                                ->options(fn (): array => $this->departmentStudyPlanOptions())
-                                ->searchable()
-                                ->placeholder(__('admin.faculty_workspace.editor.fields.automatic'))
-                                ->helperText(__('admin.faculty_workspace.editor.help.study_plan_link')),
                             TextInput::make('degrees')->label(__('admin.faculty_workspace.editor.fields.degree_track'))->maxLength(160),
                             TagsInput::make('tags')->label(__('admin.faculty_workspace.editor.fields.tags'))->columnSpanFull(),
                         ]),
@@ -1137,36 +1137,6 @@ trait ManagesFacultyHomepage
                     ->collapsible()
                     ->columnSpanFull(),
             ]),
-            Section::make(__('admin.faculty_workspace.editor.sections.specializations'))
-                ->description(__('admin.faculty_workspace.editor.help.specializations'))
-                ->schema([
-                    Repeater::make($prefix.'.specializations')
-                        ->label(__('admin.faculty_workspace.editor.sections.specializations'))
-                        ->schema([
-                            Hidden::make('slug')->default(fn (): string => 'specialization-'.Str::lower(Str::random(8))),
-                            Select::make('studyPlanDepartmentId')
-                                ->label(__('admin.faculty_workspace.editor.fields.specialization_program'))
-                                ->options(fn (): array => $this->departmentStudyPlanOptions())
-                                ->searchable()
-                                ->required(),
-                            TextInput::make('title')
-                                ->label(__('admin.faculty_workspace.editor.fields.display_title'))
-                                ->placeholder(__('admin.faculty_workspace.editor.help.specialization_title'))
-                                ->maxLength(180),
-                            TextInput::make('degrees')->label(__('admin.faculty_workspace.editor.fields.degree_track'))->maxLength(160),
-                            TagsInput::make('tags')->label(__('admin.faculty_workspace.editor.fields.tags')),
-                            Textarea::make('summary')
-                                ->label(__('admin.faculty_workspace.editor.fields.summary'))
-                                ->placeholder(__('admin.faculty_workspace.editor.help.specialization_summary'))
-                                ->rows(3)
-                                ->columnSpanFull(),
-                        ])
-                        ->columns(2)
-                        ->defaultItems(0)
-                        ->reorderable()
-                        ->collapsible()
-                        ->columnSpanFull(),
-                ]),
         ];
     }
 
@@ -1748,11 +1718,9 @@ trait ManagesFacultyHomepage
         $content['items'] = array_map(fn (array $item): array => $this->withoutKeys($item, ['_cmsKey']), $content['items']);
         unset($content['stats'], $content['dean']);
 
+        // The departments page once had a separate specializations list; it is gone.
         if ($subpageSlug === 'departments') {
-            $content['specializations'] = array_map(static fn (array $row): array => [
-                ...$row,
-                'tags' => array_values(array_filter(is_array($row['tags'] ?? null) ? $row['tags'] : [])),
-            ], $this->listOfArrays($content['specializations'] ?? []));
+            unset($content['specializations']);
         }
 
         return $content;

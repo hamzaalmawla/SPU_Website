@@ -344,12 +344,6 @@ final class FacultyPageService implements FacultyPageServiceInterface
 
         if ($subpageSlug === 'departments') {
             $items = $this->withDepartmentHeads($this->studyPlanLinkService->enrichDepartmentItems($this->publicSlug($faculty), $locale, $items), $locale);
-            $detail['specializations'] = $this->studyPlanLinkService->specializationItems(
-                $this->publicSlug($faculty),
-                $locale,
-                is_array($cmsContent) ? $this->arrayList($cmsContent['specializations'] ?? []) : [],
-                $items,
-            );
         }
 
         $filterOptions = [];

@@ -1,24 +1,21 @@
 # Faculty departments and specializations: plan
 
-Status: the foundation is built (see "As built" below); the CMS manager fills the data. Sections 3 to 6 were the first proposal and are kept for the reasoning; where they differ, "As built" wins.
+Status: built (see "As built" below); the CMS manager fills the data. Sections 3 to 6 were the first proposal and are kept for the reasoning; where they differ, "As built" wins.
 
 ## As built (2026-10-24)
 
-The page stays `/{locale}/faculties/{faculty}/departments`, with the same CMS target `facilities.<faculty>.departments` (draft, preview, publish, audit and cache as before). One payload, two lists:
+The page stays `/{locale}/faculties/{faculty}/departments`, with the same CMS target `facilities.<faculty>.departments` (draft, preview, publish, audit and cache as before). It lists the faculty's **academic departments** only. The separate Specializations list was built first and then removed on request; a stored `specializations` key in an older draft is ignored and dropped on the next save.
 
 - **Departments** (`translations.<locale>.items[]`, every faculty): `slug`, `title`, `summary`, `code`, plus
   - `kind`: `basic_sciences` | `academic` | `clinical` (default `academic`), shown as a badge;
   - `headMemberId`: a faculty profile id (never a name). The page shows the head's current name, photo and profile link; a hidden profile is left out;
-  - `studyPlanDepartmentId` (now labelled "Specialization it teaches"): optional. A department without one gets no Study Plan button when the faculty has several programs. In a single-program faculty it keeps the faculty's plan as its link.
+  - `studyPlanDepartmentId`, labelled **"Study plan (optional)"**: the study plan program (`plan.departments[].id`) this department teaches. A department with one gets a Study Plan button opening that program's tab; a department without one (Basic Sciences, most clinical departments) shows **no** Study Plan button. The faculty's own Study Plan page stays in its navigation.
   - `degrees`, `tags`: kept for older rows, under Advanced.
-- **Specializations** (`translations.<locale>.specializations[]`): `studyPlanDepartmentId` (required, a program of the published study plan), and optional `title`, `summary`, `degrees`, `tags`. An empty title or summary falls back to the program's name or summary in the plan; credits come from the plan.
-  - **Empty list:** a plan with two or more programs (AI, Business) lists every program automatically. A single-program faculty shows no specializations block.
-  - Validation: each program must exist in the published plan, appear once, and match in both languages.
-- Public rendering: `FacultyStudyPlanLinkServiceInterface::specializationItems` builds the list (with the department that teaches each one), and `FacultyPageService` adds the heads. The view shows the stats, then Specializations (cards, each with its Study Plan link), then Academic Departments.
-- Admin: the faculty page's Departments tab has the departments repeater (type, head picker grouped by this faculty or other faculties, code, summary; Advanced holds the specialization link, degree and keywords) and a Specializations repeater.
+- Public rendering: `FacultyStudyPlanLinkServiceInterface::enrichDepartmentItems` resolves each study plan link, and `FacultyPageService` adds the heads. The view shows the stats strip, then the departments.
+- Admin: the faculty page's Departments tab is the departments repeater (name, type, head picker grouped by this faculty or other faculties, code, study plan, summary; Advanced holds degree and keywords).
 - `departments.kind` column (migration `2026_10_24_000001`) for the record fallback used before a faculty's departments are first published. That migration marks the old site's Basic Sciences rows (petroleum, construction, dentistry Life Sciences) and adds **AI's Basic Sciences department** (`ai-basic-sciences`, first in order). `faculty_structure.json` carries the same, and `faculty:import-structure` writes `kind`.
 - **Business and AI links** (migration `2026_10_24_000002`, and `specializationId` per department in `faculty_structure.json`): each department records the program it teaches, in the departments page payload (`payload_json.departments[] = {slug, studyPlanDepartmentId}`), because the names are too different to match automatically.
-  - Business: Human Resources → `hr`, Accounting → `accounting`, Business Administration → `management`, Marketing → `marketing`, Finance & Banking → `finance`. **MIS (`mis`) is a specialization with no department.** It still shows as a specialization, just without a "Taught by" line.
+  - Business: Human Resources → `hr`, Accounting → `accounting`, Business Administration → `management`, Marketing → `marketing`, Finance & Banking → `finance`. **MIS (`mis`) has no department**, so it is reached from the Study Plan page's tabs, not from a department.
   - AI: each of the 6 departments → `se`, `ai`, `sec`, `ctrl`, `comm`, `med`. Basic Sciences → none.
   - A link an editor already set is kept.
 - **Academic staff** have both: the department (`faculty_members.department_id`, the main placement, as before) and an **optional specialization** (`faculty_members.specialization_id`, a study plan program id, migration `2026_10_24_000003`).
@@ -29,7 +26,7 @@ The page stays `/{locale}/faculties/{faculty}/departments`, with the same CMS ta
     - The form lists the faculty's enabled departments in page order, so Basic Sciences is included and switched-off or invented ones are not. A profile still in a switched-off department keeps it in its list and may send it back unchanged.
     - Submitting any other switched-off department is refused.
     - Approving a request keeps the profile's specialization. One that is no longer a program of the faculty's plan is cleared, so it cannot block the approval.
-- **Already-published departments pages** keep their published list until an editor adds Basic Sciences, kinds, heads and specializations, then publishes. Nothing is overwritten.
+- **Already-published departments pages** keep their published list until an editor adds Basic Sciences, kinds, heads and study plans, then publishes. Departments in a published list that have no study plan picked no longer show a Study Plan button. Nothing is overwritten.
 
 ## 1. The problem
 
