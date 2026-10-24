@@ -101,7 +101,7 @@ final class StaffIntakeReviewService implements StaffIntakeReviewServiceInterfac
                 'id' => (int) $member->getKey(),
                 'name' => $this->memberName($member, $locale),
                 'faculty' => $member->faculty instanceof Faculty ? $this->facultyName($member->faculty, $locale) : '',
-                'sameFaculty' => (int) $member->faculty_id === (int) $request->faculty_id,
+                'sameFaculty' => $member->faculty_id === null || (int) $member->faculty_id === (int) $request->faculty_id,
             ])
             ->values()
             ->all();
@@ -175,7 +175,10 @@ final class StaffIntakeReviewService implements StaffIntakeReviewServiceInterfac
             }
 
             $targetId = $targetMemberId ?? ($locked->type === StaffIntakeRequest::TYPE_UPDATE ? $locked->faculty_member_id : null);
-            if ($targetId !== null && ! FacultyMember::query()->whereKey($targetId)->where('faculty_id', $locked->faculty_id)->exists()) {
+            // A profile with no faculty yet is placed in the request's faculty.
+            if ($targetId !== null && ! FacultyMember::query()->whereKey($targetId)
+                ->where(fn ($query) => $query->where('faculty_id', $locked->faculty_id)->orWhereNull('faculty_id'))
+                ->exists()) {
                 throw ValidationException::withMessages(['target' => __('staff_intake.admin.errors.target_faculty')]);
             }
 
@@ -308,6 +311,9 @@ final class StaffIntakeReviewService implements StaffIntakeReviewServiceInterfac
                 'educations' => [],
                 'social_links' => [],
             ];
+        }
+        if (! is_numeric($base['faculty_id'] ?? null)) {
+            $base['faculty_id'] = (int) $request->faculty_id;
         }
 
         foreach (['ar', 'en'] as $locale) {

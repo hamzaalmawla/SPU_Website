@@ -165,6 +165,30 @@ final class StaffIntakeTest extends TestCase
         $this->assertDatabaseHas('audit_logs', ['action' => 'staff_intake_request.approved', 'entity_id' => $latest->getKey()]);
     }
 
+    public function test_a_leaders_profile_with_no_faculty_is_updated_and_placed_in_the_links_faculty(): void
+    {
+        $member = $this->member('dean-intake', 'عميد إنتيك', 'Dean Intake', null);
+        $token = $this->token($this->link());
+
+        $this->post('/en/staff-intake/'.$token.'/form', $this->formData($this->refFor($token, 'Dean Intake'), [
+            'name_ar' => 'أ.د. عميد إنتيك',
+            'name_en' => 'Prof. Dr. Dean Intake',
+            'position_ar' => 'عميد',
+            'position_en' => 'Dean',
+        ]))->assertRedirect('/en/staff-intake/'.$token.'/sent');
+
+        $request = StaffIntakeRequest::query()->sole();
+        $this->assertSame(StaffIntakeRequest::TYPE_UPDATE, $request->type);
+        $this->assertSame((int) $member->getKey(), (int) $request->faculty_member_id);
+
+        $result = app(StaffIntakeReviewServiceInterface::class)->approve((int) $request->getKey(), (int) $this->user('editor')->getKey());
+
+        $this->assertSame((int) $member->getKey(), $result->facultyMemberId, 'Approval made a second profile.');
+        $this->assertSame((int) $this->dentistry->getKey(), (int) $member->fresh()?->faculty_id);
+        $this->assertSame('dean-intake', $member->fresh()?->slug);
+        $this->assertSame(0, FacultyMember::query()->where('slug', 'like', 'prof-dr-dean-intake%')->count());
+    }
+
     public function test_a_new_teacher_with_an_existing_name_must_confirm_before_a_new_profile_is_requested(): void
     {
         $this->member('omar-intake', 'عمر إنتيك', 'Omar Intake', $this->dentistry);
@@ -567,11 +591,11 @@ trailer << /Root 1 0 R >>
         ];
     }
 
-    private function member(string $slug, string $nameAr, string $nameEn, Faculty $faculty, ?string $email = null): FacultyMember
+    private function member(string $slug, string $nameAr, string $nameEn, ?Faculty $faculty, ?string $email = null): FacultyMember
     {
         $member = FacultyMember::query()->create([
             'slug' => $slug,
-            'faculty_id' => $faculty->getKey(),
+            'faculty_id' => $faculty?->getKey(),
             'email' => $email,
             'is_enabled' => true,
             'publication_status' => PublicationStatus::Published->value,

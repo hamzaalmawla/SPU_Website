@@ -78,7 +78,7 @@ final class StaffIntakeService implements StaffIntakeServiceInterface
             ->filter(fn (array $row): bool => $row['rank'] > 0)
             ->sortBy([
                 fn (array $a, array $b): int => $b['rank'] <=> $a['rank'],
-                fn (array $a, array $b): int => ((int) $b['member']->faculty_id === (int) $link->faculty_id) <=> ((int) $a['member']->faculty_id === (int) $link->faculty_id),
+                fn (array $a, array $b): int => $this->joinsLinkFaculty($b['member'], $link) <=> $this->joinsLinkFaculty($a['member'], $link),
                 fn (array $a, array $b): int => $this->name($a['member'], $locale) <=> $this->name($b['member'], $locale),
             ])
             ->take(self::SUGGESTION_LIMIT)
@@ -102,7 +102,7 @@ final class StaffIntakeService implements StaffIntakeServiceInterface
                 return null;
             }
 
-            $sameFaculty = (int) $member->faculty_id === (int) $link->faculty_id;
+            $sameFaculty = $this->joinsLinkFaculty($member, $link);
             $departments = $this->departments((int) $link->faculty_id, $locale, $sameFaculty ? $this->nullableId($member->department_id) : null);
             $fields = StaffIntakeFields::fromMember($member);
             if (! $sameFaculty) {
@@ -165,13 +165,13 @@ final class StaffIntakeService implements StaffIntakeServiceInterface
             throw ValidationException::withMessages(['form' => __('staff_intake.public.errors.expired_form', [], $submission->locale)]);
         }
 
-        $isUpdate = $claimed instanceof FacultyMember && (int) $claimed->faculty_id === (int) $link->faculty_id;
+        $isUpdate = $claimed instanceof FacultyMember && $this->joinsLinkFaculty($claimed, $link);
         $this->requireFiles($submission, $claimed, $isUpdate);
         $fields = $this->cleanFields(
             $submission->fields,
             (int) $link->faculty_id,
             $submission->locale,
-            $claimed instanceof FacultyMember && (int) $claimed->faculty_id === (int) $link->faculty_id ? $this->nullableId($claimed->department_id) : null,
+            $isUpdate ? $this->nullableId($claimed->department_id) : null,
         );
         $educations = $this->cleanEducations($submission->educations, $isUpdate ? $claimed : null, $submission->locale);
 
@@ -258,6 +258,16 @@ final class StaffIntakeService implements StaffIntakeServiceInterface
         return $member instanceof FacultyMember ? $member : null;
     }
 
+    /**
+     * The link's own profiles and those with no faculty yet (a leader's
+     * profile made from the leadership row): sending one updates it, and
+     * approval places it in the link's faculty, instead of starting a copy.
+     */
+    private function joinsLinkFaculty(FacultyMember $member, StaffIntakeLink $link): bool
+    {
+        return $member->faculty_id === null || (int) $member->faculty_id === (int) $link->faculty_id;
+    }
+
     private function rank(string $typedName, FacultyMember $member): int
     {
         return (int) $member->translations
@@ -278,7 +288,7 @@ final class StaffIntakeService implements StaffIntakeServiceInterface
             title: $translation?->title,
             department: $department,
             faculty: $member->faculty instanceof Faculty ? $this->facultyName($member->faculty, $locale) : null,
-            inLinkFaculty: (int) $member->faculty_id === (int) $link->faculty_id,
+            inLinkFaculty: $this->joinsLinkFaculty($member, $link),
             photoUrl: $this->photoUrl($member),
             rank: $rank,
         );

@@ -119,6 +119,10 @@ class ViewStaffIntakeRequest extends ViewRecord
         }
         if ($details->type === StaffIntakeRequest::TYPE_CREATE) {
             $options['new'] = __('staff_intake.admin.actions.target_new');
+            // Started from a profile with no faculty (sent before such profiles were updated in place).
+            if ($details->relatedMember !== null && $details->relatedMember['faculty'] === '') {
+                $options['member:'.$details->relatedMember['id']] = __('staff_intake.admin.actions.target_existing', ['name' => $details->relatedMember['name']]);
+            }
         }
         foreach ($details->candidates as $candidate) {
             if ($candidate['sameFaculty'] && ($details->claimedMember['id'] ?? null) !== $candidate['id']) {
