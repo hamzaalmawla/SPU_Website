@@ -21,7 +21,15 @@ The imported `AGENTS.MD` is the authoritative project rulebook (scope, architect
 - Admin editing is the visual board on each faculty admin page: `ManagesStudyPlanBoard` (Livewire actions) -> `FacultyStudyPlanBoardService` (pure payload edits) -> `CmsWorkflowService::saveDraft`. Board and form save independently; the form never carries departments.
 - Bulk load from a curriculum: convert the source with a script in `database/seeders/Data/study_plans/`, then `php artisan faculty:import-study-plan <faculty> <file.json> --user=<id>` (dry run by default, `--write` saves an unpublished draft). It skips any plan editors have already saved or published (`--replace-edited` overrides, manual only); `cpanel-deploy.sh` runs it only when `study-plans.approved` is placed on the server (see `Docs/DEPLOYING.md`).
 - Public graph: `resources/js/alpine/studyPlan.js` (`planEdgePaths` is shared with the admin board in `resources/js/filament/studyPlanBoard.js`). Layout is measured from the DOM, not computed from constants.
-- Course teachers: `courses[].teachers.{theory,practical} = {memberId, enabled}` (a faculty profile id, never a name). Edited on the board's course panel; the course page reads the name and photo from the public profile (`FacultyPageService::courseTeachers`) and skips a switched-off part. The older `instructor` field shows only when no teachers are set.
+- Course teachers: `courses[].teachers.{theory,practical} = {memberIds: [], enabled}` (faculty profile ids, never names; any number per part). Plans saved earlier hold one `memberId`, still read. Edited on the board's course panel (add/remove chips); the course page reads each name and photo from the public profile (`FacultyPageService::courseTeachers`) and skips a switched-off part. The older `instructor` field shows only when no teachers are set.
+
+## Faculty projects
+- Supervisors are faculty profiles: `facilities.<faculty>.projects` items carry `supervisorMemberIds` (picked per language in the admin; a language with none uses the other's). The project list and detail pages link each to its profile (`FacultyPageService::withProjectSupervisors`). The imported free-text `supervisor` shows only while no profile is picked, and its admin field only while it has text.
+
+## Search
+- `App\Support\LenientSearch` is the matcher for list searches (faculty projects, student lists, alumni directory, research publications/projects/researchers): every word in any order, Arabic folding, no article or punctuation, near spellings against names and titles. Callers pass the item's text in both languages, so a search works on either site.
+- Site search: each `search_documents` row also holds the other language's text and `alt_title_normalized` (rebuilt by `search:index` on every deploy); below 10 exact hits, near spellings of titles are added after them.
+- `CachePublicPages` keys each route on its own query parameters; a list search must list `q` there or every search gets the first cached page.
 - `FacultyStudyPlanEditorService` workspace methods (`buildWorkspace`, `mergeWorkspace`) belong to the removed per-term form and are unused by the app; `validationErrors` is still the validator.
 - Tests are slow (Livewire pages take 5-10s each); run classes separately with `--filter`, and run long ones in the background.
 

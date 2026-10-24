@@ -24,6 +24,7 @@ use App\Models\Research\ResearchPublication;
 use App\Models\Research\ResearchPublicationTranslation;
 use App\Models\Shared\MigrationLog;
 use App\Support\LegacyPublicationMetadata;
+use App\Support\LenientSearch;
 use App\Support\MediaUrlResolver;
 use App\Support\ResearchPublicationSlug;
 use Carbon\CarbonImmutable;
@@ -108,7 +109,7 @@ final class ResearchPageService implements ResearchPageServiceInterface
 
         if (is_array($cmsContent)) {
             $cmsContent = $this->withDatabasePublications($cmsContent, $locale);
-            $cmsContent = $this->withFilteredPublications($cmsContent, $filters);
+            $cmsContent = $this->withFilteredPublications($cmsContent, $filters, $locale);
 
             return $this->pageDto(
                 $locale,
@@ -121,7 +122,7 @@ final class ResearchPageService implements ResearchPageServiceInterface
         }
 
         $localized = $this->withDatabasePublications([], $locale);
-        $localized = $this->withFilteredPublications($localized, $filters);
+        $localized = $this->withFilteredPublications($localized, $filters, $locale);
 
         return $this->pageDto(
             $locale,
@@ -472,7 +473,7 @@ final class ResearchPageService implements ResearchPageServiceInterface
 
         $isAvailable = is_array($localized);
         $localized = $isAvailable ? $this->normalizedProjectsContent($localized) : [];
-        $localized = $this->withFilteredProjects($localized, $filters);
+        $localized = $this->withFilteredProjects($localized, $filters, $locale);
 
         return $this->pageDto($locale, 'projects', $localized, '/research/projects', is_array($localized['hero'] ?? null) ? $localized['hero'] : [], $isAvailable);
     }
@@ -484,7 +485,7 @@ final class ResearchPageService implements ResearchPageServiceInterface
 
     public function buildPreviewProjects(string $locale, array $content, array $filters = []): ResearchPageDTO
     {
-        $content = $this->withFilteredProjects($this->normalizedProjectsContent($content), $filters);
+        $content = $this->withFilteredProjects($this->normalizedProjectsContent($content), $filters, $locale);
 
         return $this->pageDto($locale, 'projects', $content, '/research/projects', $content['hero'] ?? []);
     }
@@ -566,7 +567,7 @@ final class ResearchPageService implements ResearchPageServiceInterface
         return $this->pageDto(
             $locale,
             'researchers',
-            $this->withFilteredResearchers($content, $filters),
+            $this->withFilteredResearchers($content, $filters, $locale),
             '/research/researchers',
             is_array($content['hero'] ?? null) ? $content['hero'] : [],
             $content['items'] !== [] || is_array($cmsContent),
@@ -1450,21 +1451,26 @@ final class ResearchPageService implements ResearchPageServiceInterface
     }
 
     /** @param array<string, mixed> $content @param array<string, mixed> $filters @return array<string, mixed> */
-    private function withFilteredPublications(array $content, array $filters): array
+    private function withFilteredPublications(array $content, array $filters, string $locale): array
     {
         $activeFilters = $this->normalizedPublicationFilters($filters);
         $items = $this->newestPublicationItems($this->arrayList($content['items'] ?? []));
         $content['totalItems'] = count($items);
         $content['activeFilters'] = $activeFilters;
+        // Papers from the register carry both languages in searchText; the
+        // ones added on the CMS page are matched with their other-language copy.
+        $otherItems = $activeFilters['q'] !== ''
+            ? $this->itemsBySlug($this->arrayList($this->publishedLocalizedPayload('research.publications', $this->otherLocale($locale))['items'] ?? []))
+            : [];
 
-        $filtered = array_values(array_filter($items, fn (array $item): bool => $this->publicationMatchesFilters($item, $activeFilters)));
+        $filtered = array_values(array_filter($items, fn (array $item): bool => $this->publicationMatchesFilters($item, $activeFilters, $otherItems[(string) ($item['slug'] ?? '')] ?? [])));
         $content = $this->withPagination($content, $filtered, $activeFilters, self::PUBLICATIONS_PER_PAGE);
 
         return $content;
     }
 
-    /** @param array<string, mixed> $item @param array<string, string> $filters */
-    private function publicationMatchesFilters(array $item, array $filters): bool
+    /** @param array<string, mixed> $item @param array<string, string> $filters @param array<string, mixed> $otherItem */
+    private function publicationMatchesFilters(array $item, array $filters, array $otherItem = []): bool
     {
         if ($filters['faculty'] !== '' && $filters['faculty'] !== $this->canonicalFacultySlug((string) ($item['facultySlug'] ?? ''))) {
             return false;
@@ -1482,31 +1488,52 @@ final class ResearchPageService implements ResearchPageServiceInterface
             return true;
         }
 
-        $haystack = $this->searchKey(implode(' ', array_filter([
-            $item['title'] ?? null,
-            $item['searchText'] ?? null,
+        return LenientSearch::matches($filters['q'], [
             $item['summary'] ?? null,
             $item['lead'] ?? null,
             $item['category'] ?? null,
             $item['type'] ?? null,
             $item['faculty'] ?? null,
-            $item['author'] ?? null,
             $item['publisher'] ?? null,
             $item['year'] ?? null,
-            implode(' ', array_filter($this->scalarList($item['keywords'] ?? []))),
-        ], static fn (mixed $value): bool => is_scalar($value) && trim((string) $value) !== '')));
-
-        return str_contains($haystack, $this->searchKey($filters['q']));
+            $otherItem['summary'] ?? null,
+            $otherItem['faculty'] ?? null,
+            $otherItem['publisher'] ?? null,
+        ], [
+            $item['title'] ?? null,
+            $item['searchText'] ?? null,
+            $item['author'] ?? null,
+            $this->scalarList($item['keywords'] ?? []),
+            $otherItem['title'] ?? null,
+            $otherItem['author'] ?? null,
+            $this->scalarList($otherItem['keywords'] ?? []),
+        ]);
     }
 
-    /** Lower case with runs of spaces collapsed: legacy titles often carry double spaces. */
-    private function searchKey(string $value): string
+    private function otherLocale(string $locale): string
     {
-        return mb_strtolower(preg_replace('/\s+/u', ' ', trim($value)) ?? $value);
+        return $locale === 'ar' ? 'en' : 'ar';
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $items
+     * @return array<string, array<string, mixed>>
+     */
+    private function itemsBySlug(array $items): array
+    {
+        $bySlug = [];
+        foreach ($items as $item) {
+            $slug = (string) ($item['slug'] ?? '');
+            if ($slug !== '') {
+                $bySlug[$slug] ??= $item;
+            }
+        }
+
+        return $bySlug;
     }
 
     /** @param array<string, mixed> $content @param array<string, mixed> $filters @return array<string, mixed> */
-    private function withFilteredProjects(array $content, array $filters): array
+    private function withFilteredProjects(array $content, array $filters, string $locale): array
     {
         $activeFilters = [
             'q' => $this->filterValue($filters['q'] ?? null),
@@ -1516,7 +1543,9 @@ final class ResearchPageService implements ResearchPageServiceInterface
             'page' => $this->filterPage($filters['page'] ?? null),
         ];
         $items = $this->newestProjectItems($this->arrayList($content['items'] ?? []));
-        $filtered = array_values(array_filter($items, function (array $item) use ($activeFilters): bool {
+        $otherContent = $activeFilters['q'] !== '' ? $this->publishedLocalizedPayload('research.projects', $this->otherLocale($locale)) : null;
+        $otherItems = is_array($otherContent) ? $this->itemsBySlug($this->arrayList($this->normalizedProjectsContent($otherContent)['items'] ?? [])) : [];
+        $filtered = array_values(array_filter($items, function (array $item) use ($activeFilters, $otherItems): bool {
             if ($activeFilters['status'] !== '' && $activeFilters['status'] !== (string) ($item['status'] ?? '')) {
                 return false;
             }
@@ -1533,19 +1562,28 @@ final class ResearchPageService implements ResearchPageServiceInterface
                 return true;
             }
 
-            return $this->containsSearchTerm([
-                $item['title'] ?? null,
+            $other = $otherItems[(string) ($item['slug'] ?? '')] ?? [];
+
+            return LenientSearch::matches($activeFilters['q'], [
                 $item['summary'] ?? null,
                 $item['faculty'] ?? null,
                 $item['theme'] ?? null,
-            ], $activeFilters['q']);
+                $other['summary'] ?? null,
+                $other['faculty'] ?? null,
+                $other['theme'] ?? null,
+                $item['funding'] ?? null,
+                $other['funding'] ?? null,
+            ], [
+                $item['title'] ?? null,
+                $other['title'] ?? null,
+            ]);
         }));
 
         return $this->withPagination($content, $filtered, $activeFilters, self::PROJECTS_PER_PAGE);
     }
 
     /** @param array<string, mixed> $content @param array<string, mixed> $filters @return array<string, mixed> */
-    private function withFilteredResearchers(array $content, array $filters, bool $withExpertise = true): array
+    private function withFilteredResearchers(array $content, array $filters, string $locale, bool $withExpertise = true): array
     {
         $activeFilters = [
             'q' => $this->filterValue($filters['q'] ?? null),
@@ -1554,7 +1592,11 @@ final class ResearchPageService implements ResearchPageServiceInterface
             'page' => $this->filterPage($filters['page'] ?? null),
         ];
         $items = $this->arrayList($content['items'] ?? $content['researchers'] ?? []);
-        $filtered = array_values(array_filter($items, function (array $item) use ($activeFilters): bool {
+        // A researcher is found by their name in either language.
+        $otherItems = $activeFilters['q'] !== ''
+            ? $this->itemsBySlug($this->databaseResearchersContent($this->otherLocale($locale))['items'])
+            : [];
+        $filtered = array_values(array_filter($items, function (array $item) use ($activeFilters, $otherItems): bool {
             $facultySlug = (string) ($item['facultySlug'] ?? $item['facultyId'] ?? '');
             if ($activeFilters['faculty'] !== '' && $activeFilters['faculty'] !== $this->canonicalFacultySlug($facultySlug)) {
                 return false;
@@ -1569,28 +1611,26 @@ final class ResearchPageService implements ResearchPageServiceInterface
                 return true;
             }
 
-            return $this->containsSearchTerm([
-                $item['name'] ?? null,
+            $other = $otherItems[(string) ($item['slug'] ?? '')] ?? [];
+
+            return LenientSearch::matches($activeFilters['q'], [
                 $item['faculty'] ?? null,
                 $item['department'] ?? null,
-                ...$this->scalarList($item['expertise'] ?? []),
-            ], $activeFilters['q']);
+                $item['title'] ?? null,
+                $this->scalarList($item['expertise'] ?? []),
+                $other['faculty'] ?? null,
+                $other['department'] ?? null,
+                $other['title'] ?? null,
+                $this->scalarList($other['expertise'] ?? []),
+            ], [
+                $item['name'] ?? null,
+                $other['name'] ?? null,
+            ]);
         }));
 
         $content['items'] = $items;
 
         return $this->withPagination($content, $filtered, $activeFilters, self::RESEARCHERS_PER_PAGE);
-    }
-
-    /** @param array<int, mixed> $values */
-    private function containsSearchTerm(array $values, string $term): bool
-    {
-        $haystack = mb_strtolower(implode(' ', array_map(
-            static fn (mixed $value): string => is_scalar($value) ? (string) $value : '',
-            $values,
-        )));
-
-        return str_contains($haystack, mb_strtolower($term));
     }
 
     /**

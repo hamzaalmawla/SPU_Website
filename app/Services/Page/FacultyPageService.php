@@ -49,6 +49,7 @@ use App\Models\Person\FacultyMember;
 use App\Models\Person\Person;
 use App\Models\Shared\MigrationLog;
 use App\Support\FacultyLogoSubtitle;
+use App\Support\LenientSearch;
 use App\Support\MediaUrlResolver;
 use App\Support\PersonName;
 use Illuminate\Database\Eloquent\Builder;
@@ -378,7 +379,7 @@ final class FacultyPageService implements FacultyPageServiceInterface
 
         if ($subpageSlug === 'projects') {
             $items = $this->withProjectSupervisors($faculty, $locale, $items);
-            $items = $this->filteredProjectItems($items, $filters);
+            $items = $this->filteredProjectItems($faculty, $locale, $items, $filters);
             [$items, $pagination] = $this->paginatedItems($items, $filters, self::FACULTY_LIST_PER_PAGE);
         }
 
@@ -1825,7 +1826,7 @@ final class FacultyPageService implements FacultyPageServiceInterface
     {
         return collect($items)
             ->filter(function (array $item) use ($subpageSlug, $filters): bool {
-                if ($filters['q'] !== '' && ! str_contains(mb_strtolower($this->studentSearchText($item)), mb_strtolower((string) $filters['q']))) {
+                if ($filters['q'] !== '' && ! LenientSearch::matches((string) $filters['q'], [$this->studentSearchText($item)], [$item['title'] ?? null])) {
                     return false;
                 }
 
@@ -1862,23 +1863,45 @@ final class FacultyPageService implements FacultyPageServiceInterface
      * @param  array<string, mixed>  $filters
      * @return array<int, array<string, mixed>>
      */
-    private function filteredProjectItems(array $items, array $filters): array
+    private function filteredProjectItems(Faculty $faculty, string $locale, array $items, array $filters): array
     {
-        $query = mb_strtolower(trim((string) ($filters['q'] ?? '')));
+        $query = trim((string) ($filters['q'] ?? ''));
 
-        if ($query === '') {
+        if (LenientSearch::terms($query) === []) {
             return $items;
         }
 
-        return collect($items)
-            ->filter(function (array $item) use ($query): bool {
-                $searchable = mb_strtolower(implode(' ', [
-                    (string) ($item['title'] ?? ''),
-                    (string) ($item['team'] ?? ''),
-                    (string) ($item['supervisor'] ?? ''),
-                ]));
+        // A project is found by its Arabic or English title, team or
+        // supervisor whichever page the search is typed on.
+        $otherLocale = $this->otherLocale($locale);
+        $otherItems = $this->projectItemsBySlug($faculty, $otherLocale);
+        $otherNames = $this->publicMemberCards($otherLocale, array_values(array_unique(array_merge([], ...array_map(
+            fn (array $item): array => $this->memberIdList($item['supervisorMemberIds'] ?? null),
+            $items,
+        )))));
 
-                return str_contains($searchable, $query);
+        return collect($items)
+            ->filter(function (array $item) use ($query, $otherItems, $otherNames): bool {
+                $other = $otherItems[(string) ($item['slug'] ?? '')] ?? [];
+                $supervisorNames = array_map(
+                    static fn (int $id): string => (string) ($otherNames[$id]['name'] ?? ''),
+                    $this->memberIdList($item['supervisorMemberIds'] ?? null),
+                );
+
+                return LenientSearch::matches($query, [
+                    $item['tag'] ?? null,
+                    $item['summary'] ?? null,
+                    $other['tag'] ?? null,
+                    $other['summary'] ?? null,
+                ], [
+                    $item['title'] ?? null,
+                    $item['team'] ?? null,
+                    $item['supervisor'] ?? null,
+                    $other['title'] ?? null,
+                    $other['team'] ?? null,
+                    $other['supervisor'] ?? null,
+                    ...$supervisorNames,
+                ]);
             })
             ->values()
             ->all();

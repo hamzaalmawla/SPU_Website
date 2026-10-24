@@ -24,6 +24,7 @@ class SearchDocument extends Model
         'locale',
         'title',
         'title_normalized',
+        'alt_title_normalized',
         'summary',
         'body_normalized',
         'url',

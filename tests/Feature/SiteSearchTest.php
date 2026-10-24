@@ -201,6 +201,46 @@ final class SiteSearchTest extends TestCase
             ->assertDontSee('Dentistry open day', false);
     }
 
+    // ── Either language, near spellings ──────────────────────────────────────
+
+    public function test_a_search_in_either_language_finds_the_page_in_the_sites_language(): void
+    {
+        $this->publishedPerson('rana-haddad', 'Dr. Rana Haddad', 'الدكتورة رنا حداد');
+        $this->publishedPublication('Machine Learning in Cardiology', 'التعلم الآلي في طب القلب');
+
+        // English typed on the Arabic site: the Arabic page is listed.
+        $this->get('/ar/search?q=Haddad')
+            ->assertOk()
+            ->assertSee('الدكتورة رنا حداد', false)
+            ->assertSee('/ar/', false);
+        $this->get('/ar/search?q=Cardiology')->assertOk()->assertSee('التعلم الآلي في طب القلب', false);
+
+        // Arabic typed on the English site.
+        $this->get('/en/search?q='.rawurlencode('رنا حداد'))->assertOk()->assertSee('Dr. Rana Haddad', false);
+        $this->get('/en/search?q='.rawurlencode('طب القلب'))->assertOk()->assertSee('Machine Learning in Cardiology', false);
+    }
+
+    public function test_a_near_spelling_of_a_title_or_name_is_found(): void
+    {
+        $this->publishedPerson('mohammad-alghazzi', 'Prof. Muhammad Ahmad Alghazzi', 'أ. د. محمد أحمد الغزي');
+        $this->publishedPublication('Pharmaceutical Chemistry of Natural Products', 'الكيمياء الصيدلانية للمنتجات الطبيعية');
+
+        $this->get('/en/search?q='.rawurlencode('Mohamed Ahmed'))->assertOk()->assertSee('Prof. Muhammad Ahmad Alghazzi', false);
+        $this->get('/en/search?q='.rawurlencode('pharmaceutcal chemistry'))->assertOk()->assertSee('Pharmaceutical Chemistry of Natural Products', false);
+        $this->get('/ar/search?q='.rawurlencode('الكيمياء الصيدلانيه'))->assertOk()->assertSee('الكيمياء الصيدلانية للمنتجات الطبيعية', false);
+
+        // Unrelated words still find nothing.
+        $this->get('/en/search?q='.rawurlencode('Mohamed Zaid'))->assertOk()->assertDontSee('Prof. Muhammad Ahmad Alghazzi', false);
+    }
+
+    public function test_the_arabic_article_and_punctuation_do_not_block_a_match(): void
+    {
+        $this->publishedArticle(slug: 'pharmacy-day', titleEn: 'Pharmacy day', titleAr: 'يوم صيدلة مفتوح');
+
+        $this->get('/ar/search?q='.rawurlencode('الصيدلة'))->assertOk()->assertSee('يوم صيدلة مفتوح', false);
+        $this->get('/en/search?q='.rawurlencode('pharmacy, day!'))->assertOk()->assertSee('Pharmacy day', false);
+    }
+
     // ── Arabic normalization ─────────────────────────────────────────────────
 
     public function test_undiacritized_query_matches_diacritized_content(): void
@@ -376,14 +416,17 @@ final class SiteSearchTest extends TestCase
         $this->publishedArticle(slug: 'wildcard-target', titleEn: 'Engineering symposium', titleAr: 'ندوة هندسية');
 
         // Unescaped, '%' would match everything and '_' would match any single
-        // character, so both of these would otherwise return the article.
+        // character, so these would otherwise return the article.
         $this->get('/en/search?q='.rawurlencode('%'))->assertOk()->assertDontSee('Engineering symposium', false);
         $this->get('/en/search?q='.rawurlencode('%%'))->assertOk()->assertDontSee('Engineering symposium', false);
-        $this->get('/en/search?q='.rawurlencode('Engineering%symposium'))->assertOk()->assertDontSee('Engineering symposium', false);
-        $this->get('/en/search?q='.rawurlencode('Engineerin_'))->assertOk()->assertDontSee('Engineering symposium', false);
+        $this->get('/en/search?q='.rawurlencode('__'))->assertOk()->assertDontSee('Engineering symposium', false);
+        $this->get('/en/search?q='.rawurlencode('Chemistry_%'))->assertOk()->assertDontSee('Engineering symposium', false);
 
         // The escape character itself must not leak into the pattern either.
         $this->get('/en/search?q='.rawurlencode('!%'))->assertOk()->assertDontSee('Engineering symposium', false);
+
+        // Punctuation inside a query separates words, as a space would.
+        $this->get('/en/search?q='.rawurlencode('Engineering%symposium'))->assertOk()->assertSee('Engineering symposium', false);
 
         // The literal term still matches, proving the escaping did not break it.
         $this->get('/en/search?q=Engineering')->assertOk()->assertSee('Engineering symposium', false);

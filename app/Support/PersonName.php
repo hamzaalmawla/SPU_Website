@@ -82,6 +82,12 @@ final class PersonName
         return $outline;
     }
 
+    /** The consonant outline of one lowercase Latin word, for search: see wordSkeleton(). */
+    public static function latinOutline(string $word): string
+    {
+        return self::wordSkeleton(strtolower($word));
+    }
+
     /** Consonant outline of one lowercase Latin word: "ahmed" and "ahmad" both give "ahmd". */
     private static function wordSkeleton(string $word): string
     {

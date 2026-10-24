@@ -9,6 +9,7 @@ use App\Contracts\Shared\CacheServiceInterface;
 use App\DTOs\Search\SearchResultDTO;
 use App\DTOs\Search\SearchResultsDTO;
 use App\Models\Search\SearchDocument;
+use App\Support\LenientSearch;
 use App\Support\SearchTextNormalizer;
 use BadMethodCallException;
 use Illuminate\Database\Eloquent\Builder;
@@ -47,6 +48,17 @@ final class SiteSearchService implements SiteSearchServiceInterface
     /** Terms beyond this are ignored; each one costs another LIKE pass. */
     private const MAX_TERMS = 6;
 
+    /**
+     * Below this many exact matches, titles spelled nearly like the query
+     * ("pharmcy", "Mohamed" for "Muhammad") are added after them.
+     */
+    private const NEAR_BELOW = 10;
+
+    /** Titles checked for a near spelling, and near matches kept. */
+    private const NEAR_CANDIDATES = 1500;
+
+    private const NEAR_MAX = 50;
+
     private const CACHE_TTL_SECONDS = 300;
 
     /** Characters of context kept before and after the first match. */
@@ -69,7 +81,7 @@ final class SiteSearchService implements SiteSearchServiceInterface
         $rawQuery = trim($query);
         $rawQuery = mb_substr($rawQuery, 0, self::MAX_QUERY_LENGTH);
         $normalizedQuery = SearchTextNormalizer::normalize($rawQuery);
-        $terms = array_slice(SearchTextNormalizer::terms($rawQuery), 0, self::MAX_TERMS);
+        $terms = array_slice($this->terms($rawQuery), 0, self::MAX_TERMS);
 
         $hasQuery = $rawQuery !== '';
         $tooShort = $hasQuery && mb_strlen($normalizedQuery) < self::MIN_QUERY_LENGTH;
@@ -87,8 +99,19 @@ final class SiteSearchService implements SiteSearchServiceInterface
         // the filter agreed with it.
         $typeCounts = $this->facetCounts($locale, $normalizedQuery, $terms);
         $matches = $this->matchingDocuments($locale, $normalizedQuery, $terms, $type);
-
         $filtered = $matches['results'];
+
+        // Few exact hits: add the titles spelled nearly like the query.
+        if ($typeCounts['all'] < self::NEAR_BELOW) {
+            foreach ($this->nearMatches($locale, $rawQuery, $normalizedQuery, $terms) as $near) {
+                $typeCounts[$near['type']] = ($typeCounts[$near['type']] ?? 0) + 1;
+                $typeCounts['all']++;
+                if ($type === 'all' || $near['type'] === $type) {
+                    $filtered[] = $near;
+                }
+            }
+        }
+
         $total = count($filtered);
         $lastPage = max(1, (int) ceil($total / $perPage));
         $page = min($page, $lastPage);
@@ -167,14 +190,14 @@ final class SiteSearchService implements SiteSearchServiceInterface
 
         $rows = $builder
             ->orderByRaw(
-                "CASE WHEN title_normalized LIKE ? ESCAPE '!' THEN 0 ELSE 1 END",
-                ['%'.SearchTextNormalizer::escapeLike($normalizedQuery).'%'],
+                "CASE WHEN title_normalized LIKE ? ESCAPE '!' OR alt_title_normalized LIKE ? ESCAPE '!' THEN 0 ELSE 1 END",
+                array_fill(0, 2, '%'.SearchTextNormalizer::escapeLike($normalizedQuery).'%'),
             )
             ->orderByDesc('weight')
             ->orderByDesc('published_at')
             ->orderByDesc('id')
             ->limit(self::MAX_MATCHES + 1)
-            ->get(['id', 'type', 'title_normalized', 'published_at', 'weight']);
+            ->get(['id', 'type', 'title_normalized', 'alt_title_normalized', 'published_at', 'weight']);
 
         $capped = $rows->count() > self::MAX_MATCHES;
         $rows = $rows->take(self::MAX_MATCHES);
@@ -184,7 +207,11 @@ final class SiteSearchService implements SiteSearchServiceInterface
                 return [
                     'id' => (int) $document->getKey(),
                     'type' => (string) $document->type,
-                    'score' => $this->score((string) $document->title_normalized, (int) $document->weight, $normalizedQuery, $terms),
+                    // A title in either language counts as the title.
+                    'score' => max(
+                        $this->score((string) $document->title_normalized, (int) $document->weight, $normalizedQuery, $terms),
+                        $this->score((string) $document->alt_title_normalized, (int) $document->weight, $normalizedQuery, $terms),
+                    ),
                     'published_at' => $document->published_at?->getTimestamp() ?? 0,
                 ];
             })
@@ -201,6 +228,91 @@ final class SiteSearchService implements SiteSearchServiceInterface
             ),
             'capped' => $capped,
         ];
+    }
+
+    /**
+     * The query's words, folded, without punctuation or the Arabic article
+     * ("الصيدلة" also finds "صيدلة"), longest first so that the most specific
+     * term wins when highlighting overlapping matches.
+     *
+     * @return list<string>
+     */
+    private function terms(string $rawQuery): array
+    {
+        $terms = LenientSearch::terms($rawQuery);
+        usort($terms, static fn (string $a, string $b): int => mb_strlen($b) <=> mb_strlen($a));
+
+        return $terms;
+    }
+
+    /**
+     * Documents whose title, in either language, is spelled nearly like the
+     * query without containing it, ranked after every exact match. Only
+     * titles are compared: a near spelling somewhere in a long body is noise.
+     * Candidates share the first or last three letters of a typed word, so the
+     * scan stays bounded however large the index grows.
+     *
+     * @param  list<string>  $terms
+     * @return list<array{id: int, type: string}>
+     */
+    private function nearMatches(string $locale, string $rawQuery, string $normalizedQuery, array $terms): array
+    {
+        $fragments = [];
+        foreach ($terms as $term) {
+            if (mb_strlen($term) >= 4) {
+                $fragments[] = mb_substr($term, 0, 3);
+                $fragments[] = mb_substr($term, -3);
+            }
+        }
+        $fragments = array_values(array_unique($fragments));
+
+        if ($fragments === []) {
+            return [];
+        }
+
+        $find = function () use ($locale, $rawQuery, $terms, $fragments): array {
+            $rows = SearchDocument::query()
+                ->where('locale', $locale)
+                ->where(function (Builder $query) use ($fragments): void {
+                    foreach ($fragments as $fragment) {
+                        $like = '%'.SearchTextNormalizer::escapeLike($fragment).'%';
+                        $query->orWhereRaw("title_normalized LIKE ? ESCAPE '!'", [$like])
+                            ->orWhereRaw("alt_title_normalized LIKE ? ESCAPE '!'", [$like]);
+                    }
+                })
+                // Exact matches are already listed.
+                ->whereNot(function (Builder $query) use ($terms): void {
+                    foreach ($terms as $term) {
+                        $query->whereRaw("body_normalized LIKE ? ESCAPE '!'", ['%'.SearchTextNormalizer::escapeLike($term).'%']);
+                    }
+                })
+                ->orderByDesc('weight')
+                ->orderByDesc('id')
+                ->limit(self::NEAR_CANDIDATES)
+                ->get(['id', 'type', 'title_normalized', 'alt_title_normalized']);
+
+            $near = [];
+            foreach ($rows as $document) {
+                if (LenientSearch::matches($rawQuery, [], [(string) $document->title_normalized, (string) $document->alt_title_normalized])) {
+                    $near[] = ['id' => (int) $document->getKey(), 'type' => (string) $document->type];
+                    if (count($near) >= self::NEAR_MAX) {
+                        break;
+                    }
+                }
+            }
+
+            return $near;
+        };
+
+        try {
+            $near = $this->cacheService
+                ->tags(['search', 'public-pages'])
+                ->remember('search:near:'.sha1($locale.'|'.$normalizedQuery), $find, self::CACHE_TTL_SECONDS);
+        } catch (BadMethodCallException) {
+            $near = $find();
+        }
+
+        return is_array($near) ? array_values($near) : [];
     }
 
     /**

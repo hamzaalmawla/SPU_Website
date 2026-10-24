@@ -35,7 +35,9 @@ use Illuminate\Support\Str;
  * One document is written per (record, locale). When a record has no
  * translation in a locale, the other locale's text is indexed under it so the
  * record stays findable in both languages; the URL and display title always
- * belong to the row's own locale.
+ * belong to the row's own locale. Each document also carries the other
+ * language's title and text, so a search typed in either language finds the
+ * record on both the Arabic and the English site.
  *
  * Text is reduced to plain text and folded through SearchTextNormalizer at
  * index time. Nothing is normalized at query time except the query itself, so
@@ -173,7 +175,7 @@ final class SearchIndexService implements SearchIndexServiceInterface
             return $this->forgetRecord($source, $recordId);
         }
 
-        $documents = $this->documentsFor($source, $record);
+        $documents = $this->withBothLanguages($this->documentsFor($source, $record));
         $this->resetLookups();
 
         if ($documents === []) {
@@ -221,7 +223,7 @@ final class SearchIndexService implements SearchIndexServiceInterface
                 $documents = [];
 
                 foreach ($records as $record) {
-                    foreach ($this->documentsFor($source, $record) as $document) {
+                    foreach ($this->withBothLanguages($this->documentsFor($source, $record)) as $document) {
                         $documents[] = $document;
                     }
                 }
@@ -255,7 +257,7 @@ final class SearchIndexService implements SearchIndexServiceInterface
         SearchDocument::query()->upsert(
             $documents,
             ['searchable_type', 'searchable_id', 'locale'],
-            ['type', 'title', 'title_normalized', 'summary', 'body_normalized', 'url', 'meta', 'published_at', 'weight', 'updated_at'],
+            ['type', 'title', 'title_normalized', 'alt_title_normalized', 'summary', 'body_normalized', 'url', 'meta', 'published_at', 'weight', 'updated_at'],
         );
     }
 
@@ -712,6 +714,44 @@ final class SearchIndexService implements SearchIndexServiceInterface
     }
 
     // ── Shared document assembly ─────────────────────────────────────────────
+
+    /**
+     * Adds to each of a record's documents the title and text of its other
+     * language: the visitor's search is matched against both, whichever site
+     * they are on, and the result still shows the page in their language.
+     *
+     * @param  list<array<string, mixed>>  $documents
+     * @return list<array<string, mixed>>
+     */
+    private function withBothLanguages(array $documents): array
+    {
+        $byLocale = [];
+        foreach ($documents as $document) {
+            $byLocale[(string) $document['locale']] = $document;
+        }
+
+        foreach ($documents as $index => $document) {
+            $documents[$index]['alt_title_normalized'] = null;
+            foreach ($byLocale as $locale => $other) {
+                if ($locale === $document['locale']) {
+                    continue;
+                }
+
+                if ($other['title_normalized'] !== $document['title_normalized']) {
+                    $documents[$index]['alt_title_normalized'] = $other['title_normalized'];
+                }
+                if ($other['body_normalized'] !== $document['body_normalized'] && $other['body_normalized'] !== '') {
+                    $documents[$index]['body_normalized'] = Str::limit(
+                        $document['body_normalized'].' '.$other['body_normalized'],
+                        self::MAX_BODY_LENGTH * 2,
+                        '',
+                    );
+                }
+            }
+        }
+
+        return $documents;
+    }
 
     /**
      * @param  list<string>  $bodyParts

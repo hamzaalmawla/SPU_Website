@@ -118,6 +118,26 @@ final class ResearchersDirectoryTest extends TestCase
         $this->assertFalse(PersonName::likelySame('Omar Haddad', 'Ali Haddad'));
     }
 
+    public function test_the_directory_search_finds_a_researcher_by_either_name_and_a_near_spelling(): void
+    {
+        $member = $this->member('d-ayman-khaled', 'Dr. Ayman Khaled');
+        $member->translations()->where('locale', 'ar')->update(['full_name' => 'د. أيمن خالد']);
+        $staff = Researcher::query()->create(['full_name' => 'Ayman Khaled', 'faculty_id' => $this->dentistry->getKey(), 'faculty_member_id' => $member->getKey()]);
+        $other = Researcher::query()->create(['full_name' => 'Omar Haddad', 'faculty_id' => $this->dentistry->getKey()]);
+        $this->paper('Implant Stability in Smokers')->researchers()->attach([
+            $staff->getKey() => ['role' => 'lead_author', 'sort_order' => 1],
+            $other->getKey() => ['role' => 'co_author', 'sort_order' => 2],
+        ]);
+        Cache::flush();
+
+        // English typed on the Arabic site, Arabic on the English site.
+        $this->get('/ar/research/researchers?q='.rawurlencode('Ayman Khaled'))->assertOk()->assertSee('د. أيمن خالد')->assertDontSee('Omar Haddad');
+        $this->get('/en/research/researchers?q='.rawurlencode('أيمن خالد'))->assertOk()->assertSee('Dr. Ayman Khaled')->assertDontSee('Omar Haddad');
+        // Another spelling, and words in any order.
+        $this->get('/en/research/researchers?q='.rawurlencode('Aymen Khalid'))->assertOk()->assertSee('Dr. Ayman Khaled');
+        $this->get('/en/research/researchers?q='.rawurlencode('haddad omar'))->assertOk()->assertSee('Omar Haddad')->assertDontSee('Dr. Ayman Khaled');
+    }
+
     private function member(string $slug, string $name): FacultyMember
     {
         $member = FacultyMember::query()->create([

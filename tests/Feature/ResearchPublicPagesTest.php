@@ -220,6 +220,26 @@ final class ResearchPublicPagesTest extends TestCase
             ->assertSee('Clear filters');
     }
 
+    public function test_research_searches_work_in_either_language_and_forgive_a_typo(): void
+    {
+        $this->get('/ar/research/publications?q=dental')
+            ->assertOk()
+            ->assertSee('نماذج تنبؤية مدفوعة بالذكاء الاصطناعي للكشف المبكر عن تسوس الأسنان');
+        $this->get('/en/research/publications?q='.rawurlencode('تسوس الأسنان'))
+            ->assertOk()
+            ->assertSee('AI-Driven Predictive Models for Early Dental Caries Detection');
+        $this->get('/en/research/publications?q='.rawurlencode('Dentl Caries'))
+            ->assertOk()
+            ->assertSee('AI-Driven Predictive Models for Early Dental Caries Detection');
+
+        $this->get('/ar/research/projects?q=Caries')
+            ->assertOk()
+            ->assertSee('نظام الكشف عن تسوس الأسنان بالذكاء الاصطناعي');
+        $this->get('/en/research/projects?q='.rawurlencode('الكشف عن تسوس'))
+            ->assertOk()
+            ->assertSee('AI Dental Caries Detection System');
+    }
+
     public function test_researcher_and_expert_finder_controls_are_functional(): void
     {
         $response = $this->get('/en/research/researchers?q=Ayman')

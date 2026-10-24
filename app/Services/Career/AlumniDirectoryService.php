@@ -15,6 +15,7 @@ use App\Models\Faculty\Faculty;
 use App\Models\Faculty\FacultyTranslation;
 use App\Models\Media\MediaAsset;
 use App\Models\Shared\MigrationLog;
+use App\Support\LenientSearch;
 use App\Support\MediaUrlResolver;
 use Illuminate\Database\Eloquent\Builder;
 
@@ -34,10 +35,7 @@ final class AlumniDirectoryService implements AlumniDirectoryServiceInterface
         $filterOptions = $this->filterOptions($records);
         $normalizedFilters = $this->normalizeFilters($filters, $filterOptions);
         $filtered = collect($records)->filter(function (array $record) use ($normalizedFilters): bool {
-            if ($normalizedFilters['q'] !== '' && ! str_contains(
-                mb_strtolower((string) $record['_searchText']),
-                mb_strtolower($normalizedFilters['q']),
-            )) {
+            if ($normalizedFilters['q'] !== '' && ! LenientSearch::matches($normalizedFilters['q'], [$record['_searchText']], $record['_searchNames'])) {
                 return false;
             }
 
@@ -173,6 +171,8 @@ final class AlumniDirectoryService implements AlumniDirectoryServiceInterface
                         : MediaUrlResolver::resolveLegacy($legacyPhoto),
                     '_facultySlug' => $facultySlug,
                     '_departmentSlug' => $departmentSlug,
+                    // The name in every language, so either spelling finds the graduate.
+                    '_searchNames' => $alumni->translations->pluck('full_name')->map(static fn (mixed $name): string => trim((string) $name))->filter()->unique()->values()->all(),
                     '_searchText' => implode(' ', array_filter([
                         $title,
                         $alumni->graduation_year,
