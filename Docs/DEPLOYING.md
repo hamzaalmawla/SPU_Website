@@ -507,7 +507,7 @@ Prefer the clone. It is five minutes once.
 
 ## Loading the faculty study plans
 
-The converted curricula (AI, construction, petroleum, pharmacy, medicine) ship with the release in
+The converted curricula (AI, construction, petroleum, pharmacy, medicine, business, dentistry) ship with the release in
 `database/seeders/Data/study_plans/<faculty>.json`, next to the `.report.md` that lists every doubtful
 point in each source. Deploying the code does **not** load them: the visual editor, the new graph and
 the mobile layout go live, and every plan keeps exactly the content it has now.
