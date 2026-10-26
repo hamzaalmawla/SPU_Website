@@ -77,7 +77,7 @@
             <div class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                 @forelse ($page->items as $item)
                     <article class="overflow-hidden border border-slate-200 bg-white shadow-[0_8px_26px_rgba(15,23,42,0.04)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_18px_44px_rgba(15,23,42,0.1)]">
-                        <div class="h-[210px] overflow-hidden bg-slate-100">
+                        <div class="aspect-[4/3] overflow-hidden bg-slate-100">
                             @if (! empty($item['image']))
                                 <img src="{{ $item['image'] }}" alt="{{ $item['title'] }}" class="content-media-image h-full w-full">
                             @else

@@ -75,7 +75,7 @@
 
   .honor-card__media {
     position: relative;
-    aspect-ratio: 1.55 / 1;
+    aspect-ratio: 4 / 3;
     overflow: hidden;
     background: rgba(32, 39, 89, 0.06);
   }
