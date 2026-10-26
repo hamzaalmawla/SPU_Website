@@ -26,6 +26,9 @@ The imported `AGENTS.MD` is the authoritative project rulebook (scope, architect
 ## Faculty projects
 - Supervisors are faculty profiles: `facilities.<faculty>.projects` items carry `supervisorMemberIds` (picked per language in the admin; a language with none uses the other's). The project list and detail pages link each to its profile (`FacultyPageService::withProjectSupervisors`). The imported free-text `supervisor` shows only while no profile is picked, and its admin field only while it has text.
 
+## Faculty final exams
+- Every faculty has a `final-exams` page and card (`facilities.<faculty>.final-exams`, schedules with files or timetable rows). Its card on the faculty and overview pages appears only once a schedule with a file or a row is published in that locale (`FacultyPageService::hasPublishedExamSchedule`); the page URL itself always opens, with an empty-state line until then.
+
 ## Search
 - `App\Support\LenientSearch` is the matcher for list searches (faculty projects, student lists, alumni directory, research publications/projects/researchers): every word in any order, Arabic folding, no article or punctuation, near spellings against names and titles. Callers pass the item's text in both languages, so a search works on either site.
 - Site search: each `search_documents` row also holds the other language's text and `alt_title_normalized` (rebuilt by `search:index` on every deploy); below 10 exact hits, near spellings of titles are added after them.

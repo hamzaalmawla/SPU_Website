@@ -999,8 +999,10 @@ final class FacultyPageService implements FacultyPageServiceInterface
 
         // Only subpages that are enabled and have a public route: a card for
         // anything else (the course-lessons view, a custom page) would 404.
+        // The final exams card waits until a schedule is published.
         return $entries
             ->filter(fn (array $entry): bool => array_key_exists($entry['slug'], $labels) && $pages->has($entry['slug']))
+            ->filter(fn (array $entry): bool => $entry['slug'] !== 'final-exams' || $this->hasPublishedExamSchedule($faculty, $locale))
             ->unique('slug')
             ->map(fn (array $entry): FacultyNavigationItemDTO => new FacultyNavigationItemDTO(
                 slug: $entry['slug'],
@@ -1009,6 +1011,27 @@ final class FacultyPageService implements FacultyPageServiceInterface
                 isActive: $active === $entry['slug'],
             ))
             ->values();
+    }
+
+    /**
+     * Whether the faculty's final exams page has a schedule to show in this
+     * locale: one with a file or timetable rows. The published CMS payload
+     * decides once there is one; before that, the imported page payload.
+     */
+    private function hasPublishedExamSchedule(Faculty $faculty, string $locale): bool
+    {
+        $content = $this->publishedLocalizedPayload($this->targetKeyForSubpage($this->publicSlug($faculty), 'final-exams'), $locale);
+
+        if (is_array($content)) {
+            $payload = is_array($content['payload'] ?? null) ? $content['payload'] : [];
+        } else {
+            $page = $this->pageForFaculty($faculty, 'final-exams');
+            $payload = $page instanceof FacultyPage && is_array($page->payload_json) ? $this->localizedPayload($page->payload_json, $locale) : [];
+        }
+
+        return collect($this->arrayList($payload['schedules'] ?? []))->contains(fn (array $schedule): bool => trim((string) ($schedule['title'] ?? '')) !== ''
+            && (collect($this->arrayList($schedule['documents'] ?? []))->contains(fn (array $document): bool => is_string($document['url'] ?? null) && preg_match('#^(/|https://)#', $document['url']) === 1)
+                || collect($this->arrayList($schedule['rows'] ?? []))->contains(fn (array $row): bool => trim((string) ($row['course'] ?? '')) !== '')));
     }
 
     /** @return Collection<int, FacultyHighlightDTO> */
