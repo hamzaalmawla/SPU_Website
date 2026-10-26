@@ -72,22 +72,38 @@ final class FacultyFinalExamsTest extends TestCase
         $this->get('/ar/faculties/pharmacy')->assertOk()->assertDontSee('/ar/faculties/pharmacy/final-exams', false);
     }
 
-    public function test_migration_adds_the_page_and_card_without_reviving_a_hidden_card(): void
+    public function test_a_faculty_without_a_final_exams_page_or_card_still_gets_one(): void
     {
+        // As on the live site, where only the faculties whose old site had a schedule got the rows.
         $dentistry = Faculty::query()->where('public_slug', 'dentistry')->firstOrFail();
         FacultyPage::query()->where('faculty_id', $dentistry->getKey())->where('slug', 'final-exams')->forceDelete();
         FacultySubpageCard::query()->where('faculty_slug', 'dentistry')->where('subpage_slug', 'final-exams')->delete();
+        Cache::flush();
+
+        $this->get('/en/faculties/dentistry')->assertOk()->assertDontSee('/en/faculties/dentistry/final-exams', false);
+        $this->get('/en/faculties/dentistry/final-exams')->assertOk()->assertSee('The final exam schedule will be published here when it is issued.');
+
+        $this->publishSchedule('dentistry', [
+            'ar' => ['title' => 'الفصل الأول', 'documents' => [['label' => '', 'url' => '/downloads/files/dent-ar.pdf']], 'rows' => []],
+            'en' => ['title' => 'First semester', 'documents' => [['label' => '', 'url' => '/downloads/files/dent-en.pdf']], 'rows' => []],
+        ]);
+
+        foreach (['ar', 'en'] as $locale) {
+            $this->get("/{$locale}/faculties/dentistry")->assertOk()->assertSee("/{$locale}/faculties/dentistry/final-exams", false);
+            $this->get("/{$locale}/faculties/dentistry/final-exams")->assertOk()->assertSee("/downloads/files/dent-{$locale}.pdf", false);
+        }
+    }
+
+    public function test_a_hidden_final_exams_card_stays_hidden(): void
+    {
         FacultySubpageCard::query()->where('faculty_slug', 'pharmacy')->where('subpage_slug', 'final-exams')->update(['is_visible' => false]);
 
-        $migration = require database_path('migrations/2026_10_27_000001_add_final_exams_subpage_to_all_faculties.php');
-        $migration->up();
+        $this->publishSchedule('pharmacy', [
+            'ar' => null,
+            'en' => ['title' => 'First semester', 'documents' => [['label' => '', 'url' => '/downloads/files/pharm.pdf']], 'rows' => []],
+        ]);
 
-        $page = FacultyPage::query()->where('faculty_id', $dentistry->getKey())->where('slug', 'final-exams')->firstOrFail();
-        self::assertTrue((bool) $page->is_enabled);
-        self::assertSame(['ar', 'en'], $page->translations()->orderBy('locale')->pluck('locale')->all());
-        self::assertTrue(FacultySubpageCard::query()->where('faculty_slug', 'dentistry')->where('subpage_slug', 'final-exams')->where('is_visible', true)->exists());
-        self::assertFalse((bool) FacultySubpageCard::query()->where('faculty_slug', 'pharmacy')->where('subpage_slug', 'final-exams')->value('is_visible'));
-        self::assertSame(1, FacultySubpageCard::query()->where('faculty_slug', 'medicine')->where('subpage_slug', 'final-exams')->count());
+        $this->get('/en/faculties/pharmacy')->assertOk()->assertDontSee('/en/faculties/pharmacy/final-exams', false);
     }
 
     /** @return iterable<string, array{string}> */
@@ -108,6 +124,7 @@ final class FacultyFinalExamsTest extends TestCase
 
         foreach ($schedules as $locale => $schedule) {
             $payload['translations'][$locale]['payload']['schedules'] = $schedule === null ? [] : [$schedule];
+            $payload['translations'][$locale]['summary'] = $locale === 'ar' ? 'برنامج الامتحانات النهائية.' : 'The final examination schedule.';
         }
 
         $workflow->saveDraft($targetKey, $payload, (int) $author->getKey());

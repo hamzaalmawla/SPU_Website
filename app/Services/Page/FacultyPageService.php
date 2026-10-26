@@ -997,11 +997,19 @@ final class FacultyPageService implements FacultyPageServiceInterface
                 ->map(fn (FacultyPage $page): array => ['slug' => (string) $page->slug, 'title' => null]);
         }
 
+        // A faculty with neither a page nor a card for its final exams still
+        // has one: it comes last.
+        $examsByDefault = $this->hasDefaultFinalExamsPage($faculty);
+
+        if ($examsByDefault) {
+            $entries = $entries->push(['slug' => 'final-exams', 'title' => null]);
+        }
+
         // Only subpages that are enabled and have a public route: a card for
         // anything else (the course-lessons view, a custom page) would 404.
         // The final exams card waits until a schedule is published.
         return $entries
-            ->filter(fn (array $entry): bool => array_key_exists($entry['slug'], $labels) && $pages->has($entry['slug']))
+            ->filter(fn (array $entry): bool => array_key_exists($entry['slug'], $labels) && ($pages->has($entry['slug']) || ($entry['slug'] === 'final-exams' && $examsByDefault)))
             ->filter(fn (array $entry): bool => $entry['slug'] !== 'final-exams' || $this->hasPublishedExamSchedule($faculty, $locale))
             ->unique('slug')
             ->map(fn (array $entry): FacultyNavigationItemDTO => new FacultyNavigationItemDTO(
@@ -1011,6 +1019,20 @@ final class FacultyPageService implements FacultyPageServiceInterface
                 isActive: $active === $entry['slug'],
             ))
             ->values();
+    }
+
+    /**
+     * Every faculty publishes a final exam schedule. Faculties whose old site
+     * had none got no page or card for it; they have the page anyway. One an
+     * editor switched off (a disabled page or a hidden card) stays off.
+     */
+    private function hasDefaultFinalExamsPage(Faculty $faculty): bool
+    {
+        $slug = $this->publicSlug($faculty);
+
+        return $this->facultyMayUseSubpage($slug, 'final-exams')
+            && ! $this->subpageCardService->cardExists($slug, 'final-exams')
+            && ! FacultyPage::query()->where('faculty_id', $faculty->getKey())->where('slug', 'final-exams')->exists();
     }
 
     /**
@@ -2684,6 +2706,10 @@ final class FacultyPageService implements FacultyPageServiceInterface
 
         if (! $this->facultyMayUseSubpage($facultySlug, $subpageSlug)) {
             return false;
+        }
+
+        if ($subpageSlug === 'final-exams' && $this->hasDefaultFinalExamsPage($faculty)) {
+            return true;
         }
 
         $visibleSlugs = $this->subpageCardService->getVisibleSubpageSlugs($facultySlug);
