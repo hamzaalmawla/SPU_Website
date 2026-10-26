@@ -217,8 +217,7 @@
                             <div class="spu-board-upload">
                                 <input type="file" multiple accept="application/pdf,.pdf" wire:model="lectureUploads" aria-label="{{ $t('lecture_file') }}">
                                 @error('lectureUploads.*')<p class="spu-board-error">{{ $message }}</p>@enderror
-                                <button type="button" class="spu-board__btn" wire:click="uploadBoardLectures" wire:loading.attr="disabled" wire:target="lectureUploads,uploadBoardLectures"
-                                    @if ($this->lectureUploads === []) disabled @endif>
+                                <button type="button" class="spu-board__btn" wire:click="uploadBoardLectures" wire:loading.attr="disabled" wire:target="lectureUploads,uploadBoardLectures">
                                     <span wire:loading.remove wire:target="uploadBoardLectures">{{ $t('upload_lectures') }}@if ($this->lectureUploads !== []) ({{ count($this->lectureUploads) }})@endif</span>
                                     <span wire:loading wire:target="lectureUploads,uploadBoardLectures">{{ $t('uploading') }}</span>
                                 </button>
@@ -248,8 +247,7 @@
                             <div class="spu-board-upload">
                                 <input type="file" accept="application/pdf,.pdf" wire:model="specificationUpload" aria-label="{{ $t('specification_file') }}">
                                 @error('specificationUpload')<p class="spu-board-error">{{ $message }}</p>@enderror
-                                <button type="button" class="spu-board__btn" wire:click="uploadBoardSpecification" wire:loading.attr="disabled" wire:target="specificationUpload,uploadBoardSpecification"
-                                    @if ($this->specificationUpload === null) disabled @endif>
+                                <button type="button" class="spu-board__btn" wire:click="uploadBoardSpecification" wire:loading.attr="disabled" wire:target="specificationUpload,uploadBoardSpecification">
                                     <span wire:loading.remove wire:target="uploadBoardSpecification">{{ ($course['specificationUrl'] ?? '') !== '' ? $t('replace_specification') : $t('upload_specification') }}</span>
                                     <span wire:loading wire:target="specificationUpload,uploadBoardSpecification">{{ $t('uploading') }}</span>
                                 </button>
@@ -264,7 +262,7 @@
                     @endunless
                     <span class="spu-board-panel__spacer"></span>
                     <button type="button" class="spu-board__btn" wire:click="closeBoardPanels">{{ $t('cancel') }}</button>
-                    <button type="submit" class="spu-board__btn spu-board__btn--primary" wire:loading.attr="disabled" wire:target="saveBoardCourse">{{ $t('save') }}</button>
+                    <button type="submit" class="spu-board__btn spu-board__btn--primary" wire:loading.attr="disabled" wire:target="saveBoardCourse,lectureUploads,specificationUpload">{{ $t('save') }}</button>
                 </footer>
             </form>
         </div>

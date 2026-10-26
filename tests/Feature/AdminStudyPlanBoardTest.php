@@ -176,6 +176,56 @@ final class AdminStudyPlanBoardTest extends TestCase
         $this->assertSame([1, 2], array_column($lessons, 'order'));
     }
 
+    public function test_saving_the_course_uploads_chosen_lectures_and_specification(): void
+    {
+        Storage::fake((string) config('filesystems.media_disk', 'public'));
+        $page = $this->page();
+        $pdf = static fn (string $name): UploadedFile => UploadedFile::fake()->createWithContent($name, "%PDF-1.4\n1 0 obj\n<< /Type /Catalog >>\nendobj\ntrailer\n<< /Root 1 0 R >>\n%%EOF\n");
+
+        $page->call('newBoardCourse', '1')
+            ->set('boardCourse.code', 'DEN-906')
+            ->set('boardCourse.titleEn', 'Saved With Files')
+            ->set('boardCourse.titleAr', 'مقرر مع ملفات')
+            ->call('saveBoardCourse')
+            ->call('openBoardCourse', 'den-906')
+            ->set('lectureUploads', [$pdf('Week 1.pdf')])
+            ->set('specificationUpload', $pdf('Specification.pdf'))
+            ->call('saveBoardCourse')
+            ->assertHasNoErrors()
+            ->assertSet('boardCourse', null)
+            ->assertSet('lectureUploads', []);
+
+        $course = $this->course('den-906');
+        $this->assertSame(['Week 1'], array_column($course['lessons'], 'title'));
+        $this->assertStringEndsWith('.pdf', $course['specificationUrl']);
+
+        $page->call('openBoardCourse', 'den-906')
+            ->assertCount('boardCourse.lessons', 1)
+            ->assertSet('boardCourse.specificationUrl', $course['specificationUrl']);
+    }
+
+    public function test_saved_prerequisites_are_listed_first(): void
+    {
+        $page = $this->page();
+        $board = $page->instance()->studyPlanBoardData();
+        $ids = [];
+        foreach ($board['terms'] as $term) {
+            foreach ($term['courses'] as $card) {
+                $ids[] = $card['id'];
+            }
+        }
+        $last = $ids[count($ids) - 1];
+        $first = $ids[0];
+
+        $page->call('openBoardCourse', $first)
+            ->set('boardCourse.prerequisites', [$last])
+            ->call('saveBoardCourse')
+            ->call('openBoardCourse', $first)
+            ->assertSet('boardCourse.prerequisites', [$last]);
+
+        $this->assertSame((string) $last, (string) array_key_first($page->instance()->boardPrerequisiteChoices()));
+    }
+
     public function test_non_pdf_lectures_are_rejected(): void
     {
         Storage::fake((string) config('filesystems.media_disk', 'public'));

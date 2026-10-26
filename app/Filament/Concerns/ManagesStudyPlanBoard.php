@@ -77,12 +77,46 @@ trait ManagesStudyPlanBoard
         $search = mb_strtolower(trim($this->boardPrerequisiteSearch));
         $selected = array_map('strval', (array) ($this->boardCourse['prerequisites'] ?? []));
 
-        return array_filter(
+        $choices = array_filter(
             $options,
             static fn (string $label, string $id): bool => $id !== $self
                 && ($search === '' || in_array($id, $selected, true) || str_contains(mb_strtolower($label), $search)),
             ARRAY_FILTER_USE_BOTH,
         );
+
+        // The saved prerequisites come first: the list is long and scrolls, so a
+        // later term's ticked course would otherwise sit out of sight. The order
+        // follows what is saved, not each tick, so rows don't jump while editing.
+        $saved = array_flip($this->savedBoardPrerequisites((string) ($this->boardCourse['originalId'] ?? '')));
+        $first = [];
+        $rest = [];
+        foreach ($choices as $id => $label) {
+            if (isset($saved[(string) $id])) {
+                $first[$id] = $label;
+            } else {
+                $rest[$id] = $label;
+            }
+        }
+
+        return $first + $rest;
+    }
+
+    /** @return list<string> */
+    private function savedBoardPrerequisites(string $courseId): array
+    {
+        if ($courseId === '') {
+            return [];
+        }
+
+        foreach ($this->studyPlanBoardData()['terms'] as $term) {
+            foreach ($term['courses'] as $card) {
+                if ($card['id'] === $courseId) {
+                    return $card['prerequisites'];
+                }
+            }
+        }
+
+        return [];
     }
 
     /**
@@ -175,6 +209,16 @@ trait ManagesStudyPlanBoard
         $form = $this->boardCourse;
 
         if (! is_array($form)) {
+            return;
+        }
+
+        // Lecture or specification PDFs chosen but not uploaded yet go in with the
+        // save, so pressing Save never drops a file the editor picked.
+        if (! $this->boardCourseIsNew && ($this->lectureUploads !== [] || $this->specificationUpload instanceof TemporaryUploadedFile)) {
+            if ($this->saveBoardCourseWithFiles('course_saved')) {
+                $this->closeBoardPanels();
+            }
+
             return;
         }
 
@@ -337,50 +381,8 @@ trait ManagesStudyPlanBoard
      */
     public function uploadBoardSpecification(): void
     {
-        $courseId = (string) ($this->boardCourse['originalId'] ?? '');
-
-        if ($courseId === '' || ! $this->specificationUpload instanceof TemporaryUploadedFile) {
-            return;
-        }
-
-        $this->validate(
-            ['specificationUpload' => ['file', 'mimes:pdf', 'max:20480']],
-            [],
-            ['specificationUpload' => __('admin.faculty_workspace.board.specification_file')],
-        );
-
-        $upload = $this->specificationUpload;
-
-        try {
-            $title = $this->lectureTitleFromFilename($upload->getClientOriginalName());
-            $result = $this->boardMediaService->upload([
-                'file' => new UploadedFile($upload->getRealPath(), $upload->getClientOriginalName(), $upload->getMimeType(), null, true),
-                'original_name' => $upload->getClientOriginalName(),
-                'directory' => 'media/document/'.now()->format('Y/m'),
-                'title_ar' => $title,
-                'title_en' => $title,
-                'uploaded_by' => $this->authenticatedUserId(),
-                'faculty_scope_slug' => $this->facultyScope,
-            ]);
-        } catch (Throwable $exception) {
-            report($exception);
-            $this->boardNotice('specification_failed', 'danger');
-
-            return;
-        }
-
-        $form = $this->boardCourse;
-        $departmentId = $this->boardDepartmentIdOrFirst();
-        $saved = $this->commitStudyPlanChange(function (array $payload) use ($departmentId, $form, $result, $courseId): array {
-            $payload = $this->studyPlanBoardService->saveCourse($payload, $departmentId, $form);
-
-            return $this->studyPlanBoardService->setSpecification($payload, $departmentId, $courseId, $result->url);
-        }, 'specification_added');
-
-        if ($saved) {
-            $this->specificationUpload = null;
-            $this->boardCache = null;
-            $this->boardCourse = $this->studyPlanBoardService->courseForm($this->studyPlanPayload(), $departmentId, $courseId);
+        if ($this->specificationUpload instanceof TemporaryUploadedFile) {
+            $this->saveBoardCourseWithFiles('specification_added');
         }
     }
 
@@ -390,58 +392,101 @@ trait ManagesStudyPlanBoard
      */
     public function uploadBoardLectures(): void
     {
+        if ($this->lectureUploads !== []) {
+            $this->saveBoardCourseWithFiles('lectures_added');
+        }
+    }
+
+    /**
+     * Saves the open course together with the chosen lecture PDFs and course
+     * specification, then reloads the course into the panel.
+     */
+    private function saveBoardCourseWithFiles(string $successKey): bool
+    {
         $courseId = (string) ($this->boardCourse['originalId'] ?? '');
 
-        if ($courseId === '' || $this->lectureUploads === []) {
-            return;
+        if ($courseId === '') {
+            return false;
         }
 
-        $this->validate(
-            ['lectureUploads.*' => ['file', 'mimes:pdf', 'max:20480']],
-            [],
-            ['lectureUploads.*' => __('admin.faculty_workspace.board.lecture_file')],
-        );
+        $rules = [];
+        $attributes = [];
+        if ($this->lectureUploads !== []) {
+            $rules['lectureUploads.*'] = ['file', 'mimes:pdf', 'max:20480'];
+            $attributes['lectureUploads.*'] = __('admin.faculty_workspace.board.lecture_file');
+        }
+        if ($this->specificationUpload instanceof TemporaryUploadedFile) {
+            $rules['specificationUpload'] = ['file', 'mimes:pdf', 'max:20480'];
+            $attributes['specificationUpload'] = __('admin.faculty_workspace.board.specification_file');
+        }
+        $this->validate($rules, [], $attributes);
 
         $lessons = [];
+        $specificationUrl = null;
 
         try {
             foreach ($this->lectureUploads as $upload) {
-                if (! $upload instanceof TemporaryUploadedFile) {
-                    continue;
+                if ($upload instanceof TemporaryUploadedFile) {
+                    $title = $this->lectureTitleFromFilename($upload->getClientOriginalName());
+                    $lessons[] = ['titleAr' => $title, 'titleEn' => $title, 'pdfUrl' => $this->storeBoardPdf($upload)];
                 }
-
-                $title = $this->lectureTitleFromFilename($upload->getClientOriginalName());
-                $result = $this->boardMediaService->upload([
-                    'file' => new UploadedFile($upload->getRealPath(), $upload->getClientOriginalName(), $upload->getMimeType(), null, true),
-                    'original_name' => $upload->getClientOriginalName(),
-                    'directory' => 'media/document/'.now()->format('Y/m'),
-                    'title_ar' => $title,
-                    'title_en' => $title,
-                    'uploaded_by' => $this->authenticatedUserId(),
-                    'faculty_scope_slug' => $this->facultyScope,
-                ]);
-                $lessons[] = ['titleAr' => $title, 'titleEn' => $title, 'pdfUrl' => $result->url];
             }
         } catch (Throwable $exception) {
             report($exception);
             $this->boardNotice('lecture_failed', 'danger');
 
-            return;
+            return false;
+        }
+
+        try {
+            if ($this->specificationUpload instanceof TemporaryUploadedFile) {
+                $specificationUrl = $this->storeBoardPdf($this->specificationUpload);
+            }
+        } catch (Throwable $exception) {
+            report($exception);
+            $this->boardNotice('specification_failed', 'danger');
+
+            return false;
         }
 
         $form = $this->boardCourse;
         $departmentId = $this->boardDepartmentIdOrFirst();
-        $saved = $this->commitStudyPlanChange(function (array $payload) use ($departmentId, $form, $lessons, $courseId): array {
+        $saved = $this->commitStudyPlanChange(function (array $payload) use ($departmentId, $form, $lessons, $specificationUrl, $courseId): array {
             $payload = $this->studyPlanBoardService->saveCourse($payload, $departmentId, $form);
 
-            return $this->studyPlanBoardService->addLessons($payload, $departmentId, $courseId, $lessons);
-        }, 'lectures_added');
+            if ($lessons !== []) {
+                $payload = $this->studyPlanBoardService->addLessons($payload, $departmentId, $courseId, $lessons);
+            }
+
+            return $specificationUrl !== null
+                ? $this->studyPlanBoardService->setSpecification($payload, $departmentId, $courseId, $specificationUrl)
+                : $payload;
+        }, $successKey);
 
         if ($saved) {
             $this->lectureUploads = [];
+            $this->specificationUpload = null;
             $this->boardCache = null;
             $this->boardCourse = $this->studyPlanBoardService->courseForm($this->studyPlanPayload(), $departmentId, $courseId);
         }
+
+        return $saved;
+    }
+
+    /** Stores one PDF in the media library and returns its public URL. */
+    private function storeBoardPdf(TemporaryUploadedFile $upload): string
+    {
+        $title = $this->lectureTitleFromFilename($upload->getClientOriginalName());
+
+        return $this->boardMediaService->upload([
+            'file' => new UploadedFile($upload->getRealPath(), $upload->getClientOriginalName(), $upload->getMimeType(), null, true),
+            'original_name' => $upload->getClientOriginalName(),
+            'directory' => 'media/document/'.now()->format('Y/m'),
+            'title_ar' => $title,
+            'title_en' => $title,
+            'uploaded_by' => $this->authenticatedUserId(),
+            'faculty_scope_slug' => $this->facultyScope,
+        ])->url;
     }
 
     /** @param Closure(array<string, mixed>): array<string, mixed> $change */
