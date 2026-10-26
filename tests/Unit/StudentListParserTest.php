@@ -104,6 +104,60 @@ final class StudentListParserTest extends TestCase
         ]);
     }
 
+    public function test_it_reads_two_semesters_side_by_side_without_gpa(): void
+    {
+        DecisionDocxFactory::topStudentsSideBySide($this->path, [
+            'السنة الأولى( الفصل الأول )' => [
+                ['id' => '2250013', 'name' => 'محمد عدنان الطعمه'],
+                ['id' => '2250079', 'name' => 'مسك خلدون العدوي'],
+            ],
+            'السنة الثانية ( الفصل الأول )' => [
+                ['id' => '2230070', 'name' => 'حازم مجيب الصحناوي'],
+            ],
+        ], [
+            'السنة الأولى( الفصل الثاني )' => [
+                ['id' => '2250081', 'name' => 'انتصار عبد الحميد الخليلي'],
+                ['id' => '2250013', 'name' => 'محمد عدنان الطعمه'],
+                ['id' => '2250034', 'name' => 'أسماء محمد جمعه تفكجي'],
+            ],
+            'السنة الثانية ( الفصل الثاني)' => [
+                ['id' => '2240001', 'name' => 'لونا طلال النحلاوي'],
+            ],
+        ]);
+
+        $parsed = DecisionListParser::topStudents(DocxTableReader::read($this->path));
+        $summary = array_map(static fn (array $row): array => [$row['studentIdentifier'], $row['studyYear'], $row['semester'], $row['rank'], $row['issues']], $parsed['rows']);
+
+        $this->assertSame([
+            ['2250013', 1, 'first', 1, []],
+            ['2250079', 1, 'first', 2, []],
+            // "السنة الثانية" is the year, not the second semester.
+            ['2230070', 2, 'first', 1, []],
+            ['2250081', 1, 'second', 1, []],
+            ['2250013', 1, 'second', 2, []],
+            ['2250034', 1, 'second', 3, []],
+            ['2240001', 2, 'second', 1, []],
+        ], $summary);
+        $this->assertNull($parsed['rows'][0]['gpa']);
+        $this->assertSame('2025/2026', DecisionListParser::academicYearInName('اوائل فصل أول وثاني كلية طب الأسنان 20252026.docx'));
+        $this->assertNull(DecisionListParser::academicYearInName('decision 12345678.docx'));
+    }
+
+    public function test_the_faculty_degree_is_not_a_department(): void
+    {
+        $departments = [
+            10 => 'قسم طب أسنان الأطفال',
+            11 => 'قسم تقويم الأسنان والفكين',
+            12 => 'قسم جراحة الفم والفكين',
+        ];
+
+        $match = DepartmentMatcher::match('دكتور في طب الأسنان', $departments, 'كلية طب الأسنان');
+        $this->assertSame(['departmentId' => null, 'confident' => true, 'score' => 0.0, 'facultyWide' => true], $match);
+
+        // A real department name still matches.
+        $this->assertSame(10, DepartmentMatcher::match('طب أسنان الأطفال', $departments, 'كلية طب الأسنان')['departmentId']);
+    }
+
     public function test_it_reads_the_first_semester_and_academic_years(): void
     {
         $meta = DecisionListParser::meta(['قائمة الأوائل للفصل الأول من العام الدراسي ٢٠٢٦/٢٠٢٧']);

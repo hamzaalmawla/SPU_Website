@@ -252,6 +252,78 @@ final class StudentListImportService implements StudentListImportServiceInterfac
     }
 
     /** Uploads previewed but never imported or cancelled are removed after a day. */
+    public function repairFacultyWideDepartments(bool $write): array
+    {
+        $lines = [];
+
+        StudentListImport::query()
+            ->active()
+            ->whereNotNull('department_map')
+            ->with('faculty.translations:id,faculty_id,locale,name')
+            ->orderBy('id')
+            ->get()
+            ->each(function (StudentListImport $import) use ($write, &$lines): void {
+                $faculty = $import->faculty;
+                $map = is_array($import->department_map) ? $import->department_map : [];
+
+                if (! $faculty instanceof Faculty || $map === []) {
+                    return;
+                }
+
+                $facultyName = $this->facultyName($faculty, 'ar');
+                $wrong = [];
+                $kept = [];
+
+                foreach ($map as $text => $departmentId) {
+                    if (! is_numeric($departmentId)) {
+                        continue;
+                    }
+                    if (DepartmentMatcher::match((string) $text, [], $facultyName)['facultyWide']) {
+                        $wrong[(string) $text] = (int) $departmentId;
+                    } else {
+                        $kept[] = (int) $departmentId;
+                    }
+                }
+
+                // A department another text of this decision rightly maps to cannot be told apart.
+                $clear = array_values(array_unique(array_diff($wrong, $kept)));
+
+                if ($clear === []) {
+                    return;
+                }
+
+                $query = ($import->kind === self::KIND_ALUMNI ? Alumni::query() : HonorStudent::query())
+                    ->where('student_list_import_id', $import->getKey())
+                    ->whereIn('department_id', $clear);
+                $count = $query->count();
+
+                $lines[] = sprintf(
+                    'Import #%d (%s, %s, %s): %d student(s) taken out of department(s) %s',
+                    $import->getKey(), $this->publicSlug($faculty), $import->kind, $import->original_filename, $count, implode(', ', $clear),
+                );
+
+                if (! $write) {
+                    return;
+                }
+
+                DB::transaction(function () use ($import, $query, $map, $wrong): void {
+                    $query->update(['department_id' => null]);
+                    $import->forceFill(['department_map' => array_merge($map, array_fill_keys(array_keys($wrong), null))])->save();
+                });
+
+                $this->auditService->log('student_list.departments_repaired', null, StudentListImport::class, (int) $import->getKey(), [
+                    'cleared' => $clear,
+                    'students' => $count,
+                ]);
+            });
+
+        if ($write && $lines !== []) {
+            $this->flushPublicCaches();
+        }
+
+        return $lines;
+    }
+
     private function pruneStaleUploads(string $keep): void
     {
         $disk = Storage::disk(self::DISK);
@@ -269,26 +341,33 @@ final class StudentListImportService implements StudentListImportServiceInterfac
      */
     private function buildPreview(Faculty $faculty, string $kind, array $parsed, string $fileName, ?StudentListImportChoicesDTO $choices): StudentListImportPreviewDTO
     {
-        $academicYear = $choices->academicYear ?? $parsed['meta']['academicYear'];
+        $academicYear = $choices->academicYear ?? $parsed['meta']['academicYear'] ?? DecisionListParser::academicYearInName($fileName);
         $semester = $choices->semester ?? $parsed['meta']['semester'];
         $departments = $this->departments($faculty);
         $departmentNames = $departments->mapWithKeys(fn (Department $department): array => [(int) $department->getKey() => $this->departmentName($department, 'ar')])->all();
         $remembered = $this->rememberedDepartments($faculty);
+        $facultyName = $this->facultyName($faculty, 'ar');
 
         $specializations = collect($parsed['rows'])
             ->pluck('specialization')
             ->filter(fn (mixed $text): bool => is_string($text) && $text !== '')
             ->countBy()
-            ->map(function (int $count, string $text) use ($choices, $remembered, $departmentNames): StudentListSpecializationDTO {
+            ->map(function (int $count, string $text) use ($choices, $remembered, $departmentNames, $facultyName): StudentListSpecializationDTO {
                 if ($choices !== null && array_key_exists($text, $choices->departments)) {
                     return new StudentListSpecializationDTO($text, $count, $choices->departments[$text], false);
+                }
+
+                $match = DepartmentMatcher::match($text, $departmentNames, $facultyName);
+
+                // The faculty's own degree ("دكتور في طب الأسنان") is never a
+                // department, even when an earlier import was confirmed with one.
+                if ($match['facultyWide']) {
+                    return new StudentListSpecializationDTO($text, $count, null, false);
                 }
 
                 if (array_key_exists($text, $remembered) && ($remembered[$text] === null || isset($departmentNames[$remembered[$text]]))) {
                     return new StudentListSpecializationDTO($text, $count, $remembered[$text], false, true);
                 }
-
-                $match = DepartmentMatcher::match($text, $departmentNames);
 
                 return new StudentListSpecializationDTO($text, $count, $match['departmentId'], ! $match['confident']);
             })
@@ -297,7 +376,7 @@ final class StudentListImportService implements StudentListImportServiceInterfac
 
         $departmentFor = collect($specializations)->mapWithKeys(fn (StudentListSpecializationDTO $specialization): array => [$specialization->text => $specialization->departmentId])->all();
         $identifiers = array_values(array_filter(array_column($parsed['rows'], 'studentIdentifier')));
-        $existing = $this->existingIdentifiers($faculty, $kind, $identifiers, $academicYear, $semester);
+        $existing = $this->existingIdentifiers($faculty, $kind, $identifiers, $academicYear);
         $legacyNames = $kind === self::KIND_ALUMNI ? $this->legacyAlumniNames($faculty) : [];
         $seen = [];
         $rows = [];
@@ -305,18 +384,21 @@ final class StudentListImportService implements StudentListImportServiceInterfac
         foreach ($parsed['rows'] as $row) {
             $issues = $row['issues'];
             $identifier = $row['studentIdentifier'];
+            // A top student is listed once per semester, and one decision may list both.
+            $rowKey = $identifier === null ? null
+                : ($kind === self::KIND_ALUMNI ? $identifier : $identifier.'|'.(($row['semester'] ?? null) ?: $semester));
 
-            if ($identifier !== null && isset($seen[$identifier])) {
+            if ($rowKey !== null && isset($seen[$rowKey])) {
                 $issues[] = 'duplicate_in_file';
             }
-            if ($identifier !== null) {
-                $seen[$identifier] = true;
+            if ($rowKey !== null) {
+                $seen[$rowKey] = true;
             }
 
             $departmentId = is_string($row['specialization']) ? ($departmentFor[$row['specialization']] ?? null) : null;
             $action = match (true) {
                 $issues !== [] => StudentListImportRowDTO::ACTION_SKIP,
-                isset($existing[$identifier]) => StudentListImportRowDTO::ACTION_UPDATE,
+                isset($existing[$rowKey]) => StudentListImportRowDTO::ACTION_UPDATE,
                 default => StudentListImportRowDTO::ACTION_CREATE,
             };
 
@@ -336,6 +418,7 @@ final class StudentListImportService implements StudentListImportServiceInterfac
                 rank: $row['rank'] ?? null,
                 studyYear: $row['studyYear'] ?? null,
                 possibleDuplicate: $action === StudentListImportRowDTO::ACTION_CREATE ? $this->possibleDuplicate((string) $row['name'], $legacyNames) : null,
+                semester: $row['semester'] ?? null,
             );
         }
 
@@ -410,11 +493,12 @@ final class StudentListImportService implements StudentListImportServiceInterfac
     /** @return array<string, mixed>|null the row's values before the update, null when it was created */
     private function writeTopStudent(Faculty $faculty, StudentListImport $import, StudentListImportRowDTO $row, StudentListImportChoicesDTO $choices): ?array
     {
+        $semester = $row->semester ?? $choices->semester;
         $record = HonorStudent::query()
             ->where('faculty_id', $faculty->getKey())
             ->where('student_identifier', $row->studentIdentifier)
             ->where('academic_year', $choices->academicYear)
-            ->where('semester', $choices->semester)
+            ->where('semester', $semester)
             ->lockForUpdate()
             ->first();
         $before = $record instanceof HonorStudent ? $this->snapshot($record, self::HONOR_FIELDS) : null;
@@ -428,7 +512,7 @@ final class StudentListImportService implements StudentListImportServiceInterfac
             'department_id' => $row->departmentId,
             'academic_year' => $choices->academicYear,
             'study_year' => $row->studyYear,
-            'semester' => $choices->semester,
+            'semester' => $semester,
             'gpa' => $row->gpa,
             'sort_order' => $row->rank ?? 0,
             'is_enabled' => true,
@@ -518,24 +602,33 @@ final class StudentListImportService implements StudentListImportServiceInterfac
     }
 
     /**
+     * Students already listed: keyed by ID, or "ID|semester" for top students
+     * of the academic year.
+     *
      * @param  list<string>  $identifiers
      * @return array<string, true>
      */
-    private function existingIdentifiers(Faculty $faculty, string $kind, array $identifiers, ?string $academicYear, ?string $semester): array
+    private function existingIdentifiers(Faculty $faculty, string $kind, array $identifiers, ?string $academicYear): array
     {
         if ($identifiers === []) {
             return [];
         }
 
-        $query = $kind === self::KIND_ALUMNI
-            ? Alumni::query()
-            : HonorStudent::query()->where('academic_year', $academicYear)->where('semester', $semester);
+        if ($kind === self::KIND_ALUMNI) {
+            return Alumni::query()
+                ->where('faculty_id', $faculty->getKey())
+                ->whereIn('student_identifier', $identifiers)
+                ->pluck('student_identifier')
+                ->mapWithKeys(fn (mixed $identifier): array => [(string) $identifier => true])
+                ->all();
+        }
 
-        return $query
+        return HonorStudent::query()
             ->where('faculty_id', $faculty->getKey())
+            ->where('academic_year', $academicYear)
             ->whereIn('student_identifier', $identifiers)
-            ->pluck('student_identifier')
-            ->mapWithKeys(fn (mixed $identifier): array => [(string) $identifier => true])
+            ->get(['student_identifier', 'semester'])
+            ->mapWithKeys(fn (HonorStudent $student): array => [$student->student_identifier.'|'.$student->semester => true])
             ->all();
     }
 

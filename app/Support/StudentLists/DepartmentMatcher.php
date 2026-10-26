@@ -15,10 +15,17 @@ use App\Support\SearchTextNormalizer;
  * and a leading "و" are dropped, and الصنعي counts as الاصطناعي. A match is
  * confident only when it shares enough words and clearly beats the runner-up;
  * otherwise the editor picks the department in the import preview.
+ *
+ * Words of the faculty's own name (كلية طب الأسنان) and of a degree (دكتور،
+ * إجازة) say nothing about a department: "دكتور في طب الأسنان" is the whole
+ * faculty's degree and must not match "قسم طب أسنان الأطفال". Such a text is
+ * faculty-wide: no department, and nothing for the editor to pick.
  */
 final class DepartmentMatcher
 {
     private const STOP_WORDS = ['قسم', 'هندسه', 'ذكيه', 'و', 'في', 'من', 'علوم'];
+
+    private const DEGREE_WORDS = ['كليه', 'دكتور', 'دكتوراه', 'اجازه', 'بكالوريوس', 'شهاده', 'جامعيه', 'درجه', 'ماجستير'];
 
     private const SYNONYMS = ['صنعي' => 'اصطناعي'];
 
@@ -28,20 +35,26 @@ final class DepartmentMatcher
 
     /**
      * @param  array<int, string>  $departments  department id => Arabic name
-     * @return array{departmentId: ?int, confident: bool, score: float}
+     * @return array{departmentId: ?int, confident: bool, score: float, facultyWide: bool}
      */
-    public static function match(string $specialization, array $departments): array
+    public static function match(string $specialization, array $departments, string $facultyName = ''): array
     {
-        $wanted = self::words($specialization);
+        $ignored = array_merge(self::words($facultyName), self::DEGREE_WORDS);
+        $all = self::words($specialization);
+        $wanted = array_values(array_diff($all, $ignored));
+
+        if ($all !== [] && $wanted === []) {
+            return ['departmentId' => null, 'confident' => true, 'score' => 0.0, 'facultyWide' => true];
+        }
 
         if ($wanted === [] || $departments === []) {
-            return ['departmentId' => null, 'confident' => false, 'score' => 0.0];
+            return ['departmentId' => null, 'confident' => false, 'score' => 0.0, 'facultyWide' => false];
         }
 
         $scores = [];
 
         foreach ($departments as $id => $name) {
-            $words = self::words($name);
+            $words = array_values(array_diff(self::words($name), $ignored));
             $shared = count(array_intersect($wanted, $words));
             // Dice coefficient: shared words relative to both names' length.
             $scores[$id] = $words === [] ? 0.0 : (2 * $shared) / (count($wanted) + count($words));
@@ -53,13 +66,14 @@ final class DepartmentMatcher
         $second = (float) (next($scores) ?: 0.0);
 
         if ($best <= 0.0) {
-            return ['departmentId' => null, 'confident' => false, 'score' => 0.0];
+            return ['departmentId' => null, 'confident' => false, 'score' => 0.0, 'facultyWide' => false];
         }
 
         return [
             'departmentId' => $bestId,
             'confident' => $best >= self::MIN_SCORE && $best - $second >= self::MIN_LEAD,
             'score' => round($best, 2),
+            'facultyWide' => false,
         ];
     }
 

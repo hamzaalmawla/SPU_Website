@@ -65,4 +65,13 @@ interface StudentListImportServiceInterface
 
     /** Deletes an uploaded file that will not be imported. */
     public function discardUpload(string $storedPath): void;
+
+    /**
+     * Clears the department of imported students whose decision printed the
+     * faculty's own degree ("دكتور في طب الأسنان"), which earlier imports
+     * matched to a department. Changes nothing unless $write.
+     *
+     * @return list<string> one line per import and department cleared
+     */
+    public function repairFacultyWideDepartments(bool $write): array;
 }
