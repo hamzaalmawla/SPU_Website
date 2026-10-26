@@ -6,6 +6,7 @@ namespace Tests\Feature;
 
 use App\Contracts\Cms\CmsWorkflowServiceInterface;
 use App\Contracts\Page\FacultyPageServiceInterface;
+use App\Filament\Pages\ManageDentistryFaculty;
 use App\Models\Faculty\Faculty;
 use App\Models\Faculty\FacultyPage;
 use App\Models\Faculty\FacultySubpageCard;
@@ -13,6 +14,7 @@ use App\Models\User\User;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
+use Livewire\Livewire;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
@@ -91,6 +93,37 @@ final class FacultyFinalExamsTest extends TestCase
         foreach (['ar', 'en'] as $locale) {
             $this->get("/{$locale}/faculties/dentistry")->assertOk()->assertSee("/{$locale}/faculties/dentistry/final-exams", false);
             $this->get("/{$locale}/faculties/dentistry/final-exams")->assertOk()->assertSee("/downloads/files/dent-{$locale}.pdf", false);
+        }
+    }
+
+    public function test_editor_picks_a_schedule_file_and_publishing_shows_the_card(): void
+    {
+        $this->actingAs(User::query()->where('role_slug', 'super_admin')->firstOrFail(), 'web');
+        $target = 'facilities.dentistry.final-exams';
+
+        $component = Livewire::test(ManageDentistryFaculty::class)
+            ->set('data.target_key', $target)
+            ->call('loadTarget', $target)
+            ->assertSee(__('admin.faculty_workspace.editor.fields.document_file'))
+            ->assertDontSee(__('admin.faculty_workspace.editor.fields.file_url'));
+
+        foreach (['ar' => 'الفصل الأول', 'en' => 'First semester'] as $locale => $title) {
+            $component
+                ->set("data.{$locale}_content.summary", $title)
+                ->set("data.{$locale}_content.payload.schedules", [[
+                    'title' => $title,
+                    'note' => '',
+                    'documents' => [['label' => '', 'url' => "/storage/media/exams-{$locale}.pdf", 'urlMediaId' => null]],
+                    'rows' => [],
+                ]]);
+        }
+
+        $component->call('save')->assertHasNoErrors()->call('publish')->assertHasNoErrors();
+        Cache::flush();
+
+        foreach (['ar', 'en'] as $locale) {
+            $this->get("/{$locale}/faculties/dentistry/overview")->assertOk()->assertSee("/{$locale}/faculties/dentistry/final-exams", false);
+            $this->get("/{$locale}/faculties/dentistry/final-exams")->assertOk()->assertSee("/storage/media/exams-{$locale}.pdf", false);
         }
     }
 

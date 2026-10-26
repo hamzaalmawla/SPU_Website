@@ -1311,7 +1311,7 @@ return [
                 'academic_phase_ar' => 'Academic phase (Arabic)',
             ],
             'help' => [
-                'exam_schedules' => 'One entry per semester: its PDF and, if wanted, the schedule as a table. Put the newest first.',
+                'exam_schedules' => 'Add one entry per semester and upload its PDF; you can also enter the schedule as a table. Put the newest first. The final exam card shows on the faculty pages once a semester with a file or table is published.',
                 'study_plan_link' => 'The study plan program this department teaches. Leave empty for a department without a study plan, such as Basic Sciences: it then shows no study plan button.',
                 'department_head' => 'Pick the head\'s faculty profile; the page shows their name and photo from it.',
                 'project_supervisors' => 'Pick each supervisor\'s faculty profile. The project page shows their name and photo and links to their profile.',
