@@ -86,6 +86,7 @@ final class SearchIndexService implements SearchIndexServiceInterface
         'final-exams',
         'research',
         'members',
+        'council',
     ];
 
     /**

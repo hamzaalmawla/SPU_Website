@@ -50,6 +50,7 @@ class ManagePharmacyFaculty extends Page implements HasForms
             'facilities.pharmacy.training' => 'Training',
             'facilities.pharmacy.final-exams' => __('admin.cms.targets.facilities.final-exams'),
             'facilities.pharmacy.members' => __('admin.cms.targets.facilities.members'),
+            'facilities.pharmacy.council' => __('admin.cms.targets.facilities.council'),
         ];
     }
 

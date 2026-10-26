@@ -65,6 +65,11 @@ final class InvalidateCmsCache implements ShouldQueue
             array_push($tags, 'about', 'facilities', 'research');
         }
 
+        // A faculty's council page names its dean, who also shows on About › Leadership.
+        if (preg_match('/^facilities\.[a-z0-9-]+\.council$/', $targetKey) === 1) {
+            $tags[] = 'about';
+        }
+
         if (str_starts_with($targetKey, 'research.')) {
             $tags[] = 'research';
         }

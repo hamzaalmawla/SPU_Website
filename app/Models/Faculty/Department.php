@@ -18,7 +18,7 @@ class Department extends Model
 {
     use HasFactory, SoftDeletes;
 
-    protected $fillable = ['faculty_id', 'slug', 'kind', 'sort_order', 'is_enabled'];
+    protected $fillable = ['faculty_id', 'slug', 'sort_order', 'is_enabled'];
 
     protected function casts(): array
     {

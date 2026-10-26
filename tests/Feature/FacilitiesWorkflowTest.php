@@ -1495,6 +1495,7 @@ final class FacilitiesWorkflowTest extends TestCase
 
         $expectedTargets[] = 'facilities.'.$facultySlug.'.final-exams';
         $expectedTargets[] = 'facilities.'.$facultySlug.'.members';
+        $expectedTargets[] = 'facilities.'.$facultySlug.'.council';
 
         $reflection = new \ReflectionClass($pageClass);
         $method = $reflection->getMethod('targetOptions');

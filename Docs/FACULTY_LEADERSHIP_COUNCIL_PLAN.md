@@ -1,6 +1,30 @@
 # Faculty leadership, council and department heads: plan
 
-Status: proposal (2026-10-26). Builds on `FACULTY_DEPARTMENTS_SPECIALIZATIONS_PLAN.md` ("As built") and `PEOPLE_SINGLE_PROFILE_PLAN.md` (one profile per person).
+Status: built (2026-10-26), see "As built" below. Sections 1 to 10 were the proposal; where they differ, "As built" wins. Builds on `FACULTY_DEPARTMENTS_SPECIALIZATIONS_PLAN.md` ("As built") and `PEOPLE_SINGLE_PROFILE_PLAN.md` (one profile per person).
+
+## As built (2026-10-26)
+
+Answers to the open questions (product owner, 2026-10-26): council members are picked from the faculty's staff like the dean, and department heads join automatically; the Specialization / Section type **replaces** `kind`; the dean has **one source**; the council is a **separate page with a navigation card** in every faculty; departments show **no staff list** (only the council page lists people).
+
+- **Departments** (`facilities.<faculty>.departments`):
+  - `type`: `specialization` (needs `studyPlanDepartmentId`, shows the Study Plan button) or `section` (no study plan, no button). The badge reads اختصاص / Specialization or قسم / Section.
+  - An item saved before `type` existed counts as a specialization when it links to a program, explicitly or by exact name, as the page already showed. The admin form opens it with that type and link, so saving keeps the button.
+  - The head picker lists only this faculty's staff (the "Other faculties" group is gone). On readiness the server refuses a head from another faculty, a specialization without a program, a section with one, and a type or head that differs between Arabic and English.
+  - Migration `2026_10_26_000001` drops `departments.kind`; `faculty_structure.json` and `faculty:import-structure` no longer carry it.
+- **Council page** (`/{locale}/faculties/{faculty}/council`, target `facilities.<faculty>.council`, every faculty):
+  - Payload per locale: `positions[] = {id, type: dean|vice_dean|custom, memberId, title, onCouncil}`, `councilMembers[] = {id, memberId, role}`, `includeDepartmentHeads`.
+  - Admin: one bilingual "Faculty leadership and council" section under the language tabs. Rows are positions (type, staff member, AR/EN title, on council) and extra members (staff member, AR/EN role), plus the heads toggle. The staff dropdowns list only this faculty's academic staff, and one person may hold several positions. An empty title uses the default (عميد الكلية / Dean, نائب العميد / Vice Dean); a custom position needs one.
+  - Readiness: exactly one dean; every person is this faculty's staff; ids, types and people match across languages.
+  - Public page: "Faculty Leadership" cards (dean, vice deans, other positions), then "Faculty Council Members". There is one row per person with all their roles (for example "Vice Dean for Academic Affairs · Council Secretary · Head, Department of Surgery"). The dean is always on the council and is its chair. A hidden profile is left out.
+  - Before the page is published it shows the faculty's dean from About › Leadership and the heads of the published departments page; the editor starts from the same dean.
+  - Migration `2026_10_26_000002` adds the page and its navigation card to each faculty; `FacultyModuleSeeder` does the same for fresh installs. It is registered in `CmsTargetRegistry`, `FacultyPageService`, `FacultySubpageCardService`, `SearchIndexService`, the subpage route and every faculty admin page.
+- **Dean, one source**:
+  - The faculty dean block takes the dean from the published council page; the typed name matching remains only as the fallback.
+  - Publishing the council page points the faculty's dean row on About › Leadership at the published dean. That is the public row linked to this faculty's staff, else any dean row of the faculty. When the faculty has none, a published row is added with the role "عميد <faculty>" / "Dean of the <faculty>". Audit action: `faculty.council.dean_synced`.
+  - Publishing also clears the About cache.
+  - In People (PersonResource) a dean row's profile picker is locked, with a note, while the faculty's council page names the dean.
+- **Not built**: a list of other departments per staff member. With no staff list on department pages it would show nowhere; `faculty_members.department_id` stays the main department.
+- Code: `FacultyLeadershipServiceInterface` / `FacultyLeadershipService`, `FacultyCouncilDTO`. Tests: `FacultyCouncilTest`, `FacultyDepartmentsSpecializationsTest`.
 
 ## 1. Goal
 

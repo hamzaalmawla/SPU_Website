@@ -35,6 +35,7 @@ use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Forms\Form;
+use Filament\Forms\Get;
 use Filament\Notifications\Notification;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\Gate;
@@ -65,8 +66,11 @@ trait ManagesFacultyHomepage
 
     public string $facultyScope = '';
 
+    /** @var array<int, string>|null */
+    private ?array $facultyStaffCache = null;
+
     /** @var array<string, array<int, string>>|null */
-    private ?array $departmentHeadCache = null;
+    private ?array $supervisorCache = null;
 
     private FacultyPageServiceInterface $facultyPageService;
 
@@ -176,8 +180,8 @@ trait ManagesFacultyHomepage
             ? $this->matchingItemKeys($targetKey, $payload)
             : [];
 
-        $arContent = $this->contentForForm($targetKey, is_array($payload['translations']['ar'] ?? null) ? $payload['translations']['ar'] : []);
-        $enContent = $this->contentForForm($targetKey, is_array($payload['translations']['en'] ?? null) ? $payload['translations']['en'] : []);
+        $arContent = $this->contentForForm($targetKey, is_array($payload['translations']['ar'] ?? null) ? $payload['translations']['ar'] : [], 'ar');
+        $enContent = $this->contentForForm($targetKey, is_array($payload['translations']['en'] ?? null) ? $payload['translations']['en'] : [], 'en');
 
         if ($targetKey === $this->defaultTargetKey()) {
             $englishName = (string) ($enContent['faculty']['name'] ?? $enContent['title'] ?? '');
@@ -196,6 +200,7 @@ trait ManagesFacultyHomepage
             ), static fn (string $key): bool => $key !== '')),
             'student_records' => $studentRecords,
             'selected_research' => $targetKey === $this->defaultTargetKey() ? $this->selectedResearchForForm($payload) : [],
+            ...$this->councilStateForForm($targetKey, $payload),
             'ar_content' => $arContent,
             'en_content' => $enContent,
         ]);
@@ -278,6 +283,8 @@ trait ManagesFacultyHomepage
                     ->visible(fn (): bool => $this->currentTargetKeyForSchema() === $this->defaultTargetKey()),
                 $this->bilingualStudentFields()
                     ->visible(fn (): bool => $this->hasFilterableRecords($this->currentTargetKeyForSchema())),
+                $this->councilFields()
+                    ->visible(fn (): bool => $this->isCouncilTarget($this->currentTargetKeyForSchema())),
             ])
             ->statePath('data');
     }
@@ -687,6 +694,12 @@ trait ManagesFacultyHomepage
             $enContent['_filteredRecordKeys'] = $visibleKeys;
         }
 
+        if ($this->isCouncilTarget($targetKey)) {
+            [$arCouncil, $enCouncil] = $this->councilContentFromForm($state);
+            $arContent = [...$arContent, ...$arCouncil];
+            $enContent = [...$enContent, ...$enCouncil];
+        }
+
         if ($targetKey === $this->defaultTargetKey()) {
             $selectedResearch = $this->selectedResearchFromForm($state);
             $arContent['selectedResearchSlugs'] = $selectedResearch;
@@ -804,6 +817,8 @@ trait ManagesFacultyHomepage
             'final-exams' => [...$sections, ...$this->finalExamsSubpageFields($prefix)],
             'research' => [...$sections, ...$this->researchSubpageFields($prefix)],
             'members' => [...$sections, ...$this->membersSubpageFields($prefix)],
+            // Positions and members are edited once for both languages, below the language tabs.
+            'council' => $sections,
             default => throw new \InvalidArgumentException('Unsupported faculty subpage target.'),
         };
     }
@@ -1108,14 +1123,16 @@ trait ManagesFacultyHomepage
                     ->schema([
                         Hidden::make('slug')->default(fn (): string => 'department-'.Str::lower(Str::random(8))),
                         TextInput::make('title')->label(__('admin.faculty_workspace.editor.fields.department_name'))->required()->maxLength(180),
-                        Select::make('kind')
-                            ->label(__('admin.faculty_workspace.editor.fields.department_kind'))
-                            ->options(fn (): array => __('admin.faculty_workspace.editor.department_kinds'))
-                            ->default('academic')
-                            ->selectablePlaceholder(false),
+                        Select::make('type')
+                            ->label(__('admin.faculty_workspace.editor.fields.department_type'))
+                            ->options(fn (): array => __('admin.faculty_workspace.editor.department_types'))
+                            ->default('section')
+                            ->selectablePlaceholder(false)
+                            ->live()
+                            ->helperText(__('admin.faculty_workspace.editor.help.department_type')),
                         Select::make('headMemberId')
                             ->label(__('admin.faculty_workspace.editor.fields.department_head'))
-                            ->options(fn (): array => $this->departmentHeadOptions())
+                            ->options(fn (): array => $this->facultyStaffOptions())
                             ->searchable()
                             ->helperText(__('admin.faculty_workspace.editor.help.department_head')),
                         TextInput::make('code')->label(__('admin.faculty_workspace.editor.fields.department_code'))->maxLength(40),
@@ -1123,6 +1140,8 @@ trait ManagesFacultyHomepage
                             ->label(__('admin.faculty_workspace.editor.fields.study_plan_link'))
                             ->options(fn (): array => $this->departmentStudyPlanOptions())
                             ->searchable()
+                            ->visible(fn (Get $get): bool => $get('type') === 'specialization')
+                            ->required(fn (Get $get): bool => $get('type') === 'specialization')
                             ->placeholder(__('admin.faculty_workspace.editor.fields.no_study_plan'))
                             ->helperText(__('admin.faculty_workspace.editor.help.study_plan_link')),
                         Textarea::make('summary')->label(__('admin.faculty_workspace.editor.fields.summary'))->rows(3)->columnSpanFull(),
@@ -1141,26 +1160,234 @@ trait ManagesFacultyHomepage
     }
 
     /**
-     * Faculty profiles for the department head picker: this faculty's first, then the others.
+     * Departments for the form. A department saved before it had a type is a specialization when it
+     * links to a study plan program, by its saved link or by its exact name (as the page shows it),
+     * so the editor sees that link and keeps it on save.
+     *
+     * @param  array<string, mixed>  $content
+     * @return array<string, mixed>
+     */
+    private function departmentsContentForForm(array $content, string $locale): array
+    {
+        $items = $this->listOfArrays($content['items'] ?? []);
+        $resolved = $this->studyPlanLinkService->enrichDepartmentItems(static::managedFacultyScope(), $locale, $items);
+
+        $content['items'] = array_map(static function (array $item, array $resolvedItem): array {
+            unset($item['kind']);
+            $type = $item['type'] ?? null;
+
+            if (! in_array($type, ['specialization', 'section'], true)) {
+                $type = $resolvedItem['studyPlanDepartmentId'] !== null ? 'specialization' : 'section';
+            }
+
+            return [
+                ...$item,
+                'type' => $type,
+                'studyPlanDepartmentId' => $type === 'specialization' ? $resolvedItem['studyPlanDepartmentId'] : null,
+            ];
+        }, $items, $resolved);
+
+        return $content;
+    }
+
+    private function isCouncilTarget(string $targetKey): bool
+    {
+        return $this->subpageSlugFromTarget($targetKey) === 'council';
+    }
+
+    /**
+     * The council page editor: positions (dean, vice deans and custom positions) and extra
+     * council members, each one row for both languages, picked from this faculty's staff.
+     */
+    private function councilFields(): Section
+    {
+        $staff = fn (): array => $this->facultyStaffOptions();
+
+        return Section::make(__('admin.faculty_workspace.editor.sections.council'))
+            ->description(__('admin.faculty_workspace.editor.help.council'))
+            ->schema([
+                Repeater::make('council_positions')
+                    ->label(__('admin.faculty_workspace.editor.sections.council_positions'))
+                    ->schema([
+                        Hidden::make('id')->default(fn (): string => 'position-'.Str::lower(Str::random(8))),
+                        Select::make('type')
+                            ->label(__('admin.faculty_workspace.editor.fields.position_type'))
+                            ->options(fn (): array => __('admin.faculty_workspace.editor.position_types'))
+                            ->default('vice_dean')
+                            ->selectablePlaceholder(false)
+                            ->required()
+                            ->live(),
+                        Select::make('memberId')
+                            ->label(__('admin.faculty_workspace.editor.fields.staff_member'))
+                            ->options($staff)
+                            ->searchable()
+                            ->required(),
+                        TextInput::make('titleAr')
+                            ->label(__('admin.faculty_workspace.editor.fields.position_title_ar'))
+                            ->required(fn (Get $get): bool => $get('type') === 'custom')
+                            ->maxLength(180),
+                        TextInput::make('titleEn')
+                            ->label(__('admin.faculty_workspace.editor.fields.position_title_en'))
+                            ->required(fn (Get $get): bool => $get('type') === 'custom')
+                            ->maxLength(180),
+                        Toggle::make('onCouncil')
+                            ->label(__('admin.faculty_workspace.editor.fields.on_council'))
+                            ->default(true),
+                    ])
+                    ->columns(2)
+                    ->defaultItems(0)
+                    ->reorderable()
+                    ->collapsible()
+                    ->addActionLabel(__('admin.faculty_workspace.editor.fields.add_position'))
+                    ->columnSpanFull(),
+                Toggle::make('council_include_heads')
+                    ->label(__('admin.faculty_workspace.editor.fields.include_department_heads'))
+                    ->helperText(__('admin.faculty_workspace.editor.help.include_department_heads'))
+                    ->default(true),
+                Repeater::make('council_members')
+                    ->label(__('admin.faculty_workspace.editor.sections.council_members'))
+                    ->schema([
+                        Hidden::make('id')->default(fn (): string => 'member-'.Str::lower(Str::random(8))),
+                        Select::make('memberId')
+                            ->label(__('admin.faculty_workspace.editor.fields.staff_member'))
+                            ->options($staff)
+                            ->searchable()
+                            ->required()
+                            ->columnSpanFull(),
+                        TextInput::make('roleAr')->label(__('admin.faculty_workspace.editor.fields.council_role_ar'))->maxLength(180),
+                        TextInput::make('roleEn')->label(__('admin.faculty_workspace.editor.fields.council_role_en'))->maxLength(180),
+                    ])
+                    ->columns(2)
+                    ->defaultItems(0)
+                    ->reorderable()
+                    ->collapsible()
+                    ->addActionLabel(__('admin.faculty_workspace.editor.fields.add_council_member'))
+                    ->columnSpanFull(),
+            ])
+            ->columnSpanFull();
+    }
+
+    /**
+     * The council editor's rows, pairing the Arabic and English items by id.
+     *
+     * @param  array<string, mixed>  $payload
+     * @return array<string, mixed>
+     */
+    private function councilStateForForm(string $targetKey, array $payload): array
+    {
+        if (! $this->isCouncilTarget($targetKey)) {
+            return ['council_positions' => [], 'council_members' => [], 'council_include_heads' => true];
+        }
+
+        $ar = is_array($payload['translations']['ar'] ?? null) ? $payload['translations']['ar'] : [];
+        $en = is_array($payload['translations']['en'] ?? null) ? $payload['translations']['en'] : [];
+        $enPositions = collect($this->listOfArrays($en['positions'] ?? []))->keyBy(fn (array $item): string => (string) ($item['id'] ?? ''));
+        $enMembers = collect($this->listOfArrays($en['councilMembers'] ?? []))->keyBy(fn (array $item): string => (string) ($item['id'] ?? ''));
+
+        return [
+            'council_positions' => array_map(static function (array $position) use ($enPositions): array {
+                $id = (string) ($position['id'] ?? '');
+
+                return [
+                    'id' => $id !== '' ? $id : 'position-'.Str::lower(Str::random(8)),
+                    'type' => (string) ($position['type'] ?? 'vice_dean'),
+                    'memberId' => is_numeric($position['memberId'] ?? null) ? (int) $position['memberId'] : null,
+                    'titleAr' => (string) ($position['title'] ?? ''),
+                    'titleEn' => (string) ($enPositions->get($id)['title'] ?? ''),
+                    'onCouncil' => (bool) ($position['onCouncil'] ?? true),
+                ];
+            }, $this->listOfArrays($ar['positions'] ?? [])),
+            'council_members' => array_map(static function (array $member) use ($enMembers): array {
+                $id = (string) ($member['id'] ?? '');
+
+                return [
+                    'id' => $id !== '' ? $id : 'member-'.Str::lower(Str::random(8)),
+                    'memberId' => is_numeric($member['memberId'] ?? null) ? (int) $member['memberId'] : null,
+                    'roleAr' => (string) ($member['role'] ?? ''),
+                    'roleEn' => (string) ($enMembers->get($id)['role'] ?? ''),
+                ];
+            }, $this->listOfArrays($ar['councilMembers'] ?? [])),
+            'council_include_heads' => ($ar['includeDepartmentHeads'] ?? true) !== false,
+        ];
+    }
+
+    /**
+     * The council editor's rows as the Arabic and English content: the same people,
+     * types and ids in both, with each language's titles.
+     *
+     * @param  array<string, mixed>  $state
+     * @return array{0: array<string, mixed>, 1: array<string, mixed>}
+     */
+    private function councilContentFromForm(array $state): array
+    {
+        $content = ['ar' => [], 'en' => []];
+        $includeHeads = ($state['council_include_heads'] ?? true) !== false;
+
+        foreach (['ar', 'en'] as $locale) {
+            $suffix = ucfirst($locale);
+            $content[$locale] = [
+                'positions' => array_values(array_map(static fn (array $position): array => [
+                    'id' => (string) ($position['id'] ?? ''),
+                    'type' => (string) ($position['type'] ?? ''),
+                    'memberId' => is_numeric($position['memberId'] ?? null) ? (int) $position['memberId'] : null,
+                    'title' => trim((string) ($position['title'.$suffix] ?? '')),
+                    'onCouncil' => (bool) ($position['onCouncil'] ?? false),
+                ], $this->listOfArrays($state['council_positions'] ?? []))),
+                'councilMembers' => array_values(array_map(static fn (array $member): array => [
+                    'id' => (string) ($member['id'] ?? ''),
+                    'memberId' => is_numeric($member['memberId'] ?? null) ? (int) $member['memberId'] : null,
+                    'role' => trim((string) ($member['role'.$suffix] ?? '')),
+                ], $this->listOfArrays($state['council_members'] ?? []))),
+                'includeDepartmentHeads' => $includeHeads,
+            ];
+        }
+
+        return [$content['ar'], $content['en']];
+    }
+
+    /**
+     * Faculty profiles for the project supervisor picker: this faculty's first, then the others
+     * (a project may be supervised from another faculty).
      *
      * @return array<string, array<int, string>>
      */
-    private function departmentHeadOptions(): array
+    private function supervisorOptions(): array
     {
-        if ($this->departmentHeadCache !== null) {
-            return $this->departmentHeadCache;
+        if ($this->supervisorCache !== null) {
+            return $this->supervisorCache;
         }
 
         try {
             $options = app(ProfileAdminServiceInterface::class)->teacherOptions($this->facultyScope, $this->authenticatedUserId());
         } catch (AuthorizationException) {
-            return $this->departmentHeadCache = [];
+            return $this->supervisorCache = [];
         }
 
-        return $this->departmentHeadCache = array_filter([
+        return $this->supervisorCache = array_filter([
             __('admin.faculty_workspace.editor.fields.this_faculty') => $options['faculty'],
             __('admin.faculty_workspace.editor.fields.other_faculties') => $options['other'],
         ]);
+    }
+
+    /**
+     * This faculty's academic staff, for the department head, position and council pickers.
+     * Staff of other faculties are not offered (the server refuses them too).
+     *
+     * @return array<int, string>
+     */
+    private function facultyStaffOptions(): array
+    {
+        if ($this->facultyStaffCache !== null) {
+            return $this->facultyStaffCache;
+        }
+
+        try {
+            $options = app(ProfileAdminServiceInterface::class)->teacherOptions($this->facultyScope, $this->authenticatedUserId());
+        } catch (AuthorizationException) {
+            return $this->facultyStaffCache = [];
+        }
+
+        return $this->facultyStaffCache = $options['faculty'];
     }
 
     /** @return array<int, Section> */
@@ -1204,7 +1431,7 @@ trait ManagesFacultyHomepage
                         Select::make('supervisorMemberIds')
                             ->label(__('admin.faculty_workspace.editor.fields.supervisors'))
                             ->multiple()
-                            ->options(fn (): array => $this->departmentHeadOptions())
+                            ->options(fn (): array => $this->supervisorOptions())
                             ->searchable()
                             ->helperText(__('admin.faculty_workspace.editor.help.project_supervisors'))
                             ->columnSpanFull(),
@@ -1375,12 +1602,16 @@ trait ManagesFacultyHomepage
     }
 
     /** @return array<string, mixed> */
-    private function contentForForm(string $targetKey, array $content, ?string $departmentId = null, ?string $termId = null): array
+    private function contentForForm(string $targetKey, array $content, string $locale): array
     {
         $subpageSlug = $this->subpageSlugFromTarget($targetKey);
 
         if ($this->hasFilterableRecords($targetKey)) {
             return $this->filterableRecordContentForForm($targetKey, $content);
+        }
+
+        if ($subpageSlug === 'departments') {
+            return $this->departmentsContentForForm($content, $locale);
         }
 
         if ($subpageSlug !== 'study-plan') {
@@ -1688,6 +1919,15 @@ trait ManagesFacultyHomepage
             return $content;
         }
 
+        if ($subpageSlug === 'council') {
+            $content['positions'] = $this->listOfArrays($content['positions'] ?? []);
+            $content['councilMembers'] = $this->listOfArrays($content['councilMembers'] ?? []);
+            $content['includeDepartmentHeads'] = ($content['includeDepartmentHeads'] ?? true) !== false;
+            unset($content['items'], $content['stats'], $content['dean']);
+
+            return $content;
+        }
+
         $filteredRecordKeys = is_array($content['_filteredRecordKeys'] ?? null)
             ? array_values(array_filter(array_map('strval', $content['_filteredRecordKeys']), static fn (string $key): bool => $key !== ''))
             : null;
@@ -1697,6 +1937,12 @@ trait ManagesFacultyHomepage
             if ($subpageSlug === 'departments') {
                 $item['tags'] = array_values(array_filter(is_array($item['tags'] ?? null) ? $item['tags'] : []));
                 $item['headMemberId'] = is_numeric($item['headMemberId'] ?? null) && (int) $item['headMemberId'] > 0 ? (int) $item['headMemberId'] : null;
+                $item['type'] = ($item['type'] ?? null) === 'specialization' ? 'specialization' : 'section';
+                // A section has no study plan.
+                $item['studyPlanDepartmentId'] = $item['type'] === 'specialization' && trim((string) ($item['studyPlanDepartmentId'] ?? '')) !== ''
+                    ? trim((string) $item['studyPlanDepartmentId'])
+                    : null;
+                unset($item['kind']);
             }
 
             if ($subpageSlug === 'projects') {

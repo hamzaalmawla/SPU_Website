@@ -23,9 +23,10 @@ use Tests\TestCase;
 
 /**
  * A faculty's departments page lists its academic departments (every faculty,
- * Basic Sciences among them, each with a head). A department's study plan is
- * optional: one without a plan shows no study plan button. A staff member has a
- * department and, optionally, the study plan program they teach in.
+ * Basic Sciences among them, each with a head from the faculty's own staff). A
+ * department is a specialization, which links to its study plan program, or a
+ * section, which has no study plan and shows no study plan button. A staff
+ * member has a department and, optionally, the study plan program they teach in.
  */
 final class FacultyDepartmentsSpecializationsTest extends TestCase
 {
@@ -60,7 +61,7 @@ final class FacultyDepartmentsSpecializationsTest extends TestCase
             ->assertDontSee('Taught by:');
     }
 
-    public function test_the_editor_sets_basic_sciences_a_head_and_an_optional_study_plan(): void
+    public function test_the_editor_sets_a_section_with_a_head_and_a_specialization_with_its_study_plan(): void
     {
         $faculty = Faculty::query()->where('public_slug', 'artificial-intelligence')->firstOrFail();
         $head = $this->member('basic-sciences-head-test', 'Dr. Yasser Head', 'د. ياسر الرئيس', (int) $faculty->getKey());
@@ -74,7 +75,7 @@ final class FacultyDepartmentsSpecializationsTest extends TestCase
                     'slug' => 'ai-basic-sciences',
                     'title' => $isAr ? 'قسم العلوم الأساسية' : 'Department of Basic Sciences',
                     'summary' => $isAr ? 'يدرّس مقررات السنوات المشتركة.' : 'Teaches the common-years courses.',
-                    'kind' => 'basic_sciences',
+                    'type' => 'section',
                     'headMemberId' => (int) $head->getKey(),
                     'studyPlanDepartmentId' => null,
                 ],
@@ -82,7 +83,7 @@ final class FacultyDepartmentsSpecializationsTest extends TestCase
                     'slug' => 'ai-data-science',
                     'title' => $isAr ? 'قسم هندسة الذكاء الاصطناعي وعلوم البيانات' : 'Department of AI Engineering and Data Science',
                     'summary' => '',
-                    'kind' => 'academic',
+                    'type' => 'specialization',
                     'studyPlanDepartmentId' => 'ai',
                 ],
             ];
@@ -95,7 +96,8 @@ final class FacultyDepartmentsSpecializationsTest extends TestCase
         $this->get('/en/faculties/artificial-intelligence/departments')
             ->assertOk()
             ->assertSee('Department of Basic Sciences')
-            ->assertSee('Basic Sciences')
+            ->assertSee('Section')
+            ->assertSee('Specialization')
             ->assertSee('Head of Department')
             ->assertSee('Dr. Yasser Head')
             ->assertSee('/en/about/profile/basic-sciences-head-test', false)
@@ -104,8 +106,9 @@ final class FacultyDepartmentsSpecializationsTest extends TestCase
         $page = app(FacultyPageServiceInterface::class)->getSubpage('artificial-intelligence', 'departments', 'en');
         $this->assertNotNull($page);
         $items = collect($page->items)->keyBy('slug');
-        $this->assertSame('basic_sciences', $items['ai-basic-sciences']['kind']);
-        // Basic Sciences has no study plan, so it shows no study plan button.
+        $this->assertSame('section', $items['ai-basic-sciences']['type']);
+        $this->assertSame('specialization', $items['ai-data-science']['type']);
+        // Basic Sciences is a section: it has no study plan, so it shows no study plan button.
         $this->assertNull($items['ai-basic-sciences']['studyPlanUrl']);
         $this->assertSame('Dr. Yasser Head', $items['ai-basic-sciences']['head']['name']);
         $this->assertSame('/en/faculties/artificial-intelligence/study-plan?department=ai', $items['ai-data-science']['studyPlanUrl']);
@@ -113,21 +116,64 @@ final class FacultyDepartmentsSpecializationsTest extends TestCase
 
         $this->get('/ar/faculties/artificial-intelligence/departments')
             ->assertOk()
-            ->assertSee('علوم أساسية')
+            ->assertSee('اختصاص')
             ->assertSee('رئيس القسم')
             ->assertSee('د. ياسر الرئيس');
     }
 
-    public function test_the_admin_editor_has_the_department_fields_and_an_optional_study_plan(): void
+    public function test_a_department_follows_the_type_and_head_rules(): void
     {
+        $faculty = Faculty::query()->where('public_slug', 'artificial-intelligence')->firstOrFail();
+        $other = Faculty::query()->where('public_slug', 'medicine')->firstOrFail();
+        $ownStaff = $this->member('ai-own-staff', 'Dr. Own Staff', 'د. من الكلية', (int) $faculty->getKey());
+        $otherStaff = $this->member('medicine-other-staff', 'Dr. Other Faculty', 'د. من كلية أخرى', (int) $other->getKey());
+        $workflow = app(CmsWorkflowServiceInterface::class);
+        $payload = app(FacultyPageServiceInterface::class)->getEditablePayload(self::TARGET);
+        $withItem = function (array $item) use ($payload): array {
+            foreach (['ar', 'en'] as $locale) {
+                $payload['translations'][$locale]['items'] = [['slug' => 'rules-test', 'title' => 'Rules test '.$locale, ...$item]];
+            }
+
+            return $payload;
+        };
+
+        $this->assertTrue($workflow->readiness(self::TARGET, $withItem(['type' => 'section', 'headMemberId' => (int) $ownStaff->getKey()]))->isReady);
+        $this->assertTrue($workflow->readiness(self::TARGET, $withItem(['type' => 'section']))->isReady, 'The head is optional.');
+
+        $otherHead = $workflow->readiness(self::TARGET, $withItem(['type' => 'section', 'headMemberId' => (int) $otherStaff->getKey()]));
+        $this->assertFalse($otherHead->isReady);
+        $this->assertContains('A department head must be one of this faculty\'s academic staff.', $otherHead->errors['ar']);
+
+        $noPlan = $workflow->readiness(self::TARGET, $withItem(['type' => 'specialization', 'studyPlanDepartmentId' => null]));
+        $this->assertContains('A specialization must link to its study plan program.', $noPlan->errors['en']);
+
+        $sectionWithPlan = $workflow->readiness(self::TARGET, $withItem(['type' => 'section', 'studyPlanDepartmentId' => 'ai']));
+        $this->assertContains('A section has no study plan.', $sectionWithPlan->errors['ar']);
+
+        $mismatch = $withItem(['type' => 'section', 'headMemberId' => (int) $ownStaff->getKey()]);
+        $mismatch['translations']['en']['items'][0]['headMemberId'] = null;
+        $this->assertArrayHasKey('translations', $workflow->readiness(self::TARGET, $mismatch)->errors);
+    }
+
+    public function test_the_admin_editor_has_the_type_field_and_offers_only_this_facultys_staff_as_head(): void
+    {
+        $faculty = Faculty::query()->where('public_slug', 'artificial-intelligence')->firstOrFail();
+        $other = Faculty::query()->where('public_slug', 'medicine')->firstOrFail();
+        $candidate = $this->member('ai-head-candidate', 'Dr. Head Candidate', 'د. مرشح للرئاسة', (int) $faculty->getKey());
+        $outsider = $this->member('medicine-not-a-candidate', 'Dr. Not A Candidate', 'د. ليس من الكلية', (int) $other->getKey());
         $this->actingAs($this->admin, 'web');
 
-        Livewire::test(ManageArtificialIntelligenceFaculty::class)
+        $component = Livewire::test(ManageArtificialIntelligenceFaculty::class)
             ->set('data.target_key', self::TARGET)
             ->call('loadTarget', self::TARGET)
-            ->assertSee('نوع القسم')
+            ->assertSee('النوع')
+            ->assertSee('اختصاص (له خطة دراسية)')
             ->assertSee('رئيس القسم')
-            ->assertSee('الخطة الدراسية (اختياري)');
+            ->assertDontSee('كليات أخرى');
+
+        $options = (fn (): array => $this->facultyStaffOptions())->call($component->instance());
+        $this->assertArrayHasKey((int) $candidate->getKey(), $options);
+        $this->assertArrayNotHasKey((int) $outsider->getKey(), $options);
     }
 
     public function test_a_staff_member_has_a_department_and_an_optional_specialization(): void

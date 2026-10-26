@@ -294,3 +294,14 @@ gate. Current status is tracked only in
 - `page_texts/faculty-landings.json` replaces the invented one-line vision, mission and objectives tabs with the old text. It covers medicine, dentistry, pharmacy, AI and construction, and adds the AI dean's message.
 - Lab cards no longer show empty image, department or instructor rows.
 - Both imports deploy through the approval files `faculty-structure.approved` and `page-texts.approved`.
+
+## Faculty Leadership And Council - 2026-10-26
+
+- Not in the reference frontend; approved by the product owner on 2026-10-26. Plan and as-built notes: `Docs/FACULTY_LEADERSHIP_COUNCIL_PLAN.md`.
+- New subpage `/{locale}/faculties/{faculty}/council` for all seven faculties (CMS target `facilities.<faculty>.council`, draft/preview/publish, audit, cache, AR/EN), with a navigation card added to each faculty by migration `2026_10_26_000002`.
+  - Faculty Leadership: the dean, vice deans and custom positions, each a profile picked from the faculty's academic staff.
+  - Faculty Council: positions marked "on council", every department head from the published departments page, and extra members, one row per person with all their roles; the dean is the chair.
+  - Before an editor publishes it, the page shows the faculty's dean from About › Leadership and the department heads.
+- The published dean is the one source: the faculty dean block reads it, and publishing updates (or adds) the faculty's dean row on About › Leadership, whose profile picker then locks.
+- Departments: `type` (specialization with its study plan, or section without one) replaces `kind`; the head picker and the server accept only the faculty's own staff (migration `2026_10_26_000001` drops `departments.kind`).
+- Tests: `tests/Feature/FacultyCouncilTest.php`, `tests/Feature/FacultyDepartmentsSpecializationsTest.php`.

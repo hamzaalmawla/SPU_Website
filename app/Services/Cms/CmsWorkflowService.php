@@ -8,6 +8,7 @@ use App\Contracts\Auth\AdminAccessServiceInterface;
 use App\Contracts\Cms\AboutEntityCmsServiceInterface;
 use App\Contracts\Cms\CmsTargetRegistryInterface;
 use App\Contracts\Cms\CmsWorkflowServiceInterface;
+use App\Contracts\Faculty\FacultyLeadershipServiceInterface;
 use App\Contracts\Faculty\FacultyStudyPlanLinkServiceInterface;
 use App\Contracts\Form\FormDefinitionServiceInterface;
 use App\Contracts\Media\MediaServiceInterface;
@@ -54,6 +55,7 @@ final class CmsWorkflowService implements CmsWorkflowServiceInterface
         private readonly NewsArticleCmsServiceInterface $newsArticleCmsService,
         private readonly ResearchPublicationCmsServiceInterface $researchPublicationCmsService,
         private readonly FacultyStudyPlanLinkServiceInterface $studyPlanLinkService,
+        private readonly FacultyLeadershipServiceInterface $leadershipService,
         private readonly FormDefinitionServiceInterface $formDefinitions,
         private readonly AdminAccessServiceInterface $access,
     ) {}
@@ -377,12 +379,26 @@ final class CmsWorkflowService implements CmsWorkflowServiceInterface
         }
 
         if (str_ends_with($target->key, '.departments') && str_starts_with($target->key, 'facilities.')) {
+            foreach ($this->leadershipService->departmentsValidationErrors($target->key, $payload) as $field => $messages) {
+                $errors[$field] = array_values(array_unique([
+                    ...($errors[$field] ?? []),
+                    ...$messages,
+                ]));
+            }
+
             foreach ($this->studyPlanLinkService->validationErrors($target->key, $payload) as $field => $messages) {
                 $errors[$field] = array_values(array_unique([
                     ...($errors[$field] ?? []),
                     ...$messages,
                 ]));
             }
+        }
+
+        foreach ($this->leadershipService->councilValidationErrors($target->key, $payload) as $field => $messages) {
+            $errors[$field] = array_values(array_unique([
+                ...($errors[$field] ?? []),
+                ...$messages,
+            ]));
         }
 
         if (str_ends_with($target->key, '.research') && str_starts_with($target->key, 'facilities.')) {
@@ -559,6 +575,7 @@ final class CmsWorkflowService implements CmsWorkflowServiceInterface
         $this->aboutEntityCmsService->publishTarget($draft->target_key, $payload, $publishedAt);
         $this->newsArticleCmsService->publishTarget($draft->target_key, $payload, $publishedAt, $userId);
         $this->researchPublicationCmsService->publishTarget($draft->target_key, $payload, $publishedAt, $userId);
+        $this->leadershipService->publishTarget($draft->target_key, $payload, $publishedAt, $userId);
 
         CmsTargetContent::query()->updateOrCreate(
             ['target_key' => $draft->target_key],
@@ -2270,7 +2287,7 @@ final class CmsWorkflowService implements CmsWorkflowServiceInterface
             }
         }
 
-        foreach (['sections', 'blocks', 'items', 'cards', 'body_blocks', 'bodyBlocks'] as $key) {
+        foreach (['sections', 'blocks', 'items', 'cards', 'body_blocks', 'bodyBlocks', 'positions'] as $key) {
             if (is_array($payload[$key] ?? null) && $payload[$key] !== []) {
                 return true;
             }

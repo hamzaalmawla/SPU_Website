@@ -525,6 +525,7 @@ return [
     'person' => [
         'profile_section' => 'Person',
         'profile_section_help' => 'Each person has one profile. Pick their profile here: its name, photo, biography, contact details and education show on the leadership pages, and this page adds the role.',
+        'dean_managed_by_council' => 'This faculty\'s dean is picked on the Faculty Council page in the faculty admin; this row follows it when that page is published.',
         'profile' => 'Profile',
         'no_profile' => 'No profile yet',
         'profile_fields_come_from_profile' => 'Name, photo, biography and contact details come from this profile.',

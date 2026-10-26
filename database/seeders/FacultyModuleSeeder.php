@@ -30,7 +30,7 @@ final class FacultyModuleSeeder extends Seeder
     private function seedFaculty(array $faculty, int $sortOrder): int
     {
         $now = now();
-        $pages = ['overview', 'departments', 'study-plan', 'study-plan-course', 'labs', 'projects', 'research', 'alumni', 'valedictorians', 'members'];
+        $pages = ['overview', 'departments', 'study-plan', 'study-plan-course', 'labs', 'projects', 'research', 'alumni', 'valedictorians', 'members', 'council'];
 
         if ($faculty['public_slug'] === 'pharmacy') {
             $pages[] = 'training';
@@ -76,7 +76,7 @@ final class FacultyModuleSeeder extends Seeder
     /** @param array<string, mixed> $faculty */
     private function seedPages(int $facultyId, array $faculty): void
     {
-        $pages = ['overview', 'departments', 'study-plan', 'study-plan-course', 'labs', 'projects', 'research', 'alumni', 'valedictorians', 'members'];
+        $pages = ['overview', 'departments', 'study-plan', 'study-plan-course', 'labs', 'projects', 'research', 'alumni', 'valedictorians', 'members', 'council'];
 
         if ($faculty['public_slug'] === 'pharmacy') {
             $pages[] = 'training';
@@ -97,7 +97,7 @@ final class FacultyModuleSeeder extends Seeder
     private function seedSubpageCards(array $faculty, int $facultyId): void
     {
         $facultySlug = $faculty['public_slug'];
-        $pages = ['overview', 'departments', 'study-plan', 'study-plan-course', 'labs', 'projects', 'research', 'alumni', 'valedictorians', 'members'];
+        $pages = ['overview', 'departments', 'study-plan', 'study-plan-course', 'labs', 'projects', 'research', 'alumni', 'valedictorians', 'members', 'council'];
 
         if ($facultySlug === 'pharmacy') {
             $pages[] = 'training';
@@ -588,6 +588,7 @@ final class FacultyModuleSeeder extends Seeder
             'training' => ['ar' => 'التدريب والتلمذة المهنية', 'en' => 'Training & Apprenticeship'],
             'research' => ['ar' => 'أحدث الأبحاث', 'en' => 'Latest Research'],
             'members' => ['ar' => 'أعضاء الهيئة الأكاديمية', 'en' => 'Faculty Members'],
+            'council' => ['ar' => 'مجلس الكلية', 'en' => 'Faculty Council'],
             'study-plan' => ['ar' => 'الخطة الدراسية', 'en' => 'Study Plan'],
             'study-plan-course' => ['ar' => 'محاضرات المقرر', 'en' => 'Course Lessons'],
             default => ['ar' => $slug, 'en' => $slug],
@@ -606,6 +607,7 @@ final class FacultyModuleSeeder extends Seeder
                 'training' => 'مسار التدريب العملي لطلبة '.$facultyName.'.',
                 'research' => 'استكشف أحدث المنشورات والأبحاث العلمية في '.$facultyName.'.',
                 'members' => 'تعرف على أعضاء الهيئة الأكاديمية في '.$facultyName.'.',
+                'council' => 'عميد '.$facultyName.' ونوابه وأعضاء مجلس الكلية.',
                 'study-plan' => 'الخطة الدراسية وتسلسل المقررات في '.$facultyName.'.',
                 'study-plan-course' => 'محاضرات ومواد المقررات في '.$facultyName.'.',
                 default => $facultyName,
@@ -621,6 +623,7 @@ final class FacultyModuleSeeder extends Seeder
             'training' => 'Practical training pathway for '.$facultyName.' students.',
             'research' => 'Explore the latest scholarly publications and research from '.$facultyName.'.',
             'members' => 'Meet the academic staff members of '.$facultyName.'.',
+            'council' => 'The dean, vice deans and council of '.$facultyName.'.',
             'study-plan' => 'Study plan and course sequence for '.$facultyName.'.',
             'study-plan-course' => 'Course lessons and materials for '.$facultyName.'.',
             default => $facultyName,
