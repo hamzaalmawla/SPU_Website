@@ -23,6 +23,7 @@ use App\Models\Faculty\Faculty;
 use App\Models\Person\FacultyMember;
 use App\Models\Person\Person;
 use App\Models\Staff\StaffIntakeAccessLog;
+use App\Models\Staff\StaffIntakeLink;
 use App\Models\Staff\StaffIntakeRequest;
 use App\Models\User\User;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -55,6 +56,43 @@ final class StaffIntakeReviewService implements StaffIntakeReviewServiceInterfac
     public function reviewableFacultyIds(int $actorId): array
     {
         return array_map('intval', array_keys($this->links->facultyOptions($actorId, 'staff_intake_requests.view')));
+    }
+
+    public function statusReport(array $references = []): array
+    {
+        $faculties = Faculty::query()->get(['id', 'slug', 'is_enabled'])->keyBy('id');
+        $facultyLabel = static fn (?int $id): string => $id === null ? '(none)'
+            : ($faculties->has($id) ? $faculties[$id]->slug.($faculties[$id]->is_enabled ? '' : ' (disabled)') : '#'.$id.' (missing)');
+        $counts = StaffIntakeRequest::query()
+            ->selectRaw('staff_intake_link_id, status, COUNT(*) as total')
+            ->groupBy('staff_intake_link_id', 'status')
+            ->get()
+            ->groupBy('staff_intake_link_id');
+
+        $links = StaffIntakeLink::query()->orderBy('id')->get()->map(fn (StaffIntakeLink $link): array => [
+            'link' => (int) $link->getKey(),
+            'faculty' => $facultyLabel($link->faculty_id !== null ? (int) $link->faculty_id : null),
+            'active' => $link->isActive(),
+            'submissions' => (int) $link->submissions_count,
+            'requests' => ($counts[$link->getKey()] ?? collect())->mapWithKeys(fn ($row): array => [(string) $row->status => (int) $row->total])->all(),
+            'created' => $link->created_at?->toDateTimeString(),
+        ])->all();
+
+        $found = StaffIntakeRequest::query()->whereIn('reference', $references)->get()->keyBy('reference');
+
+        return [
+            'links' => $links,
+            'orphans' => StaffIntakeRequest::query()->whereNotIn('faculty_id', $faculties->where('is_enabled', true)->keys()->all())->count(),
+            'references' => array_map(fn (string $reference): array => $found->has($reference) ? [
+                'reference' => $reference,
+                'request' => (int) $found[$reference]->getKey(),
+                'link' => $found[$reference]->staff_intake_link_id !== null ? (int) $found[$reference]->staff_intake_link_id : null,
+                'faculty' => $facultyLabel($found[$reference]->faculty_id !== null ? (int) $found[$reference]->faculty_id : null),
+                'type' => (string) $found[$reference]->type,
+                'status' => (string) $found[$reference]->status,
+                'created' => $found[$reference]->created_at?->toDateTimeString(),
+            ] : ['reference' => $reference, 'status' => 'not found'], $references),
+        ];
     }
 
     public function canDecide(int $requestId, int $actorId): bool
