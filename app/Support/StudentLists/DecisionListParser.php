@@ -63,26 +63,28 @@ final class DecisionListParser
 
         foreach ($document['tables'] as $table) {
             $columns = null;
-            $headerRows = [];
+            $subHeaderIndex = null;
 
             foreach ($table as $index => $row) {
                 $cells = self::expand($row);
 
-                if ($columns === null) {
-                    if (self::rowHas($cells, 'الرقم الجامعي')) {
-                        $headerRows[] = $cells;
-                        // A two-row header: the next row holds sub-headers under spanned cells.
-                        $next = isset($table[$index + 1]) ? self::expand($table[$index + 1]) : [];
-                        if ($next !== [] && ! self::looksLikeStudentRow($next)) {
-                            $headerRows[] = $next;
-                        }
-                        $columns = self::columns($headerRows, self::GRADUATE_COLUMNS);
+                // A header starts the list, and starts it again over a later section of the
+                // same table (credit-hour graduates, then "نظام فصلي" ones with their own
+                // columns), so each section is read with its own header.
+                if (! self::looksLikeStudentRow($cells) && self::rowHas($cells, 'الرقم الجامعي')) {
+                    $headerRows = [$cells];
+                    // A two-row header: the next row holds sub-headers under spanned cells.
+                    $next = isset($table[$index + 1]) ? self::expand($table[$index + 1]) : [];
+                    if ($next !== [] && ! self::looksLikeStudentRow($next)) {
+                        $headerRows[] = $next;
+                        $subHeaderIndex = $index + 1;
                     }
+                    $columns = self::columns($headerRows, self::GRADUATE_COLUMNS);
 
                     continue;
                 }
 
-                if (in_array($cells, $headerRows, true) || self::isBlank($cells)) {
+                if ($columns === null || $index === $subHeaderIndex || self::isBlank($cells) || self::isSectionTitle($cells)) {
                     continue;
                 }
 
@@ -476,6 +478,18 @@ final class DecisionListParser
         }
 
         return false;
+    }
+
+    /**
+     * A full-width title over a section ("نظام فصلي"): one text across the row and no student.
+     *
+     * @param  list<string>  $cells
+     */
+    private static function isSectionTitle(array $cells): bool
+    {
+        $texts = array_unique(array_filter(array_map('trim', $cells), static fn (string $cell): bool => $cell !== ''));
+
+        return count($texts) === 1 && ! self::looksLikeStudentRow($cells);
     }
 
     /** @param list<string> $cells */

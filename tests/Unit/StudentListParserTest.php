@@ -94,6 +94,26 @@ final class StudentListParserTest extends TestCase
         $this->assertSame([[], [], []], array_column($rows, 'issues'));
     }
 
+    public function test_a_later_section_with_its_own_header_is_read_with_that_header(): void
+    {
+        DecisionDocxFactory::graduatesWithSemesterSystemSection($this->path, [
+            ['id' => '2210001', 'name' => 'سامر خالد الحلبي', 'specialization' => 'دكتور في طب الأسنان', 'points' => '3.39', 'percent' => '87.8', 'grade' => 'امتياز'],
+            ['id' => '2210002', 'name' => 'رنا عمر حداد', 'specialization' => 'دكتور في طب الأسنان', 'points' => '2.09', 'percent' => '61.8', 'grade' => 'مقبول'],
+        ], [
+            ['id' => '2080001', 'name' => 'مازن فادي الخطيب', 'specialization' => 'دكتور في طب الأسنان', 'percent' => '69.27', 'grade' => 'جيد'],
+        ]);
+
+        $rows = DecisionListParser::graduates(DocxTableReader::read($this->path))['rows'];
+
+        // The "نظام فصلي" title and the repeated header are not students.
+        $this->assertSame(['2210001', '2210002', '2080001'], array_column($rows, 'studentIdentifier'));
+        $this->assertSame([[], [], []], array_column($rows, 'issues'));
+        $this->assertSame(['دكتور في طب الأسنان'], array_values(array_unique(array_column($rows, 'specialization'))));
+        // The semester-system student has a percentage only.
+        $this->assertSame([null, 69.27, 'good', 'summer'], [$rows[2]['gpaPoints'], $rows[2]['gpaPercent'], $rows[2]['grade'], $rows[2]['semester']]);
+        $this->assertSame([3.39, 87.8], [$rows[0]['gpaPoints'], $rows[0]['gpaPercent']]);
+    }
+
     public function test_it_reads_top_student_blocks_and_skips_spacers(): void
     {
         DecisionDocxFactory::topStudents($this->path, [

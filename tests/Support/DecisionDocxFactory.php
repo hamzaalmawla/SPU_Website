@@ -72,6 +72,42 @@ final class DecisionDocxFactory
     }
 
     /**
+     * A graduates decision with a second section in the same table, as Dentistry
+     * sends it: credit-hour graduates, then a full-width "نظام فصلي" title and
+     * its own two-row header whose GPA column holds the percentage only.
+     *
+     * @param  list<array{id: string, name: string, specialization: string, points: string, percent: string, grade: string}>  $creditHour
+     * @param  list<array{id: string, name: string, specialization: string, percent: string, grade: string}>  $semesterSystem
+     */
+    public static function graduatesWithSemesterSystemSection(string $path, array $creditHour, array $semesterSystem): string
+    {
+        $header = static fn (string $gpaSubHeaders, int $gpaSpan): string => self::row(
+            self::cell('#', merge: 'restart').self::cell('الرقم الجامعي', merge: 'restart').self::cell('اسم الطالب', merge: 'restart')
+            .self::cell('الكلية', merge: 'restart').self::cell('الاختصاص', merge: 'restart').self::cell('المعدل التراكمي', span: $gpaSpan)
+            .self::cell('التقدير', merge: 'restart').self::cell('الفصل الدراسي الذي أنهى فيه الطالب مقرراته', merge: 'restart')
+        ).self::row(str_repeat(self::cell('', merge: 'continue'), 5).$gpaSubHeaders.str_repeat(self::cell('', merge: 'continue'), 2));
+        $student = static fn (int $line, array $student, string $gpa): string => self::row(
+            self::cell((string) $line).self::cell($student['id']).self::cell($student['name']).self::cell('كلية طب الأسنان')
+            .self::cell($student['specialization']).$gpa.self::cell($student['grade']).self::cell('الفصل الصيفي 2025/2026')
+        );
+
+        $rows = $header(self::cell('المعدل النقطي').self::cell('المعدل المئوي%'), 2);
+        foreach ($creditHour as $index => $row) {
+            $rows .= $student($index + 1, $row, self::cell($row['points']).self::cell($row['percent']));
+        }
+        $rows .= self::row(self::cell('نظام فصلي', span: 9));
+        $rows .= $header(self::cell('المعدل المئوي %'), 1);
+        foreach ($semesterSystem as $index => $row) {
+            $rows .= $student($index + 1, $row, self::cell($row['percent']));
+        }
+
+        return self::write($path, [
+            'قرار مجلس كلية رقم ( 1/7 )',
+            'اطلع مجلس الكلية على أسماء الطلاب الذين أنهوا كافة متطلبات التخرج في الفصل الصيفي من العام الدراسي 2025/2026.',
+        ], '<w:tbl>'.$rows.'</w:tbl>');
+    }
+
+    /**
      * A top-students decision: blocks of a full-width title row, a header row
      * and ranked students, with an empty full-width spacer row between two blocks.
      *
