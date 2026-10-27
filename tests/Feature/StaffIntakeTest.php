@@ -13,6 +13,7 @@ use App\Enums\PublicationStatus;
 use App\Filament\Resources\StaffIntakeLinkResource;
 use App\Filament\Resources\StaffIntakeLinkResource\Pages\ListStaffIntakeLinks;
 use App\Filament\Resources\StaffIntakeRequestResource;
+use App\Filament\Resources\StaffIntakeRequestResource\Pages\ListStaffIntakeRequests;
 use App\Filament\Resources\StaffIntakeRequestResource\Pages\ViewStaffIntakeRequest;
 use App\Mail\StaffIntakeSubmittedNotification;
 use App\Models\Faculty\Department;
@@ -453,6 +454,15 @@ final class StaffIntakeTest extends TestCase
             ->callAction('approve', ['target' => 'claimed'])
             ->assertNotified();
         $this->assertSame(StaffIntakeRequest::STATUS_APPROVED, $request->fresh()?->status);
+
+        // Approved requests can be listed per faculty, each with the profile it updated.
+        Livewire::test(ListStaffIntakeRequests::class)
+            ->filterTable('status', StaffIntakeRequest::STATUS_APPROVED)
+            ->filterTable('faculty_id', (string) $this->dentistry->getKey())
+            ->assertCanSeeTableRecords([$request])
+            ->assertSeeText('كريم إنتيك')
+            ->filterTable('faculty_id', (string) $this->pharmacy->getKey())
+            ->assertCanNotSeeTableRecords([$request]);
 
         // Another faculty's editor neither sees the request nor the links.
         $this->actingAs($this->user('faculty_editor', 'pharmacy'), 'web');
