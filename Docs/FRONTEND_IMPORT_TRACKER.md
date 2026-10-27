@@ -298,7 +298,7 @@ gate. Current status is tracked only in
 ## Faculty Leadership And Council - 2026-10-26
 
 - Not in the reference frontend; approved by the product owner on 2026-10-26. Plan and as-built notes: `Docs/FACULTY_LEADERSHIP_COUNCIL_PLAN.md`.
-- New subpage `/{locale}/faculties/{faculty}/council` for all seven faculties (CMS target `facilities.<faculty>.council`, draft/preview/publish, audit, cache, AR/EN), with a navigation card added to each faculty by migration `2026_10_26_000002`.
+- New subpage `/{locale}/faculties/{faculty}/council` for all seven faculties (CMS target `facilities.<faculty>.council`, draft/preview/publish, audit, cache, AR/EN), with a navigation card on each faculty, given in code to a faculty with no page row or card (`FacultyPageService::hasDefaultSubpage`), so no data migration is needed.
   - Faculty Leadership: the dean, vice deans and custom positions, each a profile picked from the faculty's academic staff.
   - Faculty Council: positions marked "on council", every department head from the published departments page, and extra members, one row per person with all their roles; the dean is the chair.
   - Before an editor publishes it, the page shows the faculty's dean from About › Leadership and the department heads.

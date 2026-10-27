@@ -10,11 +10,14 @@ use App\Contracts\Page\FacultyPageServiceInterface;
 use App\Enums\PublicationStatus;
 use App\Filament\Pages\ManageMedicineFaculty;
 use App\Models\Faculty\Faculty;
+use App\Models\Faculty\FacultyPage;
+use App\Models\Faculty\FacultySubpageCard;
 use App\Models\Person\FacultyMember;
 use App\Models\Person\Person;
 use App\Models\User\User;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Cache;
 use Livewire\Livewire;
 use Tests\TestCase;
 
@@ -71,6 +74,32 @@ final class FacultyCouncilTest extends TestCase
         $payload = app(FacultyPageServiceInterface::class)->getEditablePayload(self::TARGET);
         $this->assertSame((int) $dean->getKey(), $payload['translations']['ar']['positions'][0]['memberId']);
         $this->assertSame('dean', $payload['translations']['en']['positions'][0]['type']);
+    }
+
+    public function test_a_faculty_without_a_council_row_or_card_has_the_page_in_code(): void
+    {
+        // Live faculties have no council page row or card: no data migration adds them.
+        FacultyPage::query()->where('faculty_id', $this->faculty->getKey())->where('slug', 'council')->delete();
+        FacultySubpageCard::query()->where('faculty_slug', 'medicine')->where('subpage_slug', 'council')->delete();
+        Cache::flush();
+
+        $this->get('/en/faculties/medicine/council')->assertOk()->assertSee('Faculty Council');
+        $navigation = app(FacultyPageServiceInterface::class)->getFaculty('medicine', 'en')?->navigation->pluck('slug')->all() ?? [];
+        $this->assertSame('council', end($navigation));
+
+        // A card an editor hides keeps the page off.
+        FacultySubpageCard::query()->create([
+            'faculty_slug' => 'medicine',
+            'subpage_slug' => 'council',
+            'sort_order' => 99,
+            'is_visible' => false,
+            'status' => 'published',
+            'published_at' => now()->subDay(),
+        ]);
+        Cache::flush();
+
+        $this->get('/en/faculties/medicine/council')->assertNotFound();
+        $this->assertNotContains('council', app(FacultyPageServiceInterface::class)->getFaculty('medicine', 'en')?->navigation->pluck('slug')->all() ?? []);
     }
 
     public function test_the_published_council_lists_each_person_once_with_all_their_roles(): void

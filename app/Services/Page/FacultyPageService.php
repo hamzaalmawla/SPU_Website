@@ -71,6 +71,9 @@ final class FacultyPageService implements FacultyPageServiceInterface
     /** A specialization teaches a study plan program; a section has no study plan. */
     private const DEPARTMENT_TYPES = ['specialization', 'section'];
 
+    /** Subpages every faculty has even without a page row or card (see hasDefaultSubpage). */
+    private const DEFAULT_SUBPAGES = ['final-exams', 'council'];
+
     private const SUBPAGE_SLUGS = ['overview', 'departments', 'study-plan', 'study-plan-course', 'labs', 'projects', 'alumni', 'valedictorians', 'training', 'clinical-cases', 'final-exams', 'research', 'members', 'council'];
 
     private const ALUMNI_LIST_PER_PAGE = 12;
@@ -1013,19 +1016,19 @@ final class FacultyPageService implements FacultyPageServiceInterface
                 ->map(fn (FacultyPage $page): array => ['slug' => (string) $page->slug, 'title' => null]);
         }
 
-        // A faculty with neither a page nor a card for its final exams still
-        // has one: it comes last.
-        $examsByDefault = $this->hasDefaultFinalExamsPage($faculty);
+        // A faculty with neither a page nor a card for its final exams or its
+        // council still has them: they come last.
+        $defaultSlugs = array_values(array_filter(self::DEFAULT_SUBPAGES, fn (string $subpageSlug): bool => $this->hasDefaultSubpage($faculty, $subpageSlug)));
 
-        if ($examsByDefault) {
-            $entries = $entries->push(['slug' => 'final-exams', 'title' => null]);
+        foreach ($defaultSlugs as $defaultSlug) {
+            $entries = $entries->push(['slug' => $defaultSlug, 'title' => null]);
         }
 
         // Only subpages that are enabled and have a public route: a card for
         // anything else (the course-lessons view, a custom page) would 404.
         // The final exams card waits until a schedule is published.
         return $entries
-            ->filter(fn (array $entry): bool => array_key_exists($entry['slug'], $labels) && ($pages->has($entry['slug']) || ($entry['slug'] === 'final-exams' && $examsByDefault)))
+            ->filter(fn (array $entry): bool => array_key_exists($entry['slug'], $labels) && ($pages->has($entry['slug']) || in_array($entry['slug'], $defaultSlugs, true)))
             ->filter(fn (array $entry): bool => $entry['slug'] !== 'final-exams' || $this->hasPublishedExamSchedule($faculty, $locale))
             ->unique('slug')
             ->map(fn (array $entry): FacultyNavigationItemDTO => new FacultyNavigationItemDTO(
@@ -1038,17 +1041,20 @@ final class FacultyPageService implements FacultyPageServiceInterface
     }
 
     /**
-     * Every faculty publishes a final exam schedule. Faculties whose old site
-     * had none got no page or card for it; they have the page anyway. One an
-     * editor switched off (a disabled page or a hidden card) stays off.
+     * Every faculty publishes a final exam schedule and has a council page.
+     * Faculties that have no page row or card for one (the old site had no
+     * exam schedule for some; the council page is new) have it anyway, which
+     * needs no data migration. One an editor switched off (a disabled page or
+     * a hidden card) stays off.
      */
-    private function hasDefaultFinalExamsPage(Faculty $faculty): bool
+    private function hasDefaultSubpage(Faculty $faculty, string $subpageSlug): bool
     {
         $slug = $this->publicSlug($faculty);
 
-        return $this->facultyMayUseSubpage($slug, 'final-exams')
-            && ! $this->subpageCardService->cardExists($slug, 'final-exams')
-            && ! FacultyPage::query()->where('faculty_id', $faculty->getKey())->where('slug', 'final-exams')->exists();
+        return in_array($subpageSlug, self::DEFAULT_SUBPAGES, true)
+            && $this->facultyMayUseSubpage($slug, $subpageSlug)
+            && ! $this->subpageCardService->cardExists($slug, $subpageSlug)
+            && ! FacultyPage::query()->where('faculty_id', $faculty->getKey())->where('slug', $subpageSlug)->exists();
     }
 
     /**
@@ -2737,7 +2743,7 @@ final class FacultyPageService implements FacultyPageServiceInterface
             return false;
         }
 
-        if ($subpageSlug === 'final-exams' && $this->hasDefaultFinalExamsPage($faculty)) {
+        if ($this->hasDefaultSubpage($faculty, $subpageSlug)) {
             return true;
         }
 
