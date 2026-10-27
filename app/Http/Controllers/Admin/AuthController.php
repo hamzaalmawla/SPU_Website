@@ -10,7 +10,7 @@ use App\Http\Requests\Auth\LoginRequest;
 use App\Support\AdminPath;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\View\View;
+use Illuminate\Http\Response;
 
 /**
  * Handles admin authentication entry points.
@@ -21,9 +21,13 @@ final class AuthController extends Controller
         private readonly AuthServiceInterface $authService,
     ) {}
 
-    public function create(): View
+    public function create(): Response
     {
-        return view('admin.auth.login');
+        // no-store: a phone showing this page again from a background tab must
+        // fetch it, or it posts a token from a session that has since expired.
+        return response()
+            ->view('admin.auth.login')
+            ->header('Cache-Control', 'no-store, private');
     }
 
     public function switchLocale(Request $request, string $locale): RedirectResponse
