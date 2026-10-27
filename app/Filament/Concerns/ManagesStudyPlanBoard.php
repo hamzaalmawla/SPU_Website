@@ -409,14 +409,15 @@ trait ManagesStudyPlanBoard
             return false;
         }
 
+        // 12 MB is the most Livewire's temporary upload accepts, so a bigger PDF never gets here.
         $rules = [];
         $attributes = [];
         if ($this->lectureUploads !== []) {
-            $rules['lectureUploads.*'] = ['file', 'mimes:pdf', 'max:20480'];
+            $rules['lectureUploads.*'] = ['file', 'mimes:pdf', 'max:12288'];
             $attributes['lectureUploads.*'] = __('admin.faculty_workspace.board.lecture_file');
         }
         if ($this->specificationUpload instanceof TemporaryUploadedFile) {
-            $rules['specificationUpload'] = ['file', 'mimes:pdf', 'max:20480'];
+            $rules['specificationUpload'] = ['file', 'mimes:pdf', 'max:12288'];
             $attributes['specificationUpload'] = __('admin.faculty_workspace.board.specification_file');
         }
         $this->validate($rules, [], $attributes);

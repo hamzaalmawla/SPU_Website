@@ -214,12 +214,15 @@
                                 <p class="spu-board-hint">{{ $t('none_yet') }}</p>
                             @endforelse
 
-                            <div class="spu-board-upload">
+                            {{-- The browser sends the files as soon as they are picked; the course is saved with them the moment the last one arrives. --}}
+                            <div class="spu-board-upload" x-data="{ progress: null }" x-on:livewire-upload-start="progress = 0" x-on:livewire-upload-progress="progress = $event.detail.progress" x-on:livewire-upload-error="progress = null" x-on:livewire-upload-cancel="progress = null" x-on:livewire-upload-finish="progress = null; $wire.uploadBoardLectures()">
                                 <input type="file" multiple accept="application/pdf,.pdf" wire:model="lectureUploads" aria-label="{{ $t('lecture_file') }}">
+                                <p class="spu-board-hint">{{ $t('pdf_limit') }}</p>
                                 @error('lectureUploads.*')<p class="spu-board-error">{{ $message }}</p>@enderror
                                 <button type="button" class="spu-board__btn" wire:click="uploadBoardLectures" wire:loading.attr="disabled" wire:target="lectureUploads,uploadBoardLectures">
-                                    <span wire:loading.remove wire:target="uploadBoardLectures">{{ $t('upload_lectures') }}@if ($this->lectureUploads !== []) ({{ count($this->lectureUploads) }})@endif</span>
-                                    <span wire:loading wire:target="lectureUploads,uploadBoardLectures">{{ $t('uploading') }}</span>
+                                    <span wire:loading.remove wire:target="lectureUploads,uploadBoardLectures">{{ $t('upload_lectures') }}@if ($this->lectureUploads !== []) ({{ count($this->lectureUploads) }})@endif</span>
+                                    <span wire:loading wire:target="lectureUploads" x-text="@js($t('uploading_percent')).replace(':percent', progress ?? 0)">{{ $t('uploading') }}</span>
+                                    <span wire:loading wire:target="uploadBoardLectures">{{ $t('saving_files') }}</span>
                                 </button>
                             </div>
                         @endif
@@ -244,12 +247,14 @@
                                 <p class="spu-board-hint">{{ $t('specification_none') }}</p>
                             @endif
 
-                            <div class="spu-board-upload">
+                            <div class="spu-board-upload" x-data="{ progress: null }" x-on:livewire-upload-start="progress = 0" x-on:livewire-upload-progress="progress = $event.detail.progress" x-on:livewire-upload-error="progress = null" x-on:livewire-upload-cancel="progress = null" x-on:livewire-upload-finish="progress = null; $wire.uploadBoardSpecification()">
                                 <input type="file" accept="application/pdf,.pdf" wire:model="specificationUpload" aria-label="{{ $t('specification_file') }}">
+                                <p class="spu-board-hint">{{ $t('pdf_limit') }}</p>
                                 @error('specificationUpload')<p class="spu-board-error">{{ $message }}</p>@enderror
                                 <button type="button" class="spu-board__btn" wire:click="uploadBoardSpecification" wire:loading.attr="disabled" wire:target="specificationUpload,uploadBoardSpecification">
-                                    <span wire:loading.remove wire:target="uploadBoardSpecification">{{ ($course['specificationUrl'] ?? '') !== '' ? $t('replace_specification') : $t('upload_specification') }}</span>
-                                    <span wire:loading wire:target="specificationUpload,uploadBoardSpecification">{{ $t('uploading') }}</span>
+                                    <span wire:loading.remove wire:target="specificationUpload,uploadBoardSpecification">{{ ($course['specificationUrl'] ?? '') !== '' ? $t('replace_specification') : $t('upload_specification') }}</span>
+                                    <span wire:loading wire:target="specificationUpload" x-text="@js($t('uploading_percent')).replace(':percent', progress ?? 0)">{{ $t('uploading') }}</span>
+                                    <span wire:loading wire:target="uploadBoardSpecification">{{ $t('saving_files') }}</span>
                                 </button>
                             </div>
                         @endif
