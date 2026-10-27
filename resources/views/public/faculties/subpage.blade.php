@@ -531,10 +531,12 @@
                                 @if (! empty($item['image']))
                                     <img src="{{ $item['image'] }}" alt="{{ $item['title'] ?? '' }}" class="content-media-image h-full w-full">
                                 @endif
-                                <div class="honor-card__gpa">
-                                    <span>{{ $isAr ? 'المعدل' : 'GPA' }}</span>
-                                    <span dir="ltr">{{ $item['gpa'] ?? '' }}</span>
-                                </div>
+                                @if (filled($item['gpa'] ?? null))
+                                    <div class="honor-card__gpa">
+                                        <span>{{ $isAr ? 'المعدل' : 'GPA' }}</span>
+                                        <span dir="ltr">{{ $item['gpa'] }}</span>
+                                    </div>
+                                @endif
                             </div>
                             <div class="honor-card__body" @if ($isMemorial) style="position: relative; overflow: hidden;" @endif>
                                 @if ($isMemorial)

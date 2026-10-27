@@ -1328,9 +1328,9 @@ return [
                 'academic_phase_ar' => 'Academic phase (Arabic)',
             ],
             'help' => [
+                'exam_schedules' => 'Add one entry per semester and upload its PDF; you can also enter the schedule as a table. Put the newest first. The final exam card shows on the faculty pages once a semester with a file or table is published.',
                 'council' => 'Pick the dean, the vice deans and any other position from this faculty\'s academic staff only, once for both languages. One person can hold several positions. The dean published here is the dean shown on About › Leadership and in the dean\'s message. Leave a title empty to use the default (Dean, Vice Dean).',
                 'include_department_heads' => 'Each department head on the published departments page joins the council.',
-                'exam_schedules' => 'One entry per semester: its PDF and, if wanted, the schedule as a table. Put the newest first.',
                 'study_plan_link' => 'The study plan program this specialization teaches; it shows a Study Plan button.',
                 'department_type' => 'A specialization has a study plan. A section (such as Basic Sciences) has no study plan and shows no Study Plan button.',
                 'department_head' => 'Optional. Lists this faculty\'s academic staff only; the page shows the head\'s name and photo from their profile. Department heads join the Faculty Council automatically.',

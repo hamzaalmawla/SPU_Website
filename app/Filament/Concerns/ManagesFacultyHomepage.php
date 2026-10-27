@@ -939,10 +939,10 @@ trait ManagesFacultyHomepage
                             ->label(__('admin.faculty_workspace.editor.fields.files'))
                             ->schema([
                                 TextInput::make('label')->label(__('admin.faculty_workspace.editor.fields.action_label'))->maxLength(180),
-                                TextInput::make('url')->label(__('admin.faculty_workspace.editor.fields.file_url'))->required()->maxLength(500)->rule('regex:#^(/|https://)#'),
+                                MediaPicker::document('url', __('admin.faculty_workspace.editor.fields.document_file'), true),
                             ])
                             ->columns(2)
-                            ->defaultItems(0)
+                            ->defaultItems(1)
                             ->reorderable()
                             ->columnSpanFull(),
                         Repeater::make('rows')

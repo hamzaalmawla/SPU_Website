@@ -114,40 +114,93 @@ final class DecisionListParser
         $rows = [];
 
         foreach ($document['tables'] as $table) {
-            $columns = null;
-            $block = ['studyYear' => null, 'specialization' => null, 'title' => null];
+            $grid = array_map(self::expand(...), $table);
 
-            foreach ($table as $row) {
-                $cells = self::expand($row);
-                $filled = array_values(array_filter($cells, static fn (string $text): bool => $text !== ''));
+            foreach (self::columnGroups($grid) as [$start, $length]) {
+                $columns = null;
+                $block = ['studyYear' => null, 'specialization' => null, 'semester' => null, 'title' => null];
 
-                if ($filled === []) {
-                    continue;
+                foreach ($grid as $row) {
+                    $cells = array_slice(array_pad($row, $start + $length, ''), $start, $length);
+                    $filled = array_values(array_unique(array_filter(array_map('trim', $cells), static fn (string $text): bool => $text !== '')));
+
+                    if ($filled === []) {
+                        continue;
+                    }
+
+                    if (self::rowHas($cells, 'الرقم الجامعي')) {
+                        $columns = self::columns([$cells], self::TOP_STUDENT_COLUMNS);
+
+                        continue;
+                    }
+
+                    // A title row is one (spanned) text across the block, never a student.
+                    if (count($filled) === 1 && ! self::looksLikeStudentRow($cells) && ! ctype_digit(self::latinDigits($filled[0]))) {
+                        $block = self::block($filled[0]);
+                        $columns = null;
+
+                        continue;
+                    }
+
+                    if ($columns === null) {
+                        continue;
+                    }
+
+                    $rows[] = self::topStudentRow($cells, $columns, $block, count($rows) + 1);
                 }
-
-                // A title row is one cell spanning the whole table.
-                if (count($row) === 1 && ($row[0]['span'] ?? 1) > 1) {
-                    $block = self::block($filled[0]);
-                    $columns = null;
-
-                    continue;
-                }
-
-                if (self::rowHas($cells, 'الرقم الجامعي')) {
-                    $columns = self::columns([$cells], self::TOP_STUDENT_COLUMNS);
-
-                    continue;
-                }
-
-                if ($columns === null) {
-                    continue;
-                }
-
-                $rows[] = self::topStudentRow($cells, $columns, $block, count($rows) + 1);
             }
         }
 
+        // Blocks that name their semester ("السنة الأولى (الفصل الأول)") are more
+        // precise than the decision text, which may name both semesters.
+        $rowSemesters = array_values(array_filter(array_column($rows, 'semester')));
+        if ($rowSemesters !== []) {
+            $meta['semester'] = self::mostCommon($rowSemesters);
+        }
+
         return ['meta' => $meta, 'rows' => $rows];
+    }
+
+    /**
+     * The column ranges of the student blocks in a top-students table. Most
+     * decisions have one block across the table; some put two side by side
+     * (first semester on the right, second on the left), each with its own
+     * header. A block starts as many columns before its ID column as the
+     * first block does (the rank column).
+     *
+     * @param  list<list<string>>  $grid
+     * @return list<array{int, int}> [first column, width]
+     */
+    private static function columnGroups(array $grid): array
+    {
+        $keyword = SearchTextNormalizer::normalize('الرقم الجامعي');
+
+        foreach ($grid as $cells) {
+            $idColumns = [];
+            foreach ($cells as $index => $cell) {
+                if (str_contains(SearchTextNormalizer::normalize($cell), $keyword)) {
+                    $idColumns[] = $index;
+                }
+            }
+
+            if ($idColumns === []) {
+                continue;
+            }
+
+            $offset = $idColumns[0];
+            $width = max(array_map('count', $grid));
+            $starts = array_map(static fn (int $column): int => max(0, $column - $offset), $idColumns);
+            $groups = [];
+
+            foreach ($starts as $index => $start) {
+                $end = $starts[$index + 1] ?? $width;
+                $groups[] = [$start, $end - $start];
+            }
+
+            return $groups;
+        }
+
+        return [];
     }
 
     /**
@@ -190,6 +243,22 @@ final class DecisionListParser
 
         foreach ($matches as $match) {
             if ((int) $match[2] === (int) $match[1] + 1) {
+                return $match[1].'/'.$match[2];
+            }
+        }
+
+        return null;
+    }
+
+    /** "2025/2026" from a file name, where the years may run together ("20252026"). */
+    public static function academicYearInName(string $name): ?string
+    {
+        if (preg_match_all('/(?<!\d)(\d{4})\D{0,3}(\d{4})(?!\d)/u', self::latinDigits($name), $matches, PREG_SET_ORDER) === false) {
+            return null;
+        }
+
+        foreach ($matches as $match) {
+            if ((int) $match[2] === (int) $match[1] + 1 && (int) $match[1] >= 2000) {
                 return $match[1].'/'.$match[2];
             }
         }
@@ -265,7 +334,7 @@ final class DecisionListParser
     /**
      * @param  list<string>  $cells
      * @param  array<string, int>  $columns
-     * @param  array{studyYear: ?int, specialization: ?string, title: ?string}  $block
+     * @param  array{studyYear: ?int, specialization: ?string, semester: ?string, title: ?string}  $block
      * @return array<string, mixed>
      */
     private static function topStudentRow(array $cells, array $columns, array $block, int $line): array
@@ -285,7 +354,8 @@ final class DecisionListParser
         if ($name === '') {
             $issues[] = 'missing_name';
         }
-        if ($gpa === null) {
+        // Some decisions list the top students by rank without their GPA.
+        if ($gpa === null && $value('gpa') !== '') {
             $issues[] = 'bad_gpa';
         }
         if ($block['studyYear'] === null) {
@@ -300,12 +370,13 @@ final class DecisionListParser
             'gpa' => $gpa,
             'rank' => $rank,
             'studyYear' => $block['studyYear'],
+            'semester' => $block['semester'],
             'blockTitle' => $block['title'],
             'issues' => $issues,
         ];
     }
 
-    /** @return array{studyYear: ?int, specialization: ?string, title: string} */
+    /** @return array{studyYear: ?int, specialization: ?string, semester: ?string, title: string} */
     private static function block(string $title): array
     {
         $normalized = SearchTextNormalizer::normalize($title);
@@ -325,7 +396,11 @@ final class DecisionListParser
         $parts = preg_split('/\s*[\/\\\\]\s*/u', $title, 2) ?: [];
         $specialization = isset($parts[1]) && trim($parts[1]) !== '' ? trim($parts[1]) : null;
 
-        return ['studyYear' => $studyYear, 'specialization' => $specialization, 'title' => $title];
+        // Only the words after "فصل": the year name ("السنة الثانية") would read as a semester.
+        $semesterAt = mb_strpos($normalized, 'فصل');
+        $semester = $semesterAt !== false ? AcademicSemester::fromArabic(mb_substr($normalized, $semesterAt))?->value : null;
+
+        return ['studyYear' => $studyYear, 'specialization' => $specialization, 'semester' => $semester, 'title' => $title];
     }
 
     /**

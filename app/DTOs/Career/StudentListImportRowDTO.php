@@ -32,5 +32,7 @@ final readonly class StudentListImportRowDTO
         public ?int $rank = null,
         public ?int $studyYear = null,
         public ?string $possibleDuplicate = null,
+        // A top student's own semester when the decision lists several; null means the import's.
+        public ?string $semester = null,
     ) {}
 }

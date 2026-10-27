@@ -151,6 +151,54 @@ final class StudentListImportTest extends TestCase
             ->assertDontSee('نادر سليم الأحمد');
     }
 
+    public function test_the_faculty_degree_gets_no_department_and_earlier_imports_are_repaired(): void
+    {
+        $facultyName = (string) $this->faculty->translations()->where('locale', 'ar')->value('name');
+        $degree = 'دكتور في '.preg_replace('/^كلية\s+/u', '', $facultyName);
+        $students = array_map(fn (array $student): array => ['specialization' => $degree] + $student, $this->graduates());
+        $path = $this->upload('graduates.docx', fn (string $file): string => DecisionDocxFactory::graduates($file, $students));
+
+        // As it was before the fix: an editor confirmed a department for the degree.
+        $wrong = $this->imports->import(self::FACULTY, 'alumni', $path, 'graduates.docx', new StudentListImportChoicesDTO('2025/2026', 'second', [$degree => (int) $this->software->getKey()]), $this->editor);
+        $this->assertSame(3, Alumni::query()->where('student_list_import_id', $wrong->importId)->where('department_id', $this->software->getKey())->count());
+
+        // A new preview neither reuses that choice nor asks for one.
+        $path = $this->upload('graduates.docx', fn (string $file): string => DecisionDocxFactory::graduates($file, $students));
+        $preview = $this->imports->preview(self::FACULTY, 'alumni', $path, 'graduates.docx');
+        $this->assertNull($preview->specializations[0]->departmentId);
+        $this->assertFalse($preview->specializations[0]->needsChoice);
+        $this->assertNotContains('departments_need_choice', $preview->warnings);
+
+        $this->assertCount(1, $this->imports->repairFacultyWideDepartments(false));
+        $this->assertSame(3, Alumni::query()->where('department_id', $this->software->getKey())->count());
+
+        $this->assertCount(1, $this->imports->repairFacultyWideDepartments(true));
+        $this->assertSame(3, Alumni::query()->where('student_list_import_id', $wrong->importId)->whereNull('department_id')->count());
+        $this->assertSame([], $this->imports->repairFacultyWideDepartments(false));
+    }
+
+    public function test_top_students_of_two_semesters_side_by_side_are_imported(): void
+    {
+        $path = $this->upload('top-20252026.docx', fn (string $file): string => DecisionDocxFactory::topStudentsSideBySide($file, [
+            'السنة الأولى( الفصل الأول )' => [['id' => '2250013', 'name' => 'محمد عدنان الطعمه'], ['id' => '2250079', 'name' => 'مسك خلدون العدوي']],
+        ], [
+            'السنة الأولى( الفصل الثاني )' => [['id' => '2250081', 'name' => 'انتصار عبد الحميد الخليلي'], ['id' => '2250013', 'name' => 'محمد عدنان الطعمه']],
+        ]));
+
+        $preview = $this->imports->preview(self::FACULTY, 'honor_students', $path, 'top 20252026.docx');
+        $this->assertSame(['2025/2026', 4, 0], [$preview->academicYear, $preview->createCount, $preview->skipCount]);
+
+        $result = $this->imports->import(self::FACULTY, 'honor_students', $path, 'top 20252026.docx', $this->choices(), $this->editor);
+
+        $this->assertSame(4, $result->created);
+        $this->assertSame(['first', 'second'], HonorStudent::query()->where('student_identifier', '2250013')->orderBy('semester')->pluck('semester')->all());
+        $this->assertNull(HonorStudent::query()->where('student_identifier', '2250079')->value('gpa'));
+
+        $this->get('/ar/faculties/'.self::FACULTY.'/valedictorians?semester=first&q=مسك')
+            ->assertOk()
+            ->assertSee('مسك خلدون العدوي');
+    }
+
     public function test_imported_students_appear_even_when_an_editor_published_the_list(): void
     {
         $workflow = app(CmsWorkflowServiceInterface::class);

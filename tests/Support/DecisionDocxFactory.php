@@ -100,6 +100,41 @@ final class DecisionDocxFactory
     }
 
     /**
+     * A top-students list with two semesters side by side, as Dentistry sends
+     * it: each half has its own year titles ("السنة الأولى (الفصل الأول)"),
+     * headers and ranked students, no GPA, and the halves drift out of step
+     * when one has more students.
+     *
+     * @param  array<string, list<array{id: string, name: string}>>  $first  block title => students
+     * @param  array<string, list<array{id: string, name: string}>>  $second
+     */
+    public static function topStudentsSideBySide(string $path, array $first, array $second): string
+    {
+        $half = static function (array $blocks): array {
+            $rows = [];
+            foreach ($blocks as $title => $students) {
+                $rows[] = self::cell('').self::cell($title, span: 2);
+                $rows[] = self::cell('ت').self::cell('الرقم الجامعي').self::cell('اسم الطالب');
+                foreach ($students as $index => $student) {
+                    $rows[] = self::cell((string) ($index + 1)).self::cell($student['id']).self::cell($student['name']);
+                }
+            }
+
+            return $rows;
+        };
+
+        $left = $half($first);
+        $right = $half($second);
+        $empty = self::cell('').self::cell('').self::cell('');
+        $rows = '';
+        for ($i = 0; $i < max(count($left), count($right)); $i++) {
+            $rows .= self::row(($left[$i] ?? $empty).($right[$i] ?? $empty));
+        }
+
+        return self::write($path, ['نرفق لكم جدول الخريجين الأوائل للفصل الأول والثاني :'], '<w:tbl>'.$rows.'</w:tbl>', ['عميد الكلية']);
+    }
+
+    /**
      * @param  list<string>  $before
      * @param  list<string>  $after
      */

@@ -839,6 +839,30 @@ if [[ -f "${PEOPLE_MERGE_APPROVAL}" ]]; then
     mv "${PEOPLE_MERGE_APPROVAL}" "${PEOPLE_MERGE_APPROVAL}.consumed-$(date -u +%Y%m%d-%H%M%S)"
 fi
 
+# ── Student list department repair ──────────────────────────────────────────
+# Graduates imported before 2026-10-27 whose decision printed the faculty's own
+# degree ("دكتور في طب الأسنان") were put in a department that shared its words
+# (Dentistry: pediatric dentistry). This clears that department on the rows of
+# those imports only. The dry run is in every deploy log; the write is inert
+# unless a human places an approval file not in git:
+#
+#     storage/app/private/legacy-imports/student-list-departments.approved
+#
+# It disarms itself after one run.
+STUDENT_LIST_DEPARTMENTS_APPROVAL="${IMPORT_DIR}/student-list-departments.approved"
+
+log "Student list department repair dry run"
+(cd "${APP}" && "${PHP}" artisan student-lists:repair-departments --no-ansi) \
+    || printf '  The student list department dry run failed; nothing was changed.\n'
+
+if [[ -f "${STUDENT_LIST_DEPARTMENTS_APPROVAL}" ]]; then
+    log "Student list department repair"
+    (cd "${APP}" && "${PHP}" artisan student-lists:repair-departments --write --no-ansi) \
+        || fail "The student list department repair failed."
+
+    mv "${STUDENT_LIST_DEPARTMENTS_APPROVAL}" "${STUDENT_LIST_DEPARTMENTS_APPROVAL}.consumed-$(date -u +%Y%m%d-%H%M%S)"
+fi
+
 # ── Approved people unify (one profile per person) ──────────────────────────
 # Ties every leadership row (dean, rector, ...) to the faculty profile of the
 # same person, which becomes the one place their name, photo and bio live. It
