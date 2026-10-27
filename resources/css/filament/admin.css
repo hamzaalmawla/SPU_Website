@@ -618,6 +618,18 @@
     text-underline-offset: 0.2rem;
 }
 
+/* Filament keeps the header's actions row from shrinking, so pages with many
+   actions ran off the screen. Let it shrink and wrap its buttons instead. */
+.fi-header>div:last-child:not(:first-child) {
+    flex: 1 1 0%;
+    min-width: 0;
+    justify-content: flex-end;
+}
+
+.fi-header>div:last-child:not(:first-child)>.fi-ac {
+    justify-content: flex-end;
+}
+
 .fi-header-actions,
 .fi-form-actions,
 .fi-modal-footer-actions {
