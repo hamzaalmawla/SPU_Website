@@ -11,6 +11,7 @@
         <input id="{{ $fieldId }}" name="{{ $name }}" type="{{ $type ?? 'text' }}" value="{{ old($name, $value) }}" maxlength="{{ $max ?? 255 }}"
             @if (! empty($required)) required aria-required="true" @endif @if ($fieldDir) dir="{{ $fieldDir }}" @endif
             @if (! empty($autocomplete)) autocomplete="{{ $autocomplete }}" @endif
+            @if (! empty($inputmode)) inputmode="{{ $inputmode }}" autocapitalize="off" spellcheck="false" @endif
             aria-invalid="{{ $errors->has($name) ? 'true' : 'false' }}" @if ($errors->has($name) || ! empty($hint)) aria-describedby="{{ $errors->has($name) ? $fieldId.'-error' : $fieldId.'-hint' }}" @endif
             class="w-full rounded-lg border border-slate-300 px-3 py-2 outline-none focus:border-spu-blue focus:ring-4 focus:ring-spu-blue/10">
     @endif

@@ -22,12 +22,21 @@ final class StaffIntakeSubmitRequest extends FormRequest
         return true;
     }
 
-    /** Arabic keyboards type ٠١٢…, which the phone and year rules would refuse. */
+    /**
+     * Arabic keyboards type ٠١٢…, which the phone and year rules would refuse,
+     * and teachers type links without https://, which the url rule would.
+     */
     protected function prepareForValidation(): void
     {
         $normalized = [];
         if (is_string($this->input('phone'))) {
             $normalized['phone'] = trim(strtr($this->input('phone'), self::EASTERN_DIGITS));
+        }
+
+        foreach (StaffIntakeFields::LINKS as $link) {
+            if (is_string($this->input($link))) {
+                $normalized[$link] = StaffIntakeFields::link($link, $this->input($link));
+            }
         }
 
         $educations = $this->input('educations');

@@ -513,6 +513,36 @@ trailer << /Root 1 0 R >>
         $this->assertTrue(StaffIntakeAccessLog::query()->where('event', 'started_new')->exists());
     }
 
+    public function test_links_typed_without_https_are_completed_instead_of_blocking_the_form(): void
+    {
+        $token = $this->token($this->link());
+        $ref = $this->newRef($token, 'Rana Links');
+        $form = (string) $this->get('/en/staff-intake/'.$token.'/form?name=Rana+Links')->assertOk()->getContent();
+        // type="url" made the browser refuse to send the form with a bubble phones barely show.
+        $this->assertStringNotContainsString('type="url"', $form);
+
+        $this->post('/en/staff-intake/'.$token.'/form', $this->formData($ref, [
+            'name_ar' => 'رنا روابط',
+            'name_en' => 'Rana Links',
+            'linkedin' => 'www.linkedin.com/in/rana',
+            'orcid' => '0000-0002-1825-009x',
+            'scopus' => 'scopus.com/authid/detail.uri?authorId=123',
+            'researchgate' => ' https://www.researchgate.net/profile/Rana ',
+            'scholar' => '',
+            'twitter' => '@rana_links',
+        ]))->assertRedirect('/en/staff-intake/'.$token.'/sent');
+
+        $fields = StaffIntakeRequest::query()->sole()->payload['fields'];
+        $this->assertSame([
+            'https://www.linkedin.com/in/rana',
+            'https://orcid.org/0000-0002-1825-009X',
+            'https://scopus.com/authid/detail.uri?authorId=123',
+            'https://www.researchgate.net/profile/Rana',
+            null,
+            'https://x.com/rana_links',
+        ], [$fields['linkedin'], $fields['orcid'], $fields['scopus'], $fields['researchgate'], $fields['scholar'], $fields['twitter']]);
+    }
+
     public function test_a_profile_that_already_has_a_photo_and_cv_need_not_send_them_again(): void
     {
         $member = $this->member('huda-files', 'هدى ملفات', 'Huda Files', $this->dentistry, 'huda@spu.edu.sy');

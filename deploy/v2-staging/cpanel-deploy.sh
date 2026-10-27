@@ -1600,7 +1600,7 @@ log "CMS content status"
 # Where staff intake requests are, per link, and where the reference a teacher
 # was shown landed. Read-only; no names.
 log "Staff intake status"
-(cd "${APP}" && "${PHP}" artisan staff-intake:status --reference=ST-0C0M6Q2J --no-ansi) || \
+(cd "${APP}" && "${PHP}" artisan staff-intake:status --reference=ST-OCOM6Q2J --no-ansi) || \
     printf '   (staff-intake:status unavailable in this release)\n'
 
 # Researchers, faculty members and people that look like the same person, so
