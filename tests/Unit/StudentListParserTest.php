@@ -80,6 +80,20 @@ final class StudentListParserTest extends TestCase
         $this->assertSame(['bad_gpa', 'bad_grade'], $rows[2]['issues']);
     }
 
+    public function test_a_gpa_with_invisible_marks_or_an_arabic_comma_is_read(): void
+    {
+        $students = $this->graduates();
+        $students[0]['percent'] = "69.27\u{200F}";
+        $students[1]['percent'] = "\u{00A0}٦٩٫٢٧ %";
+        $students[2]['percent'] = '69،27';
+        DecisionDocxFactory::graduates($this->path, $students);
+
+        $rows = DecisionListParser::graduates(DocxTableReader::read($this->path))['rows'];
+
+        $this->assertSame([69.27, 69.27, 69.27], array_column($rows, 'gpaPercent'));
+        $this->assertSame([[], [], []], array_column($rows, 'issues'));
+    }
+
     public function test_it_reads_top_student_blocks_and_skips_spacers(): void
     {
         DecisionDocxFactory::topStudents($this->path, [

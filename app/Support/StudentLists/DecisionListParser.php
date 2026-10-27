@@ -500,7 +500,10 @@ final class DecisionListParser
 
     private static function number(string $value, float $min, float $max): ?float
     {
-        $value = str_replace([' ', '%', ','], ['', '', '.'], self::latinDigits(trim($value)));
+        // Word cells often carry invisible direction marks or non-breaking spaces
+        // around a number ("69.27" + U+200F), and some write the decimal as "،".
+        $value = (string) preg_replace('/[\p{Cf}\p{Z}\s%]+/u', '', self::latinDigits($value));
+        $value = str_replace([',', '،'], '.', $value);
 
         if ($value === '' || ! is_numeric($value)) {
             return null;
