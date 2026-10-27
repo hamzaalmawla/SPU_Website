@@ -33,6 +33,7 @@ return [
         'code_placeholder' => '6-digit code or recovery code',
         'verify' => 'Verify and continue',
         'two_factor_note' => 'This challenge protects privileged content and publishing actions.',
+        'session_expired' => 'Your session expired while this page was open. Please sign in again.',
     ],
     'menu' => [
         'navigation' => ':group Navigation',

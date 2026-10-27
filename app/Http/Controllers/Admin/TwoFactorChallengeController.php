@@ -14,7 +14,7 @@ use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Auth\Factory as AuthFactory;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\View\View;
+use Illuminate\Http\Response;
 
 /**
  * Handles the 2FA TOTP challenge during admin login.
@@ -34,7 +34,7 @@ final class TwoFactorChallengeController extends Controller
     /**
      * Show the 2FA challenge form.
      */
-    public function create(Request $request): View|RedirectResponse
+    public function create(Request $request): Response|RedirectResponse
     {
         $user = $this->resolveUser();
 
@@ -49,7 +49,10 @@ final class TwoFactorChallengeController extends Controller
             return redirect(AdminPath::url());
         }
 
-        return view('admin.auth.two-factor-challenge');
+        // no-store, like the sign-in page: never reshown with a stale token.
+        return response()
+            ->view('admin.auth.two-factor-challenge')
+            ->header('Cache-Control', 'no-store, private');
     }
 
     /**
