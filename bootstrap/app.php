@@ -13,6 +13,7 @@ use App\Http\Middleware\SecurityHeadersMiddleware;
 use App\Http\Middleware\StaffIntakeHeaders;
 use App\Http\Middleware\TwoFactorChallengeMiddleware;
 use App\Http\Middleware\VerifyWebhookSignature;
+use App\Support\ExpiredAdminForm;
 use App\Support\PageExpiredDiagnostics;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -73,6 +74,12 @@ return Application::configure(basePath: dirname(__DIR__))
             PageExpiredDiagnostics::csrfMismatch(request());
 
             return false;
+        });
+
+        // A stale admin form (sign-in, two-factor, language, logout) goes back
+        // to its page with a fresh token instead of the dead-end 419 page.
+        $exceptions->render(function (HttpExceptionInterface $e, Request $request): ?Response {
+            return $e->getStatusCode() === 419 ? ExpiredAdminForm::redirect($request) : null;
         });
 
         // Branded, bilingual error pages.
