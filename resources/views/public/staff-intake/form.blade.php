@@ -85,8 +85,9 @@
             <fieldset class="space-y-4">
                 <legend class="mb-2 text-lg font-bold text-spu-blue">{{ __('staff_intake.public.section_links', [], $locale) }}</legend>
                 <div class="grid gap-4 sm:grid-cols-2">
+                    {{-- Plain text, not type="url": the browser refused "orcid.org/…" or an old link without https:// with a bubble phones barely show. The server completes and checks them. --}}
                     @foreach (['linkedin', 'orcid', 'scopus', 'researchgate', 'scholar', 'twitter'] as $linkField)
-                        @include('public.staff-intake.field', ['name' => $linkField, 'value' => $fields[$linkField], 'type' => 'url', 'dir' => 'ltr'])
+                        @include('public.staff-intake.field', ['name' => $linkField, 'value' => $fields[$linkField], 'dir' => 'ltr', 'inputmode' => 'url'])
                     @endforeach
                 </div>
             </fieldset>

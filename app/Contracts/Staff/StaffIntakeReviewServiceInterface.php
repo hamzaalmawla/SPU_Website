@@ -19,6 +19,17 @@ interface StaffIntakeReviewServiceInterface
 
     public function pendingCount(int $actorId): int;
 
+    /**
+     * Read-only overview for the deploy log: each link with its request counts
+     * by status and whether its faculty is enabled (requests of a disabled
+     * faculty are hidden from every reviewer), and where each named reference
+     * is. No submitter names.
+     *
+     * @param  list<string>  $references
+     * @return array{links: list<array<string, mixed>>, orphans: int, references: list<array<string, mixed>>}
+     */
+    public function statusReport(array $references = []): array;
+
     /** Whether the actor may approve or reject this request. */
     public function canDecide(int $requestId, int $actorId): bool;
 

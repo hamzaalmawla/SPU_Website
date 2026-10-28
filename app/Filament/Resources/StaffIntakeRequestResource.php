@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Filament\Resources;
 
+use App\Contracts\Staff\StaffIntakeLinkServiceInterface;
 use App\Contracts\Staff\StaffIntakeReviewServiceInterface;
 use App\Filament\Resources\StaffIntakeRequestResource\Pages;
 use App\Models\Staff\StaffIntakeRequest;
@@ -86,7 +87,7 @@ class StaffIntakeRequestResource extends Resource
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()
-            ->with('faculty.translations')
+            ->with(['faculty.translations', 'appliedFacultyMember.translations'])
             ->whereIn('faculty_id', self::facultyIds());
     }
 
@@ -111,6 +112,15 @@ class StaffIntakeRequestResource extends Resource
                     ->trueIcon('heroicon-o-exclamation-triangle')->trueColor('danger')->falseIcon('heroicon-o-minus')->falseColor('gray'),
                 TextColumn::make('status')->label(__('staff_intake.admin.columns.status'))->formatStateUsing(fn (string $state): string => __('staff_intake.admin.request_status.'.$state))->badge()
                     ->color(fn (string $state): string => self::statusColor($state)),
+                TextColumn::make('applied_profile')
+                    ->label(__('staff_intake.admin.columns.profile'))
+                    ->state(fn (StaffIntakeRequest $record): ?string => self::appliedProfileName($record))
+                    ->url(fn (StaffIntakeRequest $record): ?string => $record->applied_faculty_member_id !== null
+                        ? FacultyMemberResource::getUrl('edit', ['record' => $record->applied_faculty_member_id])
+                        : null)
+                    ->color('primary')
+                    ->placeholder('—')
+                    ->wrap(),
                 TextColumn::make('created_at')->label(__('staff_intake.admin.columns.submitted_at'))->dateTime()->sortable(),
             ])
             ->filters([
@@ -120,6 +130,9 @@ class StaffIntakeRequestResource extends Resource
                         ->mapWithKeys(fn (string $status): array => [$status => __('staff_intake.admin.request_status.'.$status)])
                         ->all())
                     ->default(StaffIntakeRequest::STATUS_PENDING),
+                SelectFilter::make('faculty_id')
+                    ->label(__('staff_intake.admin.columns.faculty'))
+                    ->options(fn (): array => app(StaffIntakeLinkServiceInterface::class)->facultyOptions((int) auth()->id(), 'staff_intake_requests.view')),
                 SelectFilter::make('type')
                     ->label(__('staff_intake.admin.columns.type'))
                     ->options([
@@ -150,6 +163,19 @@ class StaffIntakeRequestResource extends Resource
             StaffIntakeRequest::STATUS_REJECTED => 'danger',
             default => 'gray',
         };
+    }
+
+    /** The profile an approved request created or updated, by name. */
+    private static function appliedProfileName(StaffIntakeRequest $record): ?string
+    {
+        $translations = $record->appliedFacultyMember?->translations;
+        if ($translations === null) {
+            return null;
+        }
+
+        $name = $translations->firstWhere('locale', app()->getLocale())?->full_name ?? $translations->first()?->full_name;
+
+        return $name !== null && $name !== '' ? (string) $name : null;
     }
 
     /** @return list<int> */

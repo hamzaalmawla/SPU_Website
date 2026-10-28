@@ -30,6 +30,34 @@ final class StaffIntakeFields
 
     public const EDUCATION = ['degree_ar', 'degree_en', 'institution_ar', 'institution_en', 'field_ar', 'field_en', 'year_start', 'year_end'];
 
+    /**
+     * What a teacher types as a profile link, made into the address it means:
+     * "orcid.org/…" or "www.…" gets https://, a bare ORCID iD its orcid.org
+     * address and an @handle its x.com address. Anything else is returned as
+     * typed, for the url rule to refuse with a message beside the field.
+     */
+    public static function link(string $field, string $value): string
+    {
+        $value = trim($value);
+        if ($value === '' || preg_match('#^https?://#i', $value) === 1) {
+            return $value;
+        }
+
+        if ($field === 'orcid' && preg_match('/^\d{4}-\d{4}-\d{4}-\d{3}[\dXx]$/', $value) === 1) {
+            return 'https://orcid.org/'.strtoupper($value);
+        }
+
+        if ($field === 'twitter' && preg_match('/^@(\w{1,15})$/', $value, $handle) === 1) {
+            return 'https://x.com/'.$handle[1];
+        }
+
+        if (preg_match('#^(//)?[^\s/@]+\.[a-z]{2,}(/\S*)?$#i', $value) === 1) {
+            return 'https://'.ltrim($value, '/');
+        }
+
+        return $value;
+    }
+
     /** @return list<string> Every flat field key, in form order. */
     public static function keys(): array
     {

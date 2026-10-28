@@ -13,6 +13,7 @@ use App\Enums\PublicationStatus;
 use App\Filament\Resources\StaffIntakeLinkResource;
 use App\Filament\Resources\StaffIntakeLinkResource\Pages\ListStaffIntakeLinks;
 use App\Filament\Resources\StaffIntakeRequestResource;
+use App\Filament\Resources\StaffIntakeRequestResource\Pages\ListStaffIntakeRequests;
 use App\Filament\Resources\StaffIntakeRequestResource\Pages\ViewStaffIntakeRequest;
 use App\Mail\StaffIntakeSubmittedNotification;
 use App\Models\Faculty\Department;
@@ -454,6 +455,15 @@ final class StaffIntakeTest extends TestCase
             ->assertNotified();
         $this->assertSame(StaffIntakeRequest::STATUS_APPROVED, $request->fresh()?->status);
 
+        // Approved requests can be listed per faculty, each with the profile it updated.
+        Livewire::test(ListStaffIntakeRequests::class)
+            ->filterTable('status', StaffIntakeRequest::STATUS_APPROVED)
+            ->filterTable('faculty_id', (string) $this->dentistry->getKey())
+            ->assertCanSeeTableRecords([$request])
+            ->assertSeeText('كريم إنتيك')
+            ->filterTable('faculty_id', (string) $this->pharmacy->getKey())
+            ->assertCanNotSeeTableRecords([$request]);
+
         // Another faculty's editor neither sees the request nor the links.
         $this->actingAs($this->user('faculty_editor', 'pharmacy'), 'web');
         $this->get(StaffIntakeRequestResource::getUrl('view', ['record' => $request]))->assertNotFound();
@@ -501,6 +511,36 @@ trailer << /Root 1 0 R >>
         $this->assertNotNull($log->ip_address);
         $this->assertSame([], array_intersect(['email', 'linkedin', 'orcid', 'scopus', 'researchgate', 'scholar'], (array) $log->changed_fields));
         $this->assertTrue(StaffIntakeAccessLog::query()->where('event', 'started_new')->exists());
+    }
+
+    public function test_links_typed_without_https_are_completed_instead_of_blocking_the_form(): void
+    {
+        $token = $this->token($this->link());
+        $ref = $this->newRef($token, 'Rana Links');
+        $form = (string) $this->get('/en/staff-intake/'.$token.'/form?name=Rana+Links')->assertOk()->getContent();
+        // type="url" made the browser refuse to send the form with a bubble phones barely show.
+        $this->assertStringNotContainsString('type="url"', $form);
+
+        $this->post('/en/staff-intake/'.$token.'/form', $this->formData($ref, [
+            'name_ar' => 'رنا روابط',
+            'name_en' => 'Rana Links',
+            'linkedin' => 'www.linkedin.com/in/rana',
+            'orcid' => '0000-0002-1825-009x',
+            'scopus' => 'scopus.com/authid/detail.uri?authorId=123',
+            'researchgate' => ' https://www.researchgate.net/profile/Rana ',
+            'scholar' => '',
+            'twitter' => '@rana_links',
+        ]))->assertRedirect('/en/staff-intake/'.$token.'/sent');
+
+        $fields = StaffIntakeRequest::query()->sole()->payload['fields'];
+        $this->assertSame([
+            'https://www.linkedin.com/in/rana',
+            'https://orcid.org/0000-0002-1825-009X',
+            'https://scopus.com/authid/detail.uri?authorId=123',
+            'https://www.researchgate.net/profile/Rana',
+            null,
+            'https://x.com/rana_links',
+        ], [$fields['linkedin'], $fields['orcid'], $fields['scopus'], $fields['researchgate'], $fields['scholar'], $fields['twitter']]);
     }
 
     public function test_a_profile_that_already_has_a_photo_and_cv_need_not_send_them_again(): void
