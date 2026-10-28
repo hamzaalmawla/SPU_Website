@@ -214,20 +214,17 @@
                 <div class="mx-auto mt-12 max-w-[1080px] divide-y divide-slate-100 overflow-hidden rounded-[8px] border border-slate-100 bg-white shadow-[0_12px_40px_rgba(9,17,68,0.06)]">
                     @forelse ($page->items as $item)
                         @php
-                            $kind = $item['kind'] ?? 'academic';
                             $head = is_array($item['head'] ?? null) ? $item['head'] : null;
-                            $kindLabel = match ($kind) {
-                                'basic_sciences' => $isAr ? 'علوم أساسية' : 'Basic Sciences',
-                                'clinical' => $isAr ? 'قسم سريري' : 'Clinical',
-                                default => $item['degrees'] ?? ($isAr ? 'قسم أكاديمي' : 'Academic Department'),
-                            };
+                            $typeLabel = ($item['type'] ?? 'section') === 'specialization'
+                                ? ($isAr ? 'اختصاص' : 'Specialization')
+                                : ($isAr ? 'قسم' : 'Section');
                         @endphp
                         <article id="{{ $item['slug'] ?? 'department-'.$loop->iteration }}" class="grid gap-5 p-6 md:grid-cols-[80px_1fr_auto] md:items-center md:p-8">
                             <div class="text-[32px] font-bold leading-none text-spu-red/80">{{ $item['code'] ?? str_pad((string) $loop->iteration, 2, '0', STR_PAD_LEFT) }}</div>
                             <div>
                                 <div class="flex flex-wrap items-center gap-3">
                                     <h2 class="card-title text-xl font-bold text-spu-blue" dir="auto">{{ $item['title'] ?? '' }}</h2>
-                                    <span class="rounded-full bg-section px-3 py-1 text-[11px] font-bold uppercase tracking-[0.12em] text-spu-blue/55">{{ $kindLabel }}</span>
+                                    <span class="rounded-full bg-section px-3 py-1 text-[11px] font-bold uppercase tracking-[0.12em] text-spu-blue/55">{{ $typeLabel }}</span>
                                 </div>
                                 <x-public.rich-text class="mt-3 max-w-[720px] text-sm leading-7 text-slate-600" :text="$item['summary'] ?? ''" />
                                 @if ($head)
@@ -606,6 +603,73 @@
         </section>
     @elseif (in_array($page->subpageSlug, ['clinical-cases', 'final-exams'], true))
         @include('public.faculties.partials.info-subpage')
+    @elseif ($page->subpageSlug === 'council')
+        @php
+            $positions = is_array($page->detail['positions'] ?? null) ? $page->detail['positions'] : [];
+        @endphp
+        <section class="bg-white py-14 font-hacen md:py-18">
+            <div class="container">
+                @if ($positions === [] && $page->items === [])
+                    <div class="mx-auto max-w-2xl rounded-xl border border-slate-200 bg-slate-50 px-6 py-12 text-center">
+                        <p class="font-bold text-slate-700">{{ $isAr ? 'لم تُنشر قيادة الكلية ومجلسها بعد.' : 'The faculty leadership and council are not published yet.' }}</p>
+                    </div>
+                @endif
+
+                @if ($positions !== [])
+                    <h2 class="mb-8 text-center text-2xl font-bold text-spu-blue">{{ $isAr ? 'قيادة الكلية' : 'Faculty Leadership' }}</h2>
+                    <div class="staff-grid">
+                        @foreach ($positions as $position)
+                            <a href="{{ $position['url'] }}" class="staff-card block transition hover:-translate-y-1 hover:shadow-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-spu-blue">
+                                <div class="staff-card-media">
+                                    @if (! empty($position['image']))
+                                        <img src="{{ $position['image'] }}" alt="{{ $position['name'] }}" loading="lazy">
+                                    @else
+                                        <div class="flex h-full items-center justify-center bg-slate-100">
+                                            <img src="/images/icon-user-graduate-outline.svg" alt="" class="h-16 w-16 opacity-30" aria-hidden="true">
+                                        </div>
+                                    @endif
+                                </div>
+                                <div class="staff-card-body">
+                                    <h3 class="card-title card-title-center staff-card-name" dir="auto">{{ $position['name'] }}</h3>
+                                    <p class="staff-card-role">{{ $position['title'] }}</p>
+                                </div>
+                            </a>
+                        @endforeach
+                    </div>
+                @endif
+
+                @if ($page->items !== [])
+                    <h2 class="mb-8 mt-14 text-center text-2xl font-bold text-spu-blue">{{ $isAr ? 'أعضاء مجلس الكلية' : 'Faculty Council Members' }}</h2>
+                    <p class="mb-8 text-center text-sm font-bold text-slate-600" role="status">
+                        {{ $isAr ? 'عدد الأعضاء: '.count($page->items) : count($page->items).' members' }}
+                    </p>
+                    <ul class="mx-auto max-w-[1080px] divide-y divide-slate-100 overflow-hidden rounded-[8px] border border-slate-100 bg-white shadow-[0_12px_40px_rgba(9,17,68,0.06)]">
+                        @foreach ($page->items as $member)
+                            <li>
+                                <a href="{{ $member['url'] }}" class="flex items-center gap-4 p-5 transition hover:bg-spu-blue/5 md:p-6">
+                                    @if (! empty($member['image']))
+                                        <img src="{{ $member['image'] }}" alt="" class="h-9 w-9 rounded-full object-cover" loading="lazy">
+                                    @else
+                                        <img src="/images/icon-user-graduate-outline.svg" alt="" class="h-5 w-5" aria-hidden="true">
+                                    @endif
+                                    <span class="text-start">
+                                        <span class="flex flex-wrap items-center gap-3">
+                                            <span class="block text-sm font-bold text-spu-blue" dir="auto">{{ $member['name'] }}</span>
+                                            @if ($member['isChair'])
+                                                <span class="rounded-full bg-section px-3 py-1 text-[11px] font-bold uppercase tracking-[0.12em] text-spu-blue/55">{{ $isAr ? 'رئيس المجلس' : 'Council Chair' }}</span>
+                                            @endif
+                                        </span>
+                                        @if ($member['roles'] !== [])
+                                            <span class="mt-1 block text-xs font-bold text-slate-500">{{ implode(' · ', $member['roles']) }}</span>
+                                        @endif
+                                    </span>
+                                </a>
+                            </li>
+                        @endforeach
+                    </ul>
+                @endif
+            </div>
+        </section>
     @elseif ($page->subpageSlug === 'members')
         <section class="bg-white py-14 font-hacen md:py-18">
             <div class="container">

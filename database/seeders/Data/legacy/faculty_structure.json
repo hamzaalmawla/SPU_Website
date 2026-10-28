@@ -186,8 +186,7 @@
           "nameAr": "قسم علوم الحياة",
           "nameEn": "Department of Life Sciences",
           "descriptionAr": "",
-          "descriptionEn": "",
-          "kind": "basic_sciences"
+          "descriptionEn": ""
         },
         {
           "slug": "histology-oral-pathology",
@@ -561,7 +560,6 @@
       "departments": [
         {
           "slug": "ai-basic-sciences",
-          "kind": "basic_sciences",
           "nameAr": "قسم العلوم الأساسية",
           "nameEn": "Department of Basic Sciences",
           "descriptionAr": "",
@@ -636,8 +634,7 @@
           "nameAr": "قسم العلوم الأساسية",
           "nameEn": "Department of Basic Sciences",
           "descriptionAr": "",
-          "descriptionEn": "",
-          "kind": "basic_sciences"
+          "descriptionEn": ""
         },
         {
           "slug": "petroleum-geology-exploration",
@@ -801,8 +798,7 @@
           "nameAr": "قسم العلوم الأساسية",
           "nameEn": "Department of Basic Sciences",
           "descriptionAr": "",
-          "descriptionEn": "",
-          "kind": "basic_sciences"
+          "descriptionEn": ""
         },
         {
           "slug": "materials-construction-technology",

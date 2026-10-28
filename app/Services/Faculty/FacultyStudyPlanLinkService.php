@@ -42,12 +42,17 @@ final class FacultyStudyPlanLinkService implements FacultyStudyPlanLinkServiceIn
 
         return array_map(function (array $item) use ($departments, $validIds, $locale, $studyPlanUrl): array {
             $explicitId = trim((string) ($item['studyPlanDepartmentId'] ?? ''));
-            $departmentId = isset($validIds[$explicitId])
-                ? $explicitId
-                : $this->exactDepartmentMatch((string) ($item['title'] ?? ''), $locale, $departments);
+            // A section has no study plan. A department saved before it had a type
+            // may still match a program by its exact name.
+            $departmentId = match (true) {
+                ($item['type'] ?? null) === 'section' => null,
+                isset($validIds[$explicitId]) => $explicitId,
+                ($item['type'] ?? null) === 'specialization' => null,
+                default => $this->exactDepartmentMatch((string) ($item['title'] ?? ''), $locale, $departments),
+            };
 
-            // The study plan is optional: a department without one (Basic Sciences, most
-            // clinical departments) shows no study plan link.
+            // A specialization shows a study plan link; a section (Basic Sciences, most
+            // clinical departments) shows none.
             return [
                 ...$item,
                 'studyPlanDepartmentId' => $departmentId,

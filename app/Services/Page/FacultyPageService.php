@@ -6,6 +6,7 @@ namespace App\Services\Page;
 
 use App\Contracts\Cms\CmsWorkflowServiceInterface;
 use App\Contracts\Content\PersonIdentityServiceInterface;
+use App\Contracts\Faculty\FacultyLeadershipServiceInterface;
 use App\Contracts\Faculty\FacultyStudyPlanLinkServiceInterface;
 use App\Contracts\Faculty\ProjectFieldBlockParserInterface;
 use App\Contracts\Page\AboutPageServiceInterface;
@@ -67,10 +68,13 @@ final class FacultyPageService implements FacultyPageServiceInterface
         'business' => 'business-administration',
     ];
 
-    /** Kinds of academic department: basic sciences (common years), academic and clinical. */
-    private const DEPARTMENT_KINDS = ['basic_sciences', 'academic', 'clinical'];
+    /** A specialization teaches a study plan program; a section has no study plan. */
+    private const DEPARTMENT_TYPES = ['specialization', 'section'];
 
-    private const SUBPAGE_SLUGS = ['overview', 'departments', 'study-plan', 'study-plan-course', 'labs', 'projects', 'alumni', 'valedictorians', 'training', 'clinical-cases', 'final-exams', 'research', 'members'];
+    /** Subpages every faculty has even without a page row or card (see hasDefaultSubpage). */
+    private const DEFAULT_SUBPAGES = ['final-exams', 'council'];
+
+    private const SUBPAGE_SLUGS = ['overview', 'departments', 'study-plan', 'study-plan-course', 'labs', 'projects', 'alumni', 'valedictorians', 'training', 'clinical-cases', 'final-exams', 'research', 'members', 'council'];
 
     private const ALUMNI_LIST_PER_PAGE = 12;
 
@@ -94,6 +98,7 @@ final class FacultyPageService implements FacultyPageServiceInterface
         private readonly ProjectFieldBlockParserInterface $projectFieldBlockParser,
         private readonly FacultySubpageCardServiceInterface $subpageCardService,
         private readonly PersonIdentityServiceInterface $identityService,
+        private readonly FacultyLeadershipServiceInterface $leadershipService,
     ) {}
 
     public function getHub(string $locale): FacultyHubPageDTO
@@ -345,6 +350,14 @@ final class FacultyPageService implements FacultyPageServiceInterface
 
         if ($subpageSlug === 'departments') {
             $items = $this->withDepartmentHeads($this->studyPlanLinkService->enrichDepartmentItems($this->publicSlug($faculty), $locale, $items), $locale);
+        }
+
+        if ($subpageSlug === 'council') {
+            // The council's people: the published (or previewed) page, or, before one is
+            // published, the dean from About › Leadership and the department heads.
+            $council = $this->leadershipService->council($this->publicSlug($faculty), $locale, $cmsContent);
+            $items = $council->members;
+            $detail = ['positions' => $council->positions];
         }
 
         $filterOptions = [];
@@ -689,6 +702,11 @@ final class FacultyPageService implements FacultyPageServiceInterface
             'items' => $this->subpageItems($faculty, $subpageSlug, $locale, $page),
         ];
 
+        if ($subpageSlug === 'council') {
+            unset($content['items']);
+            $content = [...$content, ...$this->leadershipService->defaultCouncilContent($this->publicSlug($faculty), $locale)];
+        }
+
         if ($subpageSlug === 'research') {
             $facultyName = (string) $this->facultyTranslation($faculty, $locale)->name;
             $content['eyebrow'] = $locale === 'ar' ? 'أبحاث الكلية' : 'Faculty Research';
@@ -979,6 +997,7 @@ final class FacultyPageService implements FacultyPageServiceInterface
             'final-exams' => $locale === 'ar' ? 'برنامج الامتحان النهائي' : 'Final Exam Schedule',
             'research' => $locale === 'ar' ? 'البحث العلمي' : 'Research',
             'members' => $locale === 'ar' ? 'أعضاء الهيئة الأكاديمية' : 'Faculty Members',
+            'council' => $locale === 'ar' ? 'مجلس الكلية' : 'Faculty Council',
         ];
         $pages = $faculty->pages->keyBy('slug');
         $cards = $this->subpageCardService->getVisibleCards($slug);
@@ -997,19 +1016,19 @@ final class FacultyPageService implements FacultyPageServiceInterface
                 ->map(fn (FacultyPage $page): array => ['slug' => (string) $page->slug, 'title' => null]);
         }
 
-        // A faculty with neither a page nor a card for its final exams still
-        // has one: it comes last.
-        $examsByDefault = $this->hasDefaultFinalExamsPage($faculty);
+        // A faculty with neither a page nor a card for its final exams or its
+        // council still has them: they come last.
+        $defaultSlugs = array_values(array_filter(self::DEFAULT_SUBPAGES, fn (string $subpageSlug): bool => $this->hasDefaultSubpage($faculty, $subpageSlug)));
 
-        if ($examsByDefault) {
-            $entries = $entries->push(['slug' => 'final-exams', 'title' => null]);
+        foreach ($defaultSlugs as $defaultSlug) {
+            $entries = $entries->push(['slug' => $defaultSlug, 'title' => null]);
         }
 
         // Only subpages that are enabled and have a public route: a card for
         // anything else (the course-lessons view, a custom page) would 404.
         // The final exams card waits until a schedule is published.
         return $entries
-            ->filter(fn (array $entry): bool => array_key_exists($entry['slug'], $labels) && ($pages->has($entry['slug']) || ($entry['slug'] === 'final-exams' && $examsByDefault)))
+            ->filter(fn (array $entry): bool => array_key_exists($entry['slug'], $labels) && ($pages->has($entry['slug']) || in_array($entry['slug'], $defaultSlugs, true)))
             ->filter(fn (array $entry): bool => $entry['slug'] !== 'final-exams' || $this->hasPublishedExamSchedule($faculty, $locale))
             ->unique('slug')
             ->map(fn (array $entry): FacultyNavigationItemDTO => new FacultyNavigationItemDTO(
@@ -1022,17 +1041,20 @@ final class FacultyPageService implements FacultyPageServiceInterface
     }
 
     /**
-     * Every faculty publishes a final exam schedule. Faculties whose old site
-     * had none got no page or card for it; they have the page anyway. One an
-     * editor switched off (a disabled page or a hidden card) stays off.
+     * Every faculty publishes a final exam schedule and has a council page.
+     * Faculties that have no page row or card for one (the old site had no
+     * exam schedule for some; the council page is new) have it anyway, which
+     * needs no data migration. One an editor switched off (a disabled page or
+     * a hidden card) stays off.
      */
-    private function hasDefaultFinalExamsPage(Faculty $faculty): bool
+    private function hasDefaultSubpage(Faculty $faculty, string $subpageSlug): bool
     {
         $slug = $this->publicSlug($faculty);
 
-        return $this->facultyMayUseSubpage($slug, 'final-exams')
-            && ! $this->subpageCardService->cardExists($slug, 'final-exams')
-            && ! FacultyPage::query()->where('faculty_id', $faculty->getKey())->where('slug', 'final-exams')->exists();
+        return in_array($subpageSlug, self::DEFAULT_SUBPAGES, true)
+            && $this->facultyMayUseSubpage($slug, $subpageSlug)
+            && ! $this->subpageCardService->cardExists($slug, $subpageSlug)
+            && ! FacultyPage::query()->where('faculty_id', $faculty->getKey())->where('slug', $subpageSlug)->exists();
     }
 
     /**
@@ -1235,7 +1257,6 @@ final class FacultyPageService implements FacultyPageServiceInterface
 
             return [
                 'slug' => (string) $department->slug,
-                'kind' => (string) $department->kind,
                 'code' => is_array($payload) ? ($payload['code'] ?? null) : null,
                 'title' => (string) $translation->name,
                 'summary' => (string) ($translation->description ?? ''),
@@ -1247,8 +1268,9 @@ final class FacultyPageService implements FacultyPageServiceInterface
     }
 
     /**
-     * Normalizes each department's kind and adds its head (name, photo and profile link) from the
-     * public faculty profile. A head who is not public is left out.
+     * Normalizes each department's type and adds its head (name, photo and profile link) from the
+     * public faculty profile. A head who is not public is left out. A department saved before it had
+     * a type is a specialization when it links to a study plan, otherwise a section.
      *
      * @param  array<int, array<string, mixed>>  $items
      * @return array<int, array<string, mixed>>
@@ -1264,12 +1286,13 @@ final class FacultyPageService implements FacultyPageServiceInterface
         $heads = $this->publicMemberCards($locale, $memberIds);
 
         return array_map(static function (array $item) use ($heads): array {
-            $kind = (string) ($item['kind'] ?? '');
+            $type = (string) ($item['type'] ?? '');
             $headId = is_numeric($item['headMemberId'] ?? null) ? (int) $item['headMemberId'] : 0;
+            unset($item['kind']);
 
             return [
                 ...$item,
-                'kind' => in_array($kind, self::DEPARTMENT_KINDS, true) ? $kind : 'academic',
+                'type' => in_array($type, self::DEPARTMENT_TYPES, true) ? $type : (empty($item['studyPlanUrl']) ? 'section' : 'specialization'),
                 'head' => $heads[$headId] ?? null,
             ];
         }, $items);
@@ -2481,6 +2504,7 @@ final class FacultyPageService implements FacultyPageServiceInterface
             'final-exams' => $locale === 'ar' ? 'برنامج الامتحان النهائي' : 'Final Exam Schedule',
             'research' => $locale === 'ar' ? 'أحدث الأبحاث' : 'Latest Research',
             'members' => $locale === 'ar' ? 'أعضاء الهيئة الأكاديمية' : 'Faculty Members',
+            'council' => $locale === 'ar' ? 'مجلس الكلية' : 'Faculty Council',
         ];
 
         return $titles[$subpageSlug] ?? $subpageSlug;
@@ -2539,6 +2563,17 @@ final class FacultyPageService implements FacultyPageServiceInterface
      */
     private function deanProfileFor(Faculty $faculty, string $locale, array $deanPayload): ?ProfilePageDTO
     {
+        // The dean picked on the faculty's published council page is the dean.
+        $councilDeanSlug = $this->leadershipService->deanProfileSlug($this->publicSlug($faculty));
+
+        if ($councilDeanSlug !== null && $deanPayload !== []) {
+            $profile = $this->profilePageService->getProfile($locale, 'faculty-member', $councilDeanSlug);
+
+            if ($profile instanceof ProfilePageDTO) {
+                return $profile;
+            }
+        }
+
         $displayName = (string) ($deanPayload['name'] ?? $deanPayload['name'.ucfirst($locale)] ?? '');
         if ($displayName === '') {
             return null;
@@ -2708,7 +2743,7 @@ final class FacultyPageService implements FacultyPageServiceInterface
             return false;
         }
 
-        if ($subpageSlug === 'final-exams' && $this->hasDefaultFinalExamsPage($faculty)) {
+        if ($this->hasDefaultSubpage($faculty, $subpageSlug)) {
             return true;
         }
 

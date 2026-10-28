@@ -1,6 +1,6 @@
 # Faculty departments and specializations: plan
 
-Status: built (see "As built" below); the CMS manager fills the data. Sections 3 to 6 were the first proposal and are kept for the reasoning; where they differ, "As built" wins.
+Status: built (see "As built" below); the CMS manager fills the data. Since 2026-10-26 `kind` is replaced by `type` (specialization / section) and heads are limited to the faculty's own staff: see `FACULTY_LEADERSHIP_COUNCIL_PLAN.md`. Sections 3 to 6 were the first proposal and are kept for the reasoning; where they differ, "As built" wins.
 
 ## As built (2026-10-24)
 

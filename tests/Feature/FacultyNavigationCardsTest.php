@@ -60,12 +60,13 @@ final class FacultyNavigationCardsTest extends TestCase
             ['title' => 'Alumni', 'href' => '/en/faculties/medicine/alumni'],
             ['title' => 'Honor List', 'href' => '/en/faculties/medicine/valedictorians'],
             ['title' => 'Faculty Members', 'href' => '/en/faculties/medicine/members'],
+            ['title' => 'Faculty Council', 'href' => '/en/faculties/medicine/council'],
         ];
 
         $this->assertSame($expected, $this->highlights('medicine', 'en'));
         $this->assertSame($expected, $this->pathways('medicine', 'en'));
-        $this->assertCount(9, $this->highlights('medicine', 'ar'));
-        $this->assertCount(9, $this->pathways('medicine', 'ar'));
+        $this->assertCount(10, $this->highlights('medicine', 'ar'));
+        $this->assertCount(10, $this->pathways('medicine', 'ar'));
     }
 
     public function test_admin_sort_order_controls_the_public_order_on_both_pages(): void
@@ -102,7 +103,7 @@ final class FacultyNavigationCardsTest extends TestCase
             $highlights = $this->highlights('medicine', $locale);
 
             $this->assertSame($highlights, $this->pathways('medicine', $locale));
-            $this->assertCount(6, $highlights);
+            $this->assertCount(7, $highlights);
 
             foreach (['labs', 'alumni', 'projects'] as $hidden) {
                 $this->assertNotContains("/{$locale}/faculties/medicine/{$hidden}", array_column($highlights, 'href'));
@@ -142,7 +143,7 @@ final class FacultyNavigationCardsTest extends TestCase
 
         $hrefs = array_column($this->highlights('medicine', 'en'), 'href');
 
-        $this->assertCount(9, $hrefs);
+        $this->assertCount(10, $hrefs);
         $this->assertNotContains('/en/faculties/medicine/careers', $hrefs);
         $this->assertSame($hrefs, array_column($this->pathways('medicine', 'en'), 'href'));
     }
@@ -153,7 +154,7 @@ final class FacultyNavigationCardsTest extends TestCase
         FacultySubpageCard::query()->where('faculty_slug', 'pharmacy')->delete();
         Cache::flush();
 
-        $medicine = ['overview', 'departments', 'study-plan', 'labs', 'projects', 'research', 'alumni', 'valedictorians', 'members'];
+        $medicine = ['overview', 'departments', 'study-plan', 'labs', 'projects', 'research', 'alumni', 'valedictorians', 'members', 'council'];
 
         $this->assertSame(
             array_map(fn (string $slug): string => "/en/faculties/medicine/{$slug}", $medicine),

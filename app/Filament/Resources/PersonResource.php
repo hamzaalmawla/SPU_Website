@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Filament\Resources;
 
 use App\Contracts\Content\ProfileAdminServiceInterface;
+use App\Contracts\Faculty\FacultyLeadershipServiceInterface;
 use App\Contracts\Shared\SlugServiceInterface;
 use App\Filament\Resources\Concerns\AuthorizesThroughPermissions;
 use App\Filament\Resources\PersonResource\Pages;
@@ -103,7 +104,11 @@ class PersonResource extends Resource
                             : null)
                         ->nullable()
                         ->live()
-                        ->native(false),
+                        ->native(false)
+                        // A faculty's dean is picked on its council page; this row follows it.
+                        ->disabled(fn (Get $get): bool => self::deanIsManagedByCouncil($get))
+                        ->dehydrated()
+                        ->helperText(fn (Get $get): ?string => self::deanIsManagedByCouncil($get) ? __('admin_resources.person.dean_managed_by_council') : null),
                     Placeholder::make('profile_links')
                         ->hiddenLabel()
                         ->content(fn (Get $get): HtmlString => self::profileLinks($get('faculty_member_id'))),
@@ -285,6 +290,12 @@ class PersonResource extends Resource
 
         return new HtmlString(e(__('admin_resources.person.no_profile_help')).' '
             .$link(FacultyMemberResource::getUrl('create'), __('admin_resources.person.create_profile')));
+    }
+
+    private static function deanIsManagedByCouncil(Get $get): bool
+    {
+        return $get('category') === 'dean'
+            && app(FacultyLeadershipServiceInterface::class)->managesDean(is_string($get('faculty_scope_slug')) ? $get('faculty_scope_slug') : null);
     }
 
     /** @return array<string, string> */

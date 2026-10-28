@@ -27,8 +27,6 @@ final class FacultyStructureImportService implements FacultyStructureImportServi
 {
     private const LOCALES = ['ar', 'en'];
 
-    private const DEPARTMENT_KINDS = ['basic_sciences', 'academic', 'clinical'];
-
     public function __construct(
         private readonly CacheServiceInterface $cacheService,
     ) {}
@@ -127,13 +125,7 @@ final class FacultyStructureImportService implements FacultyStructureImportServi
             $slugs[] = $slug;
             $department = Department::withTrashed()->firstOrNew(['faculty_id' => $faculty->getKey(), 'slug' => $slug]);
             $created += $department->exists ? 0 : 1;
-            $kind = (string) ($item['kind'] ?? 'academic');
-
-            if (! in_array($kind, self::DEPARTMENT_KINDS, true)) {
-                throw new InvalidArgumentException('Department "'.$slug.'" has an unknown kind "'.$kind.'".');
-            }
-
-            $department->fill(['kind' => $kind, 'sort_order' => $index + 1, 'is_enabled' => true])->save();
+            $department->fill(['sort_order' => $index + 1, 'is_enabled' => true])->save();
 
             if ($department->trashed()) {
                 $department->restore();
