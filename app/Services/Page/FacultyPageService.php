@@ -79,6 +79,9 @@ final class FacultyPageService implements FacultyPageServiceInterface
      */
     private const DEFAULT_SUBPAGES = ['final-exams', 'council', 'master-program'];
 
+    /** Default subpages whose card comes first, not last, while no card of their own places them. */
+    private const LEADING_DEFAULT_SUBPAGES = ['master-program'];
+
     private const SUBPAGE_SLUGS = ['overview', 'departments', 'study-plan', 'study-plan-course', 'labs', 'projects', 'alumni', 'valedictorians', 'training', 'clinical-cases', 'final-exams', 'research', 'members', 'council', 'master-program'];
 
     private const ALUMNI_LIST_PER_PAGE = 12;
@@ -1039,11 +1042,13 @@ final class FacultyPageService implements FacultyPageServiceInterface
         }
 
         // A faculty with neither a page nor a card for its final exams or its
-        // council still has them: they come last.
+        // council still has them: they come last. The master's program comes first.
         $defaultSlugs = array_values(array_filter(self::DEFAULT_SUBPAGES, fn (string $subpageSlug): bool => $this->hasDefaultSubpage($faculty, $subpageSlug)));
 
         foreach ($defaultSlugs as $defaultSlug) {
-            $entries = $entries->push(['slug' => $defaultSlug, 'title' => null]);
+            $entries = in_array($defaultSlug, self::LEADING_DEFAULT_SUBPAGES, true)
+                ? $entries->prepend(['slug' => $defaultSlug, 'title' => null])
+                : $entries->push(['slug' => $defaultSlug, 'title' => null]);
         }
 
         // Only subpages that are enabled and have a public route: a card for

@@ -15,6 +15,9 @@ use App\Models\Faculty\FacultyPage;
 use App\Models\Faculty\FacultySubpageCard;
 use App\Models\User\User;
 use Database\Seeders\DatabaseSeeder;
+use DOMDocument;
+use DOMElement;
+use DOMXPath;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Validation\ValidationException;
@@ -77,8 +80,8 @@ final class FacultyMasterProgramTest extends TestCase
     public function test_the_highlights_card_shows_on_the_ai_faculty_only(): void
     {
         foreach (['ar', 'en'] as $locale) {
-            $this->get("/{$locale}/faculties/artificial-intelligence")->assertOk()->assertSee("/{$locale}".self::URL, false);
-            $this->get("/{$locale}/faculties/artificial-intelligence/overview")->assertOk()->assertSee("/{$locale}".self::URL, false);
+            $this->assertSame("/{$locale}".self::URL, $this->firstCardLink("/{$locale}/faculties/artificial-intelligence", 'highlights'));
+            $this->assertSame("/{$locale}".self::URL, $this->firstCardLink("/{$locale}/faculties/artificial-intelligence/overview", 'faculty-pathways'));
             $this->get("/{$locale}/faculties/medicine")->assertOk()->assertDontSee('master-program', false);
             $this->get("/{$locale}/faculties/medicine/master-program")->assertNotFound();
         }
@@ -209,5 +212,17 @@ final class FacultyMasterProgramTest extends TestCase
 
         $this->assertNotEmpty(array_filter($locs, fn (string $loc): bool => str_ends_with($loc, '/en'.self::URL)));
         $this->assertNotEmpty(array_filter($locs, fn (string $loc): bool => str_ends_with($loc, '/ar'.self::URL)));
+    }
+
+    private function firstCardLink(string $url, string $sectionId): ?string
+    {
+        $document = new DOMDocument;
+        $previous = libxml_use_internal_errors(true);
+        $document->loadHTML('<?xml encoding="utf-8" ?>'.$this->get($url)->assertOk()->getContent());
+        libxml_clear_errors();
+        libxml_use_internal_errors($previous);
+        $link = (new DOMXPath($document))->query("//section[@id='{$sectionId}']//a[h3]")?->item(0);
+
+        return $link instanceof DOMElement ? $link->getAttribute('href') : null;
     }
 }
