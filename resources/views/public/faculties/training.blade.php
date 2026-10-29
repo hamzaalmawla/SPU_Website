@@ -26,6 +26,9 @@
     </div>
 </section>
 
+{{-- The hero's card hangs 50px below it, so the body starts lower. --}}
+@include('public.faculties.partials.subpage-body', ['bodyTopClass' => 'pt-24'])
+
 @if (($training['introCards'] ?? []) !== [])
 <section class="z-10 bg-white pb-12 pt-20 font-hacen">
     <div class="container">

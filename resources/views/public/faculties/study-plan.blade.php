@@ -99,6 +99,8 @@
         </div>
     </section>
 
+    @include('public.faculties.partials.subpage-body')
+
     <section class="bg-section py-16 lg:py-24">
         <div class="container">
             @if ($activeDepartment === null)

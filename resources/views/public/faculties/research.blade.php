@@ -5,6 +5,10 @@
                 {{ $subpage['title'] ?? ($isAr ? 'أحدث الأبحاث' : 'Latest Research') }}
             </h1>
 
+            @if (trim((string) ($subpage['body'] ?? '')) !== '')
+                <x-public.rich-text class="mx-auto mb-12 max-w-[860px] text-[15px] leading-8 text-slate-600" :text="$subpage['body']" />
+            @endif
+
             <div class="grid gap-[38px] lg:grid-cols-2">
                 @forelse ($page->items as $publication)
                     <a href="/{{ $locale }}/research/publications/{{ $publication['slug'] ?? '' }}" class="group block overflow-hidden rounded-[10px] border border-[#d5d9e2] bg-white shadow-[0_4px_10px_rgba(0,0,0,0.16)] transition-all motion-safe:hover:-translate-y-1 hover:shadow-[0_8px_24px_rgba(32,39,89,0.12)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-spu-blue">

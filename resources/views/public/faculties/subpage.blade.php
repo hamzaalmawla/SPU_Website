@@ -74,6 +74,11 @@
                 @endif
             </div>
         </section>
+
+        {{-- The overview, info pages and master's program place the body in their own content. --}}
+        @unless (in_array($page->subpageSlug, ['overview', 'clinical-cases', 'final-exams', 'master-program'], true))
+            @include('public.faculties.partials.subpage-body')
+        @endunless
     @endif
 
     @if ($page->subpageSlug === 'research')
@@ -604,10 +609,8 @@
     @elseif (in_array($page->subpageSlug, ['clinical-cases', 'final-exams'], true))
         @include('public.faculties.partials.info-subpage')
     @elseif ($page->subpageSlug === 'master-program')
-        @include('public.faculties.partials.subpage-body')
         @include('public.faculties.partials.master-program')
     @elseif ($page->subpageSlug === 'council')
-        @include('public.faculties.partials.subpage-body')
         @php
             $positions = is_array($page->detail['positions'] ?? null) ? $page->detail['positions'] : [];
         @endphp
