@@ -6,6 +6,8 @@ namespace Tests\Feature;
 
 use App\Contracts\Cms\CmsWorkflowServiceInterface;
 use App\Contracts\Page\FacultyPageServiceInterface;
+use App\Models\Faculty\Faculty;
+use App\Models\Faculty\FacultyPage;
 use App\Models\User\User;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -38,7 +40,6 @@ final class FacultySubpageBodyTest extends TestCase
             ['facilities.medicine.members', '/faculties/medicine/members'],
             ['facilities.medicine.research', '/faculties/medicine/research'],
             ['facilities.medicine.study_plan', '/faculties/medicine/study-plan'],
-            ['facilities.pharmacy.training', '/faculties/pharmacy/training'],
             // The council page's body is covered with its dean in FacultyCouncilTest.
         ];
 
@@ -48,6 +49,20 @@ final class FacultySubpageBodyTest extends TestCase
             $this->get('/en'.$path)->assertOk()->assertSee('Intro body '.$index.' in English.');
             $this->get('/ar'.$path)->assertOk()->assertSee('نص المقدمة '.$index.' بالعربية.');
         }
+    }
+
+    public function test_the_body_shows_on_the_training_page(): void
+    {
+        // Training publishes only once its facts are verified, so the body is set on the page itself.
+        $pharmacy = Faculty::query()->where('public_slug', 'pharmacy')->firstOrFail();
+        $page = FacultyPage::query()->where('faculty_id', $pharmacy->getKey())->where('slug', 'training')->firstOrFail();
+
+        foreach (['en' => 'Training intro body.', 'ar' => 'مقدمة صفحة التدريب.'] as $locale => $body) {
+            $page->translations()->updateOrCreate(['locale' => $locale], ['body' => $body]);
+        }
+
+        $this->get('/en/faculties/pharmacy/training')->assertOk()->assertSee('Training intro body.');
+        $this->get('/ar/faculties/pharmacy/training')->assertOk()->assertSee('مقدمة صفحة التدريب.');
     }
 
     public function test_the_master_program_shows_the_body_once(): void
