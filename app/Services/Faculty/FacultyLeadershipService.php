@@ -320,8 +320,11 @@ final class FacultyLeadershipService implements FacultyLeadershipServiceInterfac
             return;
         }
 
-        // The dean row shown today (public, linked to this faculty's staff), else any dean row of the faculty.
-        $person = $this->leadershipDean($faculty) ?? $this->leadershipDean($faculty, publicOnly: false);
+        // The dean row shown today (public, linked to this faculty's staff), else a public dean row of
+        // the faculty, else a hidden one: a hidden former dean's row is never picked over a public row.
+        $person = $this->leadershipDean($faculty)
+            ?? $this->leadershipDean($faculty, linkedOnly: false)
+            ?? $this->leadershipDean($faculty, publicOnly: false, linkedOnly: false);
 
         if ($person instanceof Person) {
             if ((int) $person->faculty_member_id === (int) $member->getKey()) {
@@ -373,8 +376,8 @@ final class FacultyLeadershipService implements FacultyLeadershipServiceInterfac
         ]);
     }
 
-    /** The faculty's dean row on About › Leadership that points at a profile. */
-    private function leadershipDean(Faculty $faculty, bool $publicOnly = true): ?Person
+    /** The faculty's dean row on About › Leadership: public and pointing at this faculty's staff unless asked otherwise. */
+    private function leadershipDean(Faculty $faculty, bool $publicOnly = true, bool $linkedOnly = true): ?Person
     {
         $scopes = array_values(array_unique(array_filter([(string) $faculty->faculty_scope_slug, (string) $faculty->public_slug, (string) $faculty->slug])));
         $query = Person::query()
@@ -385,8 +388,11 @@ final class FacultyLeadershipService implements FacultyLeadershipServiceInterfac
             ->orderBy('id');
 
         if ($publicOnly) {
-            $query->public()
-                ->whereNotNull('faculty_member_id')
+            $query->public();
+        }
+
+        if ($linkedOnly) {
+            $query->whereNotNull('faculty_member_id')
                 ->whereHas('profileMember', fn ($member) => $member->where('faculty_id', $faculty->getKey()));
         }
 

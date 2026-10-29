@@ -229,6 +229,22 @@ final class FacultyCouncilTest extends TestCase
         $this->assertSame('Dr. New Dean', $overview->deanProfile?->name);
     }
 
+    public function test_publishing_the_council_updates_the_public_dean_row_not_a_hidden_one(): void
+    {
+        $dean = $this->member('public-row-dean', 'Dr. Public Row Dean', 'د. عميد الصف الظاهر');
+        Person::query()->where('category', 'dean')->whereIn('faculty_scope_slug', ['medicine', (string) $this->faculty->faculty_scope_slug])->forceDelete();
+        // A former dean's row, hidden and sorted first, and the public row, linked to no profile yet.
+        $hidden = $this->deanRow('former-hidden-dean', 1, false);
+        $public = $this->deanRow('current-public-dean', 5, true);
+
+        $this->publishCouncil([
+            ['id' => 'p-dean', 'type' => 'dean', 'memberId' => (int) $dean->getKey(), 'title' => ['', ''], 'onCouncil' => true],
+        ]);
+
+        $this->assertSame((int) $dean->getKey(), (int) $public->fresh()?->faculty_member_id);
+        $this->assertNull($hidden->fresh()?->faculty_member_id);
+    }
+
     public function test_publishing_the_council_adds_a_leadership_dean_when_the_faculty_has_none(): void
     {
         $dean = $this->member('first-dean', 'Dr. First Dean', 'د. العميد الأول');
@@ -353,6 +369,23 @@ final class FacultyCouncilTest extends TestCase
         ]);
         $person->translations()->create(['locale' => 'en', 'name' => 'Old copy', 'role' => $roleEn]);
         $person->translations()->create(['locale' => 'ar', 'name' => 'نسخة قديمة', 'role' => $roleAr]);
+
+        return $person;
+    }
+
+    private function deanRow(string $slug, int $sortOrder, bool $public): Person
+    {
+        $person = Person::query()->create([
+            'slug' => $slug,
+            'category' => 'dean',
+            'faculty_scope_slug' => 'medicine',
+            'sort_order' => $sortOrder,
+            'is_enabled' => $public,
+            'publication_status' => PublicationStatus::Published->value,
+            'published_at' => now()->subDay(),
+        ]);
+        $person->translations()->create(['locale' => 'en', 'name' => $slug, 'role' => 'Dean of the Faculty of Medicine']);
+        $person->translations()->create(['locale' => 'ar', 'name' => $slug, 'role' => 'عميد كلية الطب البشري']);
 
         return $person;
     }
