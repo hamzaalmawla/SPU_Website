@@ -1257,7 +1257,18 @@ trait ManagesFacultyHomepage
                             ->label(__('admin.faculty_workspace.editor.fields.department_head'))
                             ->options(fn (): array => $this->facultyStaffOptions())
                             ->searchable()
+                            ->live()
                             ->helperText(__('admin.faculty_workspace.editor.help.department_head')),
+                        TextInput::make('headTitle')
+                            ->label(__('admin.faculty_workspace.editor.fields.department_head_title'))
+                            ->maxLength(180)
+                            ->visible(fn (Get $get): bool => filled($get('headMemberId')))
+                            ->helperText(__('admin.faculty_workspace.editor.help.department_head_title')),
+                        Toggle::make('headOnCouncil')
+                            ->label(__('admin.faculty_workspace.editor.fields.department_head_on_council'))
+                            ->default(true)
+                            ->visible(fn (Get $get): bool => filled($get('headMemberId')))
+                            ->helperText(__('admin.faculty_workspace.editor.help.department_head_on_council')),
                         TextInput::make('code')->label(__('admin.faculty_workspace.editor.fields.department_code'))->maxLength(40),
                         Select::make('studyPlanDepartmentId')
                             ->label(__('admin.faculty_workspace.editor.fields.study_plan_link'))
@@ -1307,6 +1318,8 @@ trait ManagesFacultyHomepage
                 ...$item,
                 'type' => $type,
                 'studyPlanDepartmentId' => $type === 'specialization' ? $resolvedItem['studyPlanDepartmentId'] : null,
+                // Saved before the switch existed: the head sits on the council.
+                'headOnCouncil' => ($item['headOnCouncil'] ?? true) !== false,
             ];
         }, $items, $resolved);
 
@@ -2067,6 +2080,9 @@ trait ManagesFacultyHomepage
             if ($subpageSlug === 'departments') {
                 $item['tags'] = array_values(array_filter(is_array($item['tags'] ?? null) ? $item['tags'] : []));
                 $item['headMemberId'] = is_numeric($item['headMemberId'] ?? null) && (int) $item['headMemberId'] > 0 ? (int) $item['headMemberId'] : null;
+                // A department saved before these existed keeps the default title and sits on the council.
+                $item['headTitle'] = $item['headMemberId'] !== null ? trim((string) ($item['headTitle'] ?? '')) : '';
+                $item['headOnCouncil'] = ($item['headOnCouncil'] ?? true) !== false;
                 $item['type'] = ($item['type'] ?? null) === 'specialization' ? 'specialization' : 'section';
                 // A section has no study plan.
                 $item['studyPlanDepartmentId'] = $item['type'] === 'specialization' && trim((string) ($item['studyPlanDepartmentId'] ?? '')) !== ''

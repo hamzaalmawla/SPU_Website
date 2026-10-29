@@ -16,7 +16,8 @@ use DateTimeInterface;
  * `positions[] = {id, type: dean|vice_dean|custom, memberId, title, onCouncil}`,
  * `councilMembers[] = {id, memberId, role}` and `includeDepartmentHeads`.
  * The council is the positions marked on council, the department heads of the
- * published departments page, and the extra members, one entry per person.
+ * published departments page (except a head with `headOnCouncil` off; `headTitle`
+ * replaces the default role), and the extra members, one entry per person.
  */
 interface FacultyLeadershipServiceInterface
 {
@@ -49,7 +50,7 @@ interface FacultyLeadershipServiceInterface
 
     /**
      * Departments page rules: a head is one of this faculty's staff; a specialization
-     * links to a study plan program and a section has none; type and head match in both languages.
+     * links to a study plan program and a section has none; type, head and council seat (`headOnCouncil`) match in both languages.
      *
      * @param  array<string, mixed>  $payload
      * @return array<string, array<int, string>>

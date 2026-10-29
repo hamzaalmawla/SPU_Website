@@ -205,7 +205,7 @@ final class FacultyLeadershipService implements FacultyLeadershipServiceInterfac
                 }
 
                 if ($slug !== '') {
-                    $mapping[$slug] = [$type, $headId];
+                    $mapping[$slug] = [$type, $headId, $headId !== null && ($item['headOnCouncil'] ?? true) !== false];
                 }
             }
 
@@ -213,11 +213,11 @@ final class FacultyLeadershipService implements FacultyLeadershipServiceInterfac
             $shared[$locale] = $mapping;
         }
 
-        // A department listed in both languages has the same type and head in each.
+        // A department listed in both languages has the same type, head and council seat in each.
         $inBoth = array_intersect_key($shared['ar'], $shared['en']);
 
         if ($inBoth !== array_intersect_key($shared['en'], $shared['ar'])) {
-            $errors['translations'][] = 'Each department must have the same type and head in Arabic and English.';
+            $errors['translations'][] = 'Each department must have the same type, head and council seat in Arabic and English.';
         }
 
         return $this->uniqueErrors($errors);
@@ -402,7 +402,8 @@ final class FacultyLeadershipService implements FacultyLeadershipServiceInterfac
     }
 
     /**
-     * Heads of the published departments page, in page order.
+     * Heads of the published departments page, in page order. A head switched off the
+     * council there is left out; a head's own title replaces the default role.
      *
      * @return list<array{memberId: int, role: string}>
      */
@@ -415,15 +416,18 @@ final class FacultyLeadershipService implements FacultyLeadershipServiceInterfac
             $memberId = $this->memberId($item['headMemberId'] ?? null);
             $title = trim((string) ($item['title'] ?? ''));
 
-            if ($memberId === null || $title === '') {
+            if ($memberId === null || $title === '' || ($item['headOnCouncil'] ?? true) === false) {
                 continue;
             }
 
+            $headTitle = trim((string) ($item['headTitle'] ?? ''));
             $heads[] = [
                 'memberId' => $memberId,
-                'role' => $locale === 'ar'
-                    ? (str_starts_with($title, 'قسم') ? 'رئيس '.$title : 'رئيس قسم '.$title)
-                    : 'Head, '.$title,
+                'role' => match (true) {
+                    $headTitle !== '' => $headTitle,
+                    $locale === 'ar' => str_starts_with($title, 'قسم') ? 'رئيس '.$title : 'رئيس قسم '.$title,
+                    default => 'Head, '.$title,
+                },
             ];
         }
 

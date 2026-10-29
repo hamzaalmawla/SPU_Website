@@ -144,6 +144,73 @@ final class FacultyCouncilTest extends TestCase
             ->assertSee('عضو');
     }
 
+    public function test_a_department_heads_title_and_council_seat_are_set_on_the_departments_page(): void
+    {
+        $chair = $this->member('titled-head', 'Dr. Titled Head', 'د. رئيسة القسم');
+        $offCouncil = $this->member('off-council-head', 'Dr. Off Council', 'د. خارج المجلس');
+        $this->publishDepartments([
+            ['slug' => 'surgery-titled', 'title' => ['قسم الجراحة', 'Department of Surgery'], 'headMemberId' => (int) $chair->getKey(), 'headTitle' => ['رئيسة قسم الجراحة', 'Chair, Department of Surgery']],
+            ['slug' => 'pediatrics-off', 'title' => ['قسم الأطفال', 'Department of Pediatrics'], 'headMemberId' => (int) $offCouncil->getKey(), 'headOnCouncil' => false],
+        ]);
+
+        $page = app(FacultyPageServiceInterface::class)->getSubpage('medicine', 'council', 'en');
+        $this->assertNotNull($page);
+        $members = collect($page->items)->keyBy('memberId');
+        $this->assertSame(['Chair, Department of Surgery'], $members[(int) $chair->getKey()]['roles']);
+        $this->assertArrayNotHasKey((int) $offCouncil->getKey(), $members->all());
+
+        $this->get('/ar/faculties/medicine/council')
+            ->assertOk()
+            ->assertSee('رئيسة قسم الجراحة')
+            ->assertDontSee('د. خارج المجلس');
+
+        // The departments page shows the head's own title, or the default.
+        $this->get('/en/faculties/medicine/departments')
+            ->assertOk()
+            ->assertSee('Chair, Department of Surgery')
+            ->assertSee('Head of Department')
+            ->assertSee('Dr. Off Council');
+
+        // The council seat matches in both languages.
+        $payload = app(FacultyPageServiceInterface::class)->getEditablePayload(self::DEPARTMENTS_TARGET);
+        $payload['translations']['en']['items'][1]['headOnCouncil'] = true;
+        $this->assertArrayHasKey('translations', app(CmsWorkflowServiceInterface::class)->readiness(self::DEPARTMENTS_TARGET, $payload)->errors);
+    }
+
+    public function test_the_admin_keeps_a_head_saved_before_the_council_switch_on_the_council(): void
+    {
+        $head = $this->member('legacy-switch-head', 'Dr. Legacy Head', 'د. رئيس سابق للمفتاح');
+        $this->publishDepartmentHead($head);
+        $this->actingAs($this->admin, 'web');
+
+        Livewire::test(ManageMedicineFaculty::class)
+            ->set('data.target_key', self::DEPARTMENTS_TARGET)
+            ->call('loadTarget', self::DEPARTMENTS_TARGET)
+            ->assertSee('رئيس القسم عضو في مجلس الكلية')
+            ->call('save');
+
+        $draft = app(CmsWorkflowServiceInterface::class)->latestEditableDraftPayload(self::DEPARTMENTS_TARGET, (int) $this->admin->getKey());
+        $this->assertIsArray($draft);
+        $this->assertTrue($draft['translations']['ar']['items'][0]['headOnCouncil']);
+        $this->assertTrue($draft['translations']['en']['items'][0]['headOnCouncil']);
+    }
+
+    public function test_the_page_intro_body_shows_on_the_council_page(): void
+    {
+        $dean = $this->member('body-dean', 'Dr. Body Dean', 'د. عميد النص');
+        $payload = $this->councilPayload([
+            ['id' => 'p-dean', 'type' => 'dean', 'memberId' => (int) $dean->getKey(), 'title' => ['', ''], 'onCouncil' => true],
+        ]);
+        $payload['translations']['ar']['body'] = 'يجتمع مجلس الكلية مرة كل شهر.';
+        $payload['translations']['en']['body'] = 'The faculty council meets once a month.';
+        $workflow = app(CmsWorkflowServiceInterface::class);
+        $workflow->saveDraft(self::TARGET, $payload, (int) $this->admin->getKey());
+        $this->assertTrue($workflow->publish(self::TARGET, (int) $this->admin->getKey()));
+
+        $this->get('/en/faculties/medicine/council')->assertOk()->assertSee('The faculty council meets once a month.');
+        $this->get('/ar/faculties/medicine/council')->assertOk()->assertSee('يجتمع مجلس الكلية مرة كل شهر.');
+    }
+
     public function test_the_council_rules(): void
     {
         $dean = $this->member('rules-dean', 'Dr. Rules Dean', 'د. عميد القواعد');
@@ -351,6 +418,33 @@ final class FacultyCouncilTest extends TestCase
             ]];
         }
 
+        $workflow->saveDraft(self::DEPARTMENTS_TARGET, $payload, (int) $this->admin->getKey());
+        $this->assertTrue($workflow->publish(self::DEPARTMENTS_TARGET, (int) $this->admin->getKey()));
+    }
+
+    /**
+     * @param  list<array{slug: string, title: array{0: string, 1: string}, headMemberId: int, headTitle?: array{0: string, 1: string}, headOnCouncil?: bool}>  $departments
+     */
+    private function publishDepartments(array $departments): void
+    {
+        $workflow = app(CmsWorkflowServiceInterface::class);
+        $payload = app(FacultyPageServiceInterface::class)->getEditablePayload(self::DEPARTMENTS_TARGET);
+
+        foreach (['ar' => 0, 'en' => 1] as $locale => $index) {
+            $payload['translations'][$locale]['items'] = array_map(static fn (array $department): array => [
+                'slug' => $department['slug'],
+                'title' => $department['title'][$index],
+                'summary' => '',
+                'type' => 'section',
+                'headMemberId' => $department['headMemberId'],
+                'headTitle' => isset($department['headTitle']) ? $department['headTitle'][$index] : '',
+                'headOnCouncil' => $department['headOnCouncil'] ?? true,
+                'studyPlanDepartmentId' => null,
+            ], $departments);
+        }
+
+        $readiness = $workflow->readiness(self::DEPARTMENTS_TARGET, $payload);
+        $this->assertTrue($readiness->isReady, json_encode($readiness->errors, JSON_UNESCAPED_UNICODE) ?: '');
         $workflow->saveDraft(self::DEPARTMENTS_TARGET, $payload, (int) $this->admin->getKey());
         $this->assertTrue($workflow->publish(self::DEPARTMENTS_TARGET, (int) $this->admin->getKey()));
     }

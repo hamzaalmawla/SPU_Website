@@ -230,7 +230,7 @@
                                 @if ($head)
                                     <a href="{{ $head['url'] }}" class="mt-4 inline-flex items-center gap-3 rounded-[6px] border border-slate-100 px-3 py-2 transition hover:border-spu-blue hover:bg-spu-blue/5">
                                         @if ($head['image'])<img src="{{ $head['image'] }}" alt="" class="h-9 w-9 rounded-full object-cover" loading="lazy">@else<img src="/images/icon-user-graduate-outline.svg" alt="" class="h-5 w-5" aria-hidden="true">@endif
-                                        <span class="text-start"><span class="block text-[11px] text-slate-400">{{ $isAr ? 'رئيس القسم' : 'Head of Department' }}</span><span class="block text-sm font-bold text-spu-blue">{{ $head['name'] }}</span></span>
+                                        <span class="text-start"><span class="block text-[11px] text-slate-400" dir="auto">{{ trim((string) ($item['headTitle'] ?? '')) !== '' ? $item['headTitle'] : ($isAr ? 'رئيس القسم' : 'Head of Department') }}</span><span class="block text-sm font-bold text-spu-blue">{{ $head['name'] }}</span></span>
                                     </a>
                                 @endif
                                 @if (($item['tags'] ?? []) !== [])
@@ -604,8 +604,10 @@
     @elseif (in_array($page->subpageSlug, ['clinical-cases', 'final-exams'], true))
         @include('public.faculties.partials.info-subpage')
     @elseif ($page->subpageSlug === 'master-program')
+        @include('public.faculties.partials.subpage-body')
         @include('public.faculties.partials.master-program')
     @elseif ($page->subpageSlug === 'council')
+        @include('public.faculties.partials.subpage-body')
         @php
             $positions = is_array($page->detail['positions'] ?? null) ? $page->detail['positions'] : [];
         @endphp
