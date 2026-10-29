@@ -57,7 +57,7 @@ interface FacultyLeadershipServiceInterface
     public function departmentsValidationErrors(string $targetKey, array $payload): array;
 
     /**
-     * Council page rules: exactly one dean; every person is one of this faculty's staff;
+     * Council page rules: exactly one dean; every person is one of this faculty's staff, with a published profile;
      * a custom position has a title; positions and members match in both languages.
      *
      * @param  array<string, mixed>  $payload

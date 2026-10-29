@@ -233,10 +233,14 @@ final class FacultyLeadershipService implements FacultyLeadershipServiceInterfac
 
         $errors = [];
         $shared = [];
-        $staffIds = $this->staffIds($faculty, [
+        $councilIds = [
             ...$this->payloadMemberIds($payload, 'positions', 'memberId'),
             ...$this->payloadMemberIds($payload, 'councilMembers', 'memberId'),
-        ]);
+        ];
+        $staffIds = $this->staffIds($faculty, $councilIds);
+        // A hidden profile would drop off the page, and the About › Leadership dean row
+        // would fall back to its old copy (the previous dean's name).
+        $publicIds = $this->staffIds($faculty, $councilIds, publicOnly: true);
 
         foreach (['ar', 'en'] as $locale) {
             $translation = is_array($payload['translations'][$locale] ?? null) ? $payload['translations'][$locale] : [];
@@ -256,6 +260,8 @@ final class FacultyLeadershipService implements FacultyLeadershipServiceInterfac
                     $errors[$locale][] = 'Every position needs a staff member.';
                 } elseif (! isset($staffIds[$memberId])) {
                     $errors[$locale][] = 'Every position holder must be one of this faculty\'s academic staff.';
+                } elseif (! isset($publicIds[$memberId])) {
+                    $errors[$locale][] = 'Every position holder needs a published profile.';
                 }
 
                 if ($type === 'custom' && trim((string) ($position['title'] ?? '')) === '') {
@@ -275,6 +281,8 @@ final class FacultyLeadershipService implements FacultyLeadershipServiceInterfac
 
                 if ($memberId === null || ! isset($staffIds[$memberId])) {
                     $errors[$locale][] = 'Every council member must be one of this faculty\'s academic staff.';
+                } elseif (! isset($publicIds[$memberId])) {
+                    $errors[$locale][] = 'Every council member needs a published profile.';
                 }
 
                 $members[] = [(string) ($member['id'] ?? ''), $memberId];
@@ -507,19 +515,25 @@ final class FacultyLeadershipService implements FacultyLeadershipServiceInterfac
     }
 
     /**
-     * The ids of the given profiles that belong to this faculty.
+     * The ids of the given profiles that belong to this faculty (and are public, when asked).
      *
      * @param  list<int>  $memberIds
      * @return array<int, true>
      */
-    private function staffIds(Faculty $faculty, array $memberIds): array
+    private function staffIds(Faculty $faculty, array $memberIds, bool $publicOnly = false): array
     {
         if ($memberIds === []) {
             return [];
         }
 
         return array_fill_keys(
-            FacultyMember::query()->whereKey(array_values(array_unique($memberIds)))->where('faculty_id', $faculty->getKey())->pluck('id')->map(fn (mixed $id): int => (int) $id)->all(),
+            FacultyMember::query()
+                ->whereKey(array_values(array_unique($memberIds)))
+                ->where('faculty_id', $faculty->getKey())
+                ->when($publicOnly, fn ($query) => $query->public())
+                ->pluck('id')
+                ->map(fn (mixed $id): int => (int) $id)
+                ->all(),
             true,
         );
     }

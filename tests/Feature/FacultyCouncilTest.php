@@ -182,6 +182,28 @@ final class FacultyCouncilTest extends TestCase
         $this->assertArrayHasKey('translations', $workflow->readiness(self::TARGET, $mismatch)->errors);
     }
 
+    public function test_a_hidden_profile_cannot_hold_a_position_or_sit_on_the_council(): void
+    {
+        // A hidden profile would vanish from the page, and About › Leadership would
+        // fall back to the dean row's old copy (the previous dean's name).
+        $dean = $this->member('hidden-rules-dean', 'Dr. Visible Dean', 'د. عميد ظاهر');
+        $hidden = $this->member('hidden-rules-member', 'Dr. Hidden', 'د. مخفي');
+        $hidden->forceFill(['is_enabled' => false])->save();
+        $workflow = app(CmsWorkflowServiceInterface::class);
+
+        $hiddenDean = $workflow->readiness(self::TARGET, $this->councilPayload([
+            ['id' => 'p-dean', 'type' => 'dean', 'memberId' => (int) $hidden->getKey(), 'title' => ['', ''], 'onCouncil' => true],
+        ]));
+        $this->assertContains('Every position holder needs a published profile.', $hiddenDean->errors['ar']);
+
+        $hiddenMember = $workflow->readiness(self::TARGET, $this->councilPayload([
+            ['id' => 'p-dean', 'type' => 'dean', 'memberId' => (int) $dean->getKey(), 'title' => ['', ''], 'onCouncil' => true],
+        ], [
+            ['id' => 'm-hidden', 'memberId' => (int) $hidden->getKey(), 'role' => ['', '']],
+        ]));
+        $this->assertContains('Every council member needs a published profile.', $hiddenMember->errors['en']);
+    }
+
     public function test_publishing_the_council_makes_its_dean_the_leadership_dean(): void
     {
         $oldDean = $this->member('previous-dean', 'Dr. Previous Dean', 'د. العميد السابق');
