@@ -29,6 +29,11 @@ The imported `AGENTS.MD` is the authoritative project rulebook (scope, architect
 ## Faculty final exams
 - Every faculty has a `final-exams` page (`facilities.<faculty>.final-exams`, schedules with files or timetable rows). Live, only Medicine, AI, Petroleum and Business have a page row and card for it (from the old site); the others get it by default (`FacultyPageService::hasDefaultSubpage`), while a disabled row or hidden card keeps it off. Its card on the faculty and overview pages appears only once a schedule with a file or a row is published in that locale (`FacultyPageService::hasPublishedExamSchedule`); the page URL itself always opens, with an empty-state line until then.
 
+## Faculty master's program
+- AI only (`config/faculty_subpages.php` restricts `master-program`): page `/{locale}/faculties/artificial-intelligence/master-program`, target `facilities.<faculty>.master-program`. Like final exams and council it is a default subpage in code (no page row; a disabled row or hidden card keeps it off), and its card is added last to the faculty's highlights.
+- Until a version is published, the page shows the reviewed curriculum in `database/seeders/Data/master_programs/<faculty>.json` (rebuilt by `build_artificial_intelligence.py` next to it); the admin editor starts from it too. `FacultyMasterProgramServiceInterface` reads it, builds the page (term and program totals are computed, prerequisites are course codes) and validates on publish (unique codes, known prerequisites, the same courses in both languages).
+- Public view `partials/master-program.blade.php`; the semester board's lines and course dialogs are `resources/js/alpine/masterProgram.js` (reuses `planEdgePaths`).
+
 ## Search
 - `App\Support\LenientSearch` is the matcher for list searches (faculty projects, student lists, alumni directory, research publications/projects/researchers): every word in any order, Arabic folding, no article or punctuation, near spellings against names and titles. Callers pass the item's text in both languages, so a search works on either site.
 - Site search: each `search_documents` row also holds the other language's text and `alt_title_normalized` (rebuilt by `search:index` on every deploy); below 10 exact hits, near spellings of titles are added after them.

@@ -7,6 +7,7 @@ namespace App\Services\Page;
 use App\Contracts\Cms\CmsWorkflowServiceInterface;
 use App\Contracts\Content\PersonIdentityServiceInterface;
 use App\Contracts\Faculty\FacultyLeadershipServiceInterface;
+use App\Contracts\Faculty\FacultyMasterProgramServiceInterface;
 use App\Contracts\Faculty\FacultyStudyPlanLinkServiceInterface;
 use App\Contracts\Faculty\ProjectFieldBlockParserInterface;
 use App\Contracts\Page\AboutPageServiceInterface;
@@ -71,10 +72,14 @@ final class FacultyPageService implements FacultyPageServiceInterface
     /** A specialization teaches a study plan program; a section has no study plan. */
     private const DEPARTMENT_TYPES = ['specialization', 'section'];
 
-    /** Subpages every faculty has even without a page row or card (see hasDefaultSubpage). */
-    private const DEFAULT_SUBPAGES = ['final-exams', 'council'];
+    /**
+     * Subpages every faculty that may use them has even without a page row or card
+     * (see hasDefaultSubpage); the master's program is only for the faculties
+     * config faculty_subpages.restricted lists with it.
+     */
+    private const DEFAULT_SUBPAGES = ['final-exams', 'council', 'master-program'];
 
-    private const SUBPAGE_SLUGS = ['overview', 'departments', 'study-plan', 'study-plan-course', 'labs', 'projects', 'alumni', 'valedictorians', 'training', 'clinical-cases', 'final-exams', 'research', 'members', 'council'];
+    private const SUBPAGE_SLUGS = ['overview', 'departments', 'study-plan', 'study-plan-course', 'labs', 'projects', 'alumni', 'valedictorians', 'training', 'clinical-cases', 'final-exams', 'research', 'members', 'council', 'master-program'];
 
     private const ALUMNI_LIST_PER_PAGE = 12;
 
@@ -99,6 +104,7 @@ final class FacultyPageService implements FacultyPageServiceInterface
         private readonly FacultySubpageCardServiceInterface $subpageCardService,
         private readonly PersonIdentityServiceInterface $identityService,
         private readonly FacultyLeadershipServiceInterface $leadershipService,
+        private readonly FacultyMasterProgramServiceInterface $masterProgramService,
     ) {}
 
     public function getHub(string $locale): FacultyHubPageDTO
@@ -277,6 +283,12 @@ final class FacultyPageService implements FacultyPageServiceInterface
 
             $content = $this->publishedLocalizedPayload($this->targetKeyForSubpage($this->publicSlug($faculty), $subpageSlug), $locale);
 
+            // Until an editor publishes one, the master's program page shows the
+            // curriculum shipped with the site.
+            if ($content === null && $subpageSlug === 'master-program') {
+                $content = $this->masterProgramService->defaultContent($this->publicSlug($faculty), $locale);
+            }
+
             return $this->facultySubpageDto($faculty, $subpageSlug, $locale, $content, $filters);
         }, 1800);
     }
@@ -358,6 +370,10 @@ final class FacultyPageService implements FacultyPageServiceInterface
             $council = $this->leadershipService->council($this->publicSlug($faculty), $locale, $cmsContent);
             $items = $council->members;
             $detail = ['positions' => $council->positions];
+        }
+
+        if ($subpageSlug === 'master-program') {
+            $detail = ['program' => $this->masterProgramService->program(is_array($pageData['payload'] ?? null) ? $pageData['payload'] : [])];
         }
 
         $filterOptions = [];
@@ -707,6 +723,11 @@ final class FacultyPageService implements FacultyPageServiceInterface
             $content = [...$content, ...$this->leadershipService->defaultCouncilContent($this->publicSlug($faculty), $locale)];
         }
 
+        if ($subpageSlug === 'master-program') {
+            unset($content['items']);
+            $content = [...$content, ...($this->masterProgramService->defaultContent($this->publicSlug($faculty), $locale) ?? [])];
+        }
+
         if ($subpageSlug === 'research') {
             $facultyName = (string) $this->facultyTranslation($faculty, $locale)->name;
             $content['eyebrow'] = $locale === 'ar' ? 'أبحاث الكلية' : 'Faculty Research';
@@ -998,6 +1019,7 @@ final class FacultyPageService implements FacultyPageServiceInterface
             'research' => $locale === 'ar' ? 'البحث العلمي' : 'Research',
             'members' => $locale === 'ar' ? 'أعضاء الهيئة الأكاديمية' : 'Faculty Members',
             'council' => $locale === 'ar' ? 'مجلس الكلية' : 'Faculty Council',
+            'master-program' => $locale === 'ar' ? 'برنامج الماجستير' : "Master's Program",
         ];
         $pages = $faculty->pages->keyBy('slug');
         $cards = $this->subpageCardService->getVisibleCards($slug);
@@ -1028,7 +1050,7 @@ final class FacultyPageService implements FacultyPageServiceInterface
         // anything else (the course-lessons view, a custom page) would 404.
         // The final exams card waits until a schedule is published.
         return $entries
-            ->filter(fn (array $entry): bool => array_key_exists($entry['slug'], $labels) && ($pages->has($entry['slug']) || in_array($entry['slug'], $defaultSlugs, true)))
+            ->filter(fn (array $entry): bool => array_key_exists($entry['slug'], $labels) && ($pages->has($entry['slug']) || in_array($entry['slug'], $defaultSlugs, true) || $this->isCodeDefinedSubpage($faculty, $entry['slug'])))
             ->filter(fn (array $entry): bool => $entry['slug'] !== 'final-exams' || $this->hasPublishedExamSchedule($faculty, $locale))
             ->unique('slug')
             ->map(fn (array $entry): FacultyNavigationItemDTO => new FacultyNavigationItemDTO(
@@ -1044,16 +1066,25 @@ final class FacultyPageService implements FacultyPageServiceInterface
      * Every faculty publishes a final exam schedule and has a council page.
      * Faculties that have no page row or card for one (the old site had no
      * exam schedule for some; the council page is new) have it anyway, which
-     * needs no data migration. One an editor switched off (a disabled page or
-     * a hidden card) stays off.
+     * needs no data migration. So does the AI faculty's master's program. One an
+     * editor switched off (a disabled page or a hidden card) stays off.
      */
     private function hasDefaultSubpage(Faculty $faculty, string $subpageSlug): bool
     {
         $slug = $this->publicSlug($faculty);
 
+        return $this->isCodeDefinedSubpage($faculty, $subpageSlug)
+            && ! $this->subpageCardService->cardExists($slug, $subpageSlug);
+    }
+
+    /**
+     * A default subpage with no page row: it exists in code, so a visible card an
+     * editor added for it (to place or rename it) shows without a page row.
+     */
+    private function isCodeDefinedSubpage(Faculty $faculty, string $subpageSlug): bool
+    {
         return in_array($subpageSlug, self::DEFAULT_SUBPAGES, true)
-            && $this->facultyMayUseSubpage($slug, $subpageSlug)
-            && ! $this->subpageCardService->cardExists($slug, $subpageSlug)
+            && $this->facultyMayUseSubpage($this->publicSlug($faculty), $subpageSlug)
             && ! FacultyPage::query()->where('faculty_id', $faculty->getKey())->where('slug', $subpageSlug)->exists();
     }
 
@@ -2505,6 +2536,7 @@ final class FacultyPageService implements FacultyPageServiceInterface
             'research' => $locale === 'ar' ? 'أحدث الأبحاث' : 'Latest Research',
             'members' => $locale === 'ar' ? 'أعضاء الهيئة الأكاديمية' : 'Faculty Members',
             'council' => $locale === 'ar' ? 'مجلس الكلية' : 'Faculty Council',
+            'master-program' => $locale === 'ar' ? 'برنامج الماجستير' : "Master's Program",
         ];
 
         return $titles[$subpageSlug] ?? $subpageSlug;

@@ -9,6 +9,7 @@ use App\Contracts\Auth\PermissionCatalogInterface;
 use App\Contracts\Career\StudentListImportServiceInterface;
 use App\Contracts\Cms\CmsWorkflowServiceInterface;
 use App\Contracts\Content\ProfileAdminServiceInterface;
+use App\Contracts\Faculty\FacultyMasterProgramServiceInterface;
 use App\Contracts\Faculty\FacultyStudyPlanBoardServiceInterface;
 use App\Contracts\Faculty\FacultyStudyPlanEditorServiceInterface;
 use App\Contracts\Faculty\FacultyStudyPlanLinkServiceInterface;
@@ -25,6 +26,7 @@ use App\Support\FacultyLogoSubtitle;
 use Filament\Actions\Action;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Hidden;
+use Filament\Forms\Components\KeyValue;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
@@ -819,6 +821,7 @@ trait ManagesFacultyHomepage
             'members' => [...$sections, ...$this->membersSubpageFields($prefix)],
             // Positions and members are edited once for both languages, below the language tabs.
             'council' => $sections,
+            'master-program' => [...$sections, ...$this->masterProgramSubpageFields($prefix)],
             default => throw new \InvalidArgumentException('Unsupported faculty subpage target.'),
         };
     }
@@ -966,6 +969,126 @@ trait ManagesFacultyHomepage
                     ->collapsible()
                     ->columnSpanFull(),
             ]),
+            ...$this->optionalSeoFields($prefix),
+        ];
+    }
+
+    /** @return array<int, Section> */
+    private function masterProgramSubpageFields(string $prefix): array
+    {
+        $field = static fn (string $key): string => __('admin.faculty_workspace.editor.fields.'.$key);
+        $textList = static fn (string $name, string $label, int $rows = 2): Repeater => Repeater::make($name)
+            ->label($label)
+            ->schema([Textarea::make('text')->label($field('paragraph_text'))->required()->rows($rows)])
+            ->defaultItems(0)
+            ->reorderable()
+            ->columnSpanFull();
+
+        return [
+            Section::make(__('admin.faculty_workspace.editor.sections.master_overview'))->schema([
+                $textList($prefix.'.payload.overview', $field('body'), 3),
+                Repeater::make($prefix.'.payload.facts')
+                    ->label($field('facts'))
+                    ->schema([
+                        TextInput::make('label')->label($field('label'))->required()->maxLength(120),
+                        TextInput::make('value')->label($field('value'))->required()->maxLength(120),
+                    ])
+                    ->columns(2)
+                    ->defaultItems(0)
+                    ->reorderable()
+                    ->columnSpanFull(),
+                Textarea::make($prefix.'.payload.coding')->label($field('course_coding'))->rows(2)->columnSpanFull(),
+            ])->collapsed(),
+            Section::make(__('admin.faculty_workspace.editor.sections.master_terms'))->description(__('admin.faculty_workspace.editor.help.master_terms'))->schema([
+                Repeater::make($prefix.'.payload.terms')
+                    ->label(__('admin.faculty_workspace.editor.sections.master_terms'))
+                    ->schema([
+                        Hidden::make('id'),
+                        TextInput::make('label')->label($field('semester_label'))->required()->maxLength(120),
+                        TextInput::make('theme')->label($field('semester_theme'))->maxLength(180),
+                        Repeater::make('courses')
+                            ->label($field('courses'))
+                            ->schema([
+                                TextInput::make('code')->label($field('course_code'))->required()->maxLength(20),
+                                TextInput::make('title')->label($field('course_title'))->required()->maxLength(255),
+                                TextInput::make('titleAlt')->label($field('course_title_other'))->maxLength(255),
+                                TextInput::make('credits')->label($field('credit_hours'))->numeric()->minValue(0)->maxValue(60)->required(),
+                                TextInput::make('theory')->label($field('theory_hours'))->numeric()->minValue(0)->maxValue(60),
+                                TextInput::make('practical')->label($field('practical_hours'))->numeric()->minValue(0)->maxValue(60),
+                                TagsInput::make('prerequisites')->label($field('prerequisites'))->columnSpanFull(),
+                                TextInput::make('prerequisiteNote')->label($field('prerequisite_note'))->maxLength(255)->columnSpanFull(),
+                                Textarea::make('description')->label($field('description'))->rows(4)->columnSpanFull(),
+                                $textList('outcomes', $field('course_outcomes')),
+                                Textarea::make('grading')->label($field('grading'))->rows(2)->columnSpanFull(),
+                                KeyValue::make('coverage')
+                                    ->label($field('coverage'))
+                                    ->keyLabel($field('coverage_outcome'))
+                                    ->valueLabel($field('coverage_level'))
+                                    ->columnSpanFull(),
+                            ])
+                            ->itemLabel(static fn (array $state): ?string => trim(($state['code'] ?? '').' '.($state['title'] ?? '')) ?: null)
+                            ->columns(3)
+                            ->defaultItems(0)
+                            ->reorderable()
+                            ->collapsible()
+                            ->collapsed()
+                            ->columnSpanFull(),
+                    ])
+                    ->itemLabel(static fn (array $state): ?string => trim((string) ($state['label'] ?? '')) ?: null)
+                    ->columns(2)
+                    ->defaultItems(0)
+                    ->reorderable()
+                    ->collapsible()
+                    ->columnSpanFull(),
+            ]),
+            Section::make(__('admin.faculty_workspace.editor.sections.master_outcomes'))->schema([
+                Repeater::make($prefix.'.payload.outcomes')
+                    ->label(__('admin.faculty_workspace.editor.sections.master_outcomes'))
+                    ->schema([
+                        TextInput::make('code')->label($field('outcome_code'))->required()->maxLength(20),
+                        Textarea::make('text')->label($field('description'))->required()->rows(2)->columnSpan(3),
+                    ])
+                    ->columns(4)
+                    ->defaultItems(0)
+                    ->reorderable()
+                    ->columnSpanFull(),
+                TextInput::make($prefix.'.payload.coverageLegend')->label($field('coverage_legend'))->maxLength(255)->columnSpanFull(),
+            ])->collapsed(),
+            Section::make(__('admin.faculty_workspace.editor.sections.master_assessment'))->schema([
+                Repeater::make($prefix.'.payload.assessment')
+                    ->label(__('admin.faculty_workspace.editor.sections.master_assessment'))
+                    ->schema([
+                        TextInput::make('type')->label($field('type'))->required()->maxLength(180),
+                        TextInput::make('weight')->label($field('weight'))->maxLength(60),
+                        Textarea::make('description')->label($field('description'))->rows(2)->columnSpanFull(),
+                    ])
+                    ->columns(2)
+                    ->defaultItems(0)
+                    ->reorderable()
+                    ->columnSpanFull(),
+            ])->collapsed(),
+            Section::make(__('admin.faculty_workspace.editor.sections.master_project'))->schema([
+                Textarea::make($prefix.'.payload.projectIntro')->label($field('intro'))->rows(3)->columnSpanFull(),
+                $textList($prefix.'.payload.projectRules', $field('rules')),
+            ])->collapsed(),
+            Section::make(__('admin.faculty_workspace.editor.sections.master_admission'))->schema([
+                Textarea::make($prefix.'.payload.admission.intro')->label($field('intro'))->rows(3)->columnSpanFull(),
+                $textList($prefix.'.payload.admission.majors', $field('majors'), 1),
+                Repeater::make($prefix.'.payload.admission.criteria')
+                    ->label($field('criteria'))
+                    ->schema([
+                        TextInput::make('label')->label($field('label'))->required()->maxLength(180),
+                        TextInput::make('weight')->label($field('weight'))->maxLength(60),
+                        Textarea::make('description')->label($field('description'))->rows(2)->columnSpanFull(),
+                    ])
+                    ->columns(2)
+                    ->defaultItems(0)
+                    ->reorderable()
+                    ->columnSpanFull(),
+                Textarea::make($prefix.'.payload.admission.note')->label($field('note'))->rows(2)->columnSpanFull(),
+                $textList($prefix.'.payload.degreeRequirements', $field('degree_requirements'), 1),
+                Textarea::make($prefix.'.payload.teachingNote')->label($field('teaching_note'))->rows(3)->columnSpanFull(),
+            ])->collapsed(),
             ...$this->optionalSeoFields($prefix),
         ];
     }
@@ -1914,6 +2037,13 @@ trait ManagesFacultyHomepage
         }
 
         if ($subpageSlug === 'research' || $subpageSlug === 'members') {
+            unset($content['items'], $content['stats'], $content['dean']);
+
+            return $content;
+        }
+
+        if ($subpageSlug === 'master-program') {
+            $content['payload'] = app(FacultyMasterProgramServiceInterface::class)->normalizePayload(is_array($content['payload'] ?? null) ? $content['payload'] : []);
             unset($content['items'], $content['stats'], $content['dean']);
 
             return $content;

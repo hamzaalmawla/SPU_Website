@@ -1497,6 +1497,10 @@ final class FacilitiesWorkflowTest extends TestCase
         $expectedTargets[] = 'facilities.'.$facultySlug.'.members';
         $expectedTargets[] = 'facilities.'.$facultySlug.'.council';
 
+        if ($facultySlug === 'artificial-intelligence') {
+            $expectedTargets[] = 'facilities.artificial-intelligence.master-program';
+        }
+
         $reflection = new \ReflectionClass($pageClass);
         $method = $reflection->getMethod('targetOptions');
         $method->setAccessible(true);

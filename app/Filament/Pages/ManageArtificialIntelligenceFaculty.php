@@ -50,6 +50,7 @@ class ManageArtificialIntelligenceFaculty extends Page implements HasForms
             'facilities.artificial-intelligence.final-exams' => __('admin.cms.targets.facilities.final-exams'),
             'facilities.artificial-intelligence.members' => __('admin.cms.targets.facilities.members'),
             'facilities.artificial-intelligence.council' => __('admin.cms.targets.facilities.council'),
+            'facilities.artificial-intelligence.master-program' => __('admin.cms.targets.facilities.master-program'),
         ];
     }
 

@@ -18,6 +18,7 @@ import { createVirtualTour } from './alpine/virtualTour.js';
 import { registerDynamicFormStore } from './alpine/dynamicFormStore.js';
 import { createDynamicFormShell, createDynamicFormView } from './alpine/dynamicFormView.js';
 import { initStudyPlanPages } from './alpine/studyPlan.js';
+import { initMasterProgramPages } from './alpine/masterProgram.js';
 import { initRevealSections }   from './alpine/scrollReveal.js';
 import { createVirtualizedSchedule } from './alpine/virtualizedSchedule.js';
 import { registerHomepageComponents } from './homepage.js';
@@ -61,6 +62,7 @@ function initAfterAlpineStart() {
         requestAnimationFrame(() => {
             initRevealSections();
             initStudyPlanPages();
+            initMasterProgramPages();
         });
     });
 }

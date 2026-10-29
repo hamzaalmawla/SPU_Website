@@ -6,6 +6,7 @@ namespace App\Services\Seo;
 
 use App\Contracts\Career\AlumniDirectoryServiceInterface;
 use App\Contracts\Content\PersonIdentityServiceInterface;
+use App\Contracts\Page\FacultyPageServiceInterface;
 use App\Contracts\Page\PageServiceInterface;
 use App\Contracts\Research\ResearchPageServiceInterface;
 use App\Contracts\Seo\SeoMetadataServiceInterface;
@@ -55,6 +56,7 @@ final class SitemapService implements SitemapServiceInterface
         private readonly ResearchPageServiceInterface $researchPageService,
         private readonly AlumniDirectoryServiceInterface $alumniDirectoryService,
         private readonly PersonIdentityServiceInterface $identityService,
+        private readonly FacultyPageServiceInterface $facultyPageService,
     ) {}
 
     public function generateEntries(): Collection
@@ -70,6 +72,7 @@ final class SitemapService implements SitemapServiceInterface
         $this->appendEServicesEntries($entries, $baseUrl);
         $this->appendFacultyResearchEntries($entries, $baseUrl);
         $this->appendFacultyProjectEntries($entries, $baseUrl);
+        $this->appendFacultyMasterProgramEntries($entries, $baseUrl);
         $this->appendAlumniEntries($entries, $baseUrl);
         $this->appendAchievementArchiveEntries($entries, $baseUrl);
         $this->appendResearchCatalogEntries($entries, $baseUrl);
@@ -100,6 +103,7 @@ final class SitemapService implements SitemapServiceInterface
             case 'faculties':
                 $this->appendFacultyResearchEntries($entries, $baseUrl);
                 $this->appendFacultyProjectEntries($entries, $baseUrl);
+                $this->appendFacultyMasterProgramEntries($entries, $baseUrl);
                 break;
             case 'people':
                 $this->appendAboutProfileEntries($entries, $baseUrl);
@@ -410,6 +414,40 @@ final class SitemapService implements SitemapServiceInterface
                 $entries->push(new SitemapEntryDTO(
                     loc: $baseUrl.'/'.$locale.$path,
                     lastmod: $this->w3c($faculty->updated_at),
+                    changefreq: null,
+                    priority: null,
+                    alternates: $alternates,
+                ));
+            }
+        }
+    }
+
+    /**
+     * The master's program pages: they exist in code (no page row), for the
+     * faculties config faculty_subpages.restricted lists, unless switched off.
+     *
+     * @param  Collection<int, SitemapEntryDTO>  $entries
+     */
+    private function appendFacultyMasterProgramEntries(Collection $entries, string $baseUrl): void
+    {
+        foreach ((array) config('faculty_subpages.restricted.master-program', []) as $facultySlug) {
+            $path = '/faculties/'.$facultySlug.'/master-program';
+            $locales = collect(['ar', 'en'])
+                ->filter(fn (string $locale): bool => $this->facultyPageService->getSubpage((string) $facultySlug, 'master-program', $locale) !== null)
+                ->values();
+            $alternates = $locales->map(fn (string $locale): array => [
+                'locale' => $locale,
+                'url' => $baseUrl.'/'.$locale.$path,
+            ])->all();
+            $lastmod = $this->w3c(CmsTargetContent::query()
+                ->where('target_key', 'facilities.'.$facultySlug.'.master-program')
+                ->where('status', PublicationStatus::Published->value)
+                ->value('updated_at') ?? Faculty::query()->where('public_slug', $facultySlug)->value('updated_at'));
+
+            foreach ($locales as $locale) {
+                $entries->push(new SitemapEntryDTO(
+                    loc: $baseUrl.'/'.$locale.$path,
+                    lastmod: $lastmod,
                     changefreq: null,
                     priority: null,
                     alternates: $alternates,

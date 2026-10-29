@@ -603,6 +603,8 @@
         </section>
     @elseif (in_array($page->subpageSlug, ['clinical-cases', 'final-exams'], true))
         @include('public.faculties.partials.info-subpage')
+    @elseif ($page->subpageSlug === 'master-program')
+        @include('public.faculties.partials.master-program')
     @elseif ($page->subpageSlug === 'council')
         @php
             $positions = is_array($page->detail['positions'] ?? null) ? $page->detail['positions'] : [];

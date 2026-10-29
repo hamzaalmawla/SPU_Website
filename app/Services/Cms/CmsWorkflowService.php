@@ -9,6 +9,7 @@ use App\Contracts\Cms\AboutEntityCmsServiceInterface;
 use App\Contracts\Cms\CmsTargetRegistryInterface;
 use App\Contracts\Cms\CmsWorkflowServiceInterface;
 use App\Contracts\Faculty\FacultyLeadershipServiceInterface;
+use App\Contracts\Faculty\FacultyMasterProgramServiceInterface;
 use App\Contracts\Faculty\FacultyStudyPlanLinkServiceInterface;
 use App\Contracts\Form\FormDefinitionServiceInterface;
 use App\Contracts\Media\MediaServiceInterface;
@@ -56,6 +57,7 @@ final class CmsWorkflowService implements CmsWorkflowServiceInterface
         private readonly ResearchPublicationCmsServiceInterface $researchPublicationCmsService,
         private readonly FacultyStudyPlanLinkServiceInterface $studyPlanLinkService,
         private readonly FacultyLeadershipServiceInterface $leadershipService,
+        private readonly FacultyMasterProgramServiceInterface $masterProgramService,
         private readonly FormDefinitionServiceInterface $formDefinitions,
         private readonly AdminAccessServiceInterface $access,
     ) {}
@@ -392,6 +394,13 @@ final class CmsWorkflowService implements CmsWorkflowServiceInterface
                     ...$messages,
                 ]));
             }
+        }
+
+        foreach ($this->masterProgramService->validationErrors($target->key, $payload) as $field => $messages) {
+            $errors[$field] = array_values(array_unique([
+                ...($errors[$field] ?? []),
+                ...$messages,
+            ]));
         }
 
         foreach ($this->leadershipService->councilValidationErrors($target->key, $payload) as $field => $messages) {
