@@ -16,6 +16,8 @@ final readonly class FacultyPositionMatchResultDTO
      * @param  list<array{faculty: string, member: string, typed: string, reason: string}>  $skipped  matched but not added
      * @param  list<array{faculty: string, member: string, typed: string}>  $unmatched  no position in the list fits
      * @param  list<string>  $savedFaculties  faculties whose council draft was saved
+     * @param  list<string>  $publishedFaculties  faculties whose saved draft was also published
+     * @param  array<string, string>  $notPublished  faculty => why its saved draft was left unpublished
      */
     public function __construct(
         public array $matched,
@@ -25,5 +27,7 @@ final readonly class FacultyPositionMatchResultDTO
         public array $unmatched,
         public array $savedFaculties,
         public bool $written,
+        public array $publishedFaculties = [],
+        public array $notPublished = [],
     ) {}
 }

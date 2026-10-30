@@ -15,6 +15,7 @@ use App\Models\Person\FacultyMember;
 use App\Models\User\User;
 use App\Support\SearchTextNormalizer;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
 
 final class FacultyPositionMatchService implements FacultyPositionMatchServiceInterface
@@ -37,7 +38,7 @@ final class FacultyPositionMatchService implements FacultyPositionMatchServiceIn
         private readonly CmsWorkflowServiceInterface $workflow,
     ) {}
 
-    public function run(?string $facultySlug, bool $write, ?string $user): FacultyPositionMatchResultDTO
+    public function run(?string $facultySlug, bool $write, ?string $user, bool $publish = false): FacultyPositionMatchResultDTO
     {
         $userId = null;
 
@@ -72,6 +73,8 @@ final class FacultyPositionMatchService implements FacultyPositionMatchServiceIn
         $skipped = [];
         $unmatched = [];
         $saved = [];
+        $published = [];
+        $notPublished = [];
 
         foreach ($faculties as $faculty) {
             $slug = (string) $faculty->public_slug;
@@ -140,12 +143,29 @@ final class FacultyPositionMatchService implements FacultyPositionMatchServiceIn
                     $payload['translations'][$locale]['includeDepartmentHeads'] ??= true;
                 }
 
+                // Checked before saving: an editor's unfinished work is never published from here.
+                $hadOpenDraft = $this->workflow->latestEditableDraftPayload($targetKey, $userId) !== null;
+
                 $this->workflow->saveDraft($targetKey, $payload, $userId);
                 $saved[] = $slug;
+
+                if ($publish) {
+                    try {
+                        if ($hadOpenDraft) {
+                            $notPublished[$slug] = 'an editor already had a draft open on this page';
+                        } elseif ($this->workflow->publish($targetKey, $userId)) {
+                            $published[] = $slug;
+                        } else {
+                            $notPublished[$slug] = 'the publish changed nothing';
+                        }
+                    } catch (ValidationException $exception) {
+                        $notPublished[$slug] = implode(' ', array_map('strval', collect($exception->errors())->flatten()->unique()->all()));
+                    }
+                }
             }
         }
 
-        return new FacultyPositionMatchResultDTO($matched, $present, $heads, $skipped, $unmatched, $saved, $write);
+        return new FacultyPositionMatchResultDTO($matched, $present, $heads, $skipped, $unmatched, $saved, $write, $published, $notPublished);
     }
 
     /**

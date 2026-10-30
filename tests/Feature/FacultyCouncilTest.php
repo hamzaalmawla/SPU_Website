@@ -522,6 +522,50 @@ final class FacultyCouncilTest extends TestCase
         $this->assertCount(count($draft['translations']['ar']['positions']), $again['translations']['ar']['positions'] ?? []);
     }
 
+    public function test_matched_positions_can_be_published_when_the_page_is_ready(): void
+    {
+        $dean = $this->member('published-dean', 'Dr. Published Dean', 'د. العميد المنشور');
+        $this->publishCouncil([['positionSlug' => 'dean', 'memberId' => (int) $dean->getKey()]]);
+        $vice = $this->member('typed-vice', 'Dr. Typed Vice', 'د. نائب مكتوب', position: ['نائب العميد للشؤون العلمية', 'Vice Dean for Academic Affairs']);
+
+        $this->artisan('faculty:match-positions', ['--faculty' => 'medicine', '--publish' => true])->assertFailed();
+
+        $this->artisan('faculty:match-positions', ['--faculty' => 'medicine', '--write' => true, '--publish' => true, '--user' => (string) $this->admin->getKey()])
+            ->expectsOutputToContain('Published: medicine.')
+            ->assertSuccessful();
+
+        $published = app(CmsWorkflowServiceInterface::class)->getPublishedPayload(self::TARGET);
+        $this->assertContains((int) $vice->getKey(), array_column($published['translations']['ar']['positions'], 'memberId'));
+        $this->assertContains((int) $dean->getKey(), array_column($published['translations']['en']['positions'], 'memberId'));
+    }
+
+    public function test_matched_positions_are_not_published_over_an_open_draft_or_without_a_dean(): void
+    {
+        $workflow = app(CmsWorkflowServiceInterface::class);
+        $this->member('typed-vice', 'Dr. Typed Vice', 'د. نائب مكتوب', position: ['نائب العميد للشؤون العلمية', 'Vice Dean for Academic Affairs']);
+
+        // No dean: the page fails the council rules, so it stays a draft.
+        $this->artisan('faculty:match-positions', ['--faculty' => 'medicine', '--write' => true, '--publish' => true, '--user' => (string) $this->admin->getKey()])
+            ->expectsOutputToContain('Left as a draft: medicine')
+            ->assertSuccessful();
+        $this->assertNull(CmsTargetContent::query()->where('target_key', self::TARGET)->where('status', PublicationStatus::Published->value)->value('id'));
+        $this->assertIsArray($workflow->latestEditableDraftPayload(self::TARGET, (int) $this->admin->getKey()));
+
+        // That draft is now an open one. Even with a dean added, a later run leaves it for the editor.
+        $draft = $workflow->latestEditableDraftPayload(self::TARGET, (int) $this->admin->getKey());
+        $dean = $this->member('open-draft-dean', 'Dr. Open Draft Dean', 'د. عميد المسودة');
+        foreach (['ar', 'en'] as $locale) {
+            $draft['translations'][$locale]['positions'][] = ['id' => 'dean-row', 'positionSlug' => 'dean', 'memberId' => (int) $dean->getKey()];
+        }
+        $workflow->saveDraft(self::TARGET, $draft, (int) $this->admin->getKey());
+        $this->member('typed-vice-two', 'Dr. Second Vice', 'د. نائب ثان', position: ['نائب العميد للشؤون الإدارية', 'Vice Dean for Administration']);
+
+        $this->artisan('faculty:match-positions', ['--faculty' => 'medicine', '--write' => true, '--publish' => true, '--user' => (string) $this->admin->getKey()])
+            ->expectsOutputToContain('an editor already had a draft open')
+            ->assertSuccessful();
+        $this->assertNull(CmsTargetContent::query()->where('target_key', self::TARGET)->where('status', PublicationStatus::Published->value)->value('id'));
+    }
+
     /**
      * @param  list<array{positionSlug: ?string, memberId: ?int, id?: string}>  $rows
      * @return array<string, mixed>

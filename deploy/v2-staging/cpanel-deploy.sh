@@ -898,6 +898,8 @@ fi
 #
 #     storage/app/private/legacy-imports/faculty-positions.approved
 #         actor=<user id>      (or actor=auto: the first unlocked super admin)
+#         publish=yes          (optional: also publish each draft, unless an editor
+#                               already had one open or it fails the council rules)
 #
 # It disarms itself after one run.
 FACULTY_POSITIONS_APPROVAL="${IMPORT_DIR}/faculty-positions.approved"
@@ -924,7 +926,12 @@ if [[ -f "${FACULTY_POSITIONS_APPROVAL}" ]]; then
     fi
     [[ "${FP_ACTOR}" =~ ^[0-9]+$ ]] || fail "The faculty positions actor must be a numeric user id or 'auto'."
 
-    (cd "${APP}" && "${PHP}" artisan faculty:match-positions --write --user="${FP_ACTOR}" --no-ansi) \
+    FP_PUBLISH=()
+    if grep -qE '^publish=yes[[:space:]]*$' "${FACULTY_POSITIONS_APPROVAL}"; then
+        FP_PUBLISH=(--publish)
+    fi
+
+    (cd "${APP}" && "${PHP}" artisan faculty:match-positions --write ${FP_PUBLISH[@]+"${FP_PUBLISH[@]}"} --user="${FP_ACTOR}" --no-ansi) \
         || fail "Saving the faculty positions failed."
 
     mv "${FACULTY_POSITIONS_APPROVAL}" "${FACULTY_POSITIONS_APPROVAL}.consumed-$(date -u +%Y%m%d-%H%M%S)"

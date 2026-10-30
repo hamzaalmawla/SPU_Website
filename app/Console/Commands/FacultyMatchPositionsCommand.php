@@ -13,7 +13,8 @@ final class FacultyMatchPositionsCommand extends Command
     protected $signature = 'faculty:match-positions
         {--faculty= : One public faculty slug (every faculty when left out)}
         {--user= : Id or email of the CMS user the council drafts are saved as (needed with --write)}
-        {--write : Save the matched positions as unpublished council drafts (without it nothing is stored)}';
+        {--write : Save the matched positions as unpublished council drafts (without it nothing is stored)}
+        {--publish : With --write, also publish each saved draft, unless an editor already had one open or it fails the council rules}';
 
     protected $description = 'Match positions typed on faculty profiles to the shared positions list and add them to each faculty\'s council page as a draft.';
 
@@ -27,10 +28,17 @@ final class FacultyMatchPositionsCommand extends Command
     {
         $write = (bool) $this->option('write');
         $user = $this->option('user');
+        $publish = (bool) $this->option('publish');
+
+        if ($publish && ! $write) {
+            $this->error('--publish needs --write.');
+
+            return self::INVALID;
+        }
 
         try {
             $faculty = $this->option('faculty');
-            $result = $this->matchService->run(is_string($faculty) && $faculty !== '' ? $faculty : null, $write, is_string($user) ? $user : null);
+            $result = $this->matchService->run(is_string($faculty) && $faculty !== '' ? $faculty : null, $write, is_string($user) ? $user : null, $publish);
         } catch (InvalidArgumentException $exception) {
             $this->error($exception->getMessage());
 
@@ -47,7 +55,15 @@ final class FacultyMatchPositionsCommand extends Command
         if ($write) {
             $this->info($result->savedFaculties === []
                 ? 'Nothing to save.'
-                : 'Saved unpublished council drafts for: '.implode(', ', $result->savedFaculties).'. An editor reviews and publishes each one.');
+                : 'Saved council drafts for: '.implode(', ', $result->savedFaculties).'.');
+        }
+
+        if ($publish) {
+            $this->info('Published: '.($result->publishedFaculties === [] ? 'none' : implode(', ', $result->publishedFaculties)).'.');
+
+            foreach ($result->notPublished as $faculty => $reason) {
+                $this->warn(sprintf('Left as a draft: %s (%s)', $faculty, $reason));
+            }
         }
 
         return self::SUCCESS;

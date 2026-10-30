@@ -617,6 +617,11 @@ draft** with the matched rows added; an editor reviews and publishes it. It neve
 second dean and never edits a profile. The typed text stays on the profile until an editor clears it; the
 profile shows the council page's position once one is published.
 
+Add a `publish=yes` line to the file when the product owner has approved the matched rows going public as
+they are. Each saved draft is then also published, except where an editor already had a draft open on that
+page or the page fails the council rules (for example no dean). Those stay as drafts, and the deploy log
+lists them under "Left as a draft".
+
 ### One profile per person (people:unify)
 
 Every deploy log has a "People unify dry run" section. It shows the faculty profile each leadership row
