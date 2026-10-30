@@ -12,17 +12,16 @@ use DateTimeInterface;
  * council and the department heads. Everyone is one of the faculty's own academic
  * staff profiles (`faculty_members`), stored by id.
  *
- * The council page (CMS target `facilities.<faculty>.council`) holds, per locale:
- * `positions[] = {id, type: dean|vice_dean|custom, memberId, title, onCouncil}`,
- * `councilMembers[] = {id, memberId, role}` and `includeDepartmentHeads`.
- * The council is the positions marked on council, the department heads of the
- * published departments page (except a head with `headOnCouncil` off; `headTitle`
- * replaces the default role), and the extra members, one entry per person.
+ * The council page (CMS target `facilities.<faculty>.council`) holds, the same in
+ * both locales: `positions[] = {id, positionSlug, memberId}` (a position from the
+ * shared list, FacultyPositionServiceInterface) and `includeDepartmentHeads`. A
+ * position's placement puts its holder in the leadership cards or the council
+ * list; the department heads come from the published departments page (except a
+ * head with `headOnCouncil` off; `headTitle` replaces the position's name). Pages
+ * saved before the list (`type`, `title`, `onCouncil`, `councilMembers`) still read.
  */
 interface FacultyLeadershipServiceInterface
 {
-    public const POSITION_TYPES = ['dean', 'vice_dean', 'custom'];
-
     public function isCouncilTarget(string $targetKey): bool;
 
     /**
@@ -42,6 +41,21 @@ interface FacultyLeadershipServiceInterface
      */
     public function council(string $facultySlug, string $locale, ?array $content = null): FacultyCouncilDTO;
 
+    /**
+     * Every position each of the faculty's staff holds, by profile id: their positions on the
+     * published council page and the departments they head. Profiles show these.
+     *
+     * @return array<int, list<string>>
+     */
+    public function memberPositions(string $facultySlug, string $locale): array;
+
+    /**
+     * The positions one profile holds on its own faculty's council and departments pages.
+     *
+     * @return list<string>
+     */
+    public function positionsOfMember(int $memberId, string $locale): array;
+
     /** The slug of the published dean's public profile, when the faculty's council page names one. */
     public function deanProfileSlug(string $facultySlug): ?string;
 
@@ -58,8 +72,8 @@ interface FacultyLeadershipServiceInterface
     public function departmentsValidationErrors(string $targetKey, array $payload): array;
 
     /**
-     * Council page rules: exactly one dean; every person is one of this faculty's staff, with a published profile;
-     * a custom position has a title; positions and members match in both languages.
+     * Council page rules: every position is from the positions list and exactly one is the dean;
+     * every holder is one of this faculty's staff with a published profile; the same in both languages.
      *
      * @param  array<string, mixed>  $payload
      * @return array<string, array<int, string>>

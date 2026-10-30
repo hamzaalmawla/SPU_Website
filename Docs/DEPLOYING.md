@@ -594,6 +594,29 @@ actor=auto
 `person-photos.approved.consumed-<time>`. It only adds rows to the legacy library and fills empty titles,
 so it is safe to repeat. See `Docs/LEGACY_IMPORT_RUNBOOK.md`.
 
+### Faculty positions typed on profiles (faculty:match-positions)
+
+Faculty positions are picked on each faculty's council page from one shared list (dean, vice dean, head
+of department and the ones editors add). Profiles used to carry a typed position instead, so the council
+page could not see them. Every deploy log has a "Faculty positions dry run" section: the typed positions
+that match a position in the list and would be added to the faculty's council page, those already there,
+heads of department (left to the departments page), matches it will not add (a second dean) and typed text
+that fits no position.
+
+After the dry run has been read and approved, place this file on the server, naming the CMS user the drafts
+are saved as:
+
+```
+storage/app/private/legacy-imports/faculty-positions.approved
+actor=auto
+```
+
+`cpanel-deploy.sh` then runs `faculty:match-positions --write` and renames the file to
+`faculty-positions.approved.consumed-<time>`. It saves each faculty's council page as an **unpublished
+draft** with the matched rows added; an editor reviews and publishes it. It never removes a row, never adds a
+second dean and never edits a profile. The typed text stays on the profile until an editor clears it; the
+profile shows the council page's position once one is published.
+
 ### One profile per person (people:unify)
 
 Every deploy log has a "People unify dry run" section. It shows the faculty profile each leadership row

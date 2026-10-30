@@ -28,6 +28,8 @@ use App\Contracts\ErrorPage\ErrorPageRendererInterface;
 use App\Contracts\ErrorPage\ErrorPageServiceInterface;
 use App\Contracts\Faculty\FacultyLeadershipServiceInterface;
 use App\Contracts\Faculty\FacultyMasterProgramServiceInterface;
+use App\Contracts\Faculty\FacultyPositionMatchServiceInterface;
+use App\Contracts\Faculty\FacultyPositionServiceInterface;
 use App\Contracts\Faculty\FacultyStructureImportServiceInterface;
 use App\Contracts\Faculty\FacultyStudyPlanBoardServiceInterface;
 use App\Contracts\Faculty\FacultyStudyPlanEditorServiceInterface;
@@ -228,6 +230,8 @@ use App\Services\ErrorPage\ErrorPageRenderer;
 use App\Services\ErrorPage\ErrorPageService;
 use App\Services\Faculty\FacultyLeadershipService;
 use App\Services\Faculty\FacultyMasterProgramService;
+use App\Services\Faculty\FacultyPositionMatchService;
+use App\Services\Faculty\FacultyPositionService;
 use App\Services\Faculty\FacultyStructureImportService;
 use App\Services\Faculty\FacultyStudyPlanBoardService;
 use App\Services\Faculty\FacultyStudyPlanEditorService;
@@ -719,6 +723,8 @@ class AppServiceProvider extends ServiceProvider
             FacultyStudyPlanBoardServiceInterface::class => FacultyStudyPlanBoardService::class,
             FacultyStudyPlanLinkServiceInterface::class => FacultyStudyPlanLinkService::class,
             FacultyLeadershipServiceInterface::class => FacultyLeadershipService::class,
+            FacultyPositionServiceInterface::class => FacultyPositionService::class,
+            FacultyPositionMatchServiceInterface::class => FacultyPositionMatchService::class,
             FacultyMasterProgramServiceInterface::class => FacultyMasterProgramService::class,
             ProjectFieldBlockParserInterface::class => ProjectFieldBlockParser::class,
             FacultyPageServiceInterface::class => FacultyPageService::class,

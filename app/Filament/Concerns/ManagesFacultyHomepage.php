@@ -10,6 +10,7 @@ use App\Contracts\Career\StudentListImportServiceInterface;
 use App\Contracts\Cms\CmsWorkflowServiceInterface;
 use App\Contracts\Content\ProfileAdminServiceInterface;
 use App\Contracts\Faculty\FacultyMasterProgramServiceInterface;
+use App\Contracts\Faculty\FacultyPositionServiceInterface;
 use App\Contracts\Faculty\FacultyStudyPlanBoardServiceInterface;
 use App\Contracts\Faculty\FacultyStudyPlanEditorServiceInterface;
 use App\Contracts\Faculty\FacultyStudyPlanLinkServiceInterface;
@@ -24,6 +25,7 @@ use App\Filament\Support\ResearchPublicationPicker;
 use App\Models\User\User;
 use App\Support\FacultyLogoSubtitle;
 use Filament\Actions\Action;
+use Filament\Forms\Components\Component;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\KeyValue;
@@ -39,6 +41,7 @@ use Filament\Forms\Components\Toggle;
 use Filament\Forms\Form;
 use Filament\Forms\Get;
 use Filament\Notifications\Notification;
+use Filament\Support\Exceptions\Halt;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\HtmlString;
@@ -1346,65 +1349,117 @@ trait ManagesFacultyHomepage
                     ->label(__('admin.faculty_workspace.editor.sections.council_positions'))
                     ->schema([
                         Hidden::make('id')->default(fn (): string => 'position-'.Str::lower(Str::random(8))),
-                        Select::make('type')
-                            ->label(__('admin.faculty_workspace.editor.fields.position_type'))
-                            ->options(fn (): array => __('admin.faculty_workspace.editor.position_types'))
-                            ->default('vice_dean')
-                            ->selectablePlaceholder(false)
+                        Select::make('positionSlug')
+                            ->label(__('admin.faculty_workspace.editor.fields.position'))
+                            ->options(fn (): array => app(FacultyPositionServiceInterface::class)->councilOptions(app()->getLocale() === 'ar' ? 'ar' : 'en'))
+                            ->searchable()
                             ->required()
-                            ->live(),
+                            ->helperText(__('admin.faculty_workspace.editor.help.position'))
+                            ->createOptionForm($this->positionFormSchema())
+                            ->createOptionUsing(fn (array $data): string => $this->savePosition(null, $data))
+                            ->createOptionModalHeading(__('admin.faculty_workspace.editor.fields.add_position_to_list'))
+                            ->editOptionForm($this->positionFormSchema())
+                            ->fillEditOptionActionFormUsing(fn (Select $component): array => $this->positionFormData($component->getState()))
+                            ->updateOptionUsing(function (array $data, Select $component): void {
+                                $this->savePosition(is_string($component->getState()) ? $component->getState() : null, $data);
+                            })
+                            ->editOptionModalHeading(__('admin.faculty_workspace.editor.fields.edit_position_in_list')),
                         Select::make('memberId')
                             ->label(__('admin.faculty_workspace.editor.fields.staff_member'))
                             ->options($staff)
                             ->searchable()
                             ->required(),
-                        TextInput::make('titleAr')
-                            ->label(__('admin.faculty_workspace.editor.fields.position_title_ar'))
-                            ->required(fn (Get $get): bool => $get('type') === 'custom')
-                            ->maxLength(180),
-                        TextInput::make('titleEn')
-                            ->label(__('admin.faculty_workspace.editor.fields.position_title_en'))
-                            ->required(fn (Get $get): bool => $get('type') === 'custom')
-                            ->maxLength(180),
-                        Toggle::make('onCouncil')
-                            ->label(__('admin.faculty_workspace.editor.fields.on_council'))
-                            ->default(true),
                     ])
                     ->columns(2)
                     ->defaultItems(0)
                     ->reorderable()
                     ->collapsible()
+                    ->itemLabel(fn (array $state): ?string => $this->councilRowLabel($state))
                     ->addActionLabel(__('admin.faculty_workspace.editor.fields.add_position'))
                     ->columnSpanFull(),
                 Toggle::make('council_include_heads')
                     ->label(__('admin.faculty_workspace.editor.fields.include_department_heads'))
                     ->helperText(__('admin.faculty_workspace.editor.help.include_department_heads'))
                     ->default(true),
-                Repeater::make('council_members')
-                    ->label(__('admin.faculty_workspace.editor.sections.council_members'))
-                    ->schema([
-                        Hidden::make('id')->default(fn (): string => 'member-'.Str::lower(Str::random(8))),
-                        Select::make('memberId')
-                            ->label(__('admin.faculty_workspace.editor.fields.staff_member'))
-                            ->options($staff)
-                            ->searchable()
-                            ->required()
-                            ->columnSpanFull(),
-                        TextInput::make('roleAr')->label(__('admin.faculty_workspace.editor.fields.council_role_ar'))->maxLength(180),
-                        TextInput::make('roleEn')->label(__('admin.faculty_workspace.editor.fields.council_role_en'))->maxLength(180),
-                    ])
-                    ->columns(2)
-                    ->defaultItems(0)
-                    ->reorderable()
-                    ->collapsible()
-                    ->addActionLabel(__('admin.faculty_workspace.editor.fields.add_council_member'))
-                    ->columnSpanFull(),
             ])
             ->columnSpanFull();
     }
 
+    /** @return array<int, Component> */
+    private function positionFormSchema(): array
+    {
+        return [
+            Hidden::make('slug'),
+            TextInput::make('nameAr')->label(__('admin.faculty_workspace.editor.fields.position_name_ar'))->required()->maxLength(180),
+            TextInput::make('nameEn')->label(__('admin.faculty_workspace.editor.fields.position_name_en'))->required()->maxLength(180),
+            Select::make('placement')
+                ->label(__('admin.faculty_workspace.editor.fields.position_placement'))
+                ->options(fn (): array => __('admin.faculty_workspace.editor.position_placements'))
+                ->default('council')
+                ->selectablePlaceholder(false)
+                ->required()
+                ->helperText(__('admin.faculty_workspace.editor.help.position_placement'))
+                // The dean always leads the page.
+                ->visible(fn (Get $get): bool => $get('slug') !== FacultyPositionServiceInterface::DEAN),
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    private function positionFormData(mixed $slug): array
+    {
+        $position = is_string($slug) ? app(FacultyPositionServiceInterface::class)->find($slug) : null;
+
+        return $position === null ? [] : [
+            'slug' => $position->slug,
+            'nameAr' => $position->nameAr,
+            'nameEn' => $position->nameEn,
+            'placement' => $position->placement,
+        ];
+    }
+
     /**
-     * The council editor's rows, pairing the Arabic and English items by id.
+     * Adds a position to the shared list, or renames and places one, and returns its slug.
+     * A refused name keeps the dialog open with the reason.
+     *
+     * @param  array<string, mixed>  $data
+     */
+    private function savePosition(?string $slug, array $data): string
+    {
+        try {
+            return app(FacultyPositionServiceInterface::class)->save(
+                $slug,
+                (string) ($data['nameAr'] ?? ''),
+                (string) ($data['nameEn'] ?? ''),
+                (string) ($data['placement'] ?? 'council'),
+                $this->currentTargetKeyForSchema(),
+                $this->authenticatedUserId(),
+            )->slug;
+        } catch (ValidationException $exception) {
+            Notification::make()
+                ->danger()
+                ->title(collect($exception->errors())->flatten()->first() ?? __('admin.faculty_workspace.editor.position_errors.name_required'))
+                ->send();
+
+            throw new Halt;
+        }
+    }
+
+    /** @param array<string, mixed> $state */
+    private function councilRowLabel(array $state): ?string
+    {
+        $slug = is_string($state['positionSlug'] ?? null) ? $state['positionSlug'] : '';
+        $found = $slug !== '' ? app(FacultyPositionServiceInterface::class)->find($slug) : null;
+        $position = $found === null ? null : (app()->getLocale() === 'ar' ? $found->nameAr : $found->nameEn);
+        $memberId = is_numeric($state['memberId'] ?? null) ? (int) $state['memberId'] : 0;
+        $name = $memberId > 0 ? ($this->facultyStaffOptions()[$memberId] ?? null) : null;
+
+        return trim(implode(' · ', array_filter([$position, $name]))) ?: null;
+    }
+
+    /**
+     * The council editor's rows: one per position, the same in both languages. A page saved
+     * before the positions list loads its dean and vice deans as those positions; its other
+     * positions and extra members load with their person and an empty position to pick.
      *
      * @param  array<string, mixed>  $payload
      * @return array<string, mixed>
@@ -1412,73 +1467,53 @@ trait ManagesFacultyHomepage
     private function councilStateForForm(string $targetKey, array $payload): array
     {
         if (! $this->isCouncilTarget($targetKey)) {
-            return ['council_positions' => [], 'council_members' => [], 'council_include_heads' => true];
+            return ['council_positions' => [], 'council_include_heads' => true];
         }
 
         $ar = is_array($payload['translations']['ar'] ?? null) ? $payload['translations']['ar'] : [];
-        $en = is_array($payload['translations']['en'] ?? null) ? $payload['translations']['en'] : [];
-        $enPositions = collect($this->listOfArrays($en['positions'] ?? []))->keyBy(fn (array $item): string => (string) ($item['id'] ?? ''));
-        $enMembers = collect($this->listOfArrays($en['councilMembers'] ?? []))->keyBy(fn (array $item): string => (string) ($item['id'] ?? ''));
+        $rows = [];
+
+        foreach ([...$this->listOfArrays($ar['positions'] ?? []), ...$this->listOfArrays($ar['councilMembers'] ?? [])] as $position) {
+            $id = (string) ($position['id'] ?? '');
+            $slug = trim((string) ($position['positionSlug'] ?? ''));
+            $type = $position['type'] ?? null;
+
+            if ($slug === '' && in_array($type, [FacultyPositionServiceInterface::DEAN, FacultyPositionServiceInterface::VICE_DEAN], true)) {
+                $slug = $type;
+            }
+
+            $rows[] = [
+                'id' => $id !== '' ? $id : 'position-'.Str::lower(Str::random(8)),
+                'positionSlug' => $slug !== '' ? $slug : null,
+                'memberId' => is_numeric($position['memberId'] ?? null) ? (int) $position['memberId'] : null,
+            ];
+        }
 
         return [
-            'council_positions' => array_map(static function (array $position) use ($enPositions): array {
-                $id = (string) ($position['id'] ?? '');
-
-                return [
-                    'id' => $id !== '' ? $id : 'position-'.Str::lower(Str::random(8)),
-                    'type' => (string) ($position['type'] ?? 'vice_dean'),
-                    'memberId' => is_numeric($position['memberId'] ?? null) ? (int) $position['memberId'] : null,
-                    'titleAr' => (string) ($position['title'] ?? ''),
-                    'titleEn' => (string) ($enPositions->get($id)['title'] ?? ''),
-                    'onCouncil' => (bool) ($position['onCouncil'] ?? true),
-                ];
-            }, $this->listOfArrays($ar['positions'] ?? [])),
-            'council_members' => array_map(static function (array $member) use ($enMembers): array {
-                $id = (string) ($member['id'] ?? '');
-
-                return [
-                    'id' => $id !== '' ? $id : 'member-'.Str::lower(Str::random(8)),
-                    'memberId' => is_numeric($member['memberId'] ?? null) ? (int) $member['memberId'] : null,
-                    'roleAr' => (string) ($member['role'] ?? ''),
-                    'roleEn' => (string) ($enMembers->get($id)['role'] ?? ''),
-                ];
-            }, $this->listOfArrays($ar['councilMembers'] ?? [])),
+            'council_positions' => $rows,
             'council_include_heads' => ($ar['includeDepartmentHeads'] ?? true) !== false,
         ];
     }
 
     /**
-     * The council editor's rows as the Arabic and English content: the same people,
-     * types and ids in both, with each language's titles.
+     * The council editor's rows as the Arabic and English content, which are the same:
+     * a position's name comes from the positions list in each language.
      *
      * @param  array<string, mixed>  $state
      * @return array{0: array<string, mixed>, 1: array<string, mixed>}
      */
     private function councilContentFromForm(array $state): array
     {
-        $content = ['ar' => [], 'en' => []];
-        $includeHeads = ($state['council_include_heads'] ?? true) !== false;
+        $content = [
+            'positions' => array_values(array_map(static fn (array $position): array => [
+                'id' => (string) ($position['id'] ?? ''),
+                'positionSlug' => is_string($position['positionSlug'] ?? null) ? $position['positionSlug'] : null,
+                'memberId' => is_numeric($position['memberId'] ?? null) ? (int) $position['memberId'] : null,
+            ], $this->listOfArrays($state['council_positions'] ?? []))),
+            'includeDepartmentHeads' => ($state['council_include_heads'] ?? true) !== false,
+        ];
 
-        foreach (['ar', 'en'] as $locale) {
-            $suffix = ucfirst($locale);
-            $content[$locale] = [
-                'positions' => array_values(array_map(static fn (array $position): array => [
-                    'id' => (string) ($position['id'] ?? ''),
-                    'type' => (string) ($position['type'] ?? ''),
-                    'memberId' => is_numeric($position['memberId'] ?? null) ? (int) $position['memberId'] : null,
-                    'title' => trim((string) ($position['title'.$suffix] ?? '')),
-                    'onCouncil' => (bool) ($position['onCouncil'] ?? false),
-                ], $this->listOfArrays($state['council_positions'] ?? []))),
-                'councilMembers' => array_values(array_map(static fn (array $member): array => [
-                    'id' => (string) ($member['id'] ?? ''),
-                    'memberId' => is_numeric($member['memberId'] ?? null) ? (int) $member['memberId'] : null,
-                    'role' => trim((string) ($member['role'.$suffix] ?? '')),
-                ], $this->listOfArrays($state['council_members'] ?? []))),
-                'includeDepartmentHeads' => $includeHeads,
-            ];
-        }
-
-        return [$content['ar'], $content['en']];
+        return [$content, $content];
     }
 
     /**
@@ -2064,7 +2099,8 @@ trait ManagesFacultyHomepage
 
         if ($subpageSlug === 'council') {
             $content['positions'] = $this->listOfArrays($content['positions'] ?? []);
-            $content['councilMembers'] = $this->listOfArrays($content['councilMembers'] ?? []);
+            // Extra members became positions; a page saved before keeps none apart.
+            unset($content['councilMembers']);
             $content['includeDepartmentHeads'] = ($content['includeDepartmentHeads'] ?? true) !== false;
             unset($content['items'], $content['stats'], $content['dean']);
 

@@ -372,7 +372,7 @@ final class FacultyPageService implements FacultyPageServiceInterface
             // published, the dean from About › Leadership and the department heads.
             $council = $this->leadershipService->council($this->publicSlug($faculty), $locale, $cmsContent);
             $items = $council->members;
-            $detail = ['positions' => $council->positions];
+            $detail = ['dean' => $council->dean, 'leadership' => $council->leadership, 'heads' => $council->heads];
         }
 
         if ($subpageSlug === 'master-program') {
@@ -1226,8 +1226,10 @@ final class FacultyPageService implements FacultyPageServiceInterface
 
         // A profile already listed above as a leader is one card, not two:
         // unique('slug') below keeps the leader's card, with the role.
+        // A position held on the council or departments page replaces one typed on the profile.
+        $heldPositions = $this->leadershipService->memberPositions($this->publicSlug($faculty), $locale);
         $facultyMemberItems = $facultyMembers
-            ->map(function (FacultyMember $member) use ($locale): ?array {
+            ->map(function (FacultyMember $member) use ($locale, $heldPositions): ?array {
                 $slug = (string) $member->slug;
                 if (preg_match('/^[A-Za-z0-9-]+$/', $slug) !== 1) {
                     return null;
@@ -1253,7 +1255,7 @@ final class FacultyPageService implements FacultyPageServiceInterface
                 return [
                     'slug' => $slug,
                     'name' => (string) $translation->full_name,
-                    'position' => $translation->position ?: $translation->title ?: '',
+                    'position' => implode(' · ', $heldPositions[(int) $member->getKey()] ?? []) ?: ($translation->position ?: $translation->title ?: ''),
                     'department' => $department,
                     'image' => $image,
                     'profileUrl' => $this->url($locale, '/about/profile/'.$slug),

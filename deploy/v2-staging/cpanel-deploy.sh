@@ -887,6 +887,49 @@ if [[ -f "${PEOPLE_UNIFY_APPROVAL}" ]]; then
     mv "${PEOPLE_UNIFY_APPROVAL}" "${PEOPLE_UNIFY_APPROVAL}.consumed-$(date -u +%Y%m%d-%H%M%S)"
 fi
 
+# ── Faculty positions typed on profiles ─────────────────────────────────────
+# Positions used to be typed on each profile ("نائب العميد للشؤون العلمية"), so
+# the council page could not see them. This matches them to the shared positions
+# list and adds them to each faculty's council page as an UNPUBLISHED draft for an
+# editor to review and publish. It never removes a row, never adds a second dean,
+# never edits a profile, and leaves heads of department to the departments page.
+# The dry run is in every deploy log; the write is inert unless a human places an
+# approval file not in git, holding the CMS user the drafts are saved as:
+#
+#     storage/app/private/legacy-imports/faculty-positions.approved
+#         actor=<user id>      (or actor=auto: the first unlocked super admin)
+#
+# It disarms itself after one run.
+FACULTY_POSITIONS_APPROVAL="${IMPORT_DIR}/faculty-positions.approved"
+
+log "Faculty positions dry run"
+(cd "${APP}" && "${PHP}" artisan faculty:match-positions --no-ansi) \
+    || printf '  The faculty positions dry run failed; nothing was changed.\n'
+
+if [[ -f "${FACULTY_POSITIONS_APPROVAL}" ]]; then
+    log "Faculty positions"
+
+    FP_ACTOR="$(grep -E '^actor=' "${FACULTY_POSITIONS_APPROVAL}" | head -n 1 | cut -d= -f2- | tr -d '\r' | tr -d ' ')"
+    [[ -n "${FP_ACTOR}" ]] || fail "The faculty positions approval file has no actor= line."
+
+    if [[ "${FP_ACTOR}" == "auto" ]]; then
+        FP_ACTOR="$(cd "${APP}" && "${PHP}" artisan tinker --execute='
+            echo (string) (\DB::table("users")
+                ->where("role_slug", "super_admin")
+                ->where(function ($q) { $q->whereNull("locked_at")->orWhere("locked_at", ""); })
+                ->orderBy("id")
+                ->value("id") ?? "");
+        ' 2>/dev/null | grep -Eo '^[0-9]+$' | head -n 1 || true)"
+        [[ -n "${FP_ACTOR}" ]] || fail "actor=auto found no unlocked super_admin to save the drafts as."
+    fi
+    [[ "${FP_ACTOR}" =~ ^[0-9]+$ ]] || fail "The faculty positions actor must be a numeric user id or 'auto'."
+
+    (cd "${APP}" && "${PHP}" artisan faculty:match-positions --write --user="${FP_ACTOR}" --no-ansi) \
+        || fail "Saving the faculty positions failed."
+
+    mv "${FACULTY_POSITIONS_APPROVAL}" "${FACULTY_POSITIONS_APPROVAL}.consumed-$(date -u +%Y%m%d-%H%M%S)"
+fi
+
 # ── Approved researcher ↔ staff links ───────────────────────────────────────
 # Links every researcher whose name matches exactly one staff member, so their
 # papers show on that staff profile. Looser matches are left as suggestions in

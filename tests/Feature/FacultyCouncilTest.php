@@ -6,9 +6,12 @@ namespace Tests\Feature;
 
 use App\Contracts\Cms\CmsWorkflowServiceInterface;
 use App\Contracts\Faculty\FacultyLeadershipServiceInterface;
+use App\Contracts\Faculty\FacultyPositionServiceInterface;
 use App\Contracts\Page\FacultyPageServiceInterface;
+use App\Contracts\Page\ProfilePageServiceInterface;
 use App\Enums\PublicationStatus;
 use App\Filament\Pages\ManageMedicineFaculty;
+use App\Models\Cms\CmsTargetContent;
 use App\Models\Faculty\Faculty;
 use App\Models\Faculty\FacultyPage;
 use App\Models\Faculty\FacultySubpageCard;
@@ -16,17 +19,20 @@ use App\Models\Person\FacultyMember;
 use App\Models\Person\Person;
 use App\Models\User\User;
 use Database\Seeders\DatabaseSeeder;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Validation\ValidationException;
 use Livewire\Livewire;
 use Tests\TestCase;
 
 /**
- * Each faculty has a Faculty Council page: the dean, vice deans and other positions,
- * and the council (the positions on it, the department heads and extra members).
- * Everyone is one of the faculty's academic staff, and one person can hold several
- * roles. The dean published there is also the dean on About › Leadership and in
- * the faculty's dean block.
+ * Each faculty has a Faculty Council page. Every row is a position from one list
+ * all faculties share (dean, vice dean and the positions editors add) and a profile
+ * of the faculty's own academic staff. A position's placement shows its holders in
+ * the leadership cards or the council list; heads of department come from the
+ * departments page. The dean published there is also the dean on About › Leadership
+ * and in the faculty's dean block, and profiles show the positions they hold.
  */
 final class FacultyCouncilTest extends TestCase
 {
@@ -59,21 +65,17 @@ final class FacultyCouncilTest extends TestCase
             ->assertSee('Faculty Council')
             ->assertSee('Faculty Leadership')
             ->assertSee('Dr. Default Dean')
-            ->assertSee('Dean of the Faculty of Medicine')
-            ->assertSee('Council Chair');
+            ->assertSee('Council Chair')
+            ->assertSee('View Profile');
 
         // The page is one of the faculty's navigation cards.
         $faculty = app(FacultyPageServiceInterface::class)->getFaculty('medicine', 'en');
         $this->assertNotNull($faculty);
         $this->assertContains('council', $faculty->navigation->pluck('slug')->all());
-        $this->get('/en/faculties/medicine')
-            ->assertOk()
-            ->assertSee('/council', false)
-            ->assertSee('Faculty Council');
 
         $payload = app(FacultyPageServiceInterface::class)->getEditablePayload(self::TARGET);
         $this->assertSame((int) $dean->getKey(), $payload['translations']['ar']['positions'][0]['memberId']);
-        $this->assertSame('dean', $payload['translations']['en']['positions'][0]['type']);
+        $this->assertSame('dean', $payload['translations']['en']['positions'][0]['positionSlug']);
     }
 
     public function test_a_faculty_without_a_council_row_or_card_has_the_page_in_code(): void
@@ -99,49 +101,91 @@ final class FacultyCouncilTest extends TestCase
         Cache::flush();
 
         $this->get('/en/faculties/medicine/council')->assertNotFound();
-        $this->assertNotContains('council', app(FacultyPageServiceInterface::class)->getFaculty('medicine', 'en')?->navigation->pluck('slug')->all() ?? []);
     }
 
-    public function test_the_published_council_lists_each_person_once_with_all_their_roles(): void
+    public function test_the_published_council_places_each_position_and_lists_the_department_heads(): void
     {
         $dean = $this->member('council-dean', 'Dr. Dean Person', 'د. العميد');
         $vice = $this->member('council-vice', 'Dr. Vice Person', 'د. نائب العميد');
-        $extra = $this->member('council-extra', 'Dr. Extra Member', 'د. عضو إضافي');
-        $this->publishDepartmentHead($vice);
+        $secretary = $this->member('council-secretary', 'Dr. Secretary Person', 'د. أمين السر');
+        $secretaryPosition = $this->addPosition('أمين سر المجلس', 'Council Secretary', 'council');
+        $representative = $this->addPosition('ممثل أعضاء الهيئة التدريسية', 'Staff representative', 'council');
+        $this->publishDepartments([
+            ['slug' => 'surgery-council-test', 'title' => ['قسم الجراحة', 'Department of Surgery'], 'headMemberId' => (int) $vice->getKey()],
+        ]);
         $this->publishCouncil([
-            ['id' => 'p-dean', 'type' => 'dean', 'memberId' => (int) $dean->getKey(), 'title' => ['', ''], 'onCouncil' => true],
-            ['id' => 'p-vice', 'type' => 'vice_dean', 'memberId' => (int) $vice->getKey(), 'title' => ['نائب العميد للشؤون العلمية', 'Vice Dean for Academic Affairs'], 'onCouncil' => true],
-            ['id' => 'p-secretary', 'type' => 'custom', 'memberId' => (int) $vice->getKey(), 'title' => ['أمين سر المجلس', 'Council Secretary'], 'onCouncil' => true],
-        ], [
-            ['id' => 'm-extra', 'memberId' => (int) $extra->getKey(), 'role' => ['', 'Staff representative']],
+            ['positionSlug' => 'dean', 'memberId' => (int) $dean->getKey()],
+            ['positionSlug' => 'vice_dean', 'memberId' => (int) $vice->getKey()],
+            ['positionSlug' => $secretaryPosition, 'memberId' => (int) $secretary->getKey()],
+            ['positionSlug' => $representative, 'memberId' => (int) $secretary->getKey()],
         ]);
 
         $page = app(FacultyPageServiceInterface::class)->getSubpage('medicine', 'council', 'en');
         $this->assertNotNull($page);
-        $this->assertSame(['dean', 'vice_dean', 'custom'], array_column($page->detail['positions'], 'type'));
-        $this->assertSame('Dean', $page->detail['positions'][0]['title']);
-
-        $members = collect($page->items)->keyBy('memberId');
-        $this->assertCount(3, $members);
-        $this->assertTrue($members[(int) $dean->getKey()]['isChair']);
-        $this->assertSame(
-            ['Vice Dean for Academic Affairs', 'Council Secretary', 'Head, Department of Surgery'],
-            $members[(int) $vice->getKey()]['roles'],
-        );
-        $this->assertSame(['Staff representative'], $members[(int) $extra->getKey()]['roles']);
-
-        $this->get('/en/faculties/medicine/council')
-            ->assertOk()
-            ->assertSee('Dr. Vice Person')
-            ->assertSee('Vice Dean for Academic Affairs · Council Secretary · Head, Department of Surgery')
-            ->assertSee('/en/about/profile/council-extra', false);
+        $this->assertSame('Dr. Dean Person', $page->detail['dean']['name']);
+        $this->assertSame('Dean', $page->detail['dean']['title']);
+        $this->assertSame(['Vice Dean'], $page->detail['leadership'][0]['titles']);
+        // One council card per person, with every position they hold there.
+        $this->assertCount(1, $page->items);
+        $this->assertSame(['Council Secretary', 'Staff representative'], $page->items[0]['roles']);
+        $this->assertSame('Department of Surgery', $page->detail['heads'][0]['department']);
+        $this->assertSame('Head of Department', $page->detail['heads'][0]['title']);
+        $this->assertSame('Dr. Vice Person', $page->detail['heads'][0]['name']);
 
         $this->get('/ar/faculties/medicine/council')
             ->assertOk()
             ->assertSee('مجلس الكلية')
             ->assertSee('عميد الكلية')
-            ->assertSee('رئيس قسم الجراحة')
-            ->assertSee('عضو');
+            ->assertSee('رئيس مجلس الكلية')
+            ->assertSee('نائب العميد')
+            ->assertSee('أمين سر المجلس')
+            ->assertSee('رؤساء الأقسام')
+            ->assertSee('قسم الجراحة')
+            ->assertSee('/ar/about/profile/council-secretary', false);
+    }
+
+    public function test_the_positions_list_is_shared_and_renaming_a_position_renames_it_everywhere(): void
+    {
+        $service = app(FacultyPositionServiceInterface::class);
+        $slug = $this->addPosition('مقرر المجلس', 'Council Rapporteur', 'council');
+
+        $this->assertArrayHasKey($slug, $service->councilOptions('en'));
+        $this->assertArrayHasKey('dean', $service->councilOptions('ar'));
+        $this->assertArrayHasKey('vice_dean', $service->councilOptions('ar'));
+        // Head of department is set on the departments page, never picked here.
+        $this->assertArrayNotHasKey('head_of_department', $service->councilOptions('ar'));
+
+        $dean = $this->member('rename-dean', 'Dr. Rename Dean', 'د. عميد التسمية');
+        $vice = $this->member('rename-vice', 'Dr. Rename Vice', 'د. نائب التسمية');
+        $this->publishCouncil([
+            ['positionSlug' => 'dean', 'memberId' => (int) $dean->getKey()],
+            ['positionSlug' => 'vice_dean', 'memberId' => (int) $vice->getKey()],
+        ]);
+
+        // Renaming the vice dean and moving it to the council list changes the page.
+        $service->save('vice_dean', 'نائب العميد للشؤون العلمية', 'Vice Dean for Academic Affairs', 'council', self::TARGET, (int) $this->admin->getKey());
+        $page = app(FacultyPageServiceInterface::class)->getSubpage('medicine', 'council', 'en');
+        $this->assertNotNull($page);
+        $this->assertSame([], $page->detail['leadership']);
+        $this->assertSame(['Vice Dean for Academic Affairs'], $page->items[0]['roles']);
+        $this->assertDatabaseHas('audit_logs', ['action' => 'faculty.position.updated']);
+
+        // The dean always leads, whatever placement is asked for.
+        $service->save('dean', 'عميد الكلية', 'Dean', 'council', self::TARGET, (int) $this->admin->getKey());
+        $this->assertSame('leadership', $service->find('dean')?->placement);
+
+        // Two positions never share a name.
+        try {
+            $service->save(null, 'نائب العميد للشؤون العلمية', 'Another one', 'council', self::TARGET, (int) $this->admin->getKey());
+            $this->fail('A position with a taken name was saved.');
+        } catch (ValidationException $exception) {
+            $this->assertArrayHasKey('nameAr', $exception->errors());
+        }
+
+        // Only someone who can edit a council page manages the list.
+        $viewer = User::factory()->create(['role_slug' => 'hr']);
+        $this->expectException(AuthorizationException::class);
+        $service->save(null, 'منصب', 'Position', 'council', self::TARGET, (int) $viewer->getKey());
     }
 
     public function test_a_department_heads_title_and_council_seat_are_set_on_the_departments_page(): void
@@ -155,9 +199,8 @@ final class FacultyCouncilTest extends TestCase
 
         $page = app(FacultyPageServiceInterface::class)->getSubpage('medicine', 'council', 'en');
         $this->assertNotNull($page);
-        $members = collect($page->items)->keyBy('memberId');
-        $this->assertSame(['Chair, Department of Surgery'], $members[(int) $chair->getKey()]['roles']);
-        $this->assertArrayNotHasKey((int) $offCouncil->getKey(), $members->all());
+        $this->assertSame(['Chair, Department of Surgery'], array_column($page->detail['heads'], 'title'));
+        $this->assertSame([(int) $chair->getKey()], array_column($page->detail['heads'], 'memberId'));
 
         $this->get('/ar/faculties/medicine/council')
             ->assertOk()
@@ -180,7 +223,9 @@ final class FacultyCouncilTest extends TestCase
     public function test_the_admin_keeps_a_head_saved_before_the_council_switch_on_the_council(): void
     {
         $head = $this->member('legacy-switch-head', 'Dr. Legacy Head', 'د. رئيس سابق للمفتاح');
-        $this->publishDepartmentHead($head);
+        $this->publishDepartments([
+            ['slug' => 'surgery-legacy', 'title' => ['قسم الجراحة', 'Department of Surgery'], 'headMemberId' => (int) $head->getKey(), 'legacy' => true],
+        ]);
         $this->actingAs($this->admin, 'web');
 
         Livewire::test(ManageMedicineFaculty::class)
@@ -198,9 +243,7 @@ final class FacultyCouncilTest extends TestCase
     public function test_the_page_intro_body_shows_on_the_council_page(): void
     {
         $dean = $this->member('body-dean', 'Dr. Body Dean', 'د. عميد النص');
-        $payload = $this->councilPayload([
-            ['id' => 'p-dean', 'type' => 'dean', 'memberId' => (int) $dean->getKey(), 'title' => ['', ''], 'onCouncil' => true],
-        ]);
+        $payload = $this->councilPayload([['positionSlug' => 'dean', 'memberId' => (int) $dean->getKey()]]);
         $payload['translations']['ar']['body'] = 'يجتمع مجلس الكلية مرة كل شهر.';
         $payload['translations']['en']['body'] = 'The faculty council meets once a month.';
         $workflow = app(CmsWorkflowServiceInterface::class);
@@ -216,59 +259,110 @@ final class FacultyCouncilTest extends TestCase
         $dean = $this->member('rules-dean', 'Dr. Rules Dean', 'د. عميد القواعد');
         $other = Faculty::query()->where('public_slug', 'pharmacy')->firstOrFail();
         $outsider = $this->member('rules-outsider', 'Dr. Outsider', 'د. من خارج الكلية', (int) $other->getKey());
+        $hidden = $this->member('rules-hidden', 'Dr. Hidden', 'د. مخفي');
+        $hidden->forceFill(['is_enabled' => false])->save();
         $workflow = app(CmsWorkflowServiceInterface::class);
-        $deanPosition = ['id' => 'p-dean', 'type' => 'dean', 'memberId' => (int) $dean->getKey(), 'title' => ['', ''], 'onCouncil' => true];
+        $deanRow = ['positionSlug' => 'dean', 'memberId' => (int) $dean->getKey()];
 
-        $this->assertTrue($workflow->readiness(self::TARGET, $this->councilPayload([$deanPosition]))->isReady);
+        $this->assertTrue($workflow->readiness(self::TARGET, $this->councilPayload([$deanRow]))->isReady);
 
         $noDean = $workflow->readiness(self::TARGET, $this->councilPayload([]));
         $this->assertContains('The faculty must have exactly one dean.', $noDean->errors['ar']);
 
-        $twoDeans = $workflow->readiness(self::TARGET, $this->councilPayload([$deanPosition, [...$deanPosition, 'id' => 'p-dean-2']]));
+        $twoDeans = $workflow->readiness(self::TARGET, $this->councilPayload([$deanRow, ['positionSlug' => 'dean', 'memberId' => (int) $hidden->getKey()]]));
         $this->assertContains('The faculty must have exactly one dean.', $twoDeans->errors['en']);
 
-        $outsiderPosition = $workflow->readiness(self::TARGET, $this->councilPayload([
-            $deanPosition,
-            ['id' => 'p-out', 'type' => 'vice_dean', 'memberId' => (int) $outsider->getKey(), 'title' => ['', ''], 'onCouncil' => true],
-        ]));
-        $this->assertContains('Every position holder must be one of this faculty\'s academic staff.', $outsiderPosition->errors['ar']);
+        $noPosition = $workflow->readiness(self::TARGET, $this->councilPayload([$deanRow, ['positionSlug' => null, 'memberId' => (int) $dean->getKey()]]));
+        $this->assertContains('Every position must be picked from the positions list.', $noPosition->errors['ar']);
 
-        $outsiderMember = $workflow->readiness(self::TARGET, $this->councilPayload([$deanPosition], [
-            ['id' => 'm-out', 'memberId' => (int) $outsider->getKey(), 'role' => ['', '']],
-        ]));
-        $this->assertContains('Every council member must be one of this faculty\'s academic staff.', $outsiderMember->errors['en']);
+        $headPicked = $workflow->readiness(self::TARGET, $this->councilPayload([$deanRow, ['positionSlug' => 'head_of_department', 'memberId' => (int) $dean->getKey()]]));
+        $this->assertContains('Every position must be picked from the positions list.', $headPicked->errors['ar']);
 
-        $untitled = $workflow->readiness(self::TARGET, $this->councilPayload([
-            $deanPosition,
-            ['id' => 'p-custom', 'type' => 'custom', 'memberId' => (int) $dean->getKey(), 'title' => ['', ''], 'onCouncil' => false],
-        ]));
-        $this->assertContains('A custom position needs a title.', $untitled->errors['ar']);
+        $noPerson = $workflow->readiness(self::TARGET, $this->councilPayload([$deanRow, ['positionSlug' => 'vice_dean', 'memberId' => null]]));
+        $this->assertContains('Every position needs a staff member.', $noPerson->errors['en']);
 
-        $mismatch = $this->councilPayload([$deanPosition]);
+        $outsiderRow = $workflow->readiness(self::TARGET, $this->councilPayload([$deanRow, ['positionSlug' => 'vice_dean', 'memberId' => (int) $outsider->getKey()]]));
+        $this->assertContains('Every position holder must be one of this faculty\'s academic staff.', $outsiderRow->errors['ar']);
+
+        // A hidden profile would vanish from the page, and About › Leadership would
+        // fall back to the dean row's old copy (the previous dean's name).
+        $hiddenRow = $workflow->readiness(self::TARGET, $this->councilPayload([['positionSlug' => 'dean', 'memberId' => (int) $hidden->getKey()]]));
+        $this->assertContains('Every position holder needs a published profile.', $hiddenRow->errors['ar']);
+
+        $twice = $workflow->readiness(self::TARGET, $this->councilPayload([$deanRow, ['positionSlug' => 'dean', 'memberId' => (int) $dean->getKey(), 'id' => 'p-again']]));
+        $this->assertContains('A person holds the same position twice.', $twice->errors['ar']);
+
+        $mismatch = $this->councilPayload([$deanRow]);
         $mismatch['translations']['en']['positions'][0]['memberId'] = (int) $outsider->getKey();
         $this->assertArrayHasKey('translations', $workflow->readiness(self::TARGET, $mismatch)->errors);
     }
 
-    public function test_a_hidden_profile_cannot_hold_a_position_or_sit_on_the_council(): void
+    public function test_a_page_saved_before_the_positions_list_still_reads(): void
     {
-        // A hidden profile would vanish from the page, and About › Leadership would
-        // fall back to the dean row's old copy (the previous dean's name).
-        $dean = $this->member('hidden-rules-dean', 'Dr. Visible Dean', 'د. عميد ظاهر');
-        $hidden = $this->member('hidden-rules-member', 'Dr. Hidden', 'د. مخفي');
-        $hidden->forceFill(['is_enabled' => false])->save();
-        $workflow = app(CmsWorkflowServiceInterface::class);
+        $dean = $this->member('legacy-dean', 'Dr. Legacy Dean', 'د. عميد سابق');
+        $custom = $this->member('legacy-custom', 'Dr. Legacy Custom', 'د. منصب سابق');
+        $extra = $this->member('legacy-extra', 'Dr. Legacy Extra', 'د. عضو سابق');
+        $legacy = [];
 
-        $hiddenDean = $workflow->readiness(self::TARGET, $this->councilPayload([
-            ['id' => 'p-dean', 'type' => 'dean', 'memberId' => (int) $hidden->getKey(), 'title' => ['', ''], 'onCouncil' => true],
-        ]));
-        $this->assertContains('Every position holder needs a published profile.', $hiddenDean->errors['ar']);
+        foreach (['ar' => 'أمين السر', 'en' => 'Secretary'] as $locale => $title) {
+            $legacy['translations'][$locale] = [
+                'title' => $locale === 'ar' ? 'مجلس الكلية' : 'Faculty Council',
+                'positions' => [
+                    ['id' => 'p-dean', 'type' => 'dean', 'memberId' => (int) $dean->getKey(), 'title' => '', 'onCouncil' => true],
+                    ['id' => 'p-custom', 'type' => 'custom', 'memberId' => (int) $custom->getKey(), 'title' => $title, 'onCouncil' => true],
+                ],
+                'councilMembers' => [['id' => 'm-extra', 'memberId' => (int) $extra->getKey(), 'role' => $locale === 'ar' ? 'عضو' : 'Member']],
+                'includeDepartmentHeads' => true,
+            ];
+        }
 
-        $hiddenMember = $workflow->readiness(self::TARGET, $this->councilPayload([
-            ['id' => 'p-dean', 'type' => 'dean', 'memberId' => (int) $dean->getKey(), 'title' => ['', ''], 'onCouncil' => true],
-        ], [
-            ['id' => 'm-hidden', 'memberId' => (int) $hidden->getKey(), 'role' => ['', '']],
-        ]));
-        $this->assertContains('Every council member needs a published profile.', $hiddenMember->errors['en']);
+        CmsTargetContent::query()->updateOrCreate(['target_key' => self::TARGET], [
+            'status' => PublicationStatus::Published->value,
+            'payload_json' => $legacy,
+            'published_at' => now()->subDay(),
+        ]);
+        Cache::flush();
+
+        $page = app(FacultyPageServiceInterface::class)->getSubpage('medicine', 'council', 'en');
+        $this->assertNotNull($page);
+        $this->assertSame('Dr. Legacy Dean', $page->detail['dean']['name']);
+        $this->assertSame(['Secretary'], $page->detail['leadership'][0]['titles']);
+        $this->assertSame(['Member'], $page->items[0]['roles']);
+        $this->assertSame('legacy-dean', app(FacultyLeadershipServiceInterface::class)->deanProfileSlug('medicine'));
+
+        // The editor loads the dean as a position and the rest with a position to pick.
+        $this->actingAs($this->admin, 'web');
+        $rows = array_values(Livewire::test(ManageMedicineFaculty::class)
+            ->set('data.target_key', self::TARGET)
+            ->call('loadTarget', self::TARGET)
+            ->get('data.council_positions'));
+        $this->assertSame(['dean', null, null], array_column($rows, 'positionSlug'));
+        $this->assertSame([(int) $dean->getKey(), (int) $custom->getKey(), (int) $extra->getKey()], array_column($rows, 'memberId'));
+    }
+
+    public function test_profiles_show_the_positions_they_hold(): void
+    {
+        $dean = $this->member('profile-dean', 'Dr. Profile Dean', 'د. عميد الملف');
+        $vice = $this->member('profile-vice', 'Dr. Profile Vice', 'د. نائب الملف', position: ['نائب العميد', 'Vice Dean (typed)']);
+        $profiles = app(ProfilePageServiceInterface::class);
+
+        // Until a council page is published, the typed one shows.
+        $this->assertSame('Vice Dean (typed)', $profiles->getProfile('en', 'faculty-member', 'profile-vice')?->position);
+
+        $this->publishDepartments([
+            ['slug' => 'surgery-profile', 'title' => ['قسم الجراحة', 'Department of Surgery'], 'headMemberId' => (int) $vice->getKey()],
+        ]);
+        $this->publishCouncil([
+            ['positionSlug' => 'dean', 'memberId' => (int) $dean->getKey()],
+            ['positionSlug' => 'vice_dean', 'memberId' => (int) $vice->getKey()],
+        ]);
+        Cache::flush();
+
+        $this->assertSame('Vice Dean · Head, Department of Surgery', $profiles->getProfile('en', 'faculty-member', 'profile-vice')?->position);
+        $this->assertSame(['نائب العميد', 'رئيس قسم الجراحة'], app(FacultyLeadershipServiceInterface::class)->positionsOfMember((int) $vice->getKey(), 'ar'));
+
+        $members = collect(app(FacultyPageServiceInterface::class)->getSubpage('medicine', 'members', 'en')?->items ?? [])->keyBy('slug');
+        $this->assertSame('Dean', $members['profile-dean']['position']);
     }
 
     public function test_publishing_the_council_makes_its_dean_the_leadership_dean(): void
@@ -277,9 +371,7 @@ final class FacultyCouncilTest extends TestCase
         $newDean = $this->member('new-dean', 'Dr. New Dean', 'د. العميد الجديد');
         $row = $this->leadershipDean($oldDean, 'Dean of the Faculty of Medicine', 'عميد كلية الطب البشري');
 
-        $this->publishCouncil([
-            ['id' => 'p-dean', 'type' => 'dean', 'memberId' => (int) $newDean->getKey(), 'title' => ['', ''], 'onCouncil' => true],
-        ]);
+        $this->publishCouncil([['positionSlug' => 'dean', 'memberId' => (int) $newDean->getKey()]]);
 
         $deanRows = Person::query()->where('category', 'dean')->where('faculty_scope_slug', 'medicine')->count();
         $this->assertSame((int) $newDean->getKey(), (int) $row->fresh()?->faculty_member_id);
@@ -304,9 +396,7 @@ final class FacultyCouncilTest extends TestCase
         $hidden = $this->deanRow('former-hidden-dean', 1, false);
         $public = $this->deanRow('current-public-dean', 5, true);
 
-        $this->publishCouncil([
-            ['id' => 'p-dean', 'type' => 'dean', 'memberId' => (int) $dean->getKey(), 'title' => ['', ''], 'onCouncil' => true],
-        ]);
+        $this->publishCouncil([['positionSlug' => 'dean', 'memberId' => (int) $dean->getKey()]]);
 
         $this->assertSame((int) $dean->getKey(), (int) $public->fresh()?->faculty_member_id);
         $this->assertNull($hidden->fresh()?->faculty_member_id);
@@ -317,9 +407,7 @@ final class FacultyCouncilTest extends TestCase
         $dean = $this->member('first-dean', 'Dr. First Dean', 'د. العميد الأول');
         Person::query()->where('category', 'dean')->whereIn('faculty_scope_slug', ['medicine', (string) $this->faculty->faculty_scope_slug])->forceDelete();
 
-        $this->publishCouncil([
-            ['id' => 'p-dean', 'type' => 'dean', 'memberId' => (int) $dean->getKey(), 'title' => ['', ''], 'onCouncil' => true],
-        ]);
+        $this->publishCouncil([['positionSlug' => 'dean', 'memberId' => (int) $dean->getKey()]]);
 
         $row = Person::query()->with('translations')->where('category', 'dean')->where('faculty_scope_slug', 'medicine')->firstOrFail();
         $this->assertSame((int) $dean->getKey(), (int) $row->faculty_member_id);
@@ -338,92 +426,141 @@ final class FacultyCouncilTest extends TestCase
             ->set('data.target_key', self::TARGET)
             ->call('loadTarget', self::TARGET)
             ->assertSee('قيادة الكلية ومجلسها')
-            ->assertSee('إضافة رؤساء الأقسام إلى المجلس تلقائياً')
+            ->assertSee('المنصب')
             ->set('data.council_positions', [
-                ['id' => 'p-dean', 'type' => 'dean', 'memberId' => (int) $dean->getKey(), 'titleAr' => '', 'titleEn' => '', 'onCouncil' => true],
-                ['id' => 'p-vice', 'type' => 'vice_dean', 'memberId' => (int) $vice->getKey(), 'titleAr' => 'نائب العميد للشؤون الإدارية', 'titleEn' => 'Vice Dean for Administrative Affairs', 'onCouncil' => true],
+                ['id' => 'p-dean', 'positionSlug' => 'dean', 'memberId' => (int) $dean->getKey()],
+                ['id' => 'p-vice', 'positionSlug' => 'vice_dean', 'memberId' => (int) $vice->getKey()],
             ])
-            ->set('data.council_members', [])
             ->set('data.council_include_heads', false)
             ->call('save');
 
         $draft = app(CmsWorkflowServiceInterface::class)->latestEditableDraftPayload(self::TARGET, (int) $this->admin->getKey());
         $this->assertIsArray($draft);
-        $this->assertSame('Vice Dean for Administrative Affairs', $draft['translations']['en']['positions'][1]['title']);
-        $this->assertSame('نائب العميد للشؤون الإدارية', $draft['translations']['ar']['positions'][1]['title']);
+        $this->assertSame($draft['translations']['ar']['positions'], $draft['translations']['en']['positions']);
+        $this->assertSame('vice_dean', $draft['translations']['en']['positions'][1]['positionSlug']);
         $this->assertSame((int) $vice->getKey(), $draft['translations']['en']['positions'][1]['memberId']);
         $this->assertFalse($draft['translations']['ar']['includeDepartmentHeads']);
+        $this->assertArrayNotHasKey('councilMembers', $draft['translations']['ar']);
         $this->assertTrue(app(CmsWorkflowServiceInterface::class)->readiness(self::TARGET, $draft)->isReady);
 
-        // Reloading pairs the languages back into one row per position.
+        // Reloading gives the same rows.
         $component = Livewire::test(ManageMedicineFaculty::class)
             ->set('data.target_key', self::TARGET)
             ->call('loadTarget', self::TARGET);
         $positions = array_values($component->get('data.council_positions'));
-        $this->assertSame('Vice Dean for Administrative Affairs', $positions[1]['titleEn']);
-        $this->assertSame('نائب العميد للشؤون الإدارية', $positions[1]['titleAr']);
+        $this->assertSame(['dean', 'vice_dean'], array_column($positions, 'positionSlug'));
+    }
+
+    public function test_the_admin_adds_and_edits_positions_from_the_dropdown(): void
+    {
+        $this->actingAs($this->admin, 'web');
+        $component = Livewire::test(ManageMedicineFaculty::class)
+            ->set('data.target_key', self::TARGET)
+            ->call('loadTarget', self::TARGET)
+            ->set('data.council_positions', ['row-1' => ['id' => 'p-1', 'positionSlug' => null, 'memberId' => null]])
+            ->callFormComponentAction('council_positions.row-1.positionSlug', 'createOption', [
+                'nameAr' => 'أمين سر مجلس الكلية',
+                'nameEn' => 'Council Secretary',
+                'placement' => 'council',
+            ])
+            ->assertHasNoFormComponentActionErrors();
+
+        $positions = app(FacultyPositionServiceInterface::class);
+        $created = collect($positions->all())->firstWhere('nameEn', 'Council Secretary');
+        $this->assertNotNull($created);
+        $this->assertSame('council', $created->placement);
+        $this->assertSame($created->slug, $component->get('data.council_positions.row-1.positionSlug'));
+
+        $component->callFormComponentAction('council_positions.row-1.positionSlug', 'editOption', [
+            'nameAr' => 'أمين السر',
+            'nameEn' => 'Secretary',
+            'placement' => 'leadership',
+        ]);
+
+        $edited = $positions->find($created->slug);
+        $this->assertSame('Secretary', $edited?->nameEn);
+        $this->assertSame('leadership', $edited?->placement);
+
+        // A taken name keeps the dialog open and saves nothing.
+        $component->callFormComponentAction('council_positions.row-1.positionSlug', 'createOption', [
+            'nameAr' => 'نائب العميد',
+            'nameEn' => 'Another vice dean',
+            'placement' => 'council',
+        ]);
+        $this->assertNull(collect($positions->all())->firstWhere('nameEn', 'Another vice dean'));
+    }
+
+    public function test_typed_profile_positions_are_matched_onto_a_council_draft(): void
+    {
+        $vice = $this->member('typed-vice', 'Dr. Typed Vice', 'د. نائب مكتوب', position: ['نائب العميد للشؤون العلمية', 'Vice Dean for Academic Affairs']);
+        $head = $this->member('typed-head', 'Dr. Typed Head', 'د. رئيس مكتوب', position: ['رئيس قسم الجراحة', 'Head of Surgery']);
+        $other = $this->member('typed-other', 'Dr. Typed Other', 'د. مكتوب آخر', position: ['أستاذ مساعد', 'Assistant Professor']);
+
+        $this->artisan('faculty:match-positions', ['--faculty' => 'medicine'])
+            ->expectsOutputToContain('dry run')
+            ->assertSuccessful();
+        // A dry run saves nothing.
+        $this->assertNull(app(CmsWorkflowServiceInterface::class)->latestEditableDraftPayload(self::TARGET, (int) $this->admin->getKey()));
+
+        $this->artisan('faculty:match-positions', ['--faculty' => 'medicine', '--write' => true, '--user' => (string) $this->admin->getKey()])
+            ->assertSuccessful();
+
+        $draft = app(CmsWorkflowServiceInterface::class)->latestEditableDraftPayload(self::TARGET, (int) $this->admin->getKey());
+        $this->assertIsArray($draft);
+        $rows = collect($draft['translations']['ar']['positions'])->map(fn (array $row): array => [$row['positionSlug'] ?? $row['type'] ?? null, $row['memberId']]);
+        $this->assertContains(['vice_dean', (int) $vice->getKey()], $rows->all());
+        // Heads of department and text that fits no position are left alone.
+        $this->assertNotContains((int) $head->getKey(), $rows->pluck(1)->all());
+        $this->assertNotContains((int) $other->getKey(), $rows->pluck(1)->all());
+        $this->assertSame($draft['translations']['ar']['positions'], $draft['translations']['en']['positions']);
+        // It is a draft: nothing is published.
+        $this->assertNull(CmsTargetContent::query()->where('target_key', self::TARGET)->where('status', PublicationStatus::Published->value)->value('id'));
+
+        // Running it again adds nothing twice.
+        $this->artisan('faculty:match-positions', ['--faculty' => 'medicine', '--write' => true, '--user' => (string) $this->admin->getKey()])->assertSuccessful();
+        $again = app(CmsWorkflowServiceInterface::class)->latestEditableDraftPayload(self::TARGET, (int) $this->admin->getKey());
+        $this->assertCount(count($draft['translations']['ar']['positions']), $again['translations']['ar']['positions'] ?? []);
     }
 
     /**
-     * @param  list<array{id: string, type: string, memberId: int, title: array{0: string, 1: string}, onCouncil: bool}>  $positions
-     * @param  list<array{id: string, memberId: int, role: array{0: string, 1: string}}>  $members
+     * @param  list<array{positionSlug: ?string, memberId: ?int, id?: string}>  $rows
      * @return array<string, mixed>
      */
-    private function councilPayload(array $positions, array $members = []): array
+    private function councilPayload(array $rows): array
     {
         $payload = app(FacultyPageServiceInterface::class)->getEditablePayload(self::TARGET);
+        $positions = array_map(static fn (array $row, int $index): array => [
+            'id' => $row['id'] ?? 'p-'.$index,
+            'positionSlug' => $row['positionSlug'],
+            'memberId' => $row['memberId'],
+        ], $rows, array_keys($rows));
 
-        foreach (['ar' => 0, 'en' => 1] as $locale => $index) {
-            $payload['translations'][$locale]['positions'] = array_map(static fn (array $position): array => [
-                ...$position,
-                'title' => $position['title'][$index],
-            ], $positions);
-            $payload['translations'][$locale]['councilMembers'] = array_map(static fn (array $member): array => [
-                ...$member,
-                'role' => $member['role'][$index],
-            ], $members);
+        foreach (['ar', 'en'] as $locale) {
+            $payload['translations'][$locale]['positions'] = $positions;
             $payload['translations'][$locale]['includeDepartmentHeads'] = true;
         }
 
         return $payload;
     }
 
-    /**
-     * @param  list<array{id: string, type: string, memberId: int, title: array{0: string, 1: string}, onCouncil: bool}>  $positions
-     * @param  list<array{id: string, memberId: int, role: array{0: string, 1: string}}>  $members
-     */
-    private function publishCouncil(array $positions, array $members = []): void
+    /** @param  list<array{positionSlug: ?string, memberId: ?int, id?: string}>  $rows */
+    private function publishCouncil(array $rows): void
     {
         $workflow = app(CmsWorkflowServiceInterface::class);
-        $payload = $this->councilPayload($positions, $members);
+        $payload = $this->councilPayload($rows);
         $readiness = $workflow->readiness(self::TARGET, $payload);
         $this->assertTrue($readiness->isReady, json_encode($readiness->errors, JSON_UNESCAPED_UNICODE) ?: '');
         $workflow->saveDraft(self::TARGET, $payload, (int) $this->admin->getKey());
         $this->assertTrue($workflow->publish(self::TARGET, (int) $this->admin->getKey()));
     }
 
-    private function publishDepartmentHead(FacultyMember $head): void
+    private function addPosition(string $arabic, string $english, string $placement): string
     {
-        $workflow = app(CmsWorkflowServiceInterface::class);
-        $payload = app(FacultyPageServiceInterface::class)->getEditablePayload(self::DEPARTMENTS_TARGET);
-
-        foreach (['ar', 'en'] as $locale) {
-            $payload['translations'][$locale]['items'] = [[
-                'slug' => 'surgery-council-test',
-                'title' => $locale === 'ar' ? 'قسم الجراحة' : 'Department of Surgery',
-                'summary' => '',
-                'type' => 'section',
-                'headMemberId' => (int) $head->getKey(),
-                'studyPlanDepartmentId' => null,
-            ]];
-        }
-
-        $workflow->saveDraft(self::DEPARTMENTS_TARGET, $payload, (int) $this->admin->getKey());
-        $this->assertTrue($workflow->publish(self::DEPARTMENTS_TARGET, (int) $this->admin->getKey()));
+        return app(FacultyPositionServiceInterface::class)->save(null, $arabic, $english, $placement, self::TARGET, (int) $this->admin->getKey())->slug;
     }
 
     /**
-     * @param  list<array{slug: string, title: array{0: string, 1: string}, headMemberId: int, headTitle?: array{0: string, 1: string}, headOnCouncil?: bool}>  $departments
+     * @param  list<array{slug: string, title: array{0: string, 1: string}, headMemberId: int, headTitle?: array{0: string, 1: string}, headOnCouncil?: bool, legacy?: bool}>  $departments
      */
     private function publishDepartments(array $departments): void
     {
@@ -431,16 +568,24 @@ final class FacultyCouncilTest extends TestCase
         $payload = app(FacultyPageServiceInterface::class)->getEditablePayload(self::DEPARTMENTS_TARGET);
 
         foreach (['ar' => 0, 'en' => 1] as $locale => $index) {
-            $payload['translations'][$locale]['items'] = array_map(static fn (array $department): array => [
-                'slug' => $department['slug'],
-                'title' => $department['title'][$index],
-                'summary' => '',
-                'type' => 'section',
-                'headMemberId' => $department['headMemberId'],
-                'headTitle' => isset($department['headTitle']) ? $department['headTitle'][$index] : '',
-                'headOnCouncil' => $department['headOnCouncil'] ?? true,
-                'studyPlanDepartmentId' => null,
-            ], $departments);
+            $payload['translations'][$locale]['items'] = array_map(static function (array $department) use ($index): array {
+                $item = [
+                    'slug' => $department['slug'],
+                    'title' => $department['title'][$index],
+                    'summary' => '',
+                    'type' => 'section',
+                    'headMemberId' => $department['headMemberId'],
+                    'studyPlanDepartmentId' => null,
+                ];
+
+                // A department saved before the head's title and council switch existed has neither.
+                if (! ($department['legacy'] ?? false)) {
+                    $item['headTitle'] = isset($department['headTitle']) ? $department['headTitle'][$index] : '';
+                    $item['headOnCouncil'] = $department['headOnCouncil'] ?? true;
+                }
+
+                return $item;
+            }, $departments);
         }
 
         $readiness = $workflow->readiness(self::DEPARTMENTS_TARGET, $payload);
@@ -484,7 +629,8 @@ final class FacultyCouncilTest extends TestCase
         return $person;
     }
 
-    private function member(string $slug, string $en, string $ar, ?int $facultyId = null): FacultyMember
+    /** @param  array{0: string, 1: string}|null  $position  the position typed on the profile, in Arabic and English */
+    private function member(string $slug, string $en, string $ar, ?int $facultyId = null, ?array $position = null): FacultyMember
     {
         $member = FacultyMember::query()->create([
             'slug' => $slug,
@@ -493,8 +639,8 @@ final class FacultyCouncilTest extends TestCase
             'publication_status' => PublicationStatus::Published->value,
             'published_at' => now()->subDay(),
         ]);
-        $member->translations()->create(['locale' => 'en', 'full_name' => $en]);
-        $member->translations()->create(['locale' => 'ar', 'full_name' => $ar]);
+        $member->translations()->create(['locale' => 'en', 'full_name' => $en, 'position' => $position[1] ?? null]);
+        $member->translations()->create(['locale' => 'ar', 'full_name' => $ar, 'position' => $position[0] ?? null]);
 
         return $member;
     }

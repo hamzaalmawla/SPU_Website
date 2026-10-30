@@ -7,6 +7,7 @@ namespace App\Filament\Resources;
 use App\Contracts\Auth\AdminAccessServiceInterface;
 use App\Contracts\Cms\CmsWorkflowServiceInterface;
 use App\Contracts\Content\ProfileAdminServiceInterface;
+use App\Contracts\Faculty\FacultyLeadershipServiceInterface;
 use App\Contracts\Shared\SlugServiceInterface;
 use App\Filament\Resources\FacultyMemberResource\Pages;
 use App\Filament\Support\MediaPicker;
@@ -179,16 +180,25 @@ class FacultyMemberResource extends Resource
                             ->helperText(__('admin_resources.faculty_member.lower_numbers_appear_first_you_can_also_reorder_staff_from_t')),
                         Toggle::make('is_enabled')->label(__('admin_resources.faculty_member.eligible_for_public_display_after_publication'))->default(true),
                     ])->columns(2),
+                    Placeholder::make('council_positions')
+                        ->label(__('admin_resources.faculty_member.council_positions'))
+                        ->content(fn (?Model $record): string => self::councilPositions($record))
+                        ->helperText(__('admin_resources.faculty_member.council_positions_help'))
+                        ->columnSpanFull(),
                     Tabs::make(__('admin_resources.faculty_member.profile_text'))->tabs([
                         Tabs\Tab::make('Arabic')->label(__('admin_resources.faculty_member.arabic'))->schema([
                             TextInput::make('translations.ar.title')->label(__('admin_resources.faculty_member.arabic_title'))->maxLength(255)->placeholder('أ.د، د، م.'),
-                            TextInput::make('translations.ar.position')->label(__('admin_resources.faculty_member.arabic_position'))->maxLength(255)->placeholder('عميد، أستاذ مساعد، ...'),
+                            TextInput::make('translations.ar.position')->label(__('admin_resources.faculty_member.arabic_position'))->maxLength(255)
+                                // Leadership positions are picked on the council page and show instead of this.
+                                ->helperText(__('admin_resources.faculty_member.typed_position_help')),
                             Textarea::make('translations.ar.bio')->label(__('admin_resources.faculty_member.arabic_biography'))->rows(4)->columnSpanFull(),
                             TagsInput::make('translations.ar.specializations')->label(__('admin_resources.faculty_member.arabic_specializations'))->separator(',')->columnSpanFull(),
                         ])->columns(2),
                         Tabs\Tab::make('English')->label(__('admin_resources.faculty_member.english'))->schema([
                             TextInput::make('translations.en.title')->label(__('admin_resources.faculty_member.english_title'))->maxLength(255)->placeholder(__('admin_resources.faculty_member.prof_dr_eng')),
-                            TextInput::make('translations.en.position')->label(__('admin_resources.faculty_member.english_position'))->maxLength(255)->placeholder(__('admin_resources.faculty_member.dean_assistant_professor')),
+                            TextInput::make('translations.en.position')->label(__('admin_resources.faculty_member.english_position'))->maxLength(255)
+                                // Leadership positions are picked on the council page and show instead of this.
+                                ->helperText(__('admin_resources.faculty_member.typed_position_help')),
                             Textarea::make('translations.en.bio')->label(__('admin_resources.faculty_member.english_biography'))->rows(4)->columnSpanFull(),
                             TagsInput::make('translations.en.specializations')->label(__('admin_resources.faculty_member.english_specializations'))->separator(',')->columnSpanFull(),
                         ])->columns(2),
@@ -428,6 +438,16 @@ class FacultyMemberResource extends Resource
     private static function profilePath(string $slug): string
     {
         return '/about/profile/'.$slug;
+    }
+
+    /** The positions this profile holds on its faculty's council and departments pages. */
+    private static function councilPositions(?Model $record): string
+    {
+        $positions = $record instanceof FacultyMember
+            ? app(FacultyLeadershipServiceInterface::class)->positionsOfMember((int) $record->getKey(), app()->getLocale() === 'ar' ? 'ar' : 'en')
+            : [];
+
+        return $positions !== [] ? implode(' · ', $positions) : __('admin_resources.faculty_member.no_council_position');
     }
 
     private static function nextSortOrder(): int

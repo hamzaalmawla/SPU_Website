@@ -1218,6 +1218,12 @@ return [
             'fields' => [
                 'position_type' => 'Position',
                 'staff_member' => 'Academic staff member',
+                'position' => 'Position',
+                'position_name_ar' => 'Position name in Arabic',
+                'position_name_en' => 'Position name in English',
+                'position_placement' => 'Where it shows on the council page',
+                'add_position_to_list' => 'Add a position to the list',
+                'edit_position_in_list' => 'Edit a position in the list',
                 'position_title_ar' => 'Arabic title',
                 'position_title_en' => 'English title',
                 'on_council' => 'Member of the faculty council',
@@ -1372,7 +1378,9 @@ return [
             'help' => [
                 'exam_schedules' => 'Add one entry per semester and upload its PDF; you can also enter the schedule as a table. Put the newest first. The final exam card shows on the faculty pages once a semester with a file or table is published.',
                 'master_terms' => 'Add the semesters in order and their courses. Prerequisites are course codes of this program; both languages must list the same codes. Totals are calculated from the courses.',
-                'council' => 'Pick the dean, the vice deans and any other position from this faculty\'s academic staff only, once for both languages. One person can hold several positions. The dean published here is the dean shown on About › Leadership and in the dean\'s message. Leave a title empty to use the default (Dean, Vice Dean).',
+                'council' => 'Add one row per position: the position from the list and a member of this faculty\'s academic staff, once for both languages. The faculty has exactly one dean, and one person may hold several positions. The dean published here is the dean on the university leadership page and in the dean\'s message. Department heads are chosen on the departments page.',
+                'position' => 'Pick from the positions list every faculty shares. Use the buttons next to it to add a position or change a position\'s name or place; a change shows in every faculty.',
+                'position_placement' => 'Faculty leadership: the large cards at the top of the page. Council members: the faculty council list.',
                 'include_department_heads' => 'Each department head on the published departments page joins the council, except a head switched off there with "Head sits on the faculty council". Each head\'s title is edited there too.',
                 'study_plan_link' => 'The study plan program this specialization teaches; it shows a Study Plan button.',
                 'department_type' => 'A specialization has a study plan. A section (such as Basic Sciences) has no study plan and shows no Study Plan button.',
@@ -1388,6 +1396,15 @@ return [
             'department_types' => [
                 'specialization' => 'Specialization (has a study plan)',
                 'section' => 'Section (no study plan)',
+            ],
+            'position_placements' => [
+                'leadership' => 'Faculty leadership',
+                'council' => 'Council members',
+            ],
+            'position_errors' => [
+                'name_required' => 'Write the position name in Arabic and English.',
+                'name_taken' => 'A position with this name is already in the list.',
+                'unknown' => 'This position is not in the list.',
             ],
             'position_types' => [
                 'dean' => 'Dean',

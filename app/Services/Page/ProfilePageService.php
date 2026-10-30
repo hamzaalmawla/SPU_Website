@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services\Page;
 
 use App\Contracts\Content\PersonIdentityServiceInterface;
+use App\Contracts\Faculty\FacultyLeadershipServiceInterface;
 use App\Contracts\Faculty\FacultyStudyPlanLinkServiceInterface;
 use App\Contracts\Page\ProfilePageServiceInterface;
 use App\DTOs\Content\EducationDTO;
@@ -40,6 +41,7 @@ final class ProfilePageService implements ProfilePageServiceInterface
     public function __construct(
         private readonly PersonIdentityServiceInterface $identityService,
         private readonly FacultyStudyPlanLinkServiceInterface $studyPlanLinkService,
+        private readonly FacultyLeadershipServiceInterface $leadershipService,
     ) {}
 
     public function getProfile(string $locale, string $source, string $slug): ?ProfilePageDTO
@@ -380,6 +382,17 @@ final class ProfilePageService implements ProfilePageServiceInterface
         );
     }
 
+    /**
+     * The positions the profile holds on its faculty's council page and departments page,
+     * which replace a position typed on the profile.
+     */
+    private function memberPosition(FacultyMember $member, string $locale): ?string
+    {
+        $positions = $this->leadershipService->positionsOfMember((int) $member->getKey(), $locale);
+
+        return $positions !== [] ? implode(' · ', $positions) : null;
+    }
+
     private function buildFacultyMemberProfileDto(FacultyMember $member, string $locale): ?ProfilePageDTO
     {
         $translation = $this->facultyMemberTranslation($member, $locale);
@@ -410,7 +423,7 @@ final class ProfilePageService implements ProfilePageServiceInterface
             slug: (string) $member->slug,
             name: (string) $translation->full_name,
             title: $translation->title,
-            position: $translation->position,
+            position: $this->memberPosition($member, $locale) ?? $translation->position,
             category: 'faculty_member',
             facultyName: $facultyName,
             departmentName: $departmentName,
