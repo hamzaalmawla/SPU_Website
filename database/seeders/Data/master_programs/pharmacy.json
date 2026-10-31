@@ -1,0 +1,1026 @@
+{
+  "ar": {
+    "title": "ماجستير التأهيل والتخصص في الصيدلانيات وتكنولوجيا الصيدلة",
+    "summary": "برنامج ماجستير تأهيل وتخصص في كلية الصيدلة يُعدّ متخصصين في تصميم الأدوية وتطويرها وتصنيعها وضبط جودتها، مدته ثلاث سنوات وبإجمالي 45 ساعة معتمدة.",
+    "seoTitle": "ماجستير الصيدلانيات وتكنولوجيا الصيدلة | كلية الصيدلة",
+    "seoDescription": "الخطة الدراسية لماجستير التأهيل والتخصص في الصيدلانيات وتكنولوجيا الصيدلة في الجامعة السورية الخاصة: المقررات، ومخرجات التعلم، والتقييم، والرسالة والتدريب، وشروط القبول.",
+    "payload": {
+      "overview": [
+        {
+          "text": "يشهد قطاع الصناعة الدوائية في الجمهورية العربية السورية نمواً متسارعاً وحاجةً متزايدة إلى كوادر علمية متخصصة قادرة على مواكبة التطورات التقنية في مجالات تصميم الأدوية وتصنيعها وضبط جودتها."
+        },
+        {
+          "text": "يُعد هذا البرنامج استجابة مباشرةً لاحتياجات الصناعة الدوائية الوطنية، ويهدف إلى إعداد متخصصين يجمعون بين الأساس العلمي الرصين للصيدلانيات والتطبيق التقني المتقدم في التكنولوجيا الصيدلية، بما يتوافق مع المعايير الأكاديمية الدولية ومتطلبات ضمان الجودة في التعليم العالي."
+        }
+      ],
+      "facts": [
+        {
+          "label": "الدرجة العلمية",
+          "value": "ماجستير تأهيل وتخصص"
+        },
+        {
+          "label": "مدة الدراسة",
+          "value": "ثلاث سنوات"
+        },
+        {
+          "label": "الساعات المعتمدة",
+          "value": "45 ساعة"
+        },
+        {
+          "label": "رسالة الماجستير",
+          "value": "10 ساعات معتمدة"
+        }
+      ],
+      "coding": "التوزيع الزمني: السنة الأولى للمقررات النظرية والمهارات المتقدمة (فصلان دراسيان)، والسنة الثانية للمقررات التطبيقية والاختيارية والتدريب العملي في المختبرات وخطوط الإنتاج، والسنة الثالثة لإعداد رسالة الماجستير ومناقشتها.",
+      "terms": [
+        {
+          "id": "compulsory",
+          "label": "المقررات الإجبارية",
+          "theme": "",
+          "note": "",
+          "credits": 27,
+          "courses": [
+            {
+              "id": "PT-601",
+              "code": "PT-601",
+              "title": "الصيدلة الصناعية",
+              "titleAlt": "Industrial Pharmacy",
+              "elective": false,
+              "credits": 0,
+              "theory": 2,
+              "practical": 2,
+              "prerequisites": [],
+              "prerequisiteNote": "",
+              "description": "",
+              "outcomes": [],
+              "grading": "",
+              "coverage": {}
+            },
+            {
+              "id": "PT-602",
+              "code": "PT-602",
+              "title": "التكنولوجيا الصيدلانية",
+              "titleAlt": "Pharmaceutical Technology",
+              "elective": false,
+              "credits": 0,
+              "theory": 2,
+              "practical": 2,
+              "prerequisites": [],
+              "prerequisiteNote": "",
+              "description": "",
+              "outcomes": [],
+              "grading": "",
+              "coverage": {}
+            },
+            {
+              "id": "PT-603",
+              "code": "PT-603",
+              "title": "الصيدلة الفيزيائية",
+              "titleAlt": "Physical Pharmacy",
+              "elective": false,
+              "credits": 0,
+              "theory": 2,
+              "practical": 0,
+              "prerequisites": [],
+              "prerequisiteNote": "",
+              "description": "",
+              "outcomes": [],
+              "grading": "",
+              "coverage": {}
+            },
+            {
+              "id": "PT-604",
+              "code": "PT-604",
+              "title": "الصيدلة الحيوية والحركية الدوائية",
+              "titleAlt": "Biopharmaceutics and Pharmacokinetics",
+              "elective": false,
+              "credits": 0,
+              "theory": 2,
+              "practical": 1,
+              "prerequisites": [],
+              "prerequisiteNote": "",
+              "description": "",
+              "outcomes": [],
+              "grading": "",
+              "coverage": {}
+            },
+            {
+              "id": "PT-605",
+              "code": "PT-605",
+              "title": "تصميم الأشكال الصيدلانية الصلبة",
+              "titleAlt": "Design of Solid Dosage Forms",
+              "elective": false,
+              "credits": 0,
+              "theory": 1,
+              "practical": 2,
+              "prerequisites": [],
+              "prerequisiteNote": "",
+              "description": "",
+              "outcomes": [],
+              "grading": "",
+              "coverage": {}
+            },
+            {
+              "id": "PT-606",
+              "code": "PT-606",
+              "title": "تصميم الأشكال السائلة وشبه الصلبة",
+              "titleAlt": "Design of Liquid and Semi-solid Dosage Forms",
+              "elective": false,
+              "credits": 0,
+              "theory": 1,
+              "practical": 2,
+              "prerequisites": [],
+              "prerequisiteNote": "",
+              "description": "",
+              "outcomes": [],
+              "grading": "",
+              "coverage": {}
+            },
+            {
+              "id": "PT-607",
+              "code": "PT-607",
+              "title": "أنظمة إيصال الدواء الحديثة",
+              "titleAlt": "Modern Drug Delivery Systems",
+              "elective": false,
+              "credits": 0,
+              "theory": 2,
+              "practical": 0,
+              "prerequisites": [],
+              "prerequisiteNote": "",
+              "description": "",
+              "outcomes": [],
+              "grading": "",
+              "coverage": {}
+            },
+            {
+              "id": "PT-608",
+              "code": "PT-608",
+              "title": "ضمان الجودة والمراقبة الدوائية (GMP)",
+              "titleAlt": "Quality Assurance and Drug Control (GMP)",
+              "elective": false,
+              "credits": 0,
+              "theory": 2,
+              "practical": 0,
+              "prerequisites": [],
+              "prerequisiteNote": "",
+              "description": "",
+              "outcomes": [],
+              "grading": "",
+              "coverage": {}
+            },
+            {
+              "id": "PT-609",
+              "code": "PT-609",
+              "title": "التحليل الصيدلاني التطبيقي",
+              "titleAlt": "Applied Pharmaceutical Analysis",
+              "elective": false,
+              "credits": 0,
+              "theory": 1,
+              "practical": 2,
+              "prerequisites": [],
+              "prerequisiteNote": "",
+              "description": "",
+              "outcomes": [],
+              "grading": "",
+              "coverage": {}
+            },
+            {
+              "id": "PT-610",
+              "code": "PT-610",
+              "title": "دراسات الثباتية الدوائية",
+              "titleAlt": "Drug Stability Studies",
+              "elective": false,
+              "credits": 0,
+              "theory": 1,
+              "practical": 1,
+              "prerequisites": [],
+              "prerequisiteNote": "",
+              "description": "",
+              "outcomes": [],
+              "grading": "",
+              "coverage": {}
+            },
+            {
+              "id": "PT-611",
+              "code": "PT-611",
+              "title": "منهجيات البحث والإحصاء الحيوي",
+              "titleAlt": "Research Methodology and Biostatistics",
+              "elective": false,
+              "credits": 0,
+              "theory": 1,
+              "practical": 1,
+              "prerequisites": [],
+              "prerequisiteNote": "",
+              "description": "",
+              "outcomes": [],
+              "grading": "",
+              "coverage": {}
+            },
+            {
+              "id": "PT-612",
+              "code": "PT-612",
+              "title": "الصيدلة الجرثومية",
+              "titleAlt": "Pharmaceutical Microbiology",
+              "elective": false,
+              "credits": 0,
+              "theory": 2,
+              "practical": 0,
+              "prerequisites": [],
+              "prerequisiteNote": "",
+              "description": "",
+              "outcomes": [],
+              "grading": "",
+              "coverage": {}
+            }
+          ]
+        },
+        {
+          "id": "electives",
+          "label": "المقررات الاختيارية",
+          "theme": "",
+          "note": "يختار الطالب منها مقررات بما يعادل 4 ساعات معتمدة.",
+          "credits": 4,
+          "courses": [
+            {
+              "id": "PT-621",
+              "code": "PT-621",
+              "title": "التكنولوجيا الحيوية الصيدلانية",
+              "titleAlt": "Pharmaceutical Biotechnology",
+              "elective": true,
+              "credits": 2,
+              "theory": 0,
+              "practical": 0,
+              "prerequisites": [],
+              "prerequisiteNote": "",
+              "description": "",
+              "outcomes": [],
+              "grading": "",
+              "coverage": {}
+            },
+            {
+              "id": "PT-623",
+              "code": "PT-623",
+              "title": "الذكاء الاصطناعي وتطوير المستحضرات الدوائية",
+              "titleAlt": "Artificial Intelligence in Pharmaceutical Product Development",
+              "elective": true,
+              "credits": 2,
+              "theory": 0,
+              "practical": 0,
+              "prerequisites": [],
+              "prerequisiteNote": "",
+              "description": "",
+              "outcomes": [],
+              "grading": "",
+              "coverage": {}
+            },
+            {
+              "id": "PT-624",
+              "code": "PT-624",
+              "title": "علم البوليميرات الصيدلانية",
+              "titleAlt": "Pharmaceutical Polymer Science",
+              "elective": true,
+              "credits": 2,
+              "theory": 0,
+              "practical": 0,
+              "prerequisites": [],
+              "prerequisiteNote": "",
+              "description": "",
+              "outcomes": [],
+              "grading": "",
+              "coverage": {}
+            },
+            {
+              "id": "PT-625",
+              "code": "PT-625",
+              "title": "تقنيات النانو في الصيدلة",
+              "titleAlt": "Nanotechnology in Pharmacy",
+              "elective": true,
+              "credits": 2,
+              "theory": 0,
+              "practical": 0,
+              "prerequisites": [],
+              "prerequisiteNote": "",
+              "description": "",
+              "outcomes": [],
+              "grading": "",
+              "coverage": {}
+            },
+            {
+              "id": "PT-626",
+              "code": "PT-626",
+              "title": "الشؤون التنظيمية وتسجيل الأدوية",
+              "titleAlt": "Regulatory Affairs and Drug Registration",
+              "elective": true,
+              "credits": 2,
+              "theory": 0,
+              "practical": 0,
+              "prerequisites": [],
+              "prerequisiteNote": "",
+              "description": "",
+              "outcomes": [],
+              "grading": "",
+              "coverage": {}
+            }
+          ]
+        },
+        {
+          "id": "thesis",
+          "label": "التدريب العملي والرسالة",
+          "theme": "",
+          "note": "",
+          "credits": null,
+          "courses": [
+            {
+              "id": "PT-631",
+              "code": "PT-631",
+              "title": "التدريب العملي المتقدم: مختبرات وخطوط إنتاج",
+              "titleAlt": "Advanced Practical Training: Laboratories and Production Lines",
+              "elective": false,
+              "credits": 4,
+              "theory": 0,
+              "practical": 0,
+              "prerequisites": [],
+              "prerequisiteNote": "",
+              "description": "",
+              "outcomes": [],
+              "grading": "",
+              "coverage": {}
+            },
+            {
+              "id": "PT-699",
+              "code": "PT-699",
+              "title": "رسالة الماجستير",
+              "titleAlt": "Master's Thesis",
+              "elective": false,
+              "credits": 10,
+              "theory": 0,
+              "practical": 0,
+              "prerequisites": [],
+              "prerequisiteNote": "",
+              "description": "",
+              "outcomes": [],
+              "grading": "",
+              "coverage": {}
+            }
+          ]
+        }
+      ],
+      "outcomes": [
+        {
+          "code": "",
+          "group": "المعارف والفهم",
+          "text": "يشرح المبادئ العلمية المتقدمة في الصيدلانيات وفيزياء الأشكال الصيدلانية."
+        },
+        {
+          "code": "",
+          "group": "المعارف والفهم",
+          "text": "يصف تقنيات التصنيع الدوائي وأنظمة إيصال الدواء الحديثة."
+        },
+        {
+          "code": "",
+          "group": "المعارف والفهم",
+          "text": "يوضح متطلبات ضمان الجودة وممارسات التصنيع الجيد والدلائل التنظيمية."
+        },
+        {
+          "code": "",
+          "group": "المهارات الذهنية",
+          "text": "يحلل المشكلات التقنية في تصميم الصيغ الدوائية ويقترح حلولاً مبنية على الدليل."
+        },
+        {
+          "code": "",
+          "group": "المهارات الذهنية",
+          "text": "يقيم جودة المستحضرات وثباتيتها وتوافرها الحيوي ويفسر البيانات."
+        },
+        {
+          "code": "",
+          "group": "المهارات الذهنية",
+          "text": "يصمم دراسات بحثية تطبيقية ويحلل نتائجها إحصائياً."
+        },
+        {
+          "code": "",
+          "group": "المهارات المهنية والعملية",
+          "text": "يصمم ويحضر الأشكال الصيدلانية المختلفة مخبرياً وصناعياً."
+        },
+        {
+          "code": "",
+          "group": "المهارات المهنية والعملية",
+          "text": "يطبق التقنيات التحليلية الآلية في مراقبة الجودة."
+        },
+        {
+          "code": "",
+          "group": "المهارات المهنية والعملية",
+          "text": "يوثق العمليات ويطبق إجراءات ضمان الجودة وفق GMP."
+        },
+        {
+          "code": "",
+          "group": "المهارات العامة والمنقولة",
+          "text": "يستخدم مصادر المعلومات والتقنيات الرقمية في التعلم المستمر."
+        },
+        {
+          "code": "",
+          "group": "المهارات العامة والمنقولة",
+          "text": "يلتزم بأخلاقيات البحث والمهنة والمسؤولية المجتمعية."
+        }
+      ],
+      "coverageLegend": "",
+      "assessment": [
+        {
+          "type": "امتحانات نظرية تحريرية",
+          "weight": "30%",
+          "description": "تقيس المعارف والمهارات الذهنية."
+        },
+        {
+          "type": "امتحانات ومهام عملية مخبرية",
+          "weight": "25%",
+          "description": "تقيس المهارات المهنية والعملية."
+        },
+        {
+          "type": "مشاريع وتقارير بحثية",
+          "weight": "20%",
+          "description": "تقيس المهارات الذهنية والمنقولة."
+        },
+        {
+          "type": "عروض تقديمية علمية",
+          "weight": "10%",
+          "description": "تقيس المهارات العامة والتواصل."
+        },
+        {
+          "type": "تقييم التدريب الميداني",
+          "weight": "15%",
+          "description": "يقيس المهارات المهنية والمنقولة."
+        }
+      ],
+      "projectTitle": "رسالة الماجستير والتدريب العملي",
+      "projectIntro": "يُتمّ الطالب التدريب العملي المتقدم في المختبرات وخطوط الإنتاج خلال السنة الثانية، ويُعِدّ رسالة الماجستير ويناقشها في السنة الثالثة.",
+      "projectRules": [
+        {
+          "text": "التدريب العملي المتقدم في المختبرات وخطوط الإنتاج (PT-631) بأربع ساعات معتمدة."
+        },
+        {
+          "text": "رسالة الماجستير (PT-699) بعشر ساعات معتمدة."
+        },
+        {
+          "text": "تُقيّم رسالة الماجستير من قبل لجنة حكم متخصصة وفق معايير معلنة."
+        }
+      ],
+      "admission": {
+        "intro": "",
+        "conditions": [
+          {
+            "text": "أن يكون حاصلاً على إجازة في الصيدلة (بكالوريوس صيدلة من جامعة معترف بها)."
+          },
+          {
+            "text": "استيفاء الحد الأدنى من المعدل التراكمي وفق لائحة الدراسات العليا في الجامعة."
+          },
+          {
+            "text": "اجتياز مقابلة القبول و/أو اختبار القبول إن وجد."
+          },
+          {
+            "text": "استيفاء متطلبات إتقان اللغة الإنجليزية وفق معايير الجامعة."
+          },
+          {
+            "text": "تقديم الوثائق الرسمية المطلوبة كاملة ضمن المدة المحددة."
+          }
+        ],
+        "majors": [],
+        "criteria": [
+          {
+            "label": "المعدل التراكمي في مرحلة الإجازة",
+            "weight": "50%",
+            "description": ""
+          },
+          {
+            "label": "نتيجة مقابلة / اختبار القبول",
+            "weight": "25%",
+            "description": ""
+          },
+          {
+            "label": "الخبرة العملية ذات الصلة (الصناعة الدوائية)",
+            "weight": "15%",
+            "description": ""
+          },
+          {
+            "label": "النشاط البحثي والعلمي",
+            "weight": "10%",
+            "description": ""
+          }
+        ],
+        "note": ""
+      },
+      "degreeRequirements": [],
+      "teachingNote": "يعتمد نظام الدرجات التراكمي وفق لائحة الدراسات العليا في الجامعة، وتُنوَّع أساليب التقييم لتغطي جميع مجالات مخرجات التعلم."
+    }
+  },
+  "en": {
+    "title": "Professional Master's in Pharmaceutics and Pharmaceutical Technology",
+    "summary": "A professional master's program at the Faculty of Pharmacy that prepares specialists in drug design, development, manufacturing and quality control, over three years and 45 credit hours.",
+    "seoTitle": "Master's in Pharmaceutics & Pharmaceutical Technology | Faculty of Pharmacy",
+    "seoDescription": "Study plan of the Professional Master's in Pharmaceutics and Pharmaceutical Technology at Syrian Private University: courses, learning outcomes, assessment, thesis and training, and admission requirements.",
+    "payload": {
+      "overview": [
+        {
+          "text": "The pharmaceutical industry in Syria is growing fast and increasingly needs specialists able to keep pace with technical advances in drug design, manufacturing and quality control."
+        },
+        {
+          "text": "The program answers the needs of the national pharmaceutical industry directly. It prepares specialists who combine a sound scientific grounding in pharmaceutics with advanced technical practice in pharmaceutical technology, in line with international academic standards and quality assurance requirements in higher education."
+        }
+      ],
+      "facts": [
+        {
+          "label": "Degree",
+          "value": "Professional Master's"
+        },
+        {
+          "label": "Duration",
+          "value": "Three years"
+        },
+        {
+          "label": "Credit hours",
+          "value": "45 hours"
+        },
+        {
+          "label": "Master's thesis",
+          "value": "10 credit hours"
+        }
+      ],
+      "coding": "Timeline: year one covers the theory courses and advanced skills (two semesters); year two the applied and elective courses and practical training in laboratories and on production lines; year three the preparation and defense of the master's thesis.",
+      "terms": [
+        {
+          "id": "compulsory",
+          "label": "Compulsory courses",
+          "theme": "",
+          "note": "",
+          "credits": 27,
+          "courses": [
+            {
+              "id": "PT-601",
+              "code": "PT-601",
+              "title": "Industrial Pharmacy",
+              "titleAlt": "الصيدلة الصناعية",
+              "elective": false,
+              "credits": 0,
+              "theory": 2,
+              "practical": 2,
+              "prerequisites": [],
+              "prerequisiteNote": "",
+              "description": "",
+              "outcomes": [],
+              "grading": "",
+              "coverage": {}
+            },
+            {
+              "id": "PT-602",
+              "code": "PT-602",
+              "title": "Pharmaceutical Technology",
+              "titleAlt": "التكنولوجيا الصيدلانية",
+              "elective": false,
+              "credits": 0,
+              "theory": 2,
+              "practical": 2,
+              "prerequisites": [],
+              "prerequisiteNote": "",
+              "description": "",
+              "outcomes": [],
+              "grading": "",
+              "coverage": {}
+            },
+            {
+              "id": "PT-603",
+              "code": "PT-603",
+              "title": "Physical Pharmacy",
+              "titleAlt": "الصيدلة الفيزيائية",
+              "elective": false,
+              "credits": 0,
+              "theory": 2,
+              "practical": 0,
+              "prerequisites": [],
+              "prerequisiteNote": "",
+              "description": "",
+              "outcomes": [],
+              "grading": "",
+              "coverage": {}
+            },
+            {
+              "id": "PT-604",
+              "code": "PT-604",
+              "title": "Biopharmaceutics and Pharmacokinetics",
+              "titleAlt": "الصيدلة الحيوية والحركية الدوائية",
+              "elective": false,
+              "credits": 0,
+              "theory": 2,
+              "practical": 1,
+              "prerequisites": [],
+              "prerequisiteNote": "",
+              "description": "",
+              "outcomes": [],
+              "grading": "",
+              "coverage": {}
+            },
+            {
+              "id": "PT-605",
+              "code": "PT-605",
+              "title": "Design of Solid Dosage Forms",
+              "titleAlt": "تصميم الأشكال الصيدلانية الصلبة",
+              "elective": false,
+              "credits": 0,
+              "theory": 1,
+              "practical": 2,
+              "prerequisites": [],
+              "prerequisiteNote": "",
+              "description": "",
+              "outcomes": [],
+              "grading": "",
+              "coverage": {}
+            },
+            {
+              "id": "PT-606",
+              "code": "PT-606",
+              "title": "Design of Liquid and Semi-solid Dosage Forms",
+              "titleAlt": "تصميم الأشكال السائلة وشبه الصلبة",
+              "elective": false,
+              "credits": 0,
+              "theory": 1,
+              "practical": 2,
+              "prerequisites": [],
+              "prerequisiteNote": "",
+              "description": "",
+              "outcomes": [],
+              "grading": "",
+              "coverage": {}
+            },
+            {
+              "id": "PT-607",
+              "code": "PT-607",
+              "title": "Modern Drug Delivery Systems",
+              "titleAlt": "أنظمة إيصال الدواء الحديثة",
+              "elective": false,
+              "credits": 0,
+              "theory": 2,
+              "practical": 0,
+              "prerequisites": [],
+              "prerequisiteNote": "",
+              "description": "",
+              "outcomes": [],
+              "grading": "",
+              "coverage": {}
+            },
+            {
+              "id": "PT-608",
+              "code": "PT-608",
+              "title": "Quality Assurance and Drug Control (GMP)",
+              "titleAlt": "ضمان الجودة والمراقبة الدوائية (GMP)",
+              "elective": false,
+              "credits": 0,
+              "theory": 2,
+              "practical": 0,
+              "prerequisites": [],
+              "prerequisiteNote": "",
+              "description": "",
+              "outcomes": [],
+              "grading": "",
+              "coverage": {}
+            },
+            {
+              "id": "PT-609",
+              "code": "PT-609",
+              "title": "Applied Pharmaceutical Analysis",
+              "titleAlt": "التحليل الصيدلاني التطبيقي",
+              "elective": false,
+              "credits": 0,
+              "theory": 1,
+              "practical": 2,
+              "prerequisites": [],
+              "prerequisiteNote": "",
+              "description": "",
+              "outcomes": [],
+              "grading": "",
+              "coverage": {}
+            },
+            {
+              "id": "PT-610",
+              "code": "PT-610",
+              "title": "Drug Stability Studies",
+              "titleAlt": "دراسات الثباتية الدوائية",
+              "elective": false,
+              "credits": 0,
+              "theory": 1,
+              "practical": 1,
+              "prerequisites": [],
+              "prerequisiteNote": "",
+              "description": "",
+              "outcomes": [],
+              "grading": "",
+              "coverage": {}
+            },
+            {
+              "id": "PT-611",
+              "code": "PT-611",
+              "title": "Research Methodology and Biostatistics",
+              "titleAlt": "منهجيات البحث والإحصاء الحيوي",
+              "elective": false,
+              "credits": 0,
+              "theory": 1,
+              "practical": 1,
+              "prerequisites": [],
+              "prerequisiteNote": "",
+              "description": "",
+              "outcomes": [],
+              "grading": "",
+              "coverage": {}
+            },
+            {
+              "id": "PT-612",
+              "code": "PT-612",
+              "title": "Pharmaceutical Microbiology",
+              "titleAlt": "الصيدلة الجرثومية",
+              "elective": false,
+              "credits": 0,
+              "theory": 2,
+              "practical": 0,
+              "prerequisites": [],
+              "prerequisiteNote": "",
+              "description": "",
+              "outcomes": [],
+              "grading": "",
+              "coverage": {}
+            }
+          ]
+        },
+        {
+          "id": "electives",
+          "label": "Elective courses",
+          "theme": "",
+          "note": "Students choose courses worth 4 credit hours.",
+          "credits": 4,
+          "courses": [
+            {
+              "id": "PT-621",
+              "code": "PT-621",
+              "title": "Pharmaceutical Biotechnology",
+              "titleAlt": "التكنولوجيا الحيوية الصيدلانية",
+              "elective": true,
+              "credits": 2,
+              "theory": 0,
+              "practical": 0,
+              "prerequisites": [],
+              "prerequisiteNote": "",
+              "description": "",
+              "outcomes": [],
+              "grading": "",
+              "coverage": {}
+            },
+            {
+              "id": "PT-623",
+              "code": "PT-623",
+              "title": "Artificial Intelligence in Pharmaceutical Product Development",
+              "titleAlt": "الذكاء الاصطناعي وتطوير المستحضرات الدوائية",
+              "elective": true,
+              "credits": 2,
+              "theory": 0,
+              "practical": 0,
+              "prerequisites": [],
+              "prerequisiteNote": "",
+              "description": "",
+              "outcomes": [],
+              "grading": "",
+              "coverage": {}
+            },
+            {
+              "id": "PT-624",
+              "code": "PT-624",
+              "title": "Pharmaceutical Polymer Science",
+              "titleAlt": "علم البوليميرات الصيدلانية",
+              "elective": true,
+              "credits": 2,
+              "theory": 0,
+              "practical": 0,
+              "prerequisites": [],
+              "prerequisiteNote": "",
+              "description": "",
+              "outcomes": [],
+              "grading": "",
+              "coverage": {}
+            },
+            {
+              "id": "PT-625",
+              "code": "PT-625",
+              "title": "Nanotechnology in Pharmacy",
+              "titleAlt": "تقنيات النانو في الصيدلة",
+              "elective": true,
+              "credits": 2,
+              "theory": 0,
+              "practical": 0,
+              "prerequisites": [],
+              "prerequisiteNote": "",
+              "description": "",
+              "outcomes": [],
+              "grading": "",
+              "coverage": {}
+            },
+            {
+              "id": "PT-626",
+              "code": "PT-626",
+              "title": "Regulatory Affairs and Drug Registration",
+              "titleAlt": "الشؤون التنظيمية وتسجيل الأدوية",
+              "elective": true,
+              "credits": 2,
+              "theory": 0,
+              "practical": 0,
+              "prerequisites": [],
+              "prerequisiteNote": "",
+              "description": "",
+              "outcomes": [],
+              "grading": "",
+              "coverage": {}
+            }
+          ]
+        },
+        {
+          "id": "thesis",
+          "label": "Practical training and thesis",
+          "theme": "",
+          "note": "",
+          "credits": null,
+          "courses": [
+            {
+              "id": "PT-631",
+              "code": "PT-631",
+              "title": "Advanced Practical Training: Laboratories and Production Lines",
+              "titleAlt": "التدريب العملي المتقدم: مختبرات وخطوط إنتاج",
+              "elective": false,
+              "credits": 4,
+              "theory": 0,
+              "practical": 0,
+              "prerequisites": [],
+              "prerequisiteNote": "",
+              "description": "",
+              "outcomes": [],
+              "grading": "",
+              "coverage": {}
+            },
+            {
+              "id": "PT-699",
+              "code": "PT-699",
+              "title": "Master's Thesis",
+              "titleAlt": "رسالة الماجستير",
+              "elective": false,
+              "credits": 10,
+              "theory": 0,
+              "practical": 0,
+              "prerequisites": [],
+              "prerequisiteNote": "",
+              "description": "",
+              "outcomes": [],
+              "grading": "",
+              "coverage": {}
+            }
+          ]
+        }
+      ],
+      "outcomes": [
+        {
+          "code": "",
+          "group": "Knowledge and understanding",
+          "text": "Explain the advanced scientific principles of pharmaceutics and the physics of dosage forms."
+        },
+        {
+          "code": "",
+          "group": "Knowledge and understanding",
+          "text": "Describe pharmaceutical manufacturing technologies and modern drug delivery systems."
+        },
+        {
+          "code": "",
+          "group": "Knowledge and understanding",
+          "text": "Explain the requirements of quality assurance, good manufacturing practice and regulatory guidelines."
+        },
+        {
+          "code": "",
+          "group": "Intellectual skills",
+          "text": "Analyze technical problems in formulation design and propose evidence-based solutions."
+        },
+        {
+          "code": "",
+          "group": "Intellectual skills",
+          "text": "Evaluate the quality, stability and bioavailability of products and interpret the data."
+        },
+        {
+          "code": "",
+          "group": "Intellectual skills",
+          "text": "Design applied research studies and analyze their results statistically."
+        },
+        {
+          "code": "",
+          "group": "Professional and practical skills",
+          "text": "Design and prepare the various dosage forms at laboratory and industrial scale."
+        },
+        {
+          "code": "",
+          "group": "Professional and practical skills",
+          "text": "Apply instrumental analytical techniques in quality control."
+        },
+        {
+          "code": "",
+          "group": "Professional and practical skills",
+          "text": "Document processes and apply quality assurance procedures in line with GMP."
+        },
+        {
+          "code": "",
+          "group": "General and transferable skills",
+          "text": "Use information sources and digital technologies for lifelong learning."
+        },
+        {
+          "code": "",
+          "group": "General and transferable skills",
+          "text": "Uphold research and professional ethics and social responsibility."
+        }
+      ],
+      "coverageLegend": "",
+      "assessment": [
+        {
+          "type": "Written theory exams",
+          "weight": "30%",
+          "description": "Assess knowledge and intellectual skills."
+        },
+        {
+          "type": "Practical laboratory exams and tasks",
+          "weight": "25%",
+          "description": "Assess professional and practical skills."
+        },
+        {
+          "type": "Research projects and reports",
+          "weight": "20%",
+          "description": "Assess intellectual and transferable skills."
+        },
+        {
+          "type": "Scientific presentations",
+          "weight": "10%",
+          "description": "Assess general and communication skills."
+        },
+        {
+          "type": "Field training evaluation",
+          "weight": "15%",
+          "description": "Assesses professional and transferable skills."
+        }
+      ],
+      "projectTitle": "Master's thesis and practical training",
+      "projectIntro": "Students complete advanced practical training in laboratories and on production lines in year two, then prepare and defend their master's thesis in year three.",
+      "projectRules": [
+        {
+          "text": "Advanced practical training in laboratories and on production lines (PT-631), 4 credit hours."
+        },
+        {
+          "text": "Master's thesis (PT-699), 10 credit hours."
+        },
+        {
+          "text": "The master's thesis is assessed by a specialized examination committee against published criteria."
+        }
+      ],
+      "admission": {
+        "intro": "",
+        "conditions": [
+          {
+            "text": "Hold a degree in pharmacy (a bachelor's in pharmacy from a recognized university)."
+          },
+          {
+            "text": "Meet the minimum cumulative average set by the university's graduate studies regulations."
+          },
+          {
+            "text": "Pass the admission interview and/or the admission test, where there is one."
+          },
+          {
+            "text": "Meet the university's English language proficiency requirements."
+          },
+          {
+            "text": "Submit all the required official documents within the set period."
+          }
+        ],
+        "majors": [],
+        "criteria": [
+          {
+            "label": "Bachelor's cumulative average",
+            "weight": "50%",
+            "description": ""
+          },
+          {
+            "label": "Admission interview / test result",
+            "weight": "25%",
+            "description": ""
+          },
+          {
+            "label": "Relevant work experience (pharmaceutical industry)",
+            "weight": "15%",
+            "description": ""
+          },
+          {
+            "label": "Research and scientific activity",
+            "weight": "10%",
+            "description": ""
+          }
+        ],
+        "note": ""
+      },
+      "degreeRequirements": [],
+      "teachingNote": "Grades follow the cumulative system of the university's graduate studies regulations, and assessment methods are varied to cover every domain of the learning outcomes."
+    }
+  }
+}

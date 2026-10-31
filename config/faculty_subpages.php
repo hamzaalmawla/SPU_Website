@@ -17,7 +17,7 @@ return [
     'restricted' => [
         'training' => ['pharmacy'],
         'clinical-cases' => ['dentistry'],
-        'master-program' => ['artificial-intelligence'],
+        'master-program' => ['artificial-intelligence', 'pharmacy', 'petroleum'],
         'final-exams' => ['medicine', 'dentistry', 'pharmacy', 'artificial-intelligence', 'building-construction-engineering', 'petroleum', 'business-administration'],
     ],
 ];

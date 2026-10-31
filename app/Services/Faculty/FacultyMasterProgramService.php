@@ -38,25 +38,32 @@ final class FacultyMasterProgramService implements FacultyMasterProgramServiceIn
     public function program(array $payload): array
     {
         $payload = $this->normalizePayload($payload);
+        $references = $this->courseReferences($payload['terms']);
         $titles = [];
+        $codes = [];
 
         foreach ($payload['terms'] as $term) {
             foreach ($term['courses'] as $course) {
-                $titles[$course['code']] = $course['title'];
+                $titles[$course['id']] = $course['title'];
+                $codes[$course['id']] = $course['code'];
             }
         }
 
         $unlocks = [];
+        $prerequisites = [];
 
         foreach ($payload['terms'] as $term) {
             foreach ($term['courses'] as $course) {
-                foreach ($course['prerequisites'] as $code) {
-                    $unlocks[$code][] = $course['code'];
+                $ids = $this->resolvedPrerequisites($course, $references);
+                $prerequisites[$course['id']] = $ids;
+
+                foreach ($ids as $id) {
+                    $unlocks[$id][] = $course['id'];
                 }
             }
         }
 
-        $link = static fn (string $code): array => ['code' => $code, 'title' => $titles[$code] ?? ''];
+        $link = static fn (string $id): array => ['id' => $id, 'code' => $codes[$id] ?? '', 'title' => $titles[$id] ?? ''];
         $totals = ['courses' => 0, 'credits' => 0, 'theory' => 0, 'practical' => 0];
         $plos = array_values(array_filter(array_map(static fn (array $outcome): string => $outcome['code'], $payload['outcomes'])));
         $coverageRows = [];
@@ -65,15 +72,17 @@ final class FacultyMasterProgramService implements FacultyMasterProgramServiceIn
         foreach ($payload['terms'] as $term) {
             $courses = array_map(fn (array $course): array => [
                 ...$course,
-                'prerequisites' => array_values(array_map($link, array_filter($course['prerequisites'], static fn (string $code): bool => isset($titles[$code])))),
-                'unlocks' => array_map($link, $unlocks[$course['code']] ?? []),
+                'prerequisites' => array_map($link, $prerequisites[$course['id']] ?? []),
+                'unlocks' => array_map($link, array_values(array_unique($unlocks[$course['id']] ?? []))),
                 'outcomes' => $this->texts($course['outcomes']),
             ], $term['courses']);
-
+            // Electives are options: a term with them states its credits, and its
+            // hours are the required courses' only.
+            $required = array_values(array_filter($courses, static fn (array $course): bool => ! $course['elective']));
             $termTotals = [
-                'credits' => array_sum(array_column($courses, 'credits')),
-                'theory' => array_sum(array_column($courses, 'theory')),
-                'practical' => array_sum(array_column($courses, 'practical')),
+                'credits' => $term['credits'] ?? array_sum(array_column($courses, 'credits')),
+                'theory' => array_sum(array_column($required, 'theory')),
+                'practical' => array_sum(array_column($required, 'practical')),
             ];
 
             foreach ($termTotals as $key => $value) {
@@ -84,11 +93,23 @@ final class FacultyMasterProgramService implements FacultyMasterProgramServiceIn
 
             foreach ($courses as $course) {
                 if ($course['coverage'] !== []) {
-                    $coverageRows[] = ['code' => $course['code'], 'title' => $course['title'], 'levels' => $course['coverage']];
+                    $coverageRows[] = ['code' => $course['code'], 'title' => $course['title'], 'elective' => $course['elective'], 'levels' => $course['coverage']];
                 }
             }
 
-            $terms[] = [...$term, ...$termTotals, 'courses' => $courses];
+            $terms[] = [
+                ...$term,
+                ...$termTotals,
+                'statedCredits' => $term['credits'] !== null,
+                'hasElectives' => count($required) !== count($courses),
+                'courses' => $courses,
+            ];
+        }
+
+        $outcomeGroups = [];
+
+        foreach ($payload['outcomes'] as $outcome) {
+            $outcomeGroups[$outcome['group']][] = $outcome;
         }
 
         return [
@@ -98,17 +119,24 @@ final class FacultyMasterProgramService implements FacultyMasterProgramServiceIn
             'terms' => $terms,
             'totals' => $totals,
             'outcomes' => $payload['outcomes'],
+            'outcomeGroups' => array_map(
+                static fn (string $group, array $outcomes): array => ['group' => $group, 'outcomes' => $outcomes],
+                array_keys($outcomeGroups),
+                array_values($outcomeGroups),
+            ),
             'coverage' => [
                 'plos' => $plos,
                 'rows' => $plos === [] ? [] : $coverageRows,
                 'legend' => $payload['coverageLegend'],
             ],
             'assessment' => $payload['assessment'],
+            'projectTitle' => $payload['projectTitle'],
             'projectIntro' => $payload['projectIntro'],
             'projectRules' => $this->texts($payload['projectRules']),
             'admission' => [
                 ...$payload['admission'],
                 'majors' => $this->texts($payload['admission']['majors']),
+                'conditions' => $this->texts($payload['admission']['conditions']),
             ],
             'degreeRequirements' => $this->texts($payload['degreeRequirements']),
             'teachingNote' => $payload['teachingNote'],
@@ -129,18 +157,23 @@ final class FacultyMasterProgramService implements FacultyMasterProgramServiceIn
                 'id' => $this->string($term['id'] ?? null) ?: 'term-'.($index + 1),
                 'label' => $this->string($term['label'] ?? null),
                 'theme' => $this->string($term['theme'] ?? null),
+                'note' => $this->string($term['note'] ?? null),
+                'credits' => is_numeric($term['credits'] ?? null) ? $this->number($term['credits']) : null,
                 'courses' => array_map(fn (array $course): array => $this->course($course), $this->list($term['courses'] ?? [])),
             ], $terms, array_keys($terms)),
             'outcomes' => array_map(fn (array $outcome): array => [
                 'code' => strtoupper($this->string($outcome['code'] ?? null)),
+                'group' => $this->string($outcome['group'] ?? null),
                 'text' => $this->string($outcome['text'] ?? null),
             ], $this->list($payload['outcomes'] ?? [])),
             'coverageLegend' => $this->string($payload['coverageLegend'] ?? null),
             'assessment' => $this->rows($payload['assessment'] ?? [], ['type', 'weight', 'description'], 'type'),
+            'projectTitle' => $this->string($payload['projectTitle'] ?? null),
             'projectIntro' => $this->string($payload['projectIntro'] ?? null),
             'projectRules' => $this->textItems($payload['projectRules'] ?? []),
             'admission' => [
                 'intro' => $this->string($admission['intro'] ?? null),
+                'conditions' => $this->textItems($admission['conditions'] ?? []),
                 'majors' => $this->textItems($admission['majors'] ?? []),
                 'criteria' => $this->rows($admission['criteria'] ?? [], ['label', 'weight', 'description'], 'label'),
                 'note' => $this->string($admission['note'] ?? null),
@@ -157,18 +190,22 @@ final class FacultyMasterProgramService implements FacultyMasterProgramServiceIn
         }
 
         $errors = [];
-        $codesByLocale = [];
+        $idsByLocale = [];
 
         foreach (['ar', 'en'] as $locale) {
             $translation = is_array($payload['translations'][$locale] ?? null) ? $payload['translations'][$locale] : [];
             $program = $this->normalizePayload(is_array($translation['payload'] ?? null) ? $translation['payload'] : []);
+            $references = $this->courseReferences($program['terms']);
+            $ids = [];
             $codes = [];
 
             foreach ($program['terms'] as $term) {
                 foreach ($term['courses'] as $course) {
-                    if ($course['code'] === '') {
-                        $errors[$locale][] = 'Every course needs a code.';
-                    } elseif (in_array($course['code'], $codes, true)) {
+                    if (in_array($course['id'], $ids, true)) {
+                        $errors[$locale][] = 'The course '.$this->courseLabel($course).' is listed more than once.';
+                    }
+
+                    if ($course['code'] !== '' && in_array($course['code'], $codes, true)) {
                         $errors[$locale][] = "The course code {$course['code']} is used more than once.";
                     }
 
@@ -176,6 +213,7 @@ final class FacultyMasterProgramService implements FacultyMasterProgramServiceIn
                         $errors[$locale][] = 'Every course needs a title.';
                     }
 
+                    $ids[] = $course['id'];
                     $codes[] = $course['code'];
                 }
             }
@@ -183,26 +221,77 @@ final class FacultyMasterProgramService implements FacultyMasterProgramServiceIn
             foreach ($program['terms'] as $term) {
                 foreach ($term['courses'] as $course) {
                     foreach ($course['prerequisites'] as $prerequisite) {
-                        if ($prerequisite === $course['code'] || ! in_array($prerequisite, $codes, true)) {
-                            $errors[$locale][] = "{$course['code']} lists {$prerequisite} as a prerequisite, which is not another course of the program.";
+                        $id = $references[strtolower($prerequisite)] ?? null;
+
+                        if ($id === null || $id === $course['id']) {
+                            $errors[$locale][] = $this->courseLabel($course)." lists {$prerequisite} as a prerequisite, which is not another course of the program.";
                         }
                     }
                 }
             }
 
-            $codesByLocale[$locale] = $codes;
+            $idsByLocale[$locale] = $ids;
         }
 
-        $arCodes = array_values(array_unique(array_filter($codesByLocale['ar'])));
-        $enCodes = array_values(array_unique(array_filter($codesByLocale['en'])));
-        sort($arCodes);
-        sort($enCodes);
+        $arIds = array_values(array_unique($idsByLocale['ar']));
+        $enIds = array_values(array_unique($idsByLocale['en']));
+        sort($arIds);
+        sort($enIds);
 
-        if ($arCodes !== $enCodes) {
-            $errors['en'][] = 'The Arabic and English pages must list the same course codes.';
+        if ($arIds !== $enIds) {
+            $errors['en'][] = 'The Arabic and English pages must list the same courses.';
         }
 
         return array_map(static fn (array $messages): array => array_values(array_unique($messages)), $errors);
+    }
+
+    /**
+     * Every course's id and code (lower case) mapped to its id: prerequisites may name either.
+     *
+     * @param  array<int, array<string, mixed>>  $terms
+     * @return array<string, string>
+     */
+    private function courseReferences(array $terms): array
+    {
+        $references = [];
+
+        foreach ($terms as $term) {
+            foreach ($term['courses'] as $course) {
+                $references[strtolower($course['id'])] = $course['id'];
+
+                if ($course['code'] !== '') {
+                    $references[strtolower($course['code'])] ??= $course['id'];
+                }
+            }
+        }
+
+        return $references;
+    }
+
+    /**
+     * @param  array<string, mixed>  $course
+     * @param  array<string, string>  $references
+     * @return array<int, string>
+     */
+    private function resolvedPrerequisites(array $course, array $references): array
+    {
+        $ids = [];
+
+        foreach ($course['prerequisites'] as $prerequisite) {
+            $id = $references[strtolower($prerequisite)] ?? null;
+
+            if ($id !== null && $id !== $course['id']) {
+                $ids[] = $id;
+            }
+        }
+
+        return array_values(array_unique($ids));
+    }
+
+    /** @param array<string, mixed> $course */
+    private function courseLabel(array $course): string
+    {
+        return $course['code'] !== '' ? $course['code'] : '"'.$course['title'].'"';
     }
 
     /** @param array<string, mixed> $course @return array<string, mixed> */
@@ -220,18 +309,25 @@ final class FacultyMasterProgramService implements FacultyMasterProgramServiceIn
         }
 
         $prerequisites = array_map(
-            fn (mixed $code): string => strtoupper($this->string(is_array($code) ? ($code['code'] ?? null) : $code)),
+            fn (mixed $reference): string => $this->string(is_array($reference) ? ($reference['id'] ?? $reference['code'] ?? null) : $reference),
             is_array($course['prerequisites'] ?? null) ? array_values($course['prerequisites']) : [],
         );
+        $code = strtoupper($this->string($course['code'] ?? null));
+        $title = $this->string($course['title'] ?? null);
+        // Courses saved before ids existed are known by their code; a course with
+        // neither gets one from its title, kept from then on.
+        $id = $this->string($course['id'] ?? null) ?: $code ?: 'course-'.substr(md5($title), 0, 8);
 
         return [
-            'code' => strtoupper($this->string($course['code'] ?? null)),
-            'title' => $this->string($course['title'] ?? null),
+            'id' => $id,
+            'code' => $code,
+            'title' => $title,
             'titleAlt' => $this->string($course['titleAlt'] ?? null),
+            'elective' => filter_var($course['elective'] ?? false, FILTER_VALIDATE_BOOLEAN),
             'credits' => $this->number($course['credits'] ?? null),
             'theory' => $this->number($course['theory'] ?? null),
             'practical' => $this->number($course['practical'] ?? null),
-            'prerequisites' => array_values(array_unique(array_filter($prerequisites, static fn (string $code): bool => $code !== ''))),
+            'prerequisites' => array_values(array_unique(array_filter($prerequisites, static fn (string $reference): bool => $reference !== ''))),
             'prerequisiteNote' => $this->string($course['prerequisiteNote'] ?? null),
             'description' => $this->string($course['description'] ?? null),
             'outcomes' => $this->textItems($course['outcomes'] ?? []),

@@ -36,6 +36,10 @@
             'requirements' => 'متطلبات الحصول على الدرجة العلمية',
             'teaching' => 'طرائق التدريس واستراتيجيات التقويم',
             'hours' => 'الساعات',
+            'elective' => 'اختياري',
+            'conditions' => 'شروط القبول',
+            'theoryShort' => 'ن',
+            'practicalShort' => 'ع',
         ]
         : [
             'jump' => 'On this page',
@@ -67,17 +71,33 @@
             'requirements' => 'Degree requirements',
             'teaching' => 'Teaching and assessment',
             'hours' => 'Hours',
+            'elective' => 'Elective',
+            'conditions' => 'Admission conditions',
+            'theoryShort' => 'T',
+            'practicalShort' => 'P',
         ];
     $sections = array_filter([
         'plan' => $terms !== [],
         'outcomes' => ($program['outcomes'] ?? []) !== [],
         'coverage' => ($coverage['rows'] ?? []) !== [],
         'assessment' => ($program['assessment'] ?? []) !== [],
-        'project' => ($program['projectRules'] ?? []) !== [],
-        'admission' => ($admission['majors'] ?? []) !== [] || trim((string) ($admission['intro'] ?? '')) !== '',
+        'project' => ($program['projectRules'] ?? []) !== [] || ($program['projectIntro'] ?? '') !== '',
+        'admission' => ($admission['majors'] ?? []) !== [] || ($admission['conditions'] ?? []) !== [] || ($admission['criteria'] ?? []) !== [] || trim((string) ($admission['intro'] ?? '')) !== '',
     ]);
-    $sectionLabels = ['plan' => $t['plan'], 'outcomes' => $t['plos'], 'coverage' => $t['coverage'], 'assessment' => $t['assessment'], 'project' => $t['project'], 'admission' => $t['admission']];
-    $courseId = static fn (string $code): string => 'mp-course-'.strtolower($code);
+    $projectTitle = ($program['projectTitle'] ?? '') !== '' ? $program['projectTitle'] : $t['project'];
+    $sectionLabels = ['plan' => $t['plan'], 'outcomes' => $t['plos'], 'coverage' => $t['coverage'], 'assessment' => $t['assessment'], 'project' => $projectTitle, 'admission' => $t['admission']];
+    $courseId = static fn (string $id): string => 'mp-course-'.Str::slug($id);
+    // A course with no stated credits (some curricula give only weekly hours) shows its hours.
+    $creditsBadge = static fn (array $course): string => $course['credits'] > 0
+        ? $course['credits'].' '.$t['credits']
+        : $course['theory'].' '.$t['theoryShort'].' + '.$course['practical'].' '.$t['practicalShort'];
+    // Literal classes, so Tailwind keeps them: the board has as many columns as terms, up to four.
+    $boardColumns = match (min(count($terms), 4)) {
+        1 => '',
+        2 => 'md:grid-cols-2',
+        3 => 'md:grid-cols-2 xl:grid-cols-3',
+        default => 'md:grid-cols-2 xl:grid-cols-4',
+    };
 @endphp
 
 <div class="bg-white font-hacen" data-master-program style="--mp-accent: {{ $accent }}">
@@ -132,7 +152,7 @@
                     </div>
 
                     {{-- Semesters read left to right, as on the study plan, so prerequisite lines run forward. --}}
-                    <div class="mp-board mt-8 grid gap-5 md:grid-cols-2 xl:grid-cols-4" dir="ltr" data-master-board>
+                    <div class="mp-board mt-8 grid gap-5 {{ $boardColumns }}" dir="ltr" data-master-board>
                         <svg class="mp-edges hidden xl:block" aria-hidden="true" focusable="false" data-master-edges></svg>
                         @foreach ($terms as $term)
                             <div class="flex flex-col gap-3" dir="{{ $isAr ? 'rtl' : 'ltr' }}">
@@ -142,20 +162,30 @@
                                         <p class="mt-0.5 text-xs font-semibold text-white/80">{{ $term['theme'] }}</p>
                                     @endif
                                 </header>
+                                @if (($term['note'] ?? '') !== '')
+                                    <p class="px-1 text-xs font-semibold leading-5 text-slate-600">{{ $term['note'] }}</p>
+                                @endif
                                 <ul class="flex flex-col gap-3">
                                     @foreach ($term['courses'] as $course)
                                         <li>
                                             <button
                                                 type="button"
-                                                id="{{ $courseId($course['code']) }}"
-                                                class="mp-course flex w-full flex-col gap-1 rounded-[8px] border border-slate-200 bg-white p-4 text-start focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-spu-blue"
+                                                id="{{ $courseId($course['id']) }}"
+                                                class="mp-course flex w-full flex-col gap-1 rounded-[8px] border {{ $course['elective'] ? 'border-dashed border-slate-300' : 'border-slate-200' }} bg-white p-4 text-start focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-spu-blue"
                                                 aria-haspopup="dialog"
-                                                data-master-course="{{ $course['code'] }}"
-                                                data-prerequisites="{{ implode(' ', array_column($course['prerequisites'], 'code')) }}"
+                                                data-master-course="{{ $course['id'] }}"
+                                                data-prerequisites="{{ implode(' ', array_column($course['prerequisites'], 'id')) }}"
                                             >
                                                 <span class="flex items-center justify-between gap-3 text-[11px] font-bold">
-                                                    <span dir="ltr" style="color: {{ $accent }}">{{ $course['code'] }}</span>
-                                                    <span class="rounded-full bg-slate-100 px-2 py-0.5 text-spu-blue" dir="ltr">{{ $course['credits'] }} {{ $t['credits'] }}</span>
+                                                    <span class="flex items-center gap-2">
+                                                        @if ($course['code'] !== '')
+                                                            <span dir="ltr" style="color: {{ $accent }}">{{ $course['code'] }}</span>
+                                                        @endif
+                                                        @if ($course['elective'])
+                                                            <span class="rounded-full border border-slate-300 px-2 py-0.5 text-slate-600">{{ $t['elective'] }}</span>
+                                                        @endif
+                                                    </span>
+                                                    <span class="shrink-0 rounded-full bg-slate-100 px-2 py-0.5 text-spu-blue" dir="ltr">{{ $creditsBadge($course) }}</span>
                                                 </span>
                                                 <span class="text-sm font-bold leading-6 text-spu-blue">{{ $course['title'] }}</span>
                                             </button>
@@ -164,8 +194,10 @@
                                 </ul>
                                 <p class="mt-auto px-1 text-xs font-bold text-slate-500">
                                     {{ $t['total'] }}: <span dir="ltr">{{ $term['credits'] }}</span> {{ $t['creditsLong'] }}
-                                    · {{ $t['theory'] }} <span dir="ltr">{{ $term['theory'] }}</span>
-                                    · {{ $t['practical'] }} <span dir="ltr">{{ $term['practical'] }}</span>
+                                    @unless ($term['hasElectives'] || $term['theory'] + $term['practical'] === 0)
+                                        · {{ $t['theory'] }} <span dir="ltr">{{ $term['theory'] }}</span>
+                                        · {{ $t['practical'] }} <span dir="ltr">{{ $term['practical'] }}</span>
+                                    @endunless
                                 </p>
                             </div>
                         @endforeach
@@ -179,12 +211,21 @@
 
             @foreach ($terms as $term)
                 @foreach ($term['courses'] as $course)
-                    <dialog class="mp-dialog font-hacen" dir="{{ $isAr ? 'rtl' : 'ltr' }}" aria-labelledby="{{ $courseId($course['code']) }}-title" data-master-dialog="{{ $course['code'] }}">
+                    <dialog class="mp-dialog font-hacen" dir="{{ $isAr ? 'rtl' : 'ltr' }}" aria-labelledby="{{ $courseId($course['id']) }}-title" data-master-dialog="{{ $course['id'] }}">
                         <div class="max-h-[calc(100vh-48px)] overflow-y-auto p-6 md:p-8">
                             <div class="flex items-start justify-between gap-4">
                                 <div class="min-w-0">
-                                    <p class="text-xs font-bold" style="color: {{ $accent }}" dir="ltr">{{ $course['code'] }}</p>
-                                    <h3 id="{{ $courseId($course['code']) }}-title" class="mt-1 text-xl font-bold leading-8 text-spu-blue">{{ $course['title'] }}</h3>
+                                    @if ($course['code'] !== '' || $course['elective'])
+                                        <p class="flex items-center gap-2 text-xs font-bold">
+                                            @if ($course['code'] !== '')
+                                                <span style="color: {{ $accent }}" dir="ltr">{{ $course['code'] }}</span>
+                                            @endif
+                                            @if ($course['elective'])
+                                                <span class="rounded-full border border-slate-300 px-2 py-0.5 text-slate-600">{{ $t['elective'] }}</span>
+                                            @endif
+                                        </p>
+                                    @endif
+                                    <h3 id="{{ $courseId($course['id']) }}-title" class="mt-1 text-xl font-bold leading-8 text-spu-blue">{{ $course['title'] }}</h3>
                                     @if (($course['titleAlt'] ?? '') !== '')
                                         <p class="mt-1 text-sm font-semibold text-slate-500" dir="{{ $isAr ? 'ltr' : 'rtl' }}" lang="{{ $isAr ? 'en' : 'ar' }}">{{ $course['titleAlt'] }}</p>
                                     @endif
@@ -194,8 +235,10 @@
                                 </button>
                             </div>
 
-                            <dl class="mt-5 grid grid-cols-3 gap-3 text-center">
-                                <div class="rounded-[8px] bg-slate-50 p-3"><dt class="text-[11px] font-bold text-slate-500">{{ $t['creditsLong'] }}</dt><dd class="mt-1 text-lg font-bold text-spu-blue" dir="ltr">{{ $course['credits'] }}</dd></div>
+                            <dl class="mt-5 grid {{ $course['credits'] > 0 ? 'grid-cols-3' : 'grid-cols-2' }} gap-3 text-center">
+                                @if ($course['credits'] > 0)
+                                    <div class="rounded-[8px] bg-slate-50 p-3"><dt class="text-[11px] font-bold text-slate-500">{{ $t['creditsLong'] }}</dt><dd class="mt-1 text-lg font-bold text-spu-blue" dir="ltr">{{ $course['credits'] }}</dd></div>
+                                @endif
                                 <div class="rounded-[8px] bg-slate-50 p-3"><dt class="text-[11px] font-bold text-slate-500">{{ $t['theory'] }}</dt><dd class="mt-1 text-lg font-bold text-spu-blue" dir="ltr">{{ $course['theory'] }}</dd></div>
                                 <div class="rounded-[8px] bg-slate-50 p-3"><dt class="text-[11px] font-bold text-slate-500">{{ $t['practical'] }}</dt><dd class="mt-1 text-lg font-bold text-spu-blue" dir="ltr">{{ $course['practical'] }}</dd></div>
                             </dl>
@@ -210,7 +253,7 @@
                                     @if ($course['prerequisites'] !== [])
                                         <ul class="mt-2 flex flex-wrap gap-2">
                                             @foreach ($course['prerequisites'] as $prerequisite)
-                                                <li><button type="button" class="rounded-full border border-slate-200 px-3 py-1 text-xs font-bold text-spu-blue hover:border-spu-blue focus-visible:outline focus-visible:outline-2 focus-visible:outline-spu-blue" data-master-open="{{ $prerequisite['code'] }}" title="{{ $prerequisite['title'] }}"><span dir="ltr">{{ $prerequisite['code'] }}</span></button></li>
+                                                <li><button type="button" class="rounded-full border border-slate-200 px-3 py-1 text-xs font-bold text-spu-blue hover:border-spu-blue focus-visible:outline focus-visible:outline-2 focus-visible:outline-spu-blue" data-master-open="{{ $prerequisite['id'] }}" title="{{ $prerequisite['title'] }}">@if ($prerequisite['code'] !== '')<span dir="ltr">{{ $prerequisite['code'] }}</span>@else{{ $prerequisite['title'] }}@endif</button></li>
                                             @endforeach
                                         </ul>
                                     @endif
@@ -225,7 +268,7 @@
                                         <h4 class="text-sm font-bold text-spu-blue">{{ $t['unlocks'] }}</h4>
                                         <ul class="mt-2 flex flex-wrap gap-2">
                                             @foreach ($course['unlocks'] as $next)
-                                                <li><button type="button" class="rounded-full border border-slate-200 px-3 py-1 text-xs font-bold text-spu-blue hover:border-spu-blue focus-visible:outline focus-visible:outline-2 focus-visible:outline-spu-blue" data-master-open="{{ $next['code'] }}" title="{{ $next['title'] }}"><span dir="ltr">{{ $next['code'] }}</span></button></li>
+                                                <li><button type="button" class="rounded-full border border-slate-200 px-3 py-1 text-xs font-bold text-spu-blue hover:border-spu-blue focus-visible:outline focus-visible:outline-2 focus-visible:outline-spu-blue" data-master-open="{{ $next['id'] }}" title="{{ $next['title'] }}">@if ($next['code'] !== '')<span dir="ltr">{{ $next['code'] }}</span>@else{{ $next['title'] }}@endif</button></li>
                                             @endforeach
                                         </ul>
                                     </div>
@@ -257,14 +300,23 @@
             <div class="container">
                 <div class="mx-auto max-w-[1080px]">
                     <h2 class="text-2xl font-bold text-spu-blue md:text-[28px]">{{ $t['plos'] }}</h2>
-                    <ol class="mt-8 grid gap-4 md:grid-cols-2">
-                        @foreach ($program['outcomes'] as $outcome)
-                            <li class="flex gap-4 rounded-[8px] border border-slate-100 bg-white p-5 shadow-[0_12px_40px_rgba(9,17,68,0.06)]">
-                                <span class="shrink-0 text-sm font-bold" style="color: {{ $accent }}" dir="ltr">{{ $outcome['code'] }}</span>
-                                <span class="text-sm leading-7 text-slate-600">{{ $outcome['text'] }}</span>
-                            </li>
-                        @endforeach
-                    </ol>
+                    @foreach ($program['outcomeGroups'] ?? [] as $group)
+                        @if ($group['group'] !== '')
+                            <h3 class="mt-8 text-lg font-bold text-spu-blue">{{ $group['group'] }}</h3>
+                        @endif
+                        <ol class="{{ $group['group'] !== '' ? 'mt-4' : 'mt-8' }} grid gap-4 md:grid-cols-2">
+                            @foreach ($group['outcomes'] as $outcome)
+                                <li class="flex gap-4 rounded-[8px] border border-slate-100 bg-white p-5 shadow-[0_12px_40px_rgba(9,17,68,0.06)]">
+                                    @if ($outcome['code'] !== '')
+                                        <span class="shrink-0 text-sm font-bold" style="color: {{ $accent }}" dir="ltr">{{ $outcome['code'] }}</span>
+                                    @else
+                                        <span class="mt-2.5 h-1.5 w-1.5 shrink-0 rounded-full" style="background-color: {{ $accent }}" aria-hidden="true"></span>
+                                    @endif
+                                    <span class="text-sm leading-7 text-slate-600">{{ $outcome['text'] }}</span>
+                                </li>
+                            @endforeach
+                        </ol>
+                    @endforeach
                 </div>
             </div>
         </section>
@@ -291,7 +343,7 @@
                             <tbody>
                                 @foreach ($coverage['rows'] as $row)
                                     <tr class="border-t border-slate-100">
-                                        <th scope="row" class="px-4 py-2.5 text-start font-semibold text-slate-600"><span class="font-bold text-spu-blue" dir="ltr">{{ $row['code'] }}</span> {{ $row['title'] }}</th>
+                                        <th scope="row" class="px-4 py-2.5 text-start font-semibold text-slate-600">@if ($row['code'] !== '')<span class="font-bold text-spu-blue" dir="ltr">{{ $row['code'] }}</span> @endif{{ $row['title'] }}@if ($row['elective'] ?? false) <span class="text-xs text-slate-500">({{ $t['elective'] }})</span>@endif</th>
                                         @foreach ($coverage['plos'] as $plo)
                                             <td class="px-2 py-2.5 text-center font-bold" style="{{ isset($row['levels'][$plo]) ? 'color: '.$accent : '' }}">{{ $row['levels'][$plo] ?? '' }}</td>
                                         @endforeach
@@ -330,14 +382,15 @@
         </section>
     @endif
 
-    @if (($program['projectRules'] ?? []) !== [])
+    @if (($program['projectRules'] ?? []) !== [] || ($program['projectIntro'] ?? '') !== '')
         <section id="mp-project" class="scroll-mt-28 bg-slate-50 py-14 md:py-16">
             <div class="container">
                 <div class="mx-auto max-w-[1080px]">
-                    <h2 class="text-2xl font-bold text-spu-blue md:text-[28px]">{{ $t['project'] }}</h2>
+                    <h2 class="text-2xl font-bold text-spu-blue md:text-[28px]">{{ $projectTitle }}</h2>
                     @if (($program['projectIntro'] ?? '') !== '')
                         <p class="mt-4 text-sm leading-7 text-slate-600">{{ $program['projectIntro'] }}</p>
                     @endif
+                    @if (($program['projectRules'] ?? []) !== [])
                     <ol class="mt-6 space-y-3">
                         @foreach ($program['projectRules'] as $rule)
                             <li class="flex gap-4 rounded-[8px] bg-white p-5 shadow-[0_12px_40px_rgba(9,17,68,0.05)]">
@@ -346,6 +399,7 @@
                             </li>
                         @endforeach
                     </ol>
+                    @endif
                 </div>
             </div>
         </section>
@@ -359,6 +413,14 @@
                         <h2 class="text-2xl font-bold text-spu-blue md:text-[28px]">{{ $t['admission'] }}</h2>
                         @if (($admission['intro'] ?? '') !== '')
                             <p class="mt-4 text-sm leading-7 text-slate-600">{{ $admission['intro'] }}</p>
+                        @endif
+                        @if (($admission['conditions'] ?? []) !== [])
+                            <h3 class="mt-8 text-lg font-bold text-spu-blue">{{ $t['conditions'] }}</h3>
+                            <ol class="mt-4 list-decimal space-y-2 ps-5 text-sm leading-7 text-slate-600">
+                                @foreach ($admission['conditions'] as $condition)
+                                    <li>{{ $condition }}</li>
+                                @endforeach
+                            </ol>
                         @endif
                         @if (($admission['majors'] ?? []) !== [])
                             <h3 class="mt-8 text-lg font-bold text-spu-blue">{{ $t['majors'] }}</h3>

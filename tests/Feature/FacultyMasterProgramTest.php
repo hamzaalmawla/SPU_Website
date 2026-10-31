@@ -77,7 +77,73 @@ final class FacultyMasterProgramTest extends TestCase
         $this->assertSame(['MADS301', 'MADS302', 'MADS303', 'MADS304', 'MADS306'], array_column($deepLearning['unlocks'], 'code'));
     }
 
-    public function test_the_highlights_card_shows_on_the_ai_faculty_only(): void
+    public function test_pharmacy_and_petroleum_have_their_masters_programs_in_both_languages(): void
+    {
+        $this->get('/en/faculties/pharmacy/master-program')
+            ->assertOk()
+            ->assertSee("Professional Master's in Pharmaceutics and Pharmaceutical Technology")
+            ->assertSee('data-master-course="PT-601"', false)
+            ->assertSee('2 T + 2 P')
+            ->assertSee('Elective')
+            ->assertSee('Students choose courses worth 4 credit hours.')
+            ->assertSee('Knowledge and understanding')
+            ->assertSee('Hold a degree in pharmacy');
+        $this->get('/ar/faculties/pharmacy/master-program')
+            ->assertOk()
+            ->assertSee('الصيدلانيات وتكنولوجيا الصيدلة')
+            ->assertSee('الصيدلة الصناعية')
+            ->assertSee('المعدل التراكمي في مرحلة الإجازة');
+
+        $this->get('/en/faculties/petroleum/master-program')
+            ->assertOk()
+            ->assertSee('Nanotechnology-Enhanced Oil Recovery (Nano-EOR)')
+            ->assertSee('data-master-course="np-nano-eor"', false)
+            ->assertSee('Intellectual and cognitive skills (S)')
+            ->assertSee('PLO12')
+            ->assertSee('compulsory graduation requirement');
+        $this->get('/ar/faculties/petroleum/master-program')
+            ->assertOk()
+            ->assertSee('تكنولوجيا النانو وتطبيقاتها في هندسة البترول والطاقة')
+            ->assertSee('مشروع التخرج');
+
+        foreach (['pharmacy', 'petroleum'] as $faculty) {
+            foreach (['ar', 'en'] as $locale) {
+                $this->assertSame("/{$locale}/faculties/{$faculty}/master-program", $this->firstCardLink("/{$locale}/faculties/{$faculty}", 'highlights'));
+            }
+        }
+    }
+
+    public function test_stated_term_credits_and_electives_set_the_totals(): void
+    {
+        $service = app(FacultyMasterProgramServiceInterface::class);
+        $petroleum = $service->program((array) $service->defaultContent('petroleum', 'en')['payload']);
+        $pharmacy = $service->program((array) $service->defaultContent('pharmacy', 'en')['payload']);
+
+        // Semester 3 lists 2 required courses and 4 electives (6 x 3 CR) but counts 12.
+        $this->assertSame([12, 12, 12, 3], array_column($petroleum['terms'], 'credits'));
+        $this->assertSame(39, $petroleum['totals']['credits']);
+        $this->assertSame([27, 4, 14], array_column($pharmacy['terms'], 'credits'));
+        $this->assertSame(45, $pharmacy['totals']['credits']);
+        $this->assertCount(15, $petroleum['coverage']['rows']);
+    }
+
+    public function test_courses_without_codes_are_known_by_their_id(): void
+    {
+        $targetKey = 'facilities.petroleum.master-program';
+        $service = app(FacultyMasterProgramServiceInterface::class);
+        $payload = app(FacultyPageServiceInterface::class)->getEditablePayload($targetKey);
+        $this->assertSame([], $service->validationErrors($targetKey, $payload));
+
+        $payload['translations']['en']['payload']['terms'][2]['courses'][0]['prerequisites'] = ['np-ai-ml', 'np-unknown'];
+        $payload['translations']['en']['payload']['terms'][1]['courses'][0]['id'] = 'np-nanofluids';
+        $errors = $service->validationErrors($targetKey, $payload)['en'] ?? [];
+
+        $this->assertContains('"Nanotechnology-Enhanced Oil Recovery (Nano-EOR)" lists np-unknown as a prerequisite, which is not another course of the program.', $errors);
+        $this->assertContains('The course "Nanofluids and their Applications in Energy Systems and Heat Transfer" is listed more than once.', $errors);
+        $this->assertNotContains('"Nanotechnology-Enhanced Oil Recovery (Nano-EOR)" lists np-ai-ml as a prerequisite, which is not another course of the program.', $errors);
+    }
+
+    public function test_the_highlights_card_leads_and_faculties_without_a_master_have_none(): void
     {
         foreach (['ar', 'en'] as $locale) {
             $this->assertSame("/{$locale}".self::URL, $this->firstCardLink("/{$locale}/faculties/artificial-intelligence", 'highlights'));
@@ -168,7 +234,7 @@ final class FacultyMasterProgramTest extends TestCase
 
         $errors = app(FacultyMasterProgramServiceInterface::class)->validationErrors($targetKey, $payload);
         $this->assertContains('MADS201 lists MADS999 as a prerequisite, which is not another course of the program.', $errors['en']);
-        $this->assertContains('The Arabic and English pages must list the same course codes.', $errors['en']);
+        $this->assertContains('The Arabic and English pages must list the same courses.', $errors['en']);
 
         $workflow->saveDraft($targetKey, $payload, $author);
         $this->expectException(ValidationException::class);

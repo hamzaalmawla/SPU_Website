@@ -1009,15 +1009,19 @@ trait ManagesFacultyHomepage
                         Hidden::make('id'),
                         TextInput::make('label')->label($field('semester_label'))->required()->maxLength(120),
                         TextInput::make('theme')->label($field('semester_theme'))->maxLength(180),
+                        TextInput::make('credits')->label($field('semester_credits'))->helperText($field('semester_credits_help'))->numeric()->minValue(0)->maxValue(200),
+                        TextInput::make('note')->label($field('semester_note'))->maxLength(255),
                         Repeater::make('courses')
                             ->label($field('courses'))
                             ->schema([
-                                TextInput::make('code')->label($field('course_code'))->required()->maxLength(20),
+                                Hidden::make('id'),
+                                TextInput::make('code')->label($field('course_code'))->maxLength(20),
                                 TextInput::make('title')->label($field('course_title'))->required()->maxLength(255),
                                 TextInput::make('titleAlt')->label($field('course_title_other'))->maxLength(255),
-                                TextInput::make('credits')->label($field('credit_hours'))->numeric()->minValue(0)->maxValue(60)->required(),
+                                TextInput::make('credits')->label($field('credit_hours'))->numeric()->minValue(0)->maxValue(60),
                                 TextInput::make('theory')->label($field('theory_hours'))->numeric()->minValue(0)->maxValue(60),
                                 TextInput::make('practical')->label($field('practical_hours'))->numeric()->minValue(0)->maxValue(60),
+                                Toggle::make('elective')->label($field('elective_course'))->inline(false),
                                 TagsInput::make('prerequisites')->label($field('prerequisites'))->columnSpanFull(),
                                 TextInput::make('prerequisiteNote')->label($field('prerequisite_note'))->maxLength(255)->columnSpanFull(),
                                 Textarea::make('description')->label($field('description'))->rows(4)->columnSpanFull(),
@@ -1048,8 +1052,9 @@ trait ManagesFacultyHomepage
                 Repeater::make($prefix.'.payload.outcomes')
                     ->label(__('admin.faculty_workspace.editor.sections.master_outcomes'))
                     ->schema([
-                        TextInput::make('code')->label($field('outcome_code'))->required()->maxLength(20),
-                        Textarea::make('text')->label($field('description'))->required()->rows(2)->columnSpan(3),
+                        TextInput::make('code')->label($field('outcome_code'))->maxLength(20),
+                        TextInput::make('group')->label($field('outcome_group'))->maxLength(120),
+                        Textarea::make('text')->label($field('description'))->required()->rows(2)->columnSpan(2),
                     ])
                     ->columns(4)
                     ->defaultItems(0)
@@ -1071,11 +1076,13 @@ trait ManagesFacultyHomepage
                     ->columnSpanFull(),
             ])->collapsed(),
             Section::make(__('admin.faculty_workspace.editor.sections.master_project'))->schema([
+                TextInput::make($prefix.'.payload.projectTitle')->label($field('section_title'))->maxLength(180)->columnSpanFull(),
                 Textarea::make($prefix.'.payload.projectIntro')->label($field('intro'))->rows(3)->columnSpanFull(),
                 $textList($prefix.'.payload.projectRules', $field('rules')),
             ])->collapsed(),
             Section::make(__('admin.faculty_workspace.editor.sections.master_admission'))->schema([
                 Textarea::make($prefix.'.payload.admission.intro')->label($field('intro'))->rows(3)->columnSpanFull(),
+                $textList($prefix.'.payload.admission.conditions', $field('admission_conditions'), 1),
                 $textList($prefix.'.payload.admission.majors', $field('majors'), 1),
                 Repeater::make($prefix.'.payload.admission.criteria')
                     ->label($field('criteria'))

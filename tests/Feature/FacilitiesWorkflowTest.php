@@ -1497,8 +1497,8 @@ final class FacilitiesWorkflowTest extends TestCase
         $expectedTargets[] = 'facilities.'.$facultySlug.'.members';
         $expectedTargets[] = 'facilities.'.$facultySlug.'.council';
 
-        if ($facultySlug === 'artificial-intelligence') {
-            $expectedTargets[] = 'facilities.artificial-intelligence.master-program';
+        if (in_array($facultySlug, ['artificial-intelligence', 'pharmacy', 'petroleum'], true)) {
+            $expectedTargets[] = 'facilities.'.$facultySlug.'.master-program';
         }
 
         $reflection = new \ReflectionClass($pageClass);
