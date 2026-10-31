@@ -272,7 +272,9 @@ final class FacultyPageService implements FacultyPageServiceInterface
         return $this->facilitiesCache()->remember("public.faculties.{$facultySlug}.{$subpageSlug}.{$locale}.{$filterKey}", function () use ($facultySlug, $subpageSlug, $locale, $filters): ?FacultySubpageDTO {
             $faculty = $this->facultyByPublicSlug($facultySlug);
 
-            if (! $faculty instanceof Faculty) {
+            // A faculty with no name in any language has no page to show (the sitemap
+            // asks for the code-default subpages of every faculty that may have them).
+            if (! $faculty instanceof Faculty || $faculty->translations->isEmpty()) {
                 return null;
             }
 
