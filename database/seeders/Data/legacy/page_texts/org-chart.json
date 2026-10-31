@@ -1,0 +1,497 @@
+{
+  "source": "Old site organisational chart PDF (/downloads/files/1781949883_fc.pdf, jx_categories 5797), every box transcribed in Arabic with an English translation. Boxes link to the matching page where the new site has one; the PDF stays as a download.",
+  "targets": {
+    "about.organizational-structure": {
+      "ar": {
+        "summary": "الهيكل التنظيمي للجامعة السورية الخاصة، من مجلس الأمناء إلى المديريات والدوائر. اضغط على أي وحدة لها صفحة للانتقال إليها.",
+        "intro": [
+          "يبيّن الهيكل التنظيمي ارتباط مجالس الجامعة ونواب الرئيس والكليات والمديريات والدوائر برئيس الجامعة. الوحدات المميزة بسهم لها صفحات على الموقع."
+        ],
+        "chart": {
+          "apex": [
+            {
+              "title": "مجلس الأمناء",
+              "url": "",
+              "children": []
+            },
+            {
+              "title": "مجلس الجامعة",
+              "url": "",
+              "children": []
+            },
+            {
+              "title": "رئيس الجامعة",
+              "url": "/about/leadership",
+              "children": []
+            }
+          ],
+          "offices": [
+            {
+              "title": "مكتب رئيس الجامعة",
+              "url": "",
+              "children": []
+            },
+            {
+              "title": "المديرية المالية",
+              "url": "",
+              "children": []
+            },
+            {
+              "title": "الجودة والاعتماد الأكاديمي",
+              "url": "/about/quality-policy",
+              "children": []
+            }
+          ],
+          "branches": [
+            {
+              "title": "أمانة الجامعة",
+              "url": "",
+              "note": "مكتب أمانة الجامعة",
+              "noteUrl": "",
+              "units": [
+                {
+                  "title": "مديرية الشؤون الفنية والهندسية",
+                  "url": "",
+                  "children": []
+                },
+                {
+                  "title": "مديرية الأمن والسلامة",
+                  "url": "",
+                  "children": []
+                },
+                {
+                  "title": "مديرية النقل",
+                  "url": "/campus-life/transport",
+                  "children": []
+                },
+                {
+                  "title": "دائرة الشؤون القانونية",
+                  "url": "",
+                  "children": []
+                },
+                {
+                  "title": "دائرة الديوان المركزي",
+                  "url": "",
+                  "children": []
+                },
+                {
+                  "title": "دائرة الجاهزية التعليمية والفنية",
+                  "url": "",
+                  "children": []
+                },
+                {
+                  "title": "مديرية الخدمات العامة",
+                  "url": "",
+                  "children": [
+                    {
+                      "title": "دائرة النقطة الطبية",
+                      "url": "",
+                      "children": []
+                    },
+                    {
+                      "title": "دائرة خدمات النظافة",
+                      "url": "",
+                      "children": []
+                    },
+                    {
+                      "title": "دائرة البيئة والاستدامة",
+                      "url": "",
+                      "children": []
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "عمداء الكليات",
+              "url": "/faculties",
+              "note": "",
+              "noteUrl": "",
+              "units": [
+                {
+                  "title": "الطب",
+                  "url": "/faculties/medicine",
+                  "children": []
+                },
+                {
+                  "title": "طب الأسنان",
+                  "url": "/faculties/dentistry",
+                  "children": []
+                },
+                {
+                  "title": "الصيدلة",
+                  "url": "/faculties/pharmacy",
+                  "children": []
+                },
+                {
+                  "title": "هندسة الذكاء الاصطناعي",
+                  "url": "/faculties/artificial-intelligence",
+                  "children": []
+                },
+                {
+                  "title": "هندسة البترول",
+                  "url": "/faculties/petroleum",
+                  "children": []
+                },
+                {
+                  "title": "العلوم الإدارية",
+                  "url": "/faculties/business-administration",
+                  "children": []
+                },
+                {
+                  "title": "هندسة تكنولوجيا البناء والتشييد",
+                  "url": "/faculties/building-construction-engineering",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "title": "نائب رئيس الجامعة لشؤون البحث العلمي والعلاقات الدولية",
+              "url": "",
+              "note": "مجلس البحث العلمي",
+              "noteUrl": "/research",
+              "units": [
+                {
+                  "title": "مديرية العلاقات الدولية",
+                  "url": "/about/partnerships",
+                  "children": []
+                },
+                {
+                  "title": "مركز التعليم والتدريب المستمر",
+                  "url": "",
+                  "children": []
+                },
+                {
+                  "title": "دائرة متابعة الخريجين",
+                  "url": "/alumni",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "title": "نائب رئيس الجامعة للشؤون العلمية",
+              "url": "",
+              "note": "مجلس الشؤون العلمية",
+              "noteUrl": "",
+              "units": [
+                {
+                  "title": "وحدة متطلبات الجامعة",
+                  "url": "",
+                  "children": []
+                },
+                {
+                  "title": "مديرية الامتحانات المركزية",
+                  "url": "/campus-life/exam-instructions",
+                  "children": []
+                },
+                {
+                  "title": "مديرية المكتبة وموارد المعلومات",
+                  "url": "/e-services/library",
+                  "children": []
+                },
+                {
+                  "title": "مديرية الإرشاد الأكاديمي والاجتماعي والنفسي",
+                  "url": "",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "title": "نائب رئيس الجامعة للشؤون الإدارية والطلاب",
+              "url": "",
+              "note": "مجلس شؤون الطلبة",
+              "noteUrl": "",
+              "units": [
+                {
+                  "title": "مديرية القبول والتسجيل",
+                  "url": "/admissions",
+                  "children": []
+                },
+                {
+                  "title": "مديرية اللوازم والمشتريات",
+                  "url": "",
+                  "children": []
+                },
+                {
+                  "title": "مديرية المستودع والموجودات",
+                  "url": "",
+                  "children": []
+                },
+                {
+                  "title": "مديرية إدارة الموارد البشرية",
+                  "url": "",
+                  "children": []
+                },
+                {
+                  "title": "مديرية العلاقات العامة والتسويق والإعلام",
+                  "url": "/about/directorates/public-relations",
+                  "children": []
+                },
+                {
+                  "title": "مديرية تقانة المعلومات",
+                  "url": "/e-services/it-support",
+                  "children": []
+                },
+                {
+                  "title": "مديرية تطوير نظم المعلومات",
+                  "url": "",
+                  "children": []
+                },
+                {
+                  "title": "مديرية شؤون الطلاب المركزية",
+                  "url": "/about/directorates/student-affairs",
+                  "children": []
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "en": {
+        "summary": "The organisational structure of the Syrian Private University, from the Board of Trustees to its directorates and departments. Select any unit that has a page to open it.",
+        "intro": [
+          "The chart shows how the university councils, vice presidents, faculties, directorates and departments report to the University President. Units marked with an arrow have their own pages on the site."
+        ],
+        "chart": {
+          "apex": [
+            {
+              "title": "Board of Trustees",
+              "url": "",
+              "children": []
+            },
+            {
+              "title": "University Council",
+              "url": "",
+              "children": []
+            },
+            {
+              "title": "University President",
+              "url": "/about/leadership",
+              "children": []
+            }
+          ],
+          "offices": [
+            {
+              "title": "President's Office",
+              "url": "",
+              "children": []
+            },
+            {
+              "title": "Financial Directorate",
+              "url": "",
+              "children": []
+            },
+            {
+              "title": "Quality and Academic Accreditation",
+              "url": "/about/quality-policy",
+              "children": []
+            }
+          ],
+          "branches": [
+            {
+              "title": "University Secretariat",
+              "url": "",
+              "note": "Secretariat Office",
+              "noteUrl": "",
+              "units": [
+                {
+                  "title": "Directorate of Technical and Engineering Affairs",
+                  "url": "",
+                  "children": []
+                },
+                {
+                  "title": "Directorate of Security and Safety",
+                  "url": "",
+                  "children": []
+                },
+                {
+                  "title": "Directorate of Transport",
+                  "url": "/campus-life/transport",
+                  "children": []
+                },
+                {
+                  "title": "Legal Affairs Department",
+                  "url": "",
+                  "children": []
+                },
+                {
+                  "title": "Central Registry Department",
+                  "url": "",
+                  "children": []
+                },
+                {
+                  "title": "Educational and Technical Readiness Department",
+                  "url": "",
+                  "children": []
+                },
+                {
+                  "title": "Directorate of General Services",
+                  "url": "",
+                  "children": [
+                    {
+                      "title": "Medical Point Department",
+                      "url": "",
+                      "children": []
+                    },
+                    {
+                      "title": "Cleaning Services Department",
+                      "url": "",
+                      "children": []
+                    },
+                    {
+                      "title": "Environment and Sustainability Department",
+                      "url": "",
+                      "children": []
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "Deans of Faculties",
+              "url": "/faculties",
+              "note": "",
+              "noteUrl": "",
+              "units": [
+                {
+                  "title": "Medicine",
+                  "url": "/faculties/medicine",
+                  "children": []
+                },
+                {
+                  "title": "Dentistry",
+                  "url": "/faculties/dentistry",
+                  "children": []
+                },
+                {
+                  "title": "Pharmacy",
+                  "url": "/faculties/pharmacy",
+                  "children": []
+                },
+                {
+                  "title": "Artificial Intelligence Engineering",
+                  "url": "/faculties/artificial-intelligence",
+                  "children": []
+                },
+                {
+                  "title": "Petroleum Engineering",
+                  "url": "/faculties/petroleum",
+                  "children": []
+                },
+                {
+                  "title": "Administrative Sciences",
+                  "url": "/faculties/business-administration",
+                  "children": []
+                },
+                {
+                  "title": "Building and Construction Technology Engineering",
+                  "url": "/faculties/building-construction-engineering",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "title": "Vice President for Scientific Research and International Relations",
+              "url": "",
+              "note": "Scientific Research Council",
+              "noteUrl": "/research",
+              "units": [
+                {
+                  "title": "Directorate of International Relations",
+                  "url": "/about/partnerships",
+                  "children": []
+                },
+                {
+                  "title": "Continuing Education and Training Center",
+                  "url": "",
+                  "children": []
+                },
+                {
+                  "title": "Alumni Follow-up Department",
+                  "url": "/alumni",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "title": "Vice President for Academic Affairs",
+              "url": "",
+              "note": "Academic Affairs Council",
+              "noteUrl": "",
+              "units": [
+                {
+                  "title": "University Requirements Unit",
+                  "url": "",
+                  "children": []
+                },
+                {
+                  "title": "Directorate of Central Examinations",
+                  "url": "/campus-life/exam-instructions",
+                  "children": []
+                },
+                {
+                  "title": "Directorate of the Library and Information Resources",
+                  "url": "/e-services/library",
+                  "children": []
+                },
+                {
+                  "title": "Directorate of Academic, Social and Psychological Counselling",
+                  "url": "",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "title": "Vice President for Administrative and Student Affairs",
+              "url": "",
+              "note": "Student Affairs Council",
+              "noteUrl": "",
+              "units": [
+                {
+                  "title": "Directorate of Admission and Registration",
+                  "url": "/admissions",
+                  "children": []
+                },
+                {
+                  "title": "Directorate of Supplies and Procurement",
+                  "url": "",
+                  "children": []
+                },
+                {
+                  "title": "Directorate of Warehouse and Assets",
+                  "url": "",
+                  "children": []
+                },
+                {
+                  "title": "Directorate of Human Resources Management",
+                  "url": "",
+                  "children": []
+                },
+                {
+                  "title": "Directorate of Public Relations, Marketing and Media",
+                  "url": "/about/directorates/public-relations",
+                  "children": []
+                },
+                {
+                  "title": "Directorate of Information Technology",
+                  "url": "/e-services/it-support",
+                  "children": []
+                },
+                {
+                  "title": "Directorate of Information Systems Development",
+                  "url": "",
+                  "children": []
+                },
+                {
+                  "title": "Directorate of Central Student Affairs",
+                  "url": "/about/directorates/student-affairs",
+                  "children": []
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  }
+}

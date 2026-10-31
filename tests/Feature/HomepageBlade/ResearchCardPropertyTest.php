@@ -1,0 +1,105 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Tests\Feature\HomepageBlade;
+
+use PHPUnit\Framework\Attributes\DataProvider;
+use Tests\Support\HomepageBladeTestHelpers;
+use Tests\TestCase;
+
+class ResearchCardPropertyTest extends TestCase
+{
+    use HomepageBladeTestHelpers;
+
+    #[DataProvider('researchCountProvider')]
+    public function test_research_section_renders_correct_number_of_cards(int $count): void
+    {
+        $items = [];
+        for ($i = 0; $i < $count; $i++) {
+            $items[] = self::makeResearchItem(['title' => "Research Item {$i}"]);
+        }
+
+        $section = self::makeSection('research_studies', [
+            'title' => 'Research Title',
+            'researchItems' => $items,
+        ]);
+
+        $html = view('public.partials.homepage-section', [
+            'section' => $section,
+            'locale' => 'en',
+        ])->render();
+
+        $this->assertStringContainsString('Research Title', $html);
+
+        for ($i = 0; $i < $count; $i++) {
+            $this->assertStringContainsString("Research Item {$i}", $html);
+        }
+    }
+
+    public function test_research_card_renders_authors_when_present(): void
+    {
+        $item = self::makeResearchItem([
+            'title' => 'Authored Research',
+            'authors' => ['Dr. Alpha', 'Dr. Beta'],
+        ]);
+
+        $section = self::makeSection('research_studies', [
+            'title' => 'Research',
+            'researchItems' => [$item],
+        ]);
+
+        $html = view('public.partials.homepage-section', [
+            'section' => $section,
+            'locale' => 'en',
+        ])->render();
+
+        $this->assertStringContainsString('Dr. Alpha', $html);
+        $this->assertStringContainsString('Dr. Beta', $html);
+    }
+
+    public function test_entire_research_card_links_to_its_publication_detail(): void
+    {
+        $item = self::makeResearchItem([
+            'title' => 'A very long imported research publication title that must not hide its detail action',
+            'url' => '/en/research/publications/imported-publication',
+        ]);
+        $section = self::makeSection('research_studies', [
+            'title' => 'Research',
+            'researchItems' => [$item],
+        ]);
+
+        $html = view('public.partials.homepage-section', [
+            'section' => $section,
+            'locale' => 'en',
+        ])->render();
+
+        $this->assertStringContainsString('href="/en/research/publications/imported-publication"', $html);
+        $this->assertStringContainsString('data-research-card-link', $html);
+        $this->assertStringContainsString('class="card-title ', $html);
+        $this->assertStringContainsString('View Details', $html);
+    }
+
+    public function test_research_carousel_controls_use_the_responsive_container_layout(): void
+    {
+        $section = self::makeSection('research_studies', [
+            'title' => 'Research with a long responsive heading',
+            'researchItems' => [self::makeResearchItem()],
+        ]);
+
+        $html = view('public.partials.homepage-section', [
+            'section' => $section,
+            'locale' => 'en',
+        ])->render();
+
+        $this->assertStringContainsString('section-header research-section-header relative', $html);
+        $this->assertStringContainsString('section-header__controls research-section-header__controls flex gap-3', $html);
+        $this->assertStringNotContainsString('absolute top-0 z-50', $html);
+        $this->assertSame(2, substr_count($html, 'aria-controls="research-priorities-track"'));
+    }
+
+    public static function researchCountProvider(): array
+    {
+        return array_map(fn ($n) => [$n], range(0, 5));
+    }
+}

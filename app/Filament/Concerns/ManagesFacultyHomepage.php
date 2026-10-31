@@ -1,0 +1,2641 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Filament\Concerns;
+
+use App\Contracts\Auth\AdminAccessServiceInterface;
+use App\Contracts\Auth\PermissionCatalogInterface;
+use App\Contracts\Career\StudentListImportServiceInterface;
+use App\Contracts\Cms\CmsWorkflowServiceInterface;
+use App\Contracts\Content\ProfileAdminServiceInterface;
+use App\Contracts\Faculty\FacultyMasterProgramServiceInterface;
+use App\Contracts\Faculty\FacultyPositionServiceInterface;
+use App\Contracts\Faculty\FacultyStudyPlanBoardServiceInterface;
+use App\Contracts\Faculty\FacultyStudyPlanEditorServiceInterface;
+use App\Contracts\Faculty\FacultyStudyPlanLinkServiceInterface;
+use App\Contracts\Media\MediaServiceInterface;
+use App\Contracts\Page\FacultyPageServiceInterface;
+use App\Contracts\Page\FacultySubpageCardServiceInterface;
+use App\Exceptions\ConflictException;
+use App\Filament\Components\PageUrlSelect;
+use App\Filament\Resources\FacultyMemberResource;
+use App\Filament\Support\MediaPicker;
+use App\Filament\Support\ResearchPublicationPicker;
+use App\Models\User\User;
+use App\Support\FacultyLogoSubtitle;
+use Filament\Actions\Action;
+use Filament\Forms\Components\Component;
+use Filament\Forms\Components\DateTimePicker;
+use Filament\Forms\Components\Hidden;
+use Filament\Forms\Components\KeyValue;
+use Filament\Forms\Components\Repeater;
+use Filament\Forms\Components\Section;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Tabs;
+use Filament\Forms\Components\Tabs\Tab;
+use Filament\Forms\Components\TagsInput;
+use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
+use Filament\Forms\Form;
+use Filament\Forms\Get;
+use Filament\Notifications\Notification;
+use Filament\Support\Exceptions\Halt;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\HtmlString;
+use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
+
+trait ManagesFacultyHomepage
+{
+    use ImportsStudentLists;
+    use ManagesStudyPlanBoard;
+
+    private const SELECTED_RESEARCH_LIMIT = 3;
+
+    /** @var array<string, mixed> */
+    public ?array $data = [];
+
+    public ?int $draftVersion = null;
+
+    public ?string $activeTargetKey = null;
+
+    /**
+     * Project keys matching the search, computed in loadTarget for the form it fills.
+     *
+     * @var list<string>
+     */
+    private array $searchedItemKeys = [];
+
+    public string $facultyScope = '';
+
+    /** @var array<int, string>|null */
+    private ?array $facultyStaffCache = null;
+
+    /** @var array<string, array<int, string>>|null */
+    private ?array $supervisorCache = null;
+
+    private FacultyPageServiceInterface $facultyPageService;
+
+    private CmsWorkflowServiceInterface $cmsWorkflowService;
+
+    private FacultyStudyPlanLinkServiceInterface $studyPlanLinkService;
+
+    private FacultyStudyPlanEditorServiceInterface $studyPlanEditorService;
+
+    private FacultySubpageCardServiceInterface $subpageCardService;
+
+    /** @var array<int, array{card_id: int, subpage_slug: string, title_override_ar: ?string, title_override_en: ?string, is_visible: bool, sort_order: int}> */
+    public array $navCards = [];
+
+    /** @return array<string, string> */
+    abstract protected function targetOptions(): array;
+
+    abstract protected function defaultTargetKey(): string;
+
+    abstract protected static function managedFacultyScope(): string;
+
+    public function boot(
+        FacultyPageServiceInterface $facultyPageService,
+        CmsWorkflowServiceInterface $cmsWorkflowService,
+        FacultyStudyPlanLinkServiceInterface $studyPlanLinkService,
+        FacultyStudyPlanEditorServiceInterface $studyPlanEditorService,
+        FacultySubpageCardServiceInterface $subpageCardService,
+        FacultyStudyPlanBoardServiceInterface $studyPlanBoardService,
+        MediaServiceInterface $mediaService,
+        StudentListImportServiceInterface $studentListImports,
+    ): void {
+        $this->facultyPageService = $facultyPageService;
+        $this->cmsWorkflowService = $cmsWorkflowService;
+        $this->studyPlanLinkService = $studyPlanLinkService;
+        $this->studyPlanEditorService = $studyPlanEditorService;
+        $this->subpageCardService = $subpageCardService;
+        $this->studyPlanBoardService = $studyPlanBoardService;
+        $this->boardMediaService = $mediaService;
+        $this->studentListImports = $studentListImports;
+    }
+
+    public static function canAccess(): bool
+    {
+        $user = auth()->user();
+
+        return $user instanceof User
+            && Gate::allows(static::facultyComponent().'.view')
+            && app(AdminAccessServiceInterface::class)->withinFacultyLimit($user, static::managedFacultyScope());
+    }
+
+    /** This faculty's permission component, for example `faculty_medicine`. */
+    protected static function facultyComponent(): string
+    {
+        return app(PermissionCatalogInterface::class)->componentForFaculty(static::managedFacultyScope());
+    }
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('admin.navigation.groups.facilities');
+    }
+
+    public function mount(): void
+    {
+        $requestedTarget = request()->query('target', $this->defaultTargetKey());
+        $targetKey = is_string($requestedTarget) && array_key_exists($requestedTarget, $this->targetOptions())
+            ? $requestedTarget
+            : $this->defaultTargetKey();
+
+        $requestedDepartment = request()->query('department');
+        $this->boardDepartmentId = is_string($requestedDepartment) ? $requestedDepartment : '';
+        $this->facultyScope = static::managedFacultyScope();
+        $this->loadNavCards();
+
+        $this->loadTarget($targetKey);
+    }
+
+    public function loadNavCards(): void
+    {
+        $this->navCards = $this->subpageCardService->getAllCards($this->facultyScope)
+            ->map(fn (object $card): array => [
+                'card_id' => (int) $card->id,
+                'subpage_slug' => $card->subpageSlug,
+                'title_override_ar' => $card->titleOverrideAr,
+                'title_override_en' => $card->titleOverrideEn,
+                'is_visible' => $card->isVisible,
+                'sort_order' => $card->sortOrder,
+            ])
+            ->values()
+            ->all();
+    }
+
+    public function loadTarget(string $targetKey): void
+    {
+        $this->assertManagedTarget($targetKey);
+        $this->activeTargetKey = $targetKey;
+        // The fields depend on the target and the form was cached for the previous
+        // one; rebuild it so a switched target does not render empty old fields.
+        $this->cacheForms();
+        $userId = $this->authenticatedUserId();
+        $draftPayload = $this->cmsWorkflowService->latestEditableDraftPayload($targetKey, $userId);
+        $payload = is_array($draftPayload) ? $draftPayload : $this->facultyPageService->getEditablePayload($targetKey);
+        $this->draftVersion = $this->cmsWorkflowService->latestEditableDraftVersion($targetKey, $userId);
+        $studentRecords = $this->hasFilterableRecords($targetKey)
+            ? $this->studentRecordsForForm($targetKey, $payload)
+            : [];
+        $this->searchedItemKeys = $this->hasSearchableItems($targetKey)
+            ? $this->matchingItemKeys($targetKey, $payload)
+            : [];
+
+        $arContent = $this->contentForForm($targetKey, is_array($payload['translations']['ar'] ?? null) ? $payload['translations']['ar'] : [], 'ar');
+        $enContent = $this->contentForForm($targetKey, is_array($payload['translations']['en'] ?? null) ? $payload['translations']['en'] : [], 'en');
+
+        if ($targetKey === $this->defaultTargetKey()) {
+            $englishName = (string) ($enContent['faculty']['name'] ?? $enContent['title'] ?? '');
+            $arContent = $this->withLogoSubtitleDefault($arContent, $englishName);
+            $enContent = $this->withLogoSubtitleDefault($enContent, $englishName);
+        }
+
+        $this->form->fill([
+            'target_key' => $targetKey,
+            'record_search' => (string) ($this->data['record_search'] ?? ''),
+            'record_department_filter' => (string) ($this->data['record_department_filter'] ?? ''),
+            'record_year_filter' => (string) ($this->data['record_year_filter'] ?? ''),
+            'student_record_keys' => $this->hasSearchableItems($targetKey) ? $this->searchedItemKeys : array_values(array_filter(array_map(
+                static fn (array $item): string => (string) ($item['_cmsKey'] ?? ''),
+                $studentRecords,
+            ), static fn (string $key): bool => $key !== '')),
+            'student_records' => $studentRecords,
+            'selected_research' => $targetKey === $this->defaultTargetKey() ? $this->selectedResearchForForm($payload) : [],
+            ...$this->councilStateForForm($targetKey, $payload),
+            'ar_content' => $arContent,
+            'en_content' => $enContent,
+        ]);
+
+        if (is_array($this->data)) {
+            $this->data['department_study_plan_options'] = $this->departmentStudyPlanOptionsFromTarget($targetKey);
+        }
+    }
+
+    /**
+     * Enter applies a filter (it blurs the box, which is when the field
+     * updates) instead of doing nothing or submitting the editor.
+     *
+     * @return array<string, string>
+     */
+    private static function filterInputAttributes(): array
+    {
+        return ['x-on:keydown.enter.prevent' => '$el.blur()'];
+    }
+
+    /** A "Searching…" note while the list reloads after a filter changes. */
+    private static function filterLoadingHint(string $field): HtmlString
+    {
+        return new HtmlString('<span wire:loading.delay wire:target="data.'.$field.'" class="text-primary-600">'.e(__('admin.faculty_workspace.fields.searching')).'</span>');
+    }
+
+    public function form(Form $form): Form
+    {
+        return $form
+            ->schema([
+                Hidden::make('target_key')->required(),
+                Hidden::make('student_record_keys')->dehydrated(),
+                Section::make(__('admin.faculty_workspace.editing_tools'))->schema([
+                    TextInput::make('record_search')
+                        ->extraInputAttributes(self::filterInputAttributes())
+                        ->hint(self::filterLoadingHint('record_search'))
+                        ->label(__('admin.faculty_workspace.fields.search'))
+                        ->helperText(fn (): ?string => $this->hasSearchableItems($this->currentTargetKeyForSchema()) ? __('admin.faculty_workspace.fields.project_search_help') : null)
+                        ->visible(fn (): bool => $this->usesRecordFilters($this->currentTargetKeyForSchema()))
+                        ->live(onBlur: true)
+                        ->afterStateUpdated(function (): void {
+                            $this->loadTarget($this->currentTargetKeyForSchema());
+                        }),
+                    TextInput::make('record_department_filter')
+                        ->extraInputAttributes(self::filterInputAttributes())
+                        ->hint(self::filterLoadingHint('record_department_filter'))
+                        ->label(__('admin.faculty_workspace.fields.department_filter'))
+                        ->visible(fn (): bool => $this->hasFilterableRecords($this->currentTargetKeyForSchema()))
+                        ->live(onBlur: true)
+                        ->afterStateUpdated(function (): void {
+                            $this->loadTarget($this->currentTargetKeyForSchema());
+                        }),
+                    TextInput::make('record_year_filter')
+                        ->extraInputAttributes(self::filterInputAttributes())
+                        ->hint(self::filterLoadingHint('record_year_filter'))
+                        ->label(__('admin.faculty_workspace.fields.year_filter'))
+                        ->visible(fn (): bool => $this->usesRecordFilters($this->currentTargetKeyForSchema()))
+                        ->live(onBlur: true)
+                        ->afterStateUpdated(function (): void {
+                            $this->loadTarget($this->currentTargetKeyForSchema());
+                        }),
+                ])->visible(fn (): bool => $this->usesRecordFilters($this->currentTargetKeyForSchema())),
+                Tabs::make('faculty_homepage_locales')
+                    ->tabs([
+                        Tab::make(__('admin.locales.ar'))->extraAttributes(['dir' => 'rtl'])->schema($this->payloadFields('ar')),
+                        Tab::make(__('admin.locales.en'))->extraAttributes(['dir' => 'ltr'])->schema($this->payloadFields('en')),
+                    ])
+                    ->persistTabInQueryString('locale')
+                    ->columnSpanFull(),
+                Section::make(__('admin.faculty_workspace.editor.sections.selected_research'))
+                    ->description(__('admin.faculty_workspace.editor.fields.selected_research_help'))
+                    ->schema([
+                        ResearchPublicationPicker::make(
+                            'selected_research',
+                            __('admin.faculty_workspace.editor.fields.selected_research'),
+                            __('admin.faculty_workspace.editor.fields.research_publication'),
+                            self::SELECTED_RESEARCH_LIMIT,
+                        )->columnSpanFull(),
+                    ])
+                    ->visible(fn (): bool => $this->currentTargetKeyForSchema() === $this->defaultTargetKey()),
+                $this->bilingualStudentFields()
+                    ->visible(fn (): bool => $this->hasFilterableRecords($this->currentTargetKeyForSchema())),
+                $this->councilFields()
+                    ->visible(fn (): bool => $this->isCouncilTarget($this->currentTargetKeyForSchema())),
+            ])
+            ->statePath('data');
+    }
+
+    protected function getHeaderActions(): array
+    {
+        return [
+            ...$this->studentListImportActions(),
+            Action::make('save')->label(__('admin.faculty_workspace.actions.save_draft'))->icon('heroicon-o-check')->color('gray')->action(function (): void {
+                $this->save();
+            }),
+            Action::make('preview_ar')->label(__('admin.faculty_workspace.actions.preview_ar'))->icon('heroicon-o-eye')->color('info')->action(function (): void {
+                $this->openPreview('ar');
+            }),
+            Action::make('preview_en')->label(__('admin.faculty_workspace.actions.preview_en'))->icon('heroicon-o-eye')->color('info')->action(function (): void {
+                $this->openPreview('en');
+            }),
+            Action::make('publish')->label(__('admin.faculty_workspace.actions.publish'))->icon('heroicon-o-paper-airplane')->color('success')->requiresConfirmation()
+                ->visible(fn (): bool => Gate::allows(static::facultyComponent().'.publish'))->action(function (): void {
+                    $this->publish();
+                }),
+            Action::make('schedule')
+                ->label(__('admin.faculty_workspace.actions.schedule'))
+                ->icon('heroicon-o-clock')
+                ->color('warning')
+                ->form([
+                    DateTimePicker::make('publish_at')->label(__('admin.faculty_workspace.fields.publish_at'))->required()->minDate(now())->native(false),
+                ])
+                ->visible(fn (): bool => Gate::allows(static::facultyComponent().'.publish'))
+                ->action(function (array $data): void {
+                    $this->schedule((string) $data['publish_at']);
+                }),
+            Action::make('unpublish')->label(__('admin.faculty_workspace.actions.unpublish'))->icon('heroicon-o-x-circle')->color('danger')->requiresConfirmation()
+                ->visible(fn (): bool => Gate::allows(static::facultyComponent().'.publish'))->action(function (): void {
+                    $this->unpublish();
+                }),
+        ];
+    }
+
+    /** @return list<array{key: string, label: string, description: string, url: string, active: bool}> */
+    public function getFacultyWorkspaceTasks(): array
+    {
+        $currentTarget = $this->currentTargetKeyForSchema();
+
+        return collect(array_keys($this->targetOptions()))
+            ->map(function (string $key) use ($currentTarget): array {
+                $task = $key === $this->defaultTargetKey()
+                    ? 'homepage'
+                    : str_replace('-', '_', (string) Str::afterLast($key, '.'));
+
+                return [
+                    'key' => $key,
+                    'label' => __('admin.faculty_workspace.targets.'.$task),
+                    'description' => __('admin.faculty_workspace.descriptions.'.$task),
+                    'url' => static::getUrl(['target' => $key]),
+                    'active' => $key === $currentTarget,
+                ];
+            })
+            ->values()
+            ->all();
+    }
+
+    public function isFacultyMembersTarget(): bool
+    {
+        return $this->subpageSlugFromTarget($this->currentTargetKeyForSchema()) === 'members';
+    }
+
+    public function facultyMembersIndexUrl(): string
+    {
+        return FacultyMemberResource::getUrl('index', ['faculty_scope' => $this->facultyScope]);
+    }
+
+    public function facultyMembersCreateUrl(): string
+    {
+        return FacultyMemberResource::getUrl('create', ['faculty_scope' => $this->facultyScope]);
+    }
+
+    public function save(): void
+    {
+        /** @var User $user */
+        $user = auth()->user();
+
+        try {
+            $draft = $this->cmsWorkflowService->saveDraft($this->currentTargetKey(), $this->payloadFromForm($this->currentFormData()), (int) $user->id, $this->draftVersion);
+            $this->draftVersion = $draft->version;
+
+            Notification::make()->title(__('admin.faculty_workspace.notifications.draft_saved'))->success()->send();
+        } catch (ConflictException $e) {
+            $this->draftVersion = $e->currentVersion;
+            Notification::make()->title(__('admin.faculty_workspace.notifications.conflict'))->body(__('admin.faculty_workspace.notifications.conflict_description'))->danger()->persistent()->send();
+        } catch (\Throwable $e) {
+            report($e);
+            Notification::make()->title(__('admin.faculty_workspace.notifications.save_failed'))->body(__('admin.faculty_workspace.notifications.safe_error'))->danger()->send();
+        }
+    }
+
+    public function openPreview(string $locale): void
+    {
+        if (! in_array($locale, ['ar', 'en'], true)) {
+            Notification::make()->title(__('admin.faculty_workspace.notifications.preview_failed'))->body(__('admin.faculty_workspace.notifications.invalid_preview_locale'))->danger()->send();
+
+            return;
+        }
+
+        /** @var User $user */
+        $user = auth()->user();
+
+        try {
+            $targetKey = $this->currentTargetKey();
+            $draft = $this->cmsWorkflowService->saveDraft($targetKey, $this->payloadFromForm($this->currentFormData()), (int) $user->id, $this->draftVersion);
+            $this->draftVersion = $draft->version;
+            $preview = $this->cmsWorkflowService->preview($targetKey, $locale, (int) $user->id);
+
+            $this->redirect($preview->previewUrl);
+        } catch (ConflictException $e) {
+            $this->draftVersion = $e->currentVersion;
+            Notification::make()->title(__('admin.faculty_workspace.notifications.conflict'))->body(__('admin.faculty_workspace.notifications.conflict_description'))->danger()->persistent()->send();
+        } catch (\Throwable $e) {
+            report($e);
+            Notification::make()->title(__('admin.faculty_workspace.notifications.preview_failed'))->body(__('admin.faculty_workspace.notifications.safe_error'))->danger()->send();
+        }
+    }
+
+    public function publish(): void
+    {
+        /** @var User $user */
+        $user = auth()->user();
+
+        try {
+            $targetKey = $this->currentTargetKey();
+            $draft = $this->cmsWorkflowService->saveDraft($targetKey, $this->payloadFromForm($this->form->getState()), (int) $user->id, $this->draftVersion);
+            $this->draftVersion = $draft->version;
+            $this->cmsWorkflowService->publish($targetKey, (int) $user->id);
+
+            Notification::make()->title(__('admin.faculty_workspace.notifications.published'))->success()->send();
+        } catch (ValidationException $e) {
+            Notification::make()->title(__('admin.faculty_workspace.notifications.publish_failed'))->body($this->formatValidationErrors($e->errors()))->danger()->persistent()->send();
+        } catch (\Throwable $e) {
+            report($e);
+            Notification::make()->title(__('admin.faculty_workspace.notifications.publish_failed'))->body(__('admin.faculty_workspace.notifications.safe_error'))->danger()->send();
+        }
+    }
+
+    public function schedule(string $publishAt): void
+    {
+        /** @var User $user */
+        $user = auth()->user();
+
+        try {
+            $targetKey = $this->currentTargetKey();
+            $draft = $this->cmsWorkflowService->saveDraft($targetKey, $this->payloadFromForm($this->form->getState()), (int) $user->id, $this->draftVersion);
+            $this->draftVersion = $draft->version;
+            $this->cmsWorkflowService->schedule($targetKey, new \DateTimeImmutable($publishAt), (int) $user->id);
+
+            Notification::make()->title(__('admin.faculty_workspace.notifications.scheduled'))->success()->send();
+        } catch (ValidationException $e) {
+            Notification::make()->title(__('admin.faculty_workspace.notifications.schedule_failed'))->body($this->formatValidationErrors($e->errors()))->danger()->persistent()->send();
+        } catch (\Throwable $e) {
+            report($e);
+            Notification::make()->title(__('admin.faculty_workspace.notifications.schedule_failed'))->body(__('admin.faculty_workspace.notifications.safe_error'))->danger()->send();
+        }
+    }
+
+    public function unpublish(): void
+    {
+        /** @var User $user */
+        $user = auth()->user();
+        try {
+            $result = $this->cmsWorkflowService->unpublish($this->currentTargetKey(), (int) $user->id);
+            $notification = Notification::make()->title($result
+                ? __('admin.faculty_workspace.notifications.unpublished')
+                : __('admin.faculty_workspace.notifications.nothing_published'));
+
+            ($result ? $notification->success() : $notification->warning())->send();
+        } catch (\Throwable $e) {
+            report($e);
+            Notification::make()->title(__('admin.faculty_workspace.notifications.unpublish_failed'))->body(__('admin.faculty_workspace.notifications.safe_error'))->danger()->send();
+        }
+    }
+
+    public function toggleNavVisibility(int $cardId): void
+    {
+        $this->subpageCardService->toggleVisibility($cardId, (int) auth()->id());
+        $this->loadNavCards();
+    }
+
+    public function moveNavUp(int $cardId): void
+    {
+        $this->subpageCardService->moveUp($cardId, (int) auth()->id());
+        $this->loadNavCards();
+    }
+
+    public function moveNavDown(int $cardId): void
+    {
+        $this->subpageCardService->moveDown($cardId, (int) auth()->id());
+        $this->loadNavCards();
+    }
+
+    public function deleteNavCard(int $cardId): void
+    {
+        $this->subpageCardService->deleteCard($cardId, (int) auth()->id());
+        Notification::make()->title(__('admin.faculty_workspace.navigation.card_deleted'))->success()->send();
+        $this->loadNavCards();
+    }
+
+    public function updateNavTitles(): void
+    {
+        foreach ($this->navCards as $card) {
+            $id = (int) ($card['card_id'] ?? 0);
+            if ($id <= 0) {
+                continue;
+            }
+            $this->subpageCardService->updateCard($id, [
+                'title_override_ar' => $card['title_override_ar'] ?? null,
+                'title_override_en' => $card['title_override_en'] ?? null,
+                'is_visible' => (bool) ($card['is_visible'] ?? false),
+                'sort_order' => (int) ($card['sort_order'] ?? 0),
+            ], (int) auth()->id());
+        }
+        Notification::make()->title(__('admin.faculty_workspace.navigation.cards_saved'))->success()->send();
+        $this->loadNavCards();
+    }
+
+    public ?array $navAddForm = null;
+
+    public bool $navAddModal = false;
+
+    public function openNavAddModal(): void
+    {
+        $this->navAddModal = true;
+        $this->navAddForm = ['subpage_slug' => '', 'title_ar' => '', 'title_en' => ''];
+    }
+
+    public function closeNavAddModal(): void
+    {
+        $this->navAddModal = false;
+        $this->navAddForm = null;
+    }
+
+    public function addNavCard(): void
+    {
+        $slug = (string) ($this->navAddForm['subpage_slug'] ?? '');
+        if ($slug === '') {
+            Notification::make()->title(__('admin.faculty_workspace.navigation.select_subpage'))->danger()->send();
+
+            return;
+        }
+
+        if ($this->subpageCardService->cardExists($this->facultyScope, $slug)) {
+            Notification::make()->title(__('admin.faculty_workspace.navigation.card_exists'))->danger()->send();
+
+            return;
+        }
+
+        $this->subpageCardService->createCard(
+            facultySlug: $this->facultyScope,
+            subpageSlug: $slug,
+            userId: (int) auth()->id(),
+            titleOverrideAr: ($this->navAddForm['title_ar'] ?? '') !== '' ? $this->navAddForm['title_ar'] : null,
+            titleOverrideEn: ($this->navAddForm['title_en'] ?? '') !== '' ? $this->navAddForm['title_en'] : null,
+        );
+
+        Notification::make()->title(__('admin.faculty_workspace.navigation.card_added'))->success()->send();
+        $this->closeNavAddModal();
+        $this->loadNavCards();
+    }
+
+    /** @return array<string, string> */
+    public function getNavAvailableSubpages(): array
+    {
+        $existing = collect($this->navCards)->pluck('subpage_slug')->all();
+
+        return collect($this->subpageCardService->availableSubpageOptions($this->facultyScope))
+            ->filter(fn (string $label, string $slug): bool => ! in_array($slug, $existing, true))
+            ->all();
+    }
+
+    /** @return array<int, Section> */
+    private function payloadFields(string $locale): array
+    {
+        if ($this->currentTargetKeyForSchema() !== $this->defaultTargetKey()) {
+            return $this->subpageFields($locale);
+        }
+
+        $prefix = $locale.'_content';
+
+        return [
+            Section::make(__('admin.faculty_workspace.editor.sections.page_content'))->schema([
+                TextInput::make($prefix.'.title')->label(__('admin.faculty_workspace.editor.fields.page_title'))->maxLength(180),
+                TextInput::make($prefix.'.summary')->label(__('admin.faculty_workspace.editor.fields.summary'))->maxLength(255),
+                Textarea::make($prefix.'.body')->label(__('admin.faculty_workspace.editor.fields.body'))->rows(5)->columnSpanFull(),
+            ])->columns(2),
+
+            Section::make(__('admin.faculty_workspace.editor.sections.faculty_identity'))->schema([
+                TextInput::make($prefix.'.faculty.name')->label(__('admin.faculty_workspace.editor.fields.name'))->maxLength(180),
+                TextInput::make($prefix.'.faculty.title')->label(__('admin.faculty_workspace.editor.fields.display_title'))->maxLength(180),
+                TextInput::make($prefix.'.faculty.yearsLabel')->label(__('admin.faculty_workspace.editor.fields.years_label'))->maxLength(80),
+                TextInput::make($prefix.'.faculty.accentColor')->label(__('admin.faculty_workspace.editor.fields.accent_color'))->maxLength(20),
+                MediaPicker::image($prefix.'.faculty.heroImage', __('admin.faculty_workspace.editor.fields.hero_image')),
+                MediaPicker::image($prefix.'.faculty.logoImage', __('admin.faculty_workspace.editor.fields.logo_image')),
+                TextInput::make($prefix.'.faculty.logoSubtitle')
+                    ->label(__('admin.faculty_workspace.editor.fields.logo_subtitle'))
+                    ->helperText(__('admin.faculty_workspace.editor.fields.logo_subtitle_help'))
+                    ->maxLength(180),
+                Textarea::make($prefix.'.faculty.summary')->label(__('admin.faculty_workspace.editor.fields.short_summary'))->rows(2)->columnSpanFull(),
+                Textarea::make($prefix.'.faculty.description')->label(__('admin.faculty_workspace.editor.fields.description'))->rows(4)->columnSpanFull(),
+            ])->columns(2)->collapsed(),
+
+            Section::make(__('admin.faculty_workspace.editor.sections.overview_tabs'))->schema([
+                Repeater::make($prefix.'.tabs')
+                    ->label(__('admin.faculty_workspace.editor.fields.tabs'))
+                    ->schema([
+                        Hidden::make('id')->default(fn (): string => 'tab-'.Str::lower(Str::random(8))),
+                        TextInput::make('label')->label(__('admin.faculty_workspace.editor.fields.label'))->maxLength(120),
+                        Textarea::make('body')->label(__('admin.faculty_workspace.editor.fields.body'))->rows(3)->columnSpanFull(),
+                    ])
+                    ->columns(2)
+                    ->defaultItems(0)
+                    ->reorderable()
+                    ->collapsible()
+                    ->columnSpanFull(),
+            ])->collapsed(),
+
+            Section::make(__('admin.faculty_workspace.editor.sections.dean_message'))->schema([
+                TextInput::make($prefix.'.dean.name')->label(__('admin.faculty_workspace.editor.fields.dean_name'))->maxLength(160),
+                TextInput::make($prefix.'.dean.role')->label(__('admin.faculty_workspace.editor.fields.dean_role'))->maxLength(160),
+                MediaPicker::image($prefix.'.dean.image', __('admin.faculty_workspace.editor.fields.dean_image')),
+                Textarea::make($prefix.'.dean.message')->label(__('admin.faculty_workspace.editor.fields.message'))->rows(4)->columnSpanFull(),
+            ])->columns(2),
+
+            Section::make(__('admin.faculty_workspace.editor.sections.gallery'))->schema([
+                Repeater::make($prefix.'.gallery')
+                    ->label(__('admin.faculty_workspace.editor.fields.gallery_images'))
+                    ->schema([
+                        MediaPicker::image('image', __('admin.faculty_workspace.editor.fields.image')),
+                    ])
+                    ->defaultItems(0)
+                    ->reorderable()
+                    ->collapsible()
+                    ->columnSpanFull(),
+            ]),
+
+            Section::make(__('admin.faculty_workspace.editor.sections.stats'))->schema([
+                Repeater::make($prefix.'.stats')
+                    ->label(__('admin.faculty_workspace.editor.sections.stats'))
+                    ->schema([
+                        TextInput::make('value')->label(__('admin.faculty_workspace.editor.fields.value'))->maxLength(40),
+                        TextInput::make('label')->label(__('admin.faculty_workspace.editor.fields.label'))->maxLength(120),
+                        MediaPicker::icon('icon', __('admin.faculty_workspace.editor.fields.icon')),
+                    ])
+                    ->columns(3)
+                    ->defaultItems(0)
+                    ->reorderable()
+                    ->collapsible()
+                    ->columnSpanFull(),
+            ]),
+
+            Section::make(__('admin.faculty_workspace.editor.sections.latest_research'))->description(__('admin.faculty_workspace.editor.fields.latest_research_legacy_help'))->collapsed()->schema([
+                Repeater::make($prefix.'.latestResearch')
+                    ->label(__('admin.faculty_workspace.editor.sections.latest_research'))
+                    ->schema([
+                        TextInput::make('title')->label(__('admin.faculty_workspace.editor.fields.title'))->maxLength(180),
+                        TextInput::make('type')->label(__('admin.faculty_workspace.editor.fields.type'))->maxLength(120),
+                        TextInput::make('date')->label(__('admin.faculty_workspace.editor.fields.date'))->maxLength(80),
+                        TextInput::make('doi')->label(__('admin.faculty_workspace.editor.fields.doi'))->maxLength(120),
+                        MediaPicker::image('image', __('admin.faculty_workspace.editor.fields.image')),
+                        PageUrlSelect::make('url', __('admin.faculty_workspace.editor.fields.url'), $locale),
+                        TextInput::make('cta')->label(__('admin.faculty_workspace.editor.fields.action_label'))->maxLength(120),
+                        Textarea::make('summary')->label(__('admin.faculty_workspace.editor.fields.summary'))->rows(2)->columnSpanFull(),
+                    ])
+                    ->columns(2)
+                    ->defaultItems(0)
+                    ->reorderable()
+                    ->collapsible()
+                    ->columnSpanFull(),
+            ]),
+        ];
+    }
+
+    /** @param array<string, mixed> $state @return array<string, mixed> */
+    private function payloadFromForm(array $state): array
+    {
+        $targetKey = (string) ($state['target_key'] ?? $this->defaultTargetKey());
+        $this->assertManagedTarget($targetKey);
+        $arContent = is_array($state['ar_content'] ?? null) ? $state['ar_content'] : [];
+        $enContent = is_array($state['en_content'] ?? null) ? $state['en_content'] : [];
+
+        if ($this->hasFilterableRecords($targetKey)) {
+            [$arItems, $enItems, $visibleKeys] = $this->studentItemsFromForm($state);
+            $usePairedRecords = $this->hasActiveRecordFilters()
+                || $this->listOfArrays($state['student_records'] ?? []) !== [];
+
+            if ($usePairedRecords) {
+                $arContent['items'] = $arItems;
+                $enContent['items'] = $enItems;
+                $arContent['_filteredRecordKeys'] = $visibleKeys;
+                $enContent['_filteredRecordKeys'] = $visibleKeys;
+            }
+        }
+
+        if ($this->hasSearchableItems($targetKey) && $this->hasActiveRecordFilters()) {
+            $visibleKeys = array_values(array_filter(
+                array_map(static fn (mixed $key): string => is_scalar($key) ? (string) $key : '', is_array($state['student_record_keys'] ?? null) ? $state['student_record_keys'] : []),
+                static fn (string $key): bool => $key !== '',
+            ));
+            $arContent['_filteredRecordKeys'] = $visibleKeys;
+            $enContent['_filteredRecordKeys'] = $visibleKeys;
+        }
+
+        if ($this->isCouncilTarget($targetKey)) {
+            [$arCouncil, $enCouncil] = $this->councilContentFromForm($state);
+            $arContent = [...$arContent, ...$arCouncil];
+            $enContent = [...$enContent, ...$enCouncil];
+        }
+
+        if ($targetKey === $this->defaultTargetKey()) {
+            $selectedResearch = $this->selectedResearchFromForm($state);
+            $arContent['selectedResearchSlugs'] = $selectedResearch;
+            $enContent['selectedResearchSlugs'] = $selectedResearch;
+        }
+
+        $payload = [
+            'translations' => [
+                'ar' => $targetKey === $this->defaultTargetKey()
+                    ? $this->normalizeContent($arContent)
+                    : $this->normalizeSubpageContent($targetKey, 'ar', $arContent),
+                'en' => $targetKey === $this->defaultTargetKey()
+                    ? $this->normalizeContent($enContent)
+                    : $this->normalizeSubpageContent($targetKey, 'en', $enContent),
+            ],
+        ];
+
+        if ($this->subpageSlugFromTarget($targetKey) !== 'study-plan') {
+            return $payload;
+        }
+
+        // Departments, terms and courses are edited on the visual board and saved as their own
+        // draft versions; the form only carries labels, legend and plan settings.
+        return $payload;
+    }
+
+    private function bilingualStudentFields(): Section
+    {
+        $subpageSlug = $this->subpageSlugFromTarget($this->currentTargetKeyForSchema());
+        $isAlumni = $subpageSlug === 'alumni';
+        $fields = [
+            Hidden::make('_cmsKey')->dehydrated(),
+            Hidden::make('id')->dehydrated(),
+            Hidden::make('_originalTitleEn')->dehydrated(),
+            Hidden::make('_originalTitleAr')->dehydrated(),
+            TextInput::make('titleEn')
+                ->label(__($isAlumni ? 'admin.faculty_workspace.editor.fields.graduate_name_en' : 'admin.faculty_workspace.editor.fields.student_name_en'))
+                ->required()
+                ->maxLength(180),
+            TextInput::make('titleAr')
+                ->label(__($isAlumni ? 'admin.faculty_workspace.editor.fields.graduate_name_ar' : 'admin.faculty_workspace.editor.fields.student_name_ar'))
+                ->required()
+                ->maxLength(180),
+        ];
+
+        if ($isAlumni) {
+            $fields = [
+                ...$fields,
+                TextInput::make('graduationYear')->label(__('admin.faculty_workspace.editor.fields.graduation_year'))->maxLength(20),
+                TextInput::make('semester')->label(__('admin.faculty_workspace.editor.fields.semester_en'))->maxLength(80),
+                TextInput::make('semesterAr')->label(__('admin.faculty_workspace.editor.fields.semester_ar'))->maxLength(80),
+                TextInput::make('department')->label(__('admin.faculty_workspace.editor.fields.department_en'))->maxLength(160),
+                TextInput::make('departmentAr')->label(__('admin.faculty_workspace.editor.fields.department_ar'))->maxLength(160),
+                TextInput::make('faculty')->label(__('admin.faculty_workspace.editor.fields.faculty_en'))->maxLength(180),
+                TextInput::make('facultyAr')->label(__('admin.faculty_workspace.editor.fields.faculty_ar'))->maxLength(180),
+                TextInput::make('degree')->label(__('admin.faculty_workspace.editor.fields.degree_en'))->maxLength(120),
+                TextInput::make('degreeAr')->label(__('admin.faculty_workspace.editor.fields.degree_ar'))->maxLength(120),
+                TextInput::make('academicPhase')->label(__('admin.faculty_workspace.editor.fields.academic_phase_en'))->maxLength(120),
+                TextInput::make('academicPhaseAr')->label(__('admin.faculty_workspace.editor.fields.academic_phase_ar'))->maxLength(120),
+                MediaPicker::image('image', __('admin.faculty_workspace.editor.fields.image')),
+            ];
+        } else {
+            $fields = [
+                ...$fields,
+                TextInput::make('academicYear')->label(__('admin.faculty_workspace.editor.fields.academic_year'))->maxLength(40),
+                TextInput::make('semester')->label(__('admin.faculty_workspace.editor.fields.semester_en'))->maxLength(80),
+                TextInput::make('semesterAr')->label(__('admin.faculty_workspace.editor.fields.semester_ar'))->maxLength(80),
+                TextInput::make('department')->label(__('admin.faculty_workspace.editor.fields.department_en'))->maxLength(160),
+                TextInput::make('departmentAr')->label(__('admin.faculty_workspace.editor.fields.department_ar'))->maxLength(160),
+                TextInput::make('faculty')->label(__('admin.faculty_workspace.editor.fields.faculty_en'))->maxLength(180),
+                TextInput::make('facultyAr')->label(__('admin.faculty_workspace.editor.fields.faculty_ar'))->maxLength(180),
+                TextInput::make('gpa')->label(__('admin.faculty_workspace.editor.fields.gpa'))->maxLength(20),
+                MediaPicker::image('image', __('admin.faculty_workspace.editor.fields.image')),
+            ];
+        }
+
+        $sectionLabel = $isAlumni
+            ? __('admin.faculty_workspace.editor.sections.alumni')
+            : __('admin.faculty_workspace.editor.sections.honor_students');
+
+        return Section::make($sectionLabel)
+            ->description(__('admin.faculty_workspace.editor.help.bilingual_records'))
+            ->schema([
+                Repeater::make('student_records')
+                    ->label($sectionLabel)
+                    ->schema($fields)
+                    ->columns(2)
+                    ->defaultItems(0)
+                    ->reorderable()
+                    ->collapsible()
+                    ->columnSpanFull(),
+            ])
+            ->columnSpanFull();
+    }
+
+    /** @return array<int, Section> */
+    private function subpageFields(string $locale): array
+    {
+        $prefix = $locale.'_content';
+        $targetKey = $this->currentTargetKeyForSchema();
+        $subpageSlug = $this->subpageSlugFromTarget($targetKey);
+
+        $sections = $this->baseSubpageFields($prefix);
+
+        return match ($subpageSlug) {
+            'overview' => [...$sections, ...$this->overviewSubpageFields($prefix)],
+            'departments' => [...$sections, ...$this->departmentsSubpageFields($prefix)],
+            'study-plan' => [...$sections, ...$this->studyPlanSubpageFields($prefix)],
+            'labs' => [...$sections, ...$this->labsSubpageFields($prefix)],
+            'projects' => [...$sections, ...$this->projectsSubpageFields($prefix)],
+            'alumni' => [...$sections, ...$this->alumniSubpageFields($prefix)],
+            'valedictorians' => [...$sections, ...$this->valedictoriansSubpageFields($prefix)],
+            'training' => [...$sections, ...$this->trainingSubpageFields($prefix)],
+            'clinical-cases' => [...$sections, ...$this->clinicalCasesSubpageFields($prefix)],
+            'final-exams' => [...$sections, ...$this->finalExamsSubpageFields($prefix)],
+            'research' => [...$sections, ...$this->researchSubpageFields($prefix)],
+            'members' => [...$sections, ...$this->membersSubpageFields($prefix)],
+            // Positions and members are edited once for both languages, below the language tabs.
+            'council' => $sections,
+            'master-program' => [...$sections, ...$this->masterProgramSubpageFields($prefix)],
+            default => throw new \InvalidArgumentException('Unsupported faculty subpage target.'),
+        };
+    }
+
+    /** @return array<int, Section> */
+    private function baseSubpageFields(string $prefix): array
+    {
+        return [
+            Section::make(__('admin.faculty_workspace.editor.sections.page_intro'))->schema([
+                TextInput::make($prefix.'.title')->label(__('admin.faculty_workspace.editor.fields.title'))->required()->maxLength(180),
+                MediaPicker::image($prefix.'.heroImage', __('admin.faculty_workspace.editor.fields.hero_image')),
+                Textarea::make($prefix.'.summary')->label(__('admin.faculty_workspace.editor.fields.summary'))->rows(2)->columnSpanFull(),
+                Textarea::make($prefix.'.body')->label(__('admin.faculty_workspace.editor.fields.body'))->rows(4)->columnSpanFull(),
+            ])->columns(2)->collapsed(),
+        ];
+    }
+
+    /** @return array<int, Section> */
+    private function membersSubpageFields(string $prefix): array
+    {
+        return [];
+    }
+
+    /** @return array<int, Section> */
+    private function trainingSubpageFields(string $prefix): array
+    {
+        return [
+            Section::make(__('admin.faculty_workspace.editor.sections.training_intro'))->schema([
+                TextInput::make($prefix.'.payload.hero.eyebrow')->label(__('admin.faculty_workspace.editor.fields.eyebrow'))->required()->maxLength(120),
+                TextInput::make($prefix.'.payload.hero.title')->label(__('admin.faculty_workspace.editor.fields.title'))->required()->maxLength(180),
+                Textarea::make($prefix.'.payload.hero.summary')->label(__('admin.faculty_workspace.editor.fields.summary'))->required()->rows(3)->columnSpanFull(),
+                MediaPicker::image($prefix.'.payload.hero.image', __('admin.faculty_workspace.editor.fields.hero_image'), true),
+            ])->columns(2),
+            Section::make(__('admin.faculty_workspace.editor.sections.training_cards'))->schema([
+                Repeater::make($prefix.'.payload.introCards')->schema([
+                    TextInput::make('title')->label(__('admin.faculty_workspace.editor.fields.title'))->required()->maxLength(180),
+                    MediaPicker::icon('icon', __('admin.faculty_workspace.editor.fields.icon'), true),
+                    Textarea::make('description')->label(__('admin.faculty_workspace.editor.fields.description'))->required()->rows(3)->columnSpanFull(),
+                ])->columns(2)->reorderable()->minItems(1)->columnSpanFull(),
+            ]),
+            Section::make(__('admin.faculty_workspace.editor.sections.training_program'))->schema([
+                TextInput::make($prefix.'.payload.programme.title')->label(__('admin.faculty_workspace.editor.fields.title'))->required()->maxLength(180),
+                Repeater::make($prefix.'.payload.programme.steps')->schema([
+                    TextInput::make('number')->label(__('admin.faculty_workspace.editor.fields.step_number'))->required()->maxLength(20),
+                    TextInput::make('title')->label(__('admin.faculty_workspace.editor.fields.title'))->required()->maxLength(180),
+                    Textarea::make('description')->label(__('admin.faculty_workspace.editor.fields.description'))->required()->rows(3)->columnSpanFull(),
+                ])->columns(2)->reorderable()->minItems(1)->columnSpanFull(),
+            ]),
+            Section::make(__('admin.faculty_workspace.editor.sections.training_regulations'))->schema([
+                TextInput::make($prefix.'.payload.regulations.title')->label(__('admin.faculty_workspace.editor.fields.title'))->maxLength(180),
+                Repeater::make($prefix.'.payload.regulations.items')->schema([
+                    TextInput::make('title')->label(__('admin.faculty_workspace.editor.fields.title'))->maxLength(255),
+                    Textarea::make('body')->label(__('admin.faculty_workspace.editor.fields.body'))->required()->rows(5)->columnSpanFull(),
+                ])->columns(2)->defaultItems(0)->reorderable()->collapsible()->columnSpanFull(),
+            ]),
+            ...$this->pageDocumentsFields($prefix),
+            Section::make(__('admin.faculty_workspace.editor.sections.training_destinations'))->description(__('admin.faculty_workspace.editor.help.verified_routes'))->schema([
+                TextInput::make($prefix.'.payload.partners.title')->label(__('admin.faculty_workspace.editor.fields.title'))->maxLength(180),
+                TextInput::make($prefix.'.payload.partners.cta')->label(__('admin.faculty_workspace.editor.fields.action_label'))->maxLength(120),
+                Repeater::make($prefix.'.payload.partners.items')->schema([
+                    TextInput::make('title')->label(__('admin.faculty_workspace.editor.fields.title'))->required()->maxLength(180),
+                    TextInput::make('category')->label(__('admin.faculty_workspace.editor.fields.category'))->required()->maxLength(120),
+                    PageUrlSelect::make('href', __('admin.faculty_workspace.editor.fields.url'), substr($prefix, 0, 2), true),
+                    MediaPicker::image('image', __('admin.faculty_workspace.editor.fields.image'), true),
+                    Textarea::make('description')->label(__('admin.faculty_workspace.editor.fields.description'))->required()->rows(3)->columnSpanFull(),
+                ])->columns(2)->reorderable()->columnSpanFull(),
+            ])->columns(2),
+            Section::make(__('admin.faculty_workspace.editor.sections.verified_facts'))->schema([
+                Repeater::make($prefix.'.payload.facts')->schema([
+                    TextInput::make('value')->label(__('admin.faculty_workspace.editor.fields.value'))->required()->maxLength(80),
+                    TextInput::make('label')->label(__('admin.faculty_workspace.editor.fields.label'))->required()->maxLength(160),
+                    Toggle::make('verified')->label(__('admin.faculty_workspace.editor.fields.verified'))->required(),
+                ])->columns(2)->reorderable()->columnSpanFull(),
+            ]),
+            Section::make(__('admin.faculty_workspace.editor.sections.seo'))->schema([
+                TextInput::make($prefix.'.seoTitle')->label(__('admin.faculty_workspace.editor.fields.seo_title'))->required()->maxLength(180),
+                Textarea::make($prefix.'.seoDescription')->label(__('admin.faculty_workspace.editor.fields.seo_description'))->required()->rows(2),
+                MediaPicker::image($prefix.'.seoImage', __('admin.faculty_workspace.editor.fields.seo_image'), true),
+            ])->columns(2),
+        ];
+    }
+
+    /** @return array<int, Section> */
+    private function clinicalCasesSubpageFields(string $prefix): array
+    {
+        return [
+            Section::make(__('admin.faculty_workspace.editor.sections.clinical_cases'))->schema([
+                Repeater::make($prefix.'.payload.entries')
+                    ->label(__('admin.faculty_workspace.editor.sections.clinical_cases'))
+                    ->schema([
+                        TextInput::make('title')->label(__('admin.faculty_workspace.editor.fields.title'))->required()->maxLength(255),
+                        TextInput::make('meta')->label(__('admin.faculty_workspace.editor.fields.case_credit'))->maxLength(255),
+                        Textarea::make('body')->label(__('admin.faculty_workspace.editor.fields.body'))->required()->rows(5)->columnSpanFull(),
+                        TextInput::make('videoUrl')->label(__('admin.faculty_workspace.editor.fields.video_url'))->maxLength(500)->rule('regex:#^https://#'),
+                    ])
+                    ->columns(2)
+                    ->defaultItems(0)
+                    ->reorderable()
+                    ->collapsible()
+                    ->columnSpanFull(),
+            ]),
+            ...$this->pageDocumentsFields($prefix),
+            ...$this->optionalSeoFields($prefix),
+        ];
+    }
+
+    /** @return array<int, Section> */
+    private function finalExamsSubpageFields(string $prefix): array
+    {
+        return [
+            Section::make(__('admin.faculty_workspace.editor.sections.exam_schedules'))->description(__('admin.faculty_workspace.editor.help.exam_schedules'))->schema([
+                Repeater::make($prefix.'.payload.schedules')
+                    ->label(__('admin.faculty_workspace.editor.sections.exam_schedules'))
+                    ->schema([
+                        TextInput::make('title')->label(__('admin.faculty_workspace.editor.fields.title'))->required()->maxLength(255),
+                        Textarea::make('note')->label(__('admin.faculty_workspace.editor.fields.description'))->rows(2)->columnSpanFull(),
+                        Repeater::make('documents')
+                            ->label(__('admin.faculty_workspace.editor.fields.files'))
+                            ->schema([
+                                TextInput::make('label')->label(__('admin.faculty_workspace.editor.fields.action_label'))->maxLength(180),
+                                MediaPicker::document('url', __('admin.faculty_workspace.editor.fields.document_file'), true),
+                            ])
+                            ->columns(2)
+                            ->defaultItems(1)
+                            ->reorderable()
+                            ->columnSpanFull(),
+                        Repeater::make('rows')
+                            ->label(__('admin.faculty_workspace.editor.fields.exam_rows'))
+                            ->schema([
+                                TextInput::make('day')->label(__('admin.faculty_workspace.editor.fields.exam_day'))->maxLength(60),
+                                TextInput::make('date')->label(__('admin.faculty_workspace.editor.fields.date'))->maxLength(60),
+                                TextInput::make('time')->label(__('admin.faculty_workspace.editor.fields.exam_time'))->maxLength(60),
+                                TextInput::make('course')->label(__('admin.faculty_workspace.editor.fields.exam_course'))->required()->maxLength(255),
+                                TextInput::make('year')->label(__('admin.faculty_workspace.editor.fields.exam_year'))->maxLength(120),
+                                TextInput::make('room')->label(__('admin.faculty_workspace.editor.fields.exam_room'))->maxLength(120),
+                            ])
+                            ->columns(3)
+                            ->defaultItems(0)
+                            ->reorderable()
+                            ->collapsible()
+                            ->columnSpanFull(),
+                    ])
+                    ->defaultItems(0)
+                    ->reorderable()
+                    ->collapsible()
+                    ->columnSpanFull(),
+            ]),
+            ...$this->optionalSeoFields($prefix),
+        ];
+    }
+
+    /** @return array<int, Section> */
+    private function masterProgramSubpageFields(string $prefix): array
+    {
+        $field = static fn (string $key): string => __('admin.faculty_workspace.editor.fields.'.$key);
+        $textList = static fn (string $name, string $label, int $rows = 2): Repeater => Repeater::make($name)
+            ->label($label)
+            ->schema([Textarea::make('text')->label($field('paragraph_text'))->required()->rows($rows)])
+            ->defaultItems(0)
+            ->reorderable()
+            ->columnSpanFull();
+
+        return [
+            Section::make(__('admin.faculty_workspace.editor.sections.master_overview'))->schema([
+                $textList($prefix.'.payload.overview', $field('body'), 3),
+                Repeater::make($prefix.'.payload.facts')
+                    ->label($field('facts'))
+                    ->schema([
+                        TextInput::make('label')->label($field('label'))->required()->maxLength(120),
+                        TextInput::make('value')->label($field('value'))->required()->maxLength(120),
+                    ])
+                    ->columns(2)
+                    ->defaultItems(0)
+                    ->reorderable()
+                    ->columnSpanFull(),
+                Textarea::make($prefix.'.payload.coding')->label($field('course_coding'))->rows(2)->columnSpanFull(),
+            ])->collapsed(),
+            Section::make(__('admin.faculty_workspace.editor.sections.master_terms'))->description(__('admin.faculty_workspace.editor.help.master_terms'))->schema([
+                Repeater::make($prefix.'.payload.terms')
+                    ->label(__('admin.faculty_workspace.editor.sections.master_terms'))
+                    ->schema([
+                        Hidden::make('id'),
+                        TextInput::make('label')->label($field('semester_label'))->required()->maxLength(120),
+                        TextInput::make('theme')->label($field('semester_theme'))->maxLength(180),
+                        TextInput::make('credits')->label($field('semester_credits'))->helperText($field('semester_credits_help'))->numeric()->minValue(0)->maxValue(200),
+                        TextInput::make('note')->label($field('semester_note'))->maxLength(255),
+                        Repeater::make('courses')
+                            ->label($field('courses'))
+                            ->schema([
+                                Hidden::make('id'),
+                                TextInput::make('code')->label($field('course_code'))->maxLength(20),
+                                TextInput::make('title')->label($field('course_title'))->required()->maxLength(255),
+                                TextInput::make('titleAlt')->label($field('course_title_other'))->maxLength(255),
+                                TextInput::make('credits')->label($field('credit_hours'))->numeric()->minValue(0)->maxValue(60),
+                                TextInput::make('theory')->label($field('theory_hours'))->numeric()->minValue(0)->maxValue(60),
+                                TextInput::make('practical')->label($field('practical_hours'))->numeric()->minValue(0)->maxValue(60),
+                                Toggle::make('elective')->label($field('elective_course'))->inline(false),
+                                TagsInput::make('prerequisites')->label($field('prerequisites'))->columnSpanFull(),
+                                TextInput::make('prerequisiteNote')->label($field('prerequisite_note'))->maxLength(255)->columnSpanFull(),
+                                Textarea::make('description')->label($field('description'))->rows(4)->columnSpanFull(),
+                                $textList('outcomes', $field('course_outcomes')),
+                                Textarea::make('grading')->label($field('grading'))->rows(2)->columnSpanFull(),
+                                KeyValue::make('coverage')
+                                    ->label($field('coverage'))
+                                    ->keyLabel($field('coverage_outcome'))
+                                    ->valueLabel($field('coverage_level'))
+                                    ->columnSpanFull(),
+                            ])
+                            ->itemLabel(static fn (array $state): ?string => trim(($state['code'] ?? '').' '.($state['title'] ?? '')) ?: null)
+                            ->columns(3)
+                            ->defaultItems(0)
+                            ->reorderable()
+                            ->collapsible()
+                            ->collapsed()
+                            ->columnSpanFull(),
+                    ])
+                    ->itemLabel(static fn (array $state): ?string => trim((string) ($state['label'] ?? '')) ?: null)
+                    ->columns(2)
+                    ->defaultItems(0)
+                    ->reorderable()
+                    ->collapsible()
+                    ->columnSpanFull(),
+            ]),
+            Section::make(__('admin.faculty_workspace.editor.sections.master_outcomes'))->schema([
+                Repeater::make($prefix.'.payload.outcomes')
+                    ->label(__('admin.faculty_workspace.editor.sections.master_outcomes'))
+                    ->schema([
+                        TextInput::make('code')->label($field('outcome_code'))->maxLength(20),
+                        TextInput::make('group')->label($field('outcome_group'))->maxLength(120),
+                        Textarea::make('text')->label($field('description'))->required()->rows(2)->columnSpan(2),
+                    ])
+                    ->columns(4)
+                    ->defaultItems(0)
+                    ->reorderable()
+                    ->columnSpanFull(),
+                TextInput::make($prefix.'.payload.coverageLegend')->label($field('coverage_legend'))->maxLength(255)->columnSpanFull(),
+            ])->collapsed(),
+            Section::make(__('admin.faculty_workspace.editor.sections.master_assessment'))->schema([
+                Repeater::make($prefix.'.payload.assessment')
+                    ->label(__('admin.faculty_workspace.editor.sections.master_assessment'))
+                    ->schema([
+                        TextInput::make('type')->label($field('type'))->required()->maxLength(180),
+                        TextInput::make('weight')->label($field('weight'))->maxLength(60),
+                        Textarea::make('description')->label($field('description'))->rows(2)->columnSpanFull(),
+                    ])
+                    ->columns(2)
+                    ->defaultItems(0)
+                    ->reorderable()
+                    ->columnSpanFull(),
+            ])->collapsed(),
+            Section::make(__('admin.faculty_workspace.editor.sections.master_project'))->schema([
+                TextInput::make($prefix.'.payload.projectTitle')->label($field('section_title'))->maxLength(180)->columnSpanFull(),
+                Textarea::make($prefix.'.payload.projectIntro')->label($field('intro'))->rows(3)->columnSpanFull(),
+                $textList($prefix.'.payload.projectRules', $field('rules')),
+            ])->collapsed(),
+            Section::make(__('admin.faculty_workspace.editor.sections.master_admission'))->schema([
+                Textarea::make($prefix.'.payload.admission.intro')->label($field('intro'))->rows(3)->columnSpanFull(),
+                $textList($prefix.'.payload.admission.conditions', $field('admission_conditions'), 1),
+                $textList($prefix.'.payload.admission.majors', $field('majors'), 1),
+                Repeater::make($prefix.'.payload.admission.criteria')
+                    ->label($field('criteria'))
+                    ->schema([
+                        TextInput::make('label')->label($field('label'))->required()->maxLength(180),
+                        TextInput::make('weight')->label($field('weight'))->maxLength(60),
+                        Textarea::make('description')->label($field('description'))->rows(2)->columnSpanFull(),
+                    ])
+                    ->columns(2)
+                    ->defaultItems(0)
+                    ->reorderable()
+                    ->columnSpanFull(),
+                Textarea::make($prefix.'.payload.admission.note')->label($field('note'))->rows(2)->columnSpanFull(),
+                $textList($prefix.'.payload.degreeRequirements', $field('degree_requirements'), 1),
+                Textarea::make($prefix.'.payload.teachingNote')->label($field('teaching_note'))->rows(3)->columnSpanFull(),
+            ])->collapsed(),
+            ...$this->optionalSeoFields($prefix),
+        ];
+    }
+
+    /** @return array<int, Section> */
+    private function pageDocumentsFields(string $prefix): array
+    {
+        return [
+            Section::make(__('admin.faculty_workspace.editor.fields.files'))->schema([
+                Repeater::make($prefix.'.payload.documents')
+                    ->label(__('admin.faculty_workspace.editor.fields.files'))
+                    ->schema([
+                        TextInput::make('label')->label(__('admin.faculty_workspace.editor.fields.action_label'))->maxLength(180),
+                        TextInput::make('url')->label(__('admin.faculty_workspace.editor.fields.file_url'))->required()->maxLength(500)->rule('regex:#^(/|https://)#'),
+                    ])
+                    ->columns(2)
+                    ->defaultItems(0)
+                    ->reorderable()
+                    ->columnSpanFull(),
+            ]),
+        ];
+    }
+
+    /** @return array<int, Section> */
+    private function optionalSeoFields(string $prefix): array
+    {
+        return [
+            Section::make(__('admin.faculty_workspace.editor.sections.seo'))->schema([
+                TextInput::make($prefix.'.seoTitle')->label(__('admin.faculty_workspace.editor.fields.seo_title'))->maxLength(180),
+                Textarea::make($prefix.'.seoDescription')->label(__('admin.faculty_workspace.editor.fields.seo_description'))->rows(2),
+            ])->columns(2)->collapsed(),
+        ];
+    }
+
+    /** @return array<int, Section> */
+    private function overviewSubpageFields(string $prefix): array
+    {
+        return [
+            Section::make(__('admin.faculty_workspace.editor.sections.overview_sections'))->schema([
+                Repeater::make($prefix.'.sections')
+                    ->label(__('admin.faculty_workspace.editor.sections.overview_sections'))
+                    ->schema([
+                        Hidden::make('id')->default(fn (): string => 'section-'.Str::lower(Str::random(8))),
+                        TextInput::make('title')->label(__('admin.faculty_workspace.editor.fields.title'))->maxLength(160),
+                        Textarea::make('body')->label(__('admin.faculty_workspace.editor.fields.body'))->rows(4)->columnSpanFull(),
+                    ])
+                    ->columns(2)
+                    ->defaultItems(0)
+                    ->reorderable()
+                    ->collapsible()
+                    ->columnSpanFull(),
+            ]),
+
+            Section::make(__('admin.faculty_workspace.editor.sections.stats'))->schema([
+                Repeater::make($prefix.'.stats')
+                    ->label(__('admin.faculty_workspace.editor.sections.stats'))
+                    ->schema([
+                        TextInput::make('value')->label(__('admin.faculty_workspace.editor.fields.value'))->maxLength(40),
+                        TextInput::make('label')->label(__('admin.faculty_workspace.editor.fields.label'))->maxLength(120),
+                        MediaPicker::icon('icon', __('admin.faculty_workspace.editor.fields.icon')),
+                    ])
+                    ->columns(3)
+                    ->defaultItems(0)
+                    ->reorderable()
+                    ->collapsible()
+                    ->columnSpanFull(),
+            ]),
+
+            Section::make(__('admin.faculty_workspace.editor.sections.dean_message'))->schema([
+                TextInput::make($prefix.'.dean.nameAr')->label(__('admin.faculty_workspace.editor.fields.dean_name_ar'))->maxLength(160),
+                TextInput::make($prefix.'.dean.nameEn')->label(__('admin.faculty_workspace.editor.fields.dean_name_en'))->maxLength(160),
+                TextInput::make($prefix.'.dean.roleAr')->label(__('admin.faculty_workspace.editor.fields.dean_role_ar'))->maxLength(160),
+                TextInput::make($prefix.'.dean.roleEn')->label(__('admin.faculty_workspace.editor.fields.dean_role_en'))->maxLength(160),
+                MediaPicker::image($prefix.'.dean.image', __('admin.faculty_workspace.editor.fields.dean_image')),
+                Textarea::make($prefix.'.dean.messageAr')->label(__('admin.faculty_workspace.editor.fields.message_ar'))->rows(4),
+                Textarea::make($prefix.'.dean.messageEn')->label(__('admin.faculty_workspace.editor.fields.message_en'))->rows(4),
+            ])->columns(2),
+        ];
+    }
+
+    /** @return array<int, Section> */
+    private function studyPlanSubpageFields(string $prefix): array
+    {
+        return [
+            Section::make(__('admin.faculty_workspace.study_plan.interface_labels'))->schema([
+                TextInput::make($prefix.'.payload.labels.title')->label(__('admin.faculty_workspace.study_plan.labels.title'))->maxLength(160),
+                TextInput::make($prefix.'.payload.labels.home')->label(__('admin.faculty_workspace.study_plan.labels.home'))->maxLength(120),
+                TextInput::make($prefix.'.payload.labels.faculties')->label(__('admin.faculty_workspace.study_plan.labels.faculties'))->maxLength(120),
+                TextInput::make($prefix.'.payload.labels.empty')->label(__('admin.faculty_workspace.study_plan.labels.empty'))->maxLength(160),
+                TextInput::make($prefix.'.payload.labels.electiveRequirements')->label(__('admin.faculty_workspace.study_plan.labels.elective_requirements'))->maxLength(160),
+                TextInput::make($prefix.'.payload.labels.promotionRequirements')->label(__('admin.faculty_workspace.study_plan.labels.promotion_requirements'))->maxLength(160),
+                TextInput::make($prefix.'.payload.labels.viewDetails')->label(__('admin.faculty_workspace.study_plan.labels.course_details'))->maxLength(120),
+                TextInput::make($prefix.'.payload.labels.close')->label(__('admin.faculty_workspace.study_plan.labels.close'))->maxLength(120),
+                TextInput::make($prefix.'.payload.labels.downloadPlan')->label(__('admin.faculty_workspace.study_plan.labels.download_plan'))->maxLength(120),
+            ])->columns(2)->collapsed(),
+
+            Section::make(__('admin.faculty_workspace.study_plan.course_page_labels'))->schema([
+                TextInput::make($prefix.'.payload.courseLabels.studyPlan')->label(__('admin.faculty_workspace.study_plan.labels.study_plan'))->maxLength(160),
+                TextInput::make($prefix.'.payload.courseLabels.coursePage')->label(__('admin.faculty_workspace.study_plan.labels.course_page'))->maxLength(160),
+                TextInput::make($prefix.'.payload.courseLabels.credits')->label(__('admin.faculty_workspace.study_plan.labels.credits'))->maxLength(120),
+                TextInput::make($prefix.'.payload.courseLabels.courseType')->label(__('admin.faculty_workspace.study_plan.labels.course_type'))->maxLength(120),
+                TextInput::make($prefix.'.payload.courseLabels.requiredStatus')->label(__('admin.faculty_workspace.study_plan.labels.required_status'))->maxLength(120),
+                TextInput::make($prefix.'.payload.courseLabels.required')->label(__('admin.faculty_workspace.study_plan.labels.required'))->maxLength(120),
+                TextInput::make($prefix.'.payload.courseLabels.elective')->label(__('admin.faculty_workspace.study_plan.labels.elective'))->maxLength(120),
+                TextInput::make($prefix.'.payload.courseLabels.prerequisites')->label(__('admin.faculty_workspace.study_plan.labels.prerequisites'))->maxLength(120),
+                TextInput::make($prefix.'.payload.courseLabels.opensAfter')->label(__('admin.faculty_workspace.study_plan.labels.opens_after'))->maxLength(120),
+                TextInput::make($prefix.'.payload.courseLabels.lessons')->label(__('admin.faculty_workspace.study_plan.labels.lessons'))->maxLength(120),
+                TextInput::make($prefix.'.payload.courseLabels.all')->label(__('admin.faculty_workspace.study_plan.labels.all_lessons'))->maxLength(120),
+                TextInput::make($prefix.'.payload.courseLabels.viewPdf')->label(__('admin.faculty_workspace.study_plan.labels.view_pdf'))->maxLength(120),
+                TextInput::make($prefix.'.payload.courseLabels.download')->label(__('admin.faculty_workspace.study_plan.labels.download'))->maxLength(120),
+                TextInput::make($prefix.'.payload.courseLabels.specification')->label(__('admin.faculty_workspace.study_plan.labels.specification'))->maxLength(120),
+            ])->columns(2)->collapsed(),
+
+            Section::make(__('admin.faculty_workspace.study_plan.plan_settings'))->schema([
+                TextInput::make($prefix.'.payload.plan.faculty')->label(__('admin.faculty_workspace.study_plan.plan_faculty'))->maxLength(180),
+                MediaPicker::image($prefix.'.payload.plan.heroImage', __('admin.faculty_workspace.study_plan.plan_image')),
+                MediaPicker::pdf($prefix.'.payload.plan.pdfUrl', __('admin.faculty_workspace.study_plan.plan_pdf')),
+                TextInput::make($prefix.'.payload.plan.accent')->label(__('admin.faculty_workspace.study_plan.plan_color'))->maxLength(20),
+            ])->columns(2)->collapsed(),
+
+            Section::make(__('admin.faculty_workspace.study_plan.legend_settings'))->schema([
+                Repeater::make($prefix.'.payload.legend')
+                    ->label(__('admin.faculty_workspace.study_plan.course_type_legend'))
+                    ->schema([
+                        Hidden::make('id')->dehydrated(),
+                        TextInput::make('label')->label(__('admin.faculty_workspace.editor.fields.label'))->required()->maxLength(120),
+                    ])
+                    ->columns(2)
+                    ->defaultItems(0)
+                    ->reorderable()
+                    ->collapsible()
+                    ->columnSpanFull(),
+                Repeater::make($prefix.'.payload.lessonTypes')
+                    ->label(__('admin.faculty_workspace.study_plan.lesson_types_label'))
+                    ->schema([
+                        Hidden::make('id')->dehydrated(),
+                        TextInput::make('label')->label(__('admin.faculty_workspace.editor.fields.label'))->required()->maxLength(120),
+                    ])
+                    ->columns(2)
+                    ->defaultItems(0)
+                    ->reorderable()
+                    ->collapsible()
+                    ->columnSpanFull(),
+            ])->collapsed(),
+        ];
+    }
+
+    /** @return array<int, Section> */
+    private function departmentsSubpageFields(string $prefix): array
+    {
+        return [
+            Section::make(__('admin.faculty_workspace.editor.sections.departments'))->schema([
+                Repeater::make($prefix.'.items')
+                    ->label(__('admin.faculty_workspace.editor.sections.departments'))
+                    ->schema([
+                        Hidden::make('slug')->default(fn (): string => 'department-'.Str::lower(Str::random(8))),
+                        TextInput::make('title')->label(__('admin.faculty_workspace.editor.fields.department_name'))->required()->maxLength(180),
+                        Select::make('type')
+                            ->label(__('admin.faculty_workspace.editor.fields.department_type'))
+                            ->options(fn (): array => __('admin.faculty_workspace.editor.department_types'))
+                            ->default('section')
+                            ->selectablePlaceholder(false)
+                            ->live()
+                            ->helperText(__('admin.faculty_workspace.editor.help.department_type')),
+                        Select::make('headMemberId')
+                            ->label(__('admin.faculty_workspace.editor.fields.department_head'))
+                            ->options(fn (): array => $this->facultyStaffOptions())
+                            ->searchable()
+                            ->live()
+                            ->helperText(__('admin.faculty_workspace.editor.help.department_head')),
+                        TextInput::make('headTitle')
+                            ->label(__('admin.faculty_workspace.editor.fields.department_head_title'))
+                            ->maxLength(180)
+                            ->visible(fn (Get $get): bool => filled($get('headMemberId')))
+                            ->helperText(__('admin.faculty_workspace.editor.help.department_head_title')),
+                        Toggle::make('headOnCouncil')
+                            ->label(__('admin.faculty_workspace.editor.fields.department_head_on_council'))
+                            ->default(true)
+                            ->visible(fn (Get $get): bool => filled($get('headMemberId')))
+                            ->helperText(__('admin.faculty_workspace.editor.help.department_head_on_council')),
+                        TextInput::make('code')->label(__('admin.faculty_workspace.editor.fields.department_code'))->maxLength(40),
+                        Select::make('studyPlanDepartmentId')
+                            ->label(__('admin.faculty_workspace.editor.fields.study_plan_link'))
+                            ->options(fn (): array => $this->departmentStudyPlanOptions())
+                            ->searchable()
+                            ->visible(fn (Get $get): bool => $get('type') === 'specialization')
+                            ->required(fn (Get $get): bool => $get('type') === 'specialization')
+                            ->placeholder(__('admin.faculty_workspace.editor.fields.no_study_plan'))
+                            ->helperText(__('admin.faculty_workspace.editor.help.study_plan_link')),
+                        Textarea::make('summary')->label(__('admin.faculty_workspace.editor.fields.summary'))->rows(3)->columnSpanFull(),
+                        Section::make(__('admin.faculty_workspace.editor.sections.advanced'))->collapsed()->schema([
+                            TextInput::make('degrees')->label(__('admin.faculty_workspace.editor.fields.degree_track'))->maxLength(160),
+                            TagsInput::make('tags')->label(__('admin.faculty_workspace.editor.fields.tags'))->columnSpanFull(),
+                        ]),
+                    ])
+                    ->columns(2)
+                    ->defaultItems(0)
+                    ->reorderable()
+                    ->collapsible()
+                    ->columnSpanFull(),
+            ]),
+        ];
+    }
+
+    /**
+     * Departments for the form. A department saved before it had a type is a specialization when it
+     * links to a study plan program, by its saved link or by its exact name (as the page shows it),
+     * so the editor sees that link and keeps it on save.
+     *
+     * @param  array<string, mixed>  $content
+     * @return array<string, mixed>
+     */
+    private function departmentsContentForForm(array $content, string $locale): array
+    {
+        $items = $this->listOfArrays($content['items'] ?? []);
+        $resolved = $this->studyPlanLinkService->enrichDepartmentItems(static::managedFacultyScope(), $locale, $items);
+
+        $content['items'] = array_map(static function (array $item, array $resolvedItem): array {
+            unset($item['kind']);
+            $type = $item['type'] ?? null;
+
+            if (! in_array($type, ['specialization', 'section'], true)) {
+                $type = $resolvedItem['studyPlanDepartmentId'] !== null ? 'specialization' : 'section';
+            }
+
+            return [
+                ...$item,
+                'type' => $type,
+                'studyPlanDepartmentId' => $type === 'specialization' ? $resolvedItem['studyPlanDepartmentId'] : null,
+                // Saved before the switch existed: the head sits on the council.
+                'headOnCouncil' => ($item['headOnCouncil'] ?? true) !== false,
+            ];
+        }, $items, $resolved);
+
+        return $content;
+    }
+
+    private function isCouncilTarget(string $targetKey): bool
+    {
+        return $this->subpageSlugFromTarget($targetKey) === 'council';
+    }
+
+    /**
+     * The council page editor: positions (dean, vice deans and custom positions) and extra
+     * council members, each one row for both languages, picked from this faculty's staff.
+     */
+    private function councilFields(): Section
+    {
+        $staff = fn (): array => $this->facultyStaffOptions();
+
+        return Section::make(__('admin.faculty_workspace.editor.sections.council'))
+            ->description(__('admin.faculty_workspace.editor.help.council'))
+            ->schema([
+                Repeater::make('council_positions')
+                    ->label(__('admin.faculty_workspace.editor.sections.council_positions'))
+                    ->schema([
+                        Hidden::make('id')->default(fn (): string => 'position-'.Str::lower(Str::random(8))),
+                        Select::make('positionSlug')
+                            ->label(__('admin.faculty_workspace.editor.fields.position'))
+                            ->options(fn (): array => app(FacultyPositionServiceInterface::class)->councilOptions(app()->getLocale() === 'ar' ? 'ar' : 'en'))
+                            ->searchable()
+                            ->required()
+                            ->helperText(__('admin.faculty_workspace.editor.help.position'))
+                            ->createOptionForm($this->positionFormSchema())
+                            ->createOptionUsing(fn (array $data): string => $this->savePosition(null, $data))
+                            ->createOptionModalHeading(__('admin.faculty_workspace.editor.fields.add_position_to_list'))
+                            ->editOptionForm($this->positionFormSchema())
+                            ->fillEditOptionActionFormUsing(fn (Select $component): array => $this->positionFormData($component->getState()))
+                            ->updateOptionUsing(function (array $data, Select $component): void {
+                                $this->savePosition(is_string($component->getState()) ? $component->getState() : null, $data);
+                            })
+                            ->editOptionModalHeading(__('admin.faculty_workspace.editor.fields.edit_position_in_list')),
+                        Select::make('memberId')
+                            ->label(__('admin.faculty_workspace.editor.fields.staff_member'))
+                            ->options($staff)
+                            ->searchable()
+                            ->required(),
+                    ])
+                    ->columns(2)
+                    ->defaultItems(0)
+                    ->reorderable()
+                    ->collapsible()
+                    ->itemLabel(fn (array $state): ?string => $this->councilRowLabel($state))
+                    ->addActionLabel(__('admin.faculty_workspace.editor.fields.add_position'))
+                    ->columnSpanFull(),
+                Toggle::make('council_include_heads')
+                    ->label(__('admin.faculty_workspace.editor.fields.include_department_heads'))
+                    ->helperText(__('admin.faculty_workspace.editor.help.include_department_heads'))
+                    ->default(true),
+            ])
+            ->columnSpanFull();
+    }
+
+    /** @return array<int, Component> */
+    private function positionFormSchema(): array
+    {
+        return [
+            Hidden::make('slug'),
+            TextInput::make('nameAr')->label(__('admin.faculty_workspace.editor.fields.position_name_ar'))->required()->maxLength(180),
+            TextInput::make('nameEn')->label(__('admin.faculty_workspace.editor.fields.position_name_en'))->required()->maxLength(180),
+            Select::make('placement')
+                ->label(__('admin.faculty_workspace.editor.fields.position_placement'))
+                ->options(fn (): array => __('admin.faculty_workspace.editor.position_placements'))
+                ->default('council')
+                ->selectablePlaceholder(false)
+                ->required()
+                ->helperText(__('admin.faculty_workspace.editor.help.position_placement'))
+                // The dean always leads the page.
+                ->visible(fn (Get $get): bool => $get('slug') !== FacultyPositionServiceInterface::DEAN),
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    private function positionFormData(mixed $slug): array
+    {
+        $position = is_string($slug) ? app(FacultyPositionServiceInterface::class)->find($slug) : null;
+
+        return $position === null ? [] : [
+            'slug' => $position->slug,
+            'nameAr' => $position->nameAr,
+            'nameEn' => $position->nameEn,
+            'placement' => $position->placement,
+        ];
+    }
+
+    /**
+     * Adds a position to the shared list, or renames and places one, and returns its slug.
+     * A refused name keeps the dialog open with the reason.
+     *
+     * @param  array<string, mixed>  $data
+     */
+    private function savePosition(?string $slug, array $data): string
+    {
+        try {
+            return app(FacultyPositionServiceInterface::class)->save(
+                $slug,
+                (string) ($data['nameAr'] ?? ''),
+                (string) ($data['nameEn'] ?? ''),
+                (string) ($data['placement'] ?? 'council'),
+                $this->currentTargetKeyForSchema(),
+                $this->authenticatedUserId(),
+            )->slug;
+        } catch (ValidationException $exception) {
+            Notification::make()
+                ->danger()
+                ->title(collect($exception->errors())->flatten()->first() ?? __('admin.faculty_workspace.editor.position_errors.name_required'))
+                ->send();
+
+            throw new Halt;
+        }
+    }
+
+    /** @param array<string, mixed> $state */
+    private function councilRowLabel(array $state): ?string
+    {
+        $slug = is_string($state['positionSlug'] ?? null) ? $state['positionSlug'] : '';
+        $found = $slug !== '' ? app(FacultyPositionServiceInterface::class)->find($slug) : null;
+        $position = $found === null ? null : (app()->getLocale() === 'ar' ? $found->nameAr : $found->nameEn);
+        $memberId = is_numeric($state['memberId'] ?? null) ? (int) $state['memberId'] : 0;
+        $name = $memberId > 0 ? ($this->facultyStaffOptions()[$memberId] ?? null) : null;
+
+        return trim(implode(' · ', array_filter([$position, $name]))) ?: null;
+    }
+
+    /**
+     * The council editor's rows: one per position, the same in both languages. A page saved
+     * before the positions list loads its dean and vice deans as those positions; its other
+     * positions and extra members load with their person and an empty position to pick.
+     *
+     * @param  array<string, mixed>  $payload
+     * @return array<string, mixed>
+     */
+    private function councilStateForForm(string $targetKey, array $payload): array
+    {
+        if (! $this->isCouncilTarget($targetKey)) {
+            return ['council_positions' => [], 'council_include_heads' => true];
+        }
+
+        $ar = is_array($payload['translations']['ar'] ?? null) ? $payload['translations']['ar'] : [];
+        $rows = [];
+
+        foreach ([...$this->listOfArrays($ar['positions'] ?? []), ...$this->listOfArrays($ar['councilMembers'] ?? [])] as $position) {
+            $id = (string) ($position['id'] ?? '');
+            $slug = trim((string) ($position['positionSlug'] ?? ''));
+            $type = $position['type'] ?? null;
+
+            if ($slug === '' && in_array($type, [FacultyPositionServiceInterface::DEAN, FacultyPositionServiceInterface::VICE_DEAN], true)) {
+                $slug = $type;
+            }
+
+            $rows[] = [
+                'id' => $id !== '' ? $id : 'position-'.Str::lower(Str::random(8)),
+                'positionSlug' => $slug !== '' ? $slug : null,
+                'memberId' => is_numeric($position['memberId'] ?? null) ? (int) $position['memberId'] : null,
+            ];
+        }
+
+        return [
+            'council_positions' => $rows,
+            'council_include_heads' => ($ar['includeDepartmentHeads'] ?? true) !== false,
+        ];
+    }
+
+    /**
+     * The council editor's rows as the Arabic and English content, which are the same:
+     * a position's name comes from the positions list in each language.
+     *
+     * @param  array<string, mixed>  $state
+     * @return array{0: array<string, mixed>, 1: array<string, mixed>}
+     */
+    private function councilContentFromForm(array $state): array
+    {
+        $content = [
+            'positions' => array_values(array_map(static fn (array $position): array => [
+                'id' => (string) ($position['id'] ?? ''),
+                'positionSlug' => is_string($position['positionSlug'] ?? null) ? $position['positionSlug'] : null,
+                'memberId' => is_numeric($position['memberId'] ?? null) ? (int) $position['memberId'] : null,
+            ], $this->listOfArrays($state['council_positions'] ?? []))),
+            'includeDepartmentHeads' => ($state['council_include_heads'] ?? true) !== false,
+        ];
+
+        return [$content, $content];
+    }
+
+    /**
+     * Faculty profiles for the project supervisor picker: this faculty's first, then the others
+     * (a project may be supervised from another faculty).
+     *
+     * @return array<string, array<int, string>>
+     */
+    private function supervisorOptions(): array
+    {
+        if ($this->supervisorCache !== null) {
+            return $this->supervisorCache;
+        }
+
+        try {
+            $options = app(ProfileAdminServiceInterface::class)->teacherOptions($this->facultyScope, $this->authenticatedUserId());
+        } catch (AuthorizationException) {
+            return $this->supervisorCache = [];
+        }
+
+        return $this->supervisorCache = array_filter([
+            __('admin.faculty_workspace.editor.fields.this_faculty') => $options['faculty'],
+            __('admin.faculty_workspace.editor.fields.other_faculties') => $options['other'],
+        ]);
+    }
+
+    /**
+     * This faculty's academic staff, for the department head, position and council pickers.
+     * Staff of other faculties are not offered (the server refuses them too).
+     *
+     * @return array<int, string>
+     */
+    private function facultyStaffOptions(): array
+    {
+        if ($this->facultyStaffCache !== null) {
+            return $this->facultyStaffCache;
+        }
+
+        try {
+            $options = app(ProfileAdminServiceInterface::class)->teacherOptions($this->facultyScope, $this->authenticatedUserId());
+        } catch (AuthorizationException) {
+            return $this->facultyStaffCache = [];
+        }
+
+        return $this->facultyStaffCache = $options['faculty'];
+    }
+
+    /** @return array<int, Section> */
+    private function labsSubpageFields(string $prefix): array
+    {
+        return [
+            Section::make(__('admin.faculty_workspace.editor.sections.labs'))->schema([
+                Repeater::make($prefix.'.items')
+                    ->label(__('admin.faculty_workspace.editor.sections.labs'))
+                    ->schema([
+                        Hidden::make('slug')->default(fn (): string => 'lab-'.Str::lower(Str::random(8))),
+                        TextInput::make('title')->label(__('admin.faculty_workspace.editor.fields.lab_name'))->required()->maxLength(180),
+                        TextInput::make('department')->label(__('admin.faculty_workspace.editor.fields.department'))->maxLength(160),
+                        TextInput::make('instructor')->label(__('admin.faculty_workspace.editor.fields.instructor'))->maxLength(160),
+                        MediaPicker::image('image', __('admin.faculty_workspace.editor.fields.image')),
+                        Textarea::make('summary')->label(__('admin.faculty_workspace.editor.fields.summary'))->rows(3)->columnSpanFull(),
+                    ])
+                    ->columns(2)
+                    ->defaultItems(0)
+                    ->reorderable()
+                    ->collapsible()
+                    ->columnSpanFull(),
+            ]),
+        ];
+    }
+
+    /** @return array<int, Section> */
+    private function projectsSubpageFields(string $prefix): array
+    {
+        return [
+            Section::make(__('admin.faculty_workspace.editor.sections.projects'))->schema([
+                Repeater::make($prefix.'.items')
+                    ->label(__('admin.faculty_workspace.editor.sections.projects'))
+                    ->schema([
+                        Hidden::make('_cmsKey')->dehydrated(),
+                        Hidden::make('slug')->default(fn (): string => 'project-'.Str::lower(Str::random(8))),
+                        Hidden::make('detailRoute'),
+                        TextInput::make('title')->label(__('admin.faculty_workspace.editor.fields.project_name'))->required()->maxLength(180),
+                        TextInput::make('tag')->label(__('admin.faculty_workspace.editor.fields.category'))->maxLength(120),
+                        TextInput::make('team')->label(__('admin.faculty_workspace.editor.fields.team'))->maxLength(180),
+                        Select::make('supervisorMemberIds')
+                            ->label(__('admin.faculty_workspace.editor.fields.supervisors'))
+                            ->multiple()
+                            ->options(fn (): array => $this->supervisorOptions())
+                            ->searchable()
+                            ->helperText(__('admin.faculty_workspace.editor.help.project_supervisors'))
+                            ->columnSpanFull(),
+                        // Imported projects name a supervisor as plain text. It shows only
+                        // while no profile is picked, and the field only while it has text.
+                        TextInput::make('supervisor')
+                            ->label(__('admin.faculty_workspace.editor.fields.supervisor_text'))
+                            ->helperText(__('admin.faculty_workspace.editor.help.supervisor_text'))
+                            ->maxLength(180)
+                            ->visible(fn (mixed $state): bool => is_string($state) && trim($state) !== ''),
+                        TextInput::make('academicYear')->label(__('admin.faculty_workspace.editor.fields.academic_year'))->maxLength(40),
+                        TextInput::make('status')->label(__('admin.faculty_workspace.editor.fields.status'))->maxLength(80),
+                        MediaPicker::image('image', __('admin.faculty_workspace.editor.fields.image')),
+                        Textarea::make('summary')->label(__('admin.faculty_workspace.editor.fields.summary'))->rows(3)->columnSpanFull(),
+                        Repeater::make('longDescription')
+                            ->label(__('admin.faculty_workspace.editor.fields.long_description'))
+                            ->schema([
+                                Textarea::make('paragraph')->label(__('admin.faculty_workspace.editor.fields.paragraph'))->required()->rows(3)->columnSpanFull(),
+                            ])
+                            ->defaultItems(0)
+                            ->reorderable()
+                            ->collapsible()
+                            ->columnSpanFull(),
+                        Repeater::make('gallery')
+                            ->label(__('admin.faculty_workspace.editor.fields.gallery_images'))
+                            ->schema([
+                                MediaPicker::image('image', __('admin.faculty_workspace.editor.fields.image'), true),
+                            ])
+                            ->defaultItems(0)
+                            ->reorderable()
+                            ->collapsible()
+                            ->columnSpanFull(),
+                        TagsInput::make('technologies')->label(__('admin.faculty_workspace.editor.fields.technologies'))->separator(',')->columnSpanFull(),
+                        Repeater::make('teamMembers')
+                            ->label(__('admin.faculty_workspace.editor.fields.team_members'))
+                            ->schema([
+                                TextInput::make('name')->label(__('admin.faculty_workspace.editor.fields.member_name'))->required()->maxLength(180),
+                                TextInput::make('role')->label(__('admin.faculty_workspace.editor.fields.member_role'))->required()->maxLength(120),
+                            ])
+                            ->columns(2)
+                            ->defaultItems(0)
+                            ->reorderable()
+                            ->collapsible()
+                            ->columnSpanFull(),
+                        Repeater::make('documents')
+                            ->label(__('admin.faculty_workspace.editor.fields.documents'))
+                            ->schema([
+                                TextInput::make('label')->label(__('admin.faculty_workspace.editor.fields.document_label'))->required()->maxLength(180),
+                                MediaPicker::document('file', __('admin.faculty_workspace.editor.fields.document_file')),
+                            ])
+                            ->columns(2)
+                            ->defaultItems(0)
+                            ->reorderable()
+                            ->collapsible()
+                            ->columnSpanFull(),
+                    ])
+                    ->columns(2)
+                    ->defaultItems(0)
+                    ->reorderable()
+                    ->collapsible()
+                    ->columnSpanFull(),
+            ]),
+        ];
+    }
+
+    /** @return array<int, Section> */
+    private function alumniSubpageFields(string $prefix): array
+    {
+        return [];
+    }
+
+    /** @return array<int, Section> */
+    private function valedictoriansSubpageFields(string $prefix): array
+    {
+        return [
+            Section::make(__('admin.faculty_workspace.editor.sections.honor_students'))->schema([
+                Textarea::make($prefix.'.payload.quote')
+                    ->label(__('admin.faculty_workspace.editor.fields.honor_quote'))
+                    ->rows(2)
+                    ->columnSpanFull(),
+            ]),
+        ];
+    }
+
+    /** @return array<int, Section> */
+    private function researchSubpageFields(string $prefix): array
+    {
+        return [
+            Section::make(__('admin.faculty_workspace.editor.sections.research_settings'))->schema([
+                TextInput::make($prefix.'.emptyTitle')->label(__('admin.faculty_workspace.editor.fields.empty_title'))->maxLength(180),
+                Textarea::make($prefix.'.emptySummary')->label(__('admin.faculty_workspace.editor.fields.empty_summary'))->rows(2)->columnSpanFull(),
+                TextInput::make($prefix.'.seoTitle')->label(__('admin.faculty_workspace.editor.fields.seo_title'))->required()->maxLength(180),
+                Textarea::make($prefix.'.seoDescription')->label(__('admin.faculty_workspace.editor.fields.seo_description'))->required()->rows(2)->columnSpanFull(),
+                MediaPicker::image($prefix.'.seoImage', __('admin.faculty_workspace.editor.fields.seo_image')),
+            ])->columns(2)->collapsed(),
+        ];
+    }
+
+    /**
+     * Picks are the same in both languages, since publication slugs are shared.
+     * Content saved before the picker existed offers its old manual cards that
+     * point at a publication, which is what the public page shows for it.
+     *
+     * @param  array<string, mixed>  $payload
+     * @return array<int, array{publication_slug: string}>
+     */
+    private function selectedResearchForForm(array $payload): array
+    {
+        $content = is_array($payload['translations']['ar'] ?? null) ? $payload['translations']['ar'] : [];
+        $values = array_key_exists('selectedResearchSlugs', $content)
+            ? $content['selectedResearchSlugs']
+            : array_map(static fn (mixed $item): mixed => is_array($item) ? ($item['slug'] ?? null) : null, $this->listOfArrays($content['latestResearch'] ?? []));
+
+        return array_map(
+            static fn (string $slug): array => ['publication_slug' => $slug],
+            $this->researchSlugList($values),
+        );
+    }
+
+    /** @param array<string, mixed> $state @return array<int, string> */
+    private function selectedResearchFromForm(array $state): array
+    {
+        return $this->researchSlugList(array_map(
+            static fn (mixed $item): mixed => is_array($item) ? ($item['publication_slug'] ?? null) : null,
+            $this->listOfArrays($state['selected_research'] ?? []),
+        ));
+    }
+
+    /** @return array<int, string> */
+    private function researchSlugList(mixed $values): array
+    {
+        return array_slice(array_values(array_unique(array_filter(
+            is_array($values) ? $values : [],
+            static fn (mixed $slug): bool => is_string($slug) && preg_match('/^[A-Za-z0-9-]+$/', $slug) === 1,
+        ))), 0, self::SELECTED_RESEARCH_LIMIT);
+    }
+
+    /**
+     * Shows editors the line the page prints under the logo until they save
+     * their own, so saving another field does not silently hide it.
+     *
+     * @param  array<string, mixed>  $content
+     * @return array<string, mixed>
+     */
+    private function withLogoSubtitleDefault(array $content, string $englishName): array
+    {
+        $faculty = is_array($content['faculty'] ?? null) ? $content['faculty'] : [];
+
+        if (! array_key_exists('logoSubtitle', $faculty)) {
+            $faculty['logoSubtitle'] = FacultyLogoSubtitle::fromEnglishName($englishName);
+            $content['faculty'] = $faculty;
+        }
+
+        return $content;
+    }
+
+    /** @return array<string, mixed> */
+    private function normalizeContent(array $content): array
+    {
+        $content['faculty'] = is_array($content['faculty'] ?? null) ? $content['faculty'] : [];
+        $content['tabs'] = $this->listOfArrays($content['tabs'] ?? []);
+        $content['dean'] = is_array($content['dean'] ?? null) ? $content['dean'] : [];
+        $content['gallery'] = $this->listOfArrays($content['gallery'] ?? []);
+        $content['stats'] = $this->listOfArrays($content['stats'] ?? []);
+        $content['latestResearch'] = $this->listOfArrays($content['latestResearch'] ?? []);
+
+        return $content;
+    }
+
+    /** @return array<string, mixed> */
+    private function contentForForm(string $targetKey, array $content, string $locale): array
+    {
+        $subpageSlug = $this->subpageSlugFromTarget($targetKey);
+
+        if ($this->hasFilterableRecords($targetKey)) {
+            return $this->filterableRecordContentForForm($targetKey, $content);
+        }
+
+        if ($subpageSlug === 'departments') {
+            return $this->departmentsContentForForm($content, $locale);
+        }
+
+        if ($subpageSlug !== 'study-plan') {
+            if ($subpageSlug === 'projects') {
+                $content['items'] = array_map(function (array $item): array {
+                    $item['longDescription'] = collect(is_array($item['longDescription'] ?? null) ? $item['longDescription'] : [])
+                        ->map(static fn (mixed $paragraph): array => [
+                            'paragraph' => is_array($paragraph)
+                                ? (string) ($paragraph['paragraph'] ?? $paragraph['body'] ?? '')
+                                : (string) $paragraph,
+                        ])
+                        ->filter(static fn (array $paragraph): bool => $paragraph['paragraph'] !== '')
+                        ->values()
+                        ->all();
+                    $item['gallery'] = collect(is_array($item['gallery'] ?? null) ? $item['gallery'] : [])
+                        ->map(static fn (mixed $image): array => ['image' => is_array($image) ? (string) ($image['image'] ?? '') : (string) $image])
+                        ->filter(static fn (array $image): bool => $image['image'] !== '')
+                        ->values()
+                        ->all();
+                    $item['teamMembers'] = $this->listOfArrays($item['teamMembers'] ?? []);
+                    $item['documents'] = collect(is_array($item['documents'] ?? null) ? $item['documents'] : [])
+                        ->map(static fn (mixed $doc): array => [
+                            'label' => is_array($doc) ? (string) ($doc['label'] ?? '') : '',
+                            'file' => is_array($doc) ? (string) ($doc['file'] ?? '') : '',
+                        ])
+                        ->filter(static fn (array $doc): bool => $doc['label'] !== '' && $doc['file'] !== '')
+                        ->values()
+                        ->all();
+
+                    return $item;
+                }, $this->listOfArrays($content['items'] ?? []));
+
+                // A faculty has up to ~120 projects, each a nested form. Rendering
+                // them all built a 14-35 MB page and exhausted the 128 MB PHP limit
+                // (HTTP 500), so only the projects matching the search are loaded.
+                // Saving merges them back by key; the others are kept untouched.
+                // Matching is done across both locales (see matchingItemKeys), so
+                // a project found by its English title also opens in Arabic.
+                $content['items'] = $this->hasActiveRecordFilters()
+                    ? array_values(array_filter(
+                        $this->recordItemsWithKeys($content['items']),
+                        fn (array $item): bool => in_array((string) ($item['_cmsKey'] ?? ''), $this->searchedItemKeys, true),
+                    ))
+                    : [];
+            }
+
+            return $content;
+        }
+
+        $payload = is_array($content['payload'] ?? null) ? $content['payload'] : [];
+        $plan = is_array($payload['plan'] ?? null) ? $payload['plan'] : [];
+        unset($plan['departments'], $plan['terms'], $plan['courses'], $plan['lessons'], $plan['electivePools'], $plan['promotionRequirements']);
+        $payload['plan'] = $plan;
+        $payload['lessonTypes'] = $this->lessonTypesForForm($payload['lessonTypes'] ?? []);
+        $content['payload'] = $payload;
+
+        return $content;
+    }
+
+    /** @return array<string, mixed> */
+    private function filterableRecordContentForForm(string $targetKey, array $content): array
+    {
+        $items = $this->recordItemsWithKeys($this->listOfArrays($content['items'] ?? []));
+
+        if (! $this->hasActiveRecordFilters()) {
+            $content['items'] = [];
+
+            return $content;
+        }
+
+        $content['items'] = array_values(array_filter($items, fn (array $item): bool => $this->recordMatchesFilters($targetKey, $item)));
+
+        return $content;
+    }
+
+    /** @param array<string, mixed> $payload @return array<int, array<string, mixed>> */
+    private function studentRecordsForForm(string $targetKey, array $payload): array
+    {
+        if (! $this->hasActiveRecordFilters()) {
+            return [];
+        }
+
+        $arItems = $this->recordItemsWithKeys($this->listOfArrays($payload['translations']['ar']['items'] ?? []));
+        $enItems = $this->recordItemsWithKeys($this->listOfArrays($payload['translations']['en']['items'] ?? []));
+        $arByKey = collect($arItems)->keyBy(fn (array $item): string => (string) ($item['_cmsKey'] ?? ''));
+        $records = [];
+        $processedIndexes = [];
+
+        foreach (array_values($enItems) as $index => $enItem) {
+            $key = (string) ($enItem['_cmsKey'] ?? 'record-position-'.$index);
+            $arItem = $arByKey->get($key);
+
+            if (! is_array($arItem)) {
+                $arItem = $arItems[$index] ?? [];
+            }
+
+            if (! $this->studentRecordMatchesFilters($targetKey, $enItem, $arItem)) {
+                continue;
+            }
+
+            $records[] = $this->studentRecordForForm($enItem, $arItem, $key);
+            $processedIndexes[$index] = true;
+        }
+
+        foreach (array_values($arItems) as $index => $arItem) {
+            if (isset($processedIndexes[$index])) {
+                continue;
+            }
+
+            $enItem = $enItems[$index] ?? [];
+            $key = (string) ($enItem['_cmsKey'] ?? $arItem['_cmsKey'] ?? 'record-position-'.$index);
+
+            if ($this->studentRecordMatchesFilters($targetKey, $enItem, $arItem)) {
+                $records[] = $this->studentRecordForForm($enItem, $arItem, $key);
+            }
+        }
+
+        return $this->deduplicateStudentRecords($records);
+    }
+
+    /** @param array<string, mixed> $enItem @param array<string, mixed> $arItem @return array<string, mixed> */
+    private function studentRecordForForm(array $enItem, array $arItem, string $key): array
+    {
+        $record = [
+            '_cmsKey' => $key,
+            'id' => $enItem['id'] ?? ($arItem['id'] ?? null),
+            'titleEn' => $this->studentPairValue($enItem, $arItem, 'title'),
+            'titleAr' => $this->studentPairValue($arItem, $enItem, 'title'),
+            'image' => $this->studentPairValue($enItem, $arItem, 'image'),
+            'semester' => $this->studentPairValue($enItem, $arItem, 'semester'),
+            'semesterAr' => $this->studentPairValue($arItem, $enItem, 'semester'),
+            'department' => $this->studentPairValue($enItem, $arItem, 'department'),
+            'departmentAr' => $this->studentPairValue($arItem, $enItem, 'department'),
+            'faculty' => $this->studentPairValue($enItem, $arItem, 'faculty'),
+            'facultyAr' => $this->studentPairValue($arItem, $enItem, 'faculty'),
+            'degree' => $this->studentPairValue($enItem, $arItem, 'degree'),
+            'degreeAr' => $this->studentPairValue($arItem, $enItem, 'degree'),
+            'academicPhase' => $this->studentPairValue($enItem, $arItem, 'academicPhase'),
+            'academicPhaseAr' => $this->studentPairValue($arItem, $enItem, 'academicPhase'),
+            'isMemorial' => $this->studentPairValue($enItem, $arItem, 'isMemorial'),
+        ];
+        $record['_originalTitleEn'] = $record['titleEn'];
+        $record['_originalTitleAr'] = $record['titleAr'];
+
+        foreach (['graduationYear', 'academicYear', 'gpa'] as $keyName) {
+            if (array_key_exists($keyName, $enItem) || array_key_exists($keyName, $arItem)) {
+                $record[$keyName] = $this->studentPairValue($enItem, $arItem, $keyName);
+            }
+        }
+
+        return $record;
+    }
+
+    /** @param array<string, mixed> $primary @param array<string, mixed> $fallback */
+    private function studentPairValue(array $primary, array $fallback, string $key): mixed
+    {
+        return ($primary[$key] ?? null) !== null && ($primary[$key] ?? '') !== ''
+            ? $primary[$key]
+            : ($fallback[$key] ?? null);
+    }
+
+    /** @param array<string, mixed> $enItem @param array<string, mixed> $arItem */
+    private function studentRecordMatchesFilters(string $targetKey, array $enItem, array $arItem): bool
+    {
+        return $this->recordMatchesFilters($targetKey, $enItem)
+            || $this->recordMatchesFilters($targetKey, $arItem);
+    }
+
+    /** @param array<string, mixed> $state @return array{0: array<int, array<string, mixed>>, 1: array<int, array<string, mixed>>, 2: array<int, string>} */
+    private function studentItemsFromForm(array $state): array
+    {
+        $records = $this->deduplicateStudentRecords($this->listOfArrays($state['student_records'] ?? []));
+        $records = $this->studentRecordsWithKeys($records);
+        $visibleKeys = array_values(array_filter(
+            array_map(static fn (mixed $key): string => is_scalar($key) ? (string) $key : '', is_array($state['student_record_keys'] ?? null) ? $state['student_record_keys'] : []),
+            static fn (string $key): bool => $key !== '',
+        ));
+
+        if ($records === [] && ! $this->hasActiveRecordFilters()) {
+            return [
+                $this->assignNewRecordKeys($this->listOfArrays($state['ar_content']['items'] ?? [])),
+                $this->assignNewRecordKeys($this->listOfArrays($state['en_content']['items'] ?? [])),
+                [],
+            ];
+        }
+
+        if ($visibleKeys === [] && $records !== []) {
+            $records = $this->recordItemsWithKeys($records);
+            $visibleKeys = array_values(array_filter(array_map(
+                static fn (array $item): string => (string) ($item['_cmsKey'] ?? ''),
+                $records,
+            )));
+        }
+
+        $legacyEnItems = $this->recordItemsWithKeys($this->listOfArrays($state['en_content']['items'] ?? []));
+        $legacyArItems = $this->recordItemsWithKeys($this->listOfArrays($state['ar_content']['items'] ?? []));
+        $legacyEnByKey = collect($legacyEnItems)->keyBy(fn (array $item): string => (string) ($item['_cmsKey'] ?? ''));
+        $legacyArByKey = collect($legacyArItems)->keyBy(fn (array $item): string => (string) ($item['_cmsKey'] ?? ''));
+
+        foreach ($records as &$record) {
+            $key = (string) ($record['_cmsKey'] ?? '');
+            $legacyEn = $legacyEnByKey->get($key);
+            $legacyAr = $legacyArByKey->get($key);
+
+            if (is_array($legacyEn)) {
+                $originalTitle = (string) ($record['_originalTitleEn'] ?? $record['titleEn'] ?? '');
+                if ((string) ($record['titleEn'] ?? '') === $originalTitle && array_key_exists('title', $legacyEn)) {
+                    $record['titleEn'] = $legacyEn['title'];
+                }
+            }
+
+            if (is_array($legacyAr)) {
+                $originalTitle = (string) ($record['_originalTitleAr'] ?? $record['titleAr'] ?? '');
+                if ((string) ($record['titleAr'] ?? '') === $originalTitle && array_key_exists('title', $legacyAr)) {
+                    $record['titleAr'] = $legacyAr['title'];
+                }
+                foreach (['semester', 'department', 'faculty', 'degree', 'academicPhase'] as $field) {
+                    if (array_key_exists($field, $legacyAr)) {
+                        $record[$field.'Ar'] = $legacyAr[$field];
+                    }
+                }
+            }
+
+            if (is_array($legacyEn) && is_array($legacyAr)) {
+                $record['image'] = $this->studentPairValue($legacyEn, $legacyAr, 'image');
+            }
+        }
+        unset($record);
+
+        return [
+            $this->studentItemsForLocale($records, 'ar'),
+            $this->studentItemsForLocale($records, 'en'),
+            $visibleKeys,
+        ];
+    }
+
+    /** @param array<int, array<string, mixed>> $records @return array<int, array<string, mixed>> */
+    private function studentItemsForLocale(array $records, string $locale): array
+    {
+        $items = [];
+        $localizedSuffix = $locale === 'ar' ? 'Ar' : 'En';
+
+        foreach ($records as $record) {
+            $item = [
+                '_cmsKey' => (string) ($record['_cmsKey'] ?? ''),
+                'title' => (string) ($record['title'.$localizedSuffix] ?? ''),
+                'image' => $record['image'] ?? null,
+                'isMemorial' => $record['isMemorial'] ?? false,
+            ];
+
+            if (array_key_exists('id', $record) && $record['id'] !== null && $record['id'] !== '') {
+                $item['id'] = $record['id'];
+            }
+
+            foreach (['graduationYear', 'academicYear', 'gpa'] as $key) {
+                if (array_key_exists($key, $record)) {
+                    $item[$key] = $record[$key];
+                }
+            }
+
+            foreach (['semester', 'department', 'faculty', 'degree', 'academicPhase'] as $key) {
+                $localizedKey = $locale === 'ar' ? $key.'Ar' : $key;
+
+                if (array_key_exists($localizedKey, $record)) {
+                    $item[$key] = $record[$localizedKey];
+                }
+            }
+
+            $items[] = $item;
+        }
+
+        return $this->recordItemsWithKeys($items);
+    }
+
+    /** @return array<string, mixed> */
+    private function normalizeSubpageContent(string $targetKey, string $locale, array $content): array
+    {
+        $content['sections'] = $this->listOfArrays($content['sections'] ?? []);
+        $subpageSlug = $this->subpageSlugFromTarget($targetKey);
+
+        if ($subpageSlug === 'overview') {
+            $content['stats'] = $this->listOfArrays($content['stats'] ?? []);
+            $content['dean'] = is_array($content['dean'] ?? null) ? $content['dean'] : [];
+            unset($content['items']);
+
+            return $content;
+        }
+
+        if ($subpageSlug === 'study-plan') {
+            $content['payload'] = is_array($content['payload'] ?? null) ? $content['payload'] : [];
+            $content['payload']['plan'] = is_array($content['payload']['plan'] ?? null) ? $content['payload']['plan'] : [];
+            $content['payload']['labels'] = is_array($content['payload']['labels'] ?? null) ? $content['payload']['labels'] : [];
+            $content['payload']['courseLabels'] = is_array($content['payload']['courseLabels'] ?? null) ? $content['payload']['courseLabels'] : [];
+            $content['payload']['legend'] = $this->listOfArrays($content['payload']['legend'] ?? []);
+            $content['payload']['lessonTypes'] = $this->keyedItemsById($content['payload']['lessonTypes'] ?? []);
+            $content = $this->mergeStudyPlanDepartmentContent($targetKey, $locale, $content);
+            unset($content['items'], $content['stats'], $content['dean']);
+
+            return $content;
+        }
+
+        if ($subpageSlug === 'research' || $subpageSlug === 'members') {
+            unset($content['items'], $content['stats'], $content['dean']);
+
+            return $content;
+        }
+
+        if ($subpageSlug === 'master-program') {
+            $content['payload'] = app(FacultyMasterProgramServiceInterface::class)->normalizePayload(is_array($content['payload'] ?? null) ? $content['payload'] : []);
+            unset($content['items'], $content['stats'], $content['dean']);
+
+            return $content;
+        }
+
+        if ($subpageSlug === 'council') {
+            $content['positions'] = $this->listOfArrays($content['positions'] ?? []);
+            // Extra members became positions; a page saved before keeps none apart.
+            unset($content['councilMembers']);
+            $content['includeDepartmentHeads'] = ($content['includeDepartmentHeads'] ?? true) !== false;
+            unset($content['items'], $content['stats'], $content['dean']);
+
+            return $content;
+        }
+
+        $filteredRecordKeys = is_array($content['_filteredRecordKeys'] ?? null)
+            ? array_values(array_filter(array_map('strval', $content['_filteredRecordKeys']), static fn (string $key): bool => $key !== ''))
+            : null;
+        unset($content['_filteredRecordKeys']);
+        $content['items'] = $this->listOfArrays($content['items'] ?? []);
+        $content['items'] = array_map(function (array $item) use ($subpageSlug): array {
+            if ($subpageSlug === 'departments') {
+                $item['tags'] = array_values(array_filter(is_array($item['tags'] ?? null) ? $item['tags'] : []));
+                $item['headMemberId'] = is_numeric($item['headMemberId'] ?? null) && (int) $item['headMemberId'] > 0 ? (int) $item['headMemberId'] : null;
+                // A department saved before these existed keeps the default title and sits on the council.
+                $item['headTitle'] = $item['headMemberId'] !== null ? trim((string) ($item['headTitle'] ?? '')) : '';
+                $item['headOnCouncil'] = ($item['headOnCouncil'] ?? true) !== false;
+                $item['type'] = ($item['type'] ?? null) === 'specialization' ? 'specialization' : 'section';
+                // A section has no study plan.
+                $item['studyPlanDepartmentId'] = $item['type'] === 'specialization' && trim((string) ($item['studyPlanDepartmentId'] ?? '')) !== ''
+                    ? trim((string) $item['studyPlanDepartmentId'])
+                    : null;
+                unset($item['kind']);
+            }
+
+            if ($subpageSlug === 'projects') {
+                $item['supervisorMemberIds'] = array_values(array_unique(array_map('intval', array_filter(
+                    is_array($item['supervisorMemberIds'] ?? null) ? $item['supervisorMemberIds'] : [],
+                    static fn (mixed $id): bool => is_numeric($id) && (int) $id > 0,
+                ))));
+                $item['longDescription'] = collect($this->listOfArrays($item['longDescription'] ?? []))
+                    ->map(static fn (array $paragraph): string => (string) ($paragraph['paragraph'] ?? $paragraph['body'] ?? ''))
+                    ->filter()
+                    ->values()
+                    ->all();
+                $item['gallery'] = collect(is_array($item['gallery'] ?? null) ? $item['gallery'] : [])
+                    ->map(static fn (mixed $image): string => is_array($image) ? (string) ($image['image'] ?? '') : (string) $image)
+                    ->filter()
+                    ->values()
+                    ->all();
+                $item['technologies'] = array_values(array_filter(is_array($item['technologies'] ?? null) ? $item['technologies'] : [], static fn (mixed $technology): bool => is_string($technology) && trim($technology) !== ''));
+                $item['teamMembers'] = collect($this->listOfArrays($item['teamMembers'] ?? []))
+                    ->map(static fn (array $member): array => [
+                        'name' => (string) ($member['name'] ?? ''),
+                        'role' => (string) ($member['role'] ?? ''),
+                    ])
+                    ->filter(static fn (array $member): bool => $member['name'] !== '')
+                    ->values()
+                    ->all();
+            }
+
+            return $item;
+        }, $content['items']);
+
+        if ($this->usesRecordFilters($targetKey)) {
+            $content = $this->mergeFilterableRecordContent($targetKey, $locale, $content, $filteredRecordKeys);
+        }
+
+        $content['items'] = array_map(fn (array $item): array => $this->withoutKeys($item, ['_cmsKey']), $content['items']);
+        unset($content['stats'], $content['dean']);
+
+        // The departments page once had a separate specializations list; it is gone.
+        if ($subpageSlug === 'departments') {
+            unset($content['specializations']);
+        }
+
+        return $content;
+    }
+
+    /** @return array<string, mixed> */
+    private function currentFormData(): array
+    {
+        return is_array($this->data) ? $this->data : [];
+    }
+
+    private function authenticatedUserId(): int
+    {
+        $userId = auth()->id();
+
+        if (! is_int($userId) && ! is_string($userId)) {
+            throw new AuthorizationException('An authenticated CMS user is required.');
+        }
+
+        return (int) $userId;
+    }
+
+    private function currentTargetKey(): string
+    {
+        $targetKey = (string) ($this->data['target_key'] ?? $this->defaultTargetKey());
+        $this->assertManagedTarget($targetKey);
+
+        return $targetKey;
+    }
+
+    private function currentTargetKeyForSchema(): string
+    {
+        if (is_string($this->activeTargetKey) && $this->activeTargetKey !== '') {
+            return $this->activeTargetKey;
+        }
+
+        return is_string($this->data['target_key'] ?? null) && $this->data['target_key'] !== ''
+            ? $this->data['target_key']
+            : $this->defaultTargetKey();
+    }
+
+    private function assertManagedTarget(string $targetKey): void
+    {
+        if (! array_key_exists($targetKey, $this->targetOptions())) {
+            throw new \InvalidArgumentException('Unsupported faculty CMS target.');
+        }
+    }
+
+    private function subpageSlugFromTarget(string $targetKey): string
+    {
+        $parts = explode('.', $targetKey);
+        $slug = (string) ($parts[2] ?? '');
+
+        return $slug === 'study_plan' ? 'study-plan' : $slug;
+    }
+
+    private function hasFilterableRecords(string $targetKey): bool
+    {
+        return in_array($this->subpageSlugFromTarget($targetKey), ['alumni', 'valedictorians'], true);
+    }
+
+    /** Targets whose per-locale item lists are edited as a searched subset (no paired student form). */
+    private function hasSearchableItems(string $targetKey): bool
+    {
+        return $this->subpageSlugFromTarget($targetKey) === 'projects';
+    }
+
+    private function usesRecordFilters(string $targetKey): bool
+    {
+        return $this->hasFilterableRecords($targetKey) || $this->hasSearchableItems($targetKey);
+    }
+
+    /**
+     * Keys of the items whose Arabic or English version matches the active filters.
+     *
+     * @param  array<string, mixed>  $payload
+     * @return list<string>
+     */
+    private function matchingItemKeys(string $targetKey, array $payload): array
+    {
+        if (! $this->hasActiveRecordFilters()) {
+            return [];
+        }
+
+        $keys = [];
+
+        foreach (['ar', 'en'] as $locale) {
+            $items = $this->recordItemsWithKeys($this->listOfArrays($payload['translations'][$locale]['items'] ?? []));
+
+            foreach ($items as $item) {
+                if ($this->recordMatchesFilters($targetKey, $item)) {
+                    $keys[] = (string) $item['_cmsKey'];
+                }
+            }
+        }
+
+        return array_values(array_unique($keys));
+    }
+
+    private function hasActiveRecordFilters(): bool
+    {
+        return trim((string) ($this->data['record_search'] ?? '')) !== ''
+            || (trim((string) ($this->data['record_department_filter'] ?? '')) !== '' && ! $this->hasSearchableItems($this->currentTargetKeyForSchema()))
+            || trim((string) ($this->data['record_year_filter'] ?? '')) !== '';
+    }
+
+    /** @param array<string, mixed> $item */
+    private function recordMatchesFilters(string $targetKey, array $item): bool
+    {
+        $search = trim((string) ($this->data['record_search'] ?? ''));
+        $department = trim((string) ($this->data['record_department_filter'] ?? ''));
+        $year = trim((string) ($this->data['record_year_filter'] ?? ''));
+        $yearKey = $this->subpageSlugFromTarget($targetKey) === 'alumni' ? 'graduationYear' : 'academicYear';
+
+        if ($search !== '' && ! Str::contains(Str::lower($this->recordSearchText($item)), Str::lower($search))) {
+            return false;
+        }
+
+        // Projects have no department field and the department filter is hidden for them.
+        if ($department !== '' && ! $this->hasSearchableItems($targetKey) && ! Str::contains(Str::lower((string) ($item['department'] ?? '').' '.(string) ($item['faculty'] ?? '')), Str::lower($department))) {
+            return false;
+        }
+
+        if ($year !== '' && ! Str::contains(Str::lower((string) ($item[$yearKey] ?? '')), Str::lower($year))) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /** @param array<string, mixed> $item */
+    private function recordSearchText(array $item): string
+    {
+        return implode(' ', array_map('strval', array_filter([
+            $item['title'] ?? null,
+            $item['tag'] ?? null,
+            $item['team'] ?? null,
+            $item['supervisor'] ?? null,
+            $item['graduationYear'] ?? null,
+            $item['academicYear'] ?? null,
+            $item['semester'] ?? null,
+            $item['department'] ?? null,
+            $item['faculty'] ?? null,
+            $item['degree'] ?? null,
+            $item['academicPhase'] ?? null,
+            $item['gpa'] ?? null,
+        ], static fn (mixed $value): bool => $value !== null && $value !== '')));
+    }
+
+    /** @param array<int, array<string, mixed>> $items @return array<int, array<string, mixed>> */
+    private function recordItemsWithKeys(array $items): array
+    {
+        return array_map(function (array $item, int $index): array {
+            $existingKey = $item['_cmsKey'] ?? null;
+            $item['_cmsKey'] = is_scalar($existingKey) && (string) $existingKey !== ''
+                ? (string) $existingKey
+                : (isset($item['id']) && is_scalar($item['id']) && (string) $item['id'] !== ''
+                    ? 'record-id-'.(string) $item['id']
+                    : (isset($item['slug']) && is_scalar($item['slug']) && (string) $item['slug'] !== ''
+                        ? 'record-slug-'.(string) $item['slug']
+                        : 'record-position-'.$index));
+
+            return $item;
+        }, $items, array_keys($items));
+    }
+
+    /** @param array<int, array<string, mixed>> $items @return array<int, array<string, mixed>> */
+    private function pairLocaleItems(array $items): array
+    {
+        $items = $this->recordItemsWithKeys($items);
+        $seen = [];
+
+        return array_values(array_filter($items, static function (array $item) use (&$seen): bool {
+            $key = (string) ($item['_cmsKey'] ?? '');
+
+            if ($key === '' || isset($seen[$key])) {
+                return false;
+            }
+
+            $seen[$key] = true;
+
+            return true;
+        }));
+    }
+
+    /** @param array<int, array<string, mixed>> $records @return array<int, array<string, mixed>> */
+    private function deduplicateStudentRecords(array $records): array
+    {
+        $seen = [];
+
+        return array_values(array_filter($records, function (array $record) use (&$seen): bool {
+            $signature = json_encode([
+                isset($record['id']) && is_scalar($record['id']) ? (string) $record['id'] : null,
+                $record['titleEn'] ?? null,
+                $record['titleAr'] ?? null,
+                $record['academicYear'] ?? $record['graduationYear'] ?? null,
+                $record['semester'] ?? null,
+                $record['semesterAr'] ?? null,
+                $record['department'] ?? null,
+                $record['departmentAr'] ?? null,
+                $record['faculty'] ?? null,
+                $record['facultyAr'] ?? null,
+                $record['degree'] ?? null,
+                $record['degreeAr'] ?? null,
+                $record['academicPhase'] ?? null,
+                $record['academicPhaseAr'] ?? null,
+                $record['gpa'] ?? null,
+                $record['image'] ?? null,
+            ]);
+
+            if (! is_string($signature) || isset($seen[$signature])) {
+                return false;
+            }
+
+            $seen[$signature] = true;
+
+            return true;
+        }));
+    }
+
+    /** @param array<string, mixed> $content @param array<int, string>|null $visibleKeys @return array<string, mixed> */
+    private function mergeFilterableRecordContent(string $targetKey, string $locale, array $content, ?array $visibleKeys = null): array
+    {
+        $basePayload = $this->cmsWorkflowService->latestEditableDraftPayload($targetKey, $this->authenticatedUserId()) ?? $this->facultyPageService->getEditablePayload($targetKey);
+        $baseContent = is_array($basePayload['translations'][$locale] ?? null) ? $basePayload['translations'][$locale] : [];
+        $baseItems = $this->deduplicateLocaleItems($this->recordItemsWithKeys($this->listOfArrays($baseContent['items'] ?? [])));
+        $editedItems = $this->recordItemsWithKeys($this->assignNewRecordKeys($this->listOfArrays($content['items'] ?? [])));
+
+        if (! $this->hasActiveRecordFilters()) {
+            $editedByKey = collect($editedItems)->keyBy(fn (array $item): string => (string) ($item['_cmsKey'] ?? ''));
+            $seenKeys = [];
+            $content['items'] = array_values(array_map(function (array $baseItem) use ($editedByKey, &$seenKeys): array {
+                $key = (string) ($baseItem['_cmsKey'] ?? '');
+                $seenKeys[] = $key;
+
+                return $editedByKey->get($key) ?? $baseItem;
+            }, $baseItems));
+
+            foreach ($editedItems as $editedItem) {
+                $key = (string) ($editedItem['_cmsKey'] ?? '');
+
+                if ($key === '' || in_array($key, $seenKeys, true)) {
+                    continue;
+                }
+
+                $content['items'][] = $editedItem;
+                $seenKeys[] = $key;
+            }
+
+            return $content;
+        }
+
+        $editedByKey = collect($editedItems)->keyBy(fn (array $item): string => (string) ($item['_cmsKey'] ?? ''));
+        $seenKeys = [];
+
+        $content['items'] = array_values(array_filter(array_map(function (array $baseItem) use ($targetKey, $editedByKey, $visibleKeys, &$seenKeys): ?array {
+            $key = (string) ($baseItem['_cmsKey'] ?? '');
+            $isVisible = is_array($visibleKeys)
+                ? in_array($key, $visibleKeys, true)
+                : $this->recordMatchesFilters($targetKey, $baseItem);
+
+            if ($isVisible) {
+                $seenKeys[] = $key;
+
+                $editedItem = $editedByKey->get($key);
+
+                if (is_array($editedItem)) {
+                    return $editedItem;
+                }
+
+                return null;
+            }
+
+            return $baseItem;
+        }, $baseItems), static fn (?array $item): bool => is_array($item)));
+
+        foreach ($editedItems as $editedItem) {
+            $key = (string) ($editedItem['_cmsKey'] ?? '');
+
+            if ($key !== '' && in_array($key, $seenKeys, true)) {
+                continue;
+            }
+
+            $content['items'][] = $editedItem;
+        }
+
+        return $content;
+    }
+
+    /** @param array<int, array<string, mixed>> $records @return array<int, array<string, mixed>> */
+    private function studentRecordsWithKeys(array $records): array
+    {
+        return array_map(function (array $record): array {
+            if (is_scalar($record['_cmsKey'] ?? null) && (string) $record['_cmsKey'] !== '') {
+                return $record;
+            }
+
+            $record['_cmsKey'] = isset($record['id']) && is_scalar($record['id']) && (string) $record['id'] !== ''
+                ? 'record-id-'.(string) $record['id']
+                : 'record-new-'.substr(hash('sha256', (string) json_encode([
+                    $record['titleEn'] ?? null,
+                    $record['titleAr'] ?? null,
+                    $record['academicYear'] ?? $record['graduationYear'] ?? null,
+                    $record['semester'] ?? null,
+                    $record['semesterAr'] ?? null,
+                    $record['department'] ?? null,
+                    $record['departmentAr'] ?? null,
+                    $record['faculty'] ?? null,
+                    $record['facultyAr'] ?? null,
+                    $record['degree'] ?? null,
+                    $record['degreeAr'] ?? null,
+                    $record['academicPhase'] ?? null,
+                    $record['academicPhaseAr'] ?? null,
+                    $record['gpa'] ?? null,
+                    $record['image'] ?? null,
+                ])), 0, 20);
+
+            return $record;
+        }, $records);
+    }
+
+    /** @param array<int, array<string, mixed>> $items @return array<int, array<string, mixed>> */
+    private function deduplicateLocaleItems(array $items): array
+    {
+        $seen = [];
+
+        return array_values(array_filter($items, function (array $item) use (&$seen): bool {
+            $signature = json_encode($this->withoutKeys($item, ['_cmsKey']), JSON_UNESCAPED_UNICODE);
+
+            if (! is_string($signature) || isset($seen[$signature])) {
+                return false;
+            }
+
+            $seen[$signature] = true;
+
+            return true;
+        }));
+    }
+
+    /** @param array<int, array<string, mixed>> $items @return array<int, array<string, mixed>> */
+    private function assignNewRecordKeys(array $items): array
+    {
+        return array_map(function (array $item): array {
+            if (isset($item['_cmsKey']) || (isset($item['id']) && is_scalar($item['id']) && (string) $item['id'] !== '')) {
+                return $item;
+            }
+
+            $item['_cmsKey'] = 'record-new-'.substr(hash('sha256', (string) json_encode($item)), 0, 20);
+
+            return $item;
+        }, $items);
+    }
+
+    /**
+     * Resolve the Study Plan department options that should be presented per department row in the
+     * departments subpage editor. They are loaded from the matching faculty's study_plan target draft
+     * or published payload, regardless of the current departments subpage being edited.
+     *
+     * @return array<string, string> Map of study-plan department tab id => bilingual label.
+     */
+    private function departmentStudyPlanOptionsFromTarget(string $targetKey): array
+    {
+        if ($this->subpageSlugFromTarget($targetKey) !== 'departments') {
+            return [];
+        }
+
+        return $this->studyPlanLinkService->optionsForDepartmentsTarget($targetKey);
+    }
+
+    /** @return array<string, string> */
+    private function departmentStudyPlanOptions(): array
+    {
+        return is_array($this->data['department_study_plan_options'] ?? null) ? $this->data['department_study_plan_options'] : [];
+    }
+
+    /** @param array<string, mixed> $content @return array<string, mixed> */
+    private function mergeStudyPlanDepartmentContent(string $targetKey, string $locale, array $content): array
+    {
+        $basePayload = $this->cmsWorkflowService->latestEditableDraftPayload($targetKey, $this->authenticatedUserId()) ?? $this->facultyPageService->getEditablePayload($targetKey);
+        $baseContent = is_array($basePayload['translations'][$locale] ?? null) ? $basePayload['translations'][$locale] : [];
+        $baseContent['payload'] = is_array($baseContent['payload'] ?? null) ? $baseContent['payload'] : [];
+        $baseContent['payload']['plan'] = is_array($baseContent['payload']['plan'] ?? null) ? $baseContent['payload']['plan'] : [];
+        $editedPayload = is_array($content['payload'] ?? null) ? $content['payload'] : [];
+        $editedPlan = is_array($editedPayload['plan'] ?? null) ? $editedPayload['plan'] : [];
+
+        foreach (['faculty', 'heroImage', 'accent'] as $key) {
+            if (array_key_exists($key, $editedPlan)) {
+                $baseContent['payload']['plan'][$key] = $editedPlan[$key];
+            }
+        }
+
+        foreach (['labels', 'courseLabels', 'legend', 'lessonTypes'] as $key) {
+            if (array_key_exists($key, $editedPayload)) {
+                $baseContent['payload'][$key] = $editedPayload[$key];
+            }
+        }
+
+        foreach (['title', 'summary', 'body', 'heroImage', 'sections'] as $key) {
+            if (array_key_exists($key, $content)) {
+                $baseContent[$key] = $content[$key];
+            }
+        }
+
+        return $baseContent;
+    }
+
+    /** @return array<string, array<string, mixed>> */
+    private function keyedItemsById(mixed $items): array
+    {
+        if (! is_array($items)) {
+            return [];
+        }
+
+        $keyed = [];
+
+        foreach ($items as $key => $item) {
+            if (is_array($item)) {
+                $id = (string) ($item['id'] ?? $key);
+                unset($item['id']);
+                $keyed[$id] = $item;
+            }
+        }
+
+        return $keyed;
+    }
+
+    /** @return array<int, array<string, mixed>> */
+    private function lessonTypesForForm(mixed $items): array
+    {
+        if (! is_array($items)) {
+            return [];
+        }
+
+        $rows = [];
+
+        foreach ($items as $key => $item) {
+            if (is_array($item)) {
+                $rows[] = ['id' => (string) ($item['id'] ?? $key), ...$item];
+            }
+        }
+
+        return $rows;
+    }
+
+    /** @param array<string, mixed> $item @param array<int, string> $keys @return array<string, mixed> */
+    private function withoutKeys(array $item, array $keys): array
+    {
+        foreach ($keys as $key) {
+            unset($item[$key]);
+        }
+
+        return $item;
+    }
+
+    /** @return array<int, array<string, mixed>> */
+    private function listOfArrays(mixed $items): array
+    {
+        return array_values(array_filter(is_array($items) ? $items : [], static fn (mixed $item): bool => is_array($item)));
+    }
+
+    /** @param array<string, array<int, string>> $errors */
+    private function formatValidationErrors(array $errors): string
+    {
+        return collect($errors)->flatten()->implode(PHP_EOL);
+    }
+}

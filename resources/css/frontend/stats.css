@@ -1,0 +1,277 @@
+/**
+ * Homepage institutional facts section.
+ */
+
+@layer components {
+    .stats-section {
+        margin-top: -12rem;
+        padding-bottom: 3rem;
+    }
+
+
+
+    /* .stats-shell::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background:
+            radial-gradient(circle at top left, rgba(104,54,149,0.06) 0%, rgba(104,54,149,0) 26%),
+            radial-gradient(circle at bottom right, rgba(43,125,179,0.05) 0%, rgba(43,125,179,0) 24%);
+        pointer-events: none;
+    } */
+
+    .stats-shell__intro {
+        position: relative;
+        z-index: 1;
+        display: grid;
+        gap: 1rem;
+        padding-bottom: 1.25rem;
+    }
+
+    .stats-shell__eyebrow {
+        color: #4d5575;
+        font-size: 0.8rem;
+        font-weight: 800;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+    }
+
+    .stats-shell__title {
+        max-width: 17ch;
+        color: #202759;
+        font-size: clamp(1.9rem, 3vw, 2.7rem);
+        font-weight: 700;
+        line-height: 1.14;
+        letter-spacing: -0.035em;
+        text-wrap: balance;
+    }
+
+    .stats-shell__copy {
+        max-width: 44rem;
+        color: #4d5575;
+        font-size: 1rem;
+        line-height: 1.8;
+    }
+
+    .stats-shell__grid {
+        position: relative;
+        z-index: 1;
+        display: grid;
+        /* Default: single column (mobile-first, <800px) */
+        grid-template-columns: minmax(0, 1fr);
+        gap: 1rem;
+    }
+
+    .stats-card {
+        --card-accent: #caa949;
+        /* The same gold, darkened until it reaches 4.5:1 on white — the value
+           App\Support\AccessibleColor::onLight('#caa949') returns, which is
+           what the faculty accents go through. The accent itself stays for the
+           rule beneath the card, where contrast does not apply. */
+        --card-accent-text: #887231;
+        position: relative;
+        container-type: inline-size;
+        display: flex;
+        flex-direction: column;
+        min-height: 14.5rem;
+        border: 1px solid #eee;
+        border-radius: 1.65rem;
+        background: white;
+        box-shadow: 1px 7px 6px 2px #eeeeeed0;
+        padding: 1.35rem;
+        transition: transform 0.32s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.32s ease, box-shadow 0.32s ease, background-color 0.32s ease;
+    }
+
+    @supports (container-type: inline-size) {
+        .stats-card {
+            min-height: clamp(14.5rem, 78cqw, 17.5rem);
+            padding: clamp(1.35rem, 9cqw, 2rem);
+        }
+    }
+
+    .stats-card__top {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        position: absolute;
+        top: 25px;
+        right: 32px;
+    }
+
+    .stats-icon-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 3.5rem;
+        height: 3.5rem;
+        border-radius: 1rem;
+        border: 1px solid rgba(32, 39, 89, 0.12);
+        background: linear-gradient(180deg, #2a346d 0%, #202759 100%);
+        box-shadow: 0 10px 22px rgba(16, 24, 59, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+    }
+
+    .stats-icon-badge img {
+        width: 1.9rem;
+        height: 1.9rem;
+        object-fit: contain;
+        opacity: 0.98;
+    }
+
+    /* Award icon uses currentColor in SVG; as <img> it renders dark — invert for contrast on navy badge. */
+    .stats-icon-badge img[src$='icon-award-outline.svg'] {
+        filter: brightness(0) invert(1);
+    }
+
+    .stats-card__eyebrow {
+        color: #4d5575;
+        font-size: 0.72rem;
+        font-weight: 800;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        white-space: nowrap;
+    }
+
+    .stats-card__body {
+        display: flex;
+        flex: 1;
+        flex-direction: column;
+    }
+
+    .stats-card__value-row {
+        display: flex;
+        align-items: flex-end;
+        gap: 0.18rem;
+        direction: ltr;
+    }
+
+    .stats-card-plus {
+        color: var(--card-accent-text, var(--card-accent));
+        font-size: clamp(1.3rem, 0.85vw + 0.95rem, 1.65rem);
+        font-weight: 800;
+        line-height: 1;
+    }
+
+    .stats-card-value {
+        display: block;
+        color: #202759;
+        font-size: clamp(2.35rem, 18cqw, 4.2rem);
+        font-weight: 700;
+        line-height: 0.94;
+        letter-spacing: -0.05em;
+    }
+
+    .stats-card-label {
+        margin-top: 0.85rem;
+        color: #202759;
+        font-size: clamp(1rem, 6cqw, 1.45rem);
+        font-weight: 700;
+        line-height: 1.25;
+    }
+
+    .stats-card-summary {
+        margin-top: 0.75rem;
+        color: #4d5575;
+        font-size: clamp(0.82rem, 4.2cqw, 0.95rem);
+        line-height: 1.75;
+    }
+
+    .stats-card-line {
+        display: block;
+        width: 4rem;
+        height: 4px;
+        margin-top: 10px;
+        border-radius: 9999px;
+        background: linear-gradient(90deg, var(--card-accent) 0%, rgba(32, 39, 89, 0.08) 100%);
+        transition: width 0.32s ease, opacity 0.32s ease;
+    }
+
+    @media (hover: hover) {
+        .stats-card:hover {
+            transform: translateY(-6px);
+            border-color: rgba(32, 39, 89, 0.12);
+            box-shadow: 0 18px 36px rgba(11, 19, 50, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.95);
+
+        }
+
+        .stats-card:hover .stats-card-line {
+            width: 5.4rem;
+        }
+    }
+
+    .stats-card:focus-visible {
+        outline: none;
+        box-shadow: 0 0 0 4px rgba(32, 39, 89, 0.12), 0 18px 36px rgba(11, 19, 50, 0.08);
+    }
+
+
+
+    @media (min-width: 768px) {
+        .stats-shell {
+            padding: 1.75rem;
+        }
+    }
+
+    /* 800px–1023px (tablet): 2×2 grid for 3 or 4 stat boxes */
+    @media (min-width: 800px) {
+
+        .stats-shell__grid.stats-grid-cols-2,
+        .stats-shell__grid.stats-grid-cols-3,
+        .stats-shell__grid.stats-grid-cols-4 {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+    }
+
+    /* 1024px (laptop) and above: all boxes in one row */
+    @media (min-width: 1024px) {
+        .stats-shell__grid.stats-grid-cols-2 {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .stats-shell__grid.stats-grid-cols-3 {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+
+        .stats-shell__grid.stats-grid-cols-4 {
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+        }
+    }
+
+    @media (min-width: 1280px) {
+        .stats-shell {
+            padding: 2rem;
+        }
+
+        .stats-shell__intro {
+            grid-template-columns: minmax(0, 1fr) minmax(0, 0.95fr);
+            align-items: end;
+            gap: 2rem;
+        }
+
+    }
+
+    @media (max-width: 799px) {
+        .stats-section {
+            margin-top: -4rem;
+            padding-bottom: 2.5rem;
+        }
+    }
+
+    /* 800px–1023px (tablet): hero reserves only ~8–10rem bottom space,
+       so the default -12rem pull covers the hero content. Reduce the
+       overlap to keep the stat boxes clear of the hero text/buttons. */
+    @media (min-width: 800px) and (max-width: 1023px) {
+        .stats-section {
+            margin-top: -6rem;
+        }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+
+        .stats-card,
+        .stats-icon-badge,
+        .stats-card-line {
+            transition: none;
+        }
+    }
+}

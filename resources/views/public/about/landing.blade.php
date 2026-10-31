@@ -1,0 +1,115 @@
+@extends('layouts.public')
+
+@section('content')
+    <div class="bg-white font-hacen text-spu-blue">
+        <section id="about-dynamic-section" class="relative overflow-x-hidden bg-white py-24 font-hacen">
+            <div class="container relative z-10 mt-14">
+                <span class="sr-only">{{ $locale === 'ar' ? 'الرئيسية' : 'Home' }}</span>
+
+                <div class="flex flex-col items-start justify-between gap-10 text-start lg:flex-row">
+                    <h1 class="mb-5 w-full min-w-0 text-5xl font-black uppercase tracking-tighter text-spu-blue md:text-7xl">{{ $about->title }}</h1>
+                </div>
+
+                <div class="grid grid-cols-1 gap-4 lg:grid-cols-12">
+                    <div class="reveal-left relative z-20 flex flex-col justify-center gap-6 overflow-visible lg:col-span-5">
+                        <div class="relative mx-auto w-full overflow-visible">
+                            <div class="relative z-10 h-[411px] w-full max-w-[448px] overflow-hidden shadow-xl">
+                                <img src="{{ $about->imagePrimary }}" class="h-full w-full object-cover" alt="">
+                                <div class="overlay absolute inset-0 bg-spu-blue/40"></div>
+                            </div>
+
+                            <div class="relative z-10 mt-6 h-[411px] w-full max-w-[448px] overflow-hidden shadow-xl">
+                                <img src="{{ $about->imageSecondary }}" class="h-full w-full object-cover" alt="">
+                                <div class="overlay absolute inset-0 bg-spu-blue/40"></div>
+                            </div>
+
+                            <div class="pointer-events-none absolute top-[67px] left-[20%] right-[20%] z-40 h-[700px] w-[211px] border-[5px] border-white/60" aria-hidden="true"></div>
+                        </div>
+
+                        <div dir="{{ $direction }}" class="absolute top-1/2 left-1/2 z-50 hidden h-[276px] w-[min(100%-1rem,24.75rem)] -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-sm border-[6px] border-white bg-spu-blue p-10 text-center text-white shadow-2xl md:flex lg:left-[calc(100%-6.5rem)] lg:rtl:left-[6.5rem] xl:left-[calc(100%-7.5rem)] xl:rtl:left-[7.5rem]">
+                            <p class="text-2xl font-bold leading-tight">{{ $about->badge }}</p>
+                        </div>
+                    </div>
+
+                    <div class="reveal-right relative z-10 flex flex-col justify-center lg:col-span-7">
+                        <div class="mb-12 lg:ps-12">
+                            <p class="w-full text-[30px] font-bold leading-[100%] text-[#1B1B1F]">{{ $about->headline }}</p>
+                        </div>
+
+                        <div class="space-y-0 lg:ps-12">
+                            @foreach ($about->storyItems as $index => $item)
+                                <div class="px-10 py-12 transition-all duration-500 {{ $index % 2 === 0 ? 'bg-section' : 'bg-white' }}">
+                                    <h2 class="mb-4 flex items-center gap-3 text-2xl font-bold text-spu-blue">{{ $item['title'] ?? '' }}</h2>
+                                    <x-public.rich-text class="max-w-2xl text-[17px] leading-relaxed text-slate-600" :text="$item['summary'] ?? ''" />
+                                </div>
+                            @endforeach
+                        </div>
+
+                        <div class="grid grid-cols-1 gap-6 bg-section py-4 sm:grid-cols-2 lg:ps-12">
+                            @foreach ($about->highlights as $highlight)
+                                <div class="flex items-start gap-3">
+                                    <img src="/images/icon-check-circle-outline.svg" class="mt-1 h-5 w-5" alt="" aria-hidden="true">
+                                    <div>
+                                        <h3 class="card-title font-bold text-spu-blue" dir="auto">{{ $highlight['title'] ?? '' }}</h3>
+                                        @if (! empty($highlight['summary']))<x-public.rich-text class="text-sm text-slate-500" :text="$highlight['summary']" />@endif
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                        <a href="/{{ $locale }}/about/vision-mission" class="mt-8 inline-flex items-center gap-2 font-black text-spu-red underline decoration-2 underline-offset-4">{{ $locale === 'ar' ? 'استكشف الرؤية والرسالة' : 'Explore Vision & Mission' }}</a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="relative mt-20 bg-spu-blue text-white shadow-2xl">
+                <div class="container">
+                    @php($_statsCount = count($about->stats))
+                    @php($_statsCols = $_statsCount >= 4 ? 'cms-grid-stats-cols-4' : ($_statsCount === 3 ? 'cms-grid-stats-cols-3' : ($_statsCount === 2 ? 'cms-grid-stats-cols-2' : '')))
+                    <div class="cms-grid-stats {{ $_statsCols }} relative z-10 gap-0">
+                        @foreach ($about->stats as $stat)
+                            <div class="group py-8 text-center">
+                                @if (! empty($stat['icon']))
+                                    <img src="{{ $stat['icon'] }}" class="mx-auto mb-6 h-8 w-8 brightness-0 invert transition-all duration-300" alt="">
+                                @endif
+                                <div class="mb-3 flex items-center justify-center text-6xl font-normal tracking-tighter">
+                                    <span translate="no">{{ $stat['value'] ?? '' }}</span>
+                                </div>
+                                <p class="text-xs font-bold uppercase tracking-[0.2em] text-[#799DD6]">{{ $stat['label'] ?? '' }}</p>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+            </div>
+
+            <div class="container relative z-10">
+                <div class="relative mt-32 overflow-hidden">
+                    <div class="flex flex-col items-center justify-between gap-24 lg:flex-row lg:gap-20">
+                        <div class="reveal-left relative w-full lg:w-1/2">
+                            <div class="relative h-[400px] overflow-hidden rounded-3xl md:h-[500px]">
+                                <img src="{{ $about->imageOverview }}" class="h-full w-full object-cover transition-transform duration-1000" alt="{{ $about->title }}">
+                                <div class="absolute inset-0 bg-gradient-to-t from-spu-blue/60 via-transparent to-transparent"></div>
+                            </div>
+                        </div>
+
+                        <div class="reveal-right w-full text-start lg:w-1/2">
+                            <div class="mb-6 inline-flex items-center gap-3">
+                                <div class="h-[2px] w-12 bg-spu-red"></div>
+                                <img src="/images/icon-award-outline.svg" class="h-5 w-5 text-spu-red" alt="" aria-hidden="true">
+                                <span class="text-sm font-black uppercase tracking-widest text-spu-red">{{ $about->badge }}</span>
+                            </div>
+
+                            <h2 class="mb-8 text-3xl font-bold leading-tight text-spu-blue md:text-4xl">{{ $about->headline }}</h2>
+                            <div class="space-y-6">
+                                <p class="border-s-4 border-spu-blue/10 ps-6 text-xl leading-relaxed text-slate-600">{{ $about->quote }}</p>
+                                <x-public.rich-text class="text-lg leading-relaxed text-slate-500" :text="$about->description" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        @php($aboutNavigationCards = $about->subPages)
+        @include('public.about.partials.navigation-section', ['locale' => $locale])
+    </div>
+@endsection

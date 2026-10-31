@@ -1,0 +1,164 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Contracts\Research;
+
+use App\DTOs\Content\ResearchCardDTO;
+use App\DTOs\News\NewsEventDTO;
+use App\DTOs\Research\ResearchConferenceRegistrationDTO;
+use App\DTOs\Research\ResearchDetailPageDTO;
+use App\DTOs\Research\ResearchPageDTO;
+use Illuminate\Support\Collection;
+
+interface ResearchPageServiceInterface
+{
+    public function landing(string $locale): ResearchPageDTO;
+
+    /** @param array<string, mixed> $filters */
+    public function repository(string $locale, array $filters = []): ResearchPageDTO;
+
+    /** @param array<string, mixed> $filters */
+    public function publications(string $locale, array $filters = []): ResearchPageDTO;
+
+    /** Number of publications listed on the public publications page. */
+    public function publicationCount(string $locale): int;
+
+    public function facultyPublications(string $facultySlug, string $locale): ResearchPageDTO;
+
+    /**
+     * The publications a faculty page features: published ones picked by slug
+     * first, in the order given, then the faculty's newest to fill the rest.
+     * Picks that are unpublished or deleted are skipped.
+     *
+     * @param  array<int, string>  $selectedSlugs
+     */
+    public function facultyFeaturedPublications(string $facultySlug, string $locale, array $selectedSlugs = [], int $limit = 3): ResearchPageDTO;
+
+    public function publication(string $locale, string $slug): ?ResearchDetailPageDTO;
+
+    /**
+     * The files of database publications as the detail page links them (main
+     * file, extra files, old-site files), keyed by publication id. Hidden and
+     * draft publications are included, for checking them in the admin.
+     *
+     * @param  list<int>  $publicationIds
+     * @return array<int, list<array{label: string, url: string, type: string}>>
+     */
+    public function publicationFiles(array $publicationIds, string $locale): array;
+
+    /**
+     * The detail page of a database publication as its draft payload would
+     * publish it, built without writing anything.
+     *
+     * @param  array<string, mixed>  $payload
+     */
+    public function buildPreviewDatabasePublication(string $locale, array $payload): ?ResearchDetailPageDTO;
+
+    /** @param array<int, string> $publicationSlugs @return Collection<int, ResearchCardDTO> */
+    public function getHomepagePublicationCards(string $locale, array $publicationSlugs = [], ?string $search = null, int $limit = 50): Collection;
+
+    /** @return array<string, mixed> */
+    public function getEditablePayload(string $targetKey): array;
+
+    /** @param array<string, mixed> $content */
+    public function buildPreviewPublications(string $locale, array $content): ResearchPageDTO;
+
+    /** @param array<string, mixed> $content */
+    public function buildPreviewExperts(string $locale, array $content): ResearchPageDTO;
+
+    public function centers(string $locale): ResearchPageDTO;
+
+    public function center(string $locale, string $slug): ?ResearchDetailPageDTO;
+
+    /** @param array<string, mixed> $content */
+    public function buildPreviewCenter(string $locale, array $content, string $slug): ?ResearchDetailPageDTO;
+
+    /** @param array<string, mixed> $filters */
+    public function projects(string $locale, array $filters = []): ResearchPageDTO;
+
+    public function project(string $locale, string $slug): ?ResearchDetailPageDTO;
+
+    /** @param array<string, mixed> $content @param array<string, mixed> $filters */
+    public function buildPreviewProjects(string $locale, array $content, array $filters = []): ResearchPageDTO;
+
+    /** @param array<string, mixed> $content */
+    public function buildPreviewProject(string $locale, array $content, string $slug): ?ResearchDetailPageDTO;
+
+    public function themes(string $locale): ResearchPageDTO;
+
+    public function theme(string $locale, string $slug): ?ResearchDetailPageDTO;
+
+    /** @param array<string, mixed> $content */
+    public function buildPreviewTheme(string $locale, array $content, string $slug): ?ResearchDetailPageDTO;
+
+    /** @param array<string, mixed> $filters */
+    public function researchers(string $locale, array $filters = []): ResearchPageDTO;
+
+    public function researcher(string $locale, string $slug): ?ResearchDetailPageDTO;
+
+    /**
+     * The page of a researcher from the research office's register
+     * ("name-r12"). When they are linked to a public staff profile, the page's
+     * data carries 'redirectTo', that profile's address.
+     */
+    public function registeredResearcher(string $locale, string $slug): ?ResearchDetailPageDTO;
+
+    /** @param array<string, mixed> $filters */
+    public function expertFinder(string $locale, array $filters = []): ResearchPageDTO;
+
+    public function conferences(string $locale): ResearchPageDTO;
+
+    public function findRegisterableConference(string $eventId, string $locale): ?ResearchConferenceRegistrationDTO;
+
+    /**
+     * Published conferences an editor marked "Add to calendar", one entry
+     * per conference day, for the news events calendar.
+     *
+     * @return Collection<int, NewsEventDTO>
+     */
+    public function calendarConferences(string $locale): Collection;
+
+    public function conferenceRegistration(string $locale, ?string $eventId): ResearchPageDTO;
+
+    public function library(string $locale): ResearchPageDTO;
+
+    public function office(string $locale): ResearchPageDTO;
+
+    public function policies(string $locale): ResearchPageDTO;
+
+    public function publicationSlugForLegacyId(string $id): ?string;
+
+    /**
+     * Every publication slug for a locale, gathered in a single pass.
+     *
+     * @return array<int, string>
+     */
+    public function publicationSitemapSlugs(string $locale): array;
+
+    public function isPubliclyAvailablePath(string $locale, string $path): bool;
+
+    /**
+     * Whether a click on this path lands on a 200, redirect included.
+     *
+     * Distinct from isPubliclyAvailablePath(), which answers whether the path
+     * is canonical content worth indexing. The two diverge on the research
+     * landing: it is not indexable while unpublished, but it is always
+     * navigable, because ResearchController::index redirects it to the
+     * publications archive. Navigation asks this one; the sitemap asks the
+     * other, and must keep asking the other or it advertises a redirect.
+     */
+    public function isNavigablePath(string $locale, string $path): bool;
+
+    /** @param array<int, mixed> $columns @return array<int, mixed> */
+    public function filterFooterColumns(string $locale, array $columns): array;
+
+    /** @param array<int, array<string, mixed>> $items @return array<int, array<string, mixed>> */
+    public function filterNavigationItems(array $items): array;
+
+    /** @param array<string, mixed> $content */
+    public function buildPreviewLanding(string $locale, array $content): ResearchPageDTO;
+
+    /** @param array<string, mixed> $content */
+    public function buildPreviewTarget(string $targetKey, string $locale, array $content): ResearchPageDTO;
+}

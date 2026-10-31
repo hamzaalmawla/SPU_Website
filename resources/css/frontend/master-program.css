@@ -1,0 +1,82 @@
+/* Faculty master's program: the semester board and its course dialogs. */
+.mp-board {
+    position: relative;
+}
+
+.mp-edges {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    overflow: visible;
+}
+
+.mp-edges path {
+    fill: none;
+    stroke: rgba(32, 39, 89, 0.16);
+    stroke-width: 1.5;
+    transition: stroke 0.2s ease, opacity 0.2s ease;
+}
+
+.mp-course {
+    position: relative;
+    z-index: 1;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease, opacity 0.2s ease;
+}
+
+.mp-course:hover,
+.mp-course:focus-visible,
+.mp-course[data-active] {
+    transform: translateY(-2px);
+    border-color: var(--mp-accent, #202759);
+    box-shadow: 0 14px 30px rgba(20, 30, 70, 0.12);
+}
+
+.mp-course[data-related] {
+    border-color: var(--mp-accent, #202759);
+    background-color: color-mix(in srgb, var(--mp-accent, #202759) 6%, white);
+}
+
+[data-highlighting] .mp-course:not([data-active], [data-related]) {
+    opacity: 0.45;
+}
+
+[data-highlighting] .mp-edges path {
+    opacity: 0.25;
+}
+
+[data-highlighting] .mp-edges path[data-active] {
+    opacity: 1;
+    stroke: var(--mp-accent, #202759);
+    stroke-width: 2;
+}
+
+.mp-dialog {
+    width: min(720px, calc(100vw - 32px));
+    max-height: calc(100vh - 48px);
+    margin: auto;
+    padding: 0;
+    border: 0;
+    border-radius: 12px;
+    background: #fff;
+    color: inherit;
+    box-shadow: var(--shadow-panel);
+}
+
+.mp-dialog::backdrop {
+    background: rgba(9, 17, 68, 0.55);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .mp-course,
+    .mp-edges path {
+        transition: none;
+    }
+
+    .mp-course:hover,
+    .mp-course:focus-visible,
+    .mp-course[data-active] {
+        transform: none;
+    }
+}

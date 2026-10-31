@@ -1,0 +1,109 @@
+{
+  "source": "Old site homepage events calendar (ar_cal_events.php, ser=10), the entries from 2025-2026. Older entries (2017-2018) are left out.",
+  "events": [
+    {
+      "id": "legacy-cal-5765",
+      "legacyUrl": "index.php?page=show&ex=2&dir=items&lang=1&ser=10&cat_id=5765",
+      "startsAt": "2026-04-26",
+      "endsAt": null,
+      "image": "/downloads/files/1776766902_4194850488.jpg",
+      "ar": {
+        "title": "مسابقة الشطرنج في الجامعة السورية الخاصة",
+        "summary": "في إطار سعي الجامعة لتعزيز النشاط الفكري والمهارات الاستراتيجية لدى طلبتها، تنظم الجامعة مسابقة شطرنج جامعية تهدف إلى خلق بيئة تنافسية إيجابية تجمع بين الذكاء والتركيز والإبداع، وتوفر للطلبة فرصة لإظهار قدراتهم في لعبة الشطرنج الكلاسيكية، وذلك يوم الأحد 26/4/2026 في مكتبة كلية طب الأسنان.\n\nولضمان تنظيم المباريات بدقة واحترافية، يرجى من المشاركين تحميل تطبيق Chess Clock، وهو تطبيق متخصص في ساعات الشطرنج الرقمية.",
+        "dateLabel": "الأحد 26 نيسان 2026",
+        "location": "مكتبة كلية طب الأسنان",
+        "timeLabel": "طوال اليوم"
+      },
+      "en": {
+        "title": "Chess Competition at the Syrian Private University",
+        "summary": "As part of its effort to strengthen intellectual activity and strategic skills among its students, the University is holding a university chess competition. It aims to create a positive competitive environment that brings together intelligence, focus and creativity, and gives students a chance to show their abilities in classical chess. The competition takes place on Sunday 26/4/2026 in the library of the Faculty of Dentistry.\n\nTo keep the matches accurate and well organised, participants are asked to install the Chess Clock app, a digital chess clock.",
+        "dateLabel": "Sunday, April 26, 2026",
+        "location": "Faculty of Dentistry Library",
+        "timeLabel": "All day"
+      },
+      "category": {
+        "id": "university-activities",
+        "ar": "نشاطات الجامعة",
+        "en": "University Activities"
+      }
+    },
+    {
+      "id": "legacy-cal-5385",
+      "legacyUrl": "index.php?page=show&ex=2&dir=items&lang=1&ser=10&cat_id=5385",
+      "startsAt": "2026-02-05",
+      "endsAt": "2026-02-16",
+      "image": "/downloads/files/1769416189_3708547162.jpg",
+      "ar": {
+        "title": "مشاركة الجامعة السورية الخاصة في معرض دمشق الدولي للكتاب في نسخته الأولى بعد التحرير",
+        "summary": "انطلاقاً من التزام الجامعة بدعم الثقافة والمعرفة، وتعزيز حضورها في الفعاليات الوطنية الكبرى، تعلن الجامعة السورية الخاصة عن مشاركتها في معرض دمشق الدولي للكتاب في نسخته الأولى بعد التحرير، وذلك خلال الفترة الممتدة من 5 شباط ولغاية 16 شباط 2026 في مدينة المعارض بدمشق.\n\nتأتي هذه المشاركة تأكيداً على دور الجامعة في رعاية الإبداع الطلابي، وفتح المجال أمام طلبتها للتفاعل مع الحراك الثقافي الوطني، والاطلاع على أحدث الإصدارات الفكرية والأدبية والعلمية، والتفاعل مع الأنشطة الثقافية.\n\nإضافة إلى إتاحة الفرصة للطلبة المبدعين لعرض مؤلفاتهم ونتاجاتهم الأدبية ضمن الجناح، إيماناً بأن الطالب هو محور النهضة المعرفية في سوريا المتجددة.",
+        "dateLabel": "5 - 16 شباط 2026",
+        "location": "مدينة المعارض، دمشق",
+        "timeLabel": "خلال ساعات المعرض"
+      },
+      "en": {
+        "title": "The Syrian Private University Participates in the First Damascus International Book Fair After Liberation",
+        "summary": "In line with its commitment to supporting culture and knowledge, and enhancing its presence at major national events, the Syrian Private University announces its participation in the Damascus International Book Fair in its first edition after liberation. The event will be held from February 5th to February 16th, 2026, at the Damascus Exhibition City.\n\nThis participation underscores the university's role in fostering student creativity, providing its students with an opportunity to engage with the national cultural scene, explore the latest intellectual, literary, and scientific publications, and interact with various cultural activities.\n\nFurthermore, it offers a platform for creative students to showcase their authored works and literary productions within the university's pavilion, based on the conviction that the student is the cornerstone of the knowledge renaissance in the renewed Syria.",
+        "dateLabel": "February 5 - 16, 2026",
+        "location": "Damascus Exhibition City",
+        "timeLabel": "During fair hours"
+      },
+      "category": {
+        "id": "university-activities",
+        "ar": "نشاطات الجامعة",
+        "en": "University Activities"
+      }
+    },
+    {
+      "id": "legacy-cal-5281",
+      "legacyUrl": "index.php?page=show&ex=2&dir=items&lang=1&ser=10&cat_id=5281",
+      "startsAt": "2025-12-09",
+      "endsAt": null,
+      "image": "/downloads/files/1764702183_3598351469.jpg",
+      "ar": {
+        "title": "الاحتفال بالذكرى الأولى لتحرير سوريا",
+        "summary": "احتفالاً بالذكرى الأولى لتحرير سوريا، تتشرّف الجامعة السورية الخاصة بدعوة طلبتها الأعزاء للمشاركة في فعاليات هذا اليوم الوطني المنتظر، في مناسبة نُحيي فيها روح الانتماء، ونُجسّد فيها اعتزازنا بوطنٍ بدأ مرحلة جديدة من تاريخه.\n\nندعوكم في هذا اليوم لرفع العلم السوري، وارتداء ألوانه الزاهية التي ترمز إلى الكرامة والصمود والأمل.\n\nوتؤكّد الجامعة على أهمية أن تُقام الفعاليات ضمن الأنظمة الجامعية المعتمدة، وبروح تعكس القيم الأكاديمية التي نلتزم بها جميعاً، ليكون الاحتفال مناسبة راقية تُجسّد الانضباط والمسؤولية والامتنان.\n\nإن هذا اليوم محطة تستحضر فيها الأجيال الشابة دورها في بناء الغد، وترى في العلم والمعرفة الطريق الأسمى لصون الوطن والارتقاء به. فلنحتفِل معاً بما يمثّله هذا التاريخ من معنى، ولنجعل من وجودنا في الحرم الجامعي رسالة وحدة وتفاؤل وقدرة على صنع مستقبلٍ يليق بسوريا وأبنائها.",
+        "dateLabel": "9 كانون الأول 2025",
+        "location": "الحرم الجامعي",
+        "timeLabel": "طوال اليوم"
+      },
+      "en": {
+        "title": "Celebrating the First Anniversary of Syria's Liberation",
+        "summary": "On the occasion of the first anniversary of Syria's liberation, the Syrian Private University is honored to invite its students to take part in the activities of this long-awaited national day, an occasion in which we revive the spirit of belonging and embody our pride in a homeland that has embarked on a new chapter of its history.\n\nOn this day, we call upon you to raise the Syrian flag and wear its vibrant colors, symbolizing dignity, resilience, and hope.\n\nThe University emphasizes the importance of holding all activities in accordance with the approved academic regulations, and in a spirit that reflects the academic values we all uphold, so that the celebration becomes a distinguished occasion that embodies discipline, responsibility, and gratitude.\n\nThis day is a milestone in which younger generations recall their role in building tomorrow, recognizing in science and knowledge the highest path to safeguarding and elevating the nation. Let us celebrate together the meaning of this date, and let our presence on campus be a message of unity, optimism, and determination to shape a future worthy of Syria and its people.",
+        "dateLabel": "December 9, 2025",
+        "location": "University campus",
+        "timeLabel": "All day"
+      },
+      "category": {
+        "id": "university-activities",
+        "ar": "نشاطات الجامعة",
+        "en": "University Activities"
+      }
+    },
+    {
+      "id": "legacy-cal-5260",
+      "legacyUrl": "index.php?page=show&ex=2&dir=items&lang=1&ser=10&cat_id=5260",
+      "startsAt": "2025-12-01",
+      "endsAt": "2025-12-03",
+      "image": "/downloads/files/1764441687_5889552687.jpg",
+      "ar": {
+        "title": "مشاركة الجامعة السورية الخاصة في المؤتمر الدولي الثالث لتقانة الغذاء",
+        "summary": "شاركت الجامعة السورية الخاصة في المؤتمر الدولي الثالث لتقانة الغذاء، الذي عُقد خلال الفترة من 1 إلى 3 كانون الأول 2025.",
+        "dateLabel": "1 - 3 كانون الأول 2025",
+        "location": "خارج الجامعة",
+        "timeLabel": "طوال أيام المؤتمر"
+      },
+      "en": {
+        "title": "Participation of the Syrian Private University in the Third International Conference on Food Technology",
+        "summary": "The Syrian Private University took part in the Third International Conference on Food Technology, held from December 1 to 3, 2025.",
+        "dateLabel": "December 1 - 3, 2025",
+        "location": "Off campus",
+        "timeLabel": "Throughout the conference"
+      },
+      "category": {
+        "id": "conferences",
+        "ar": "مؤتمرات",
+        "en": "Conferences"
+      }
+    }
+  ]
+}

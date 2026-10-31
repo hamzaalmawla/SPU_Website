@@ -1,0 +1,650 @@
+# Deploying to v2.spu.edu.sy
+
+How a change on `dev` reaches the server, what runs when it does, and the things
+that have gone wrong before.
+
+Push-to-deploy works. `git push origin dev`, then pull and deploy in cPanel.
+
+---
+
+## Current state
+
+**Push-to-deploy works.** The cPanel repository is a real clone of the GitHub
+repo, tracking `dev`.
+
+| | |
+|---|---|
+| cPanel repository | `/home/spuedu/repositories/spu-v2` |
+| Remote | `github.com/hamzaalmawla/SPU_Website` |
+| Branch | `dev` |
+
+Skip to [Deploying a change](#deploying-a-change). The setup section below is
+kept for whoever has to rebuild this.
+
+---
+
+## One-time setup (already done — kept for reference)
+
+**The repository is private, so it can only be cloned over SSH with a registered
+deploy key.** cPanel's clone dialog does *not* prompt for HTTPS credentials — it
+runs `git clone` non-interactively, so an `https://` URL fails with
+`could not read Username for 'https://github.com'`. An earlier version of this
+document said otherwise and cost two failed attempts.
+
+The account has a key at `~/.ssh/SPU_REPO`, and `~/.ssh/config` points git at it
+for `github.com` (with `IdentitiesOnly yes`, or ssh offers the default `id_rsa`
+first and is refused before it tries the right key). The matching public key is
+registered on the repository under **Settings → Deploy keys**, read-only.
+
+To rebuild it from scratch:
+
+1. **cPanel → SSH Access → Manage SSH Keys** — confirm `SPU_REPO` exists, or
+   generate a key with an **empty passphrase** (a passphrase cannot be entered
+   during an unattended clone).
+2. Copy the **public** key and add it on **GitHub → the repository → Settings →
+   Deploy keys**, read-only. A deploy key is scoped to one repository, which a
+   personal access token is not.
+3. Ensure `~/.ssh/config` contains the `Host github.com` block above.
+4. **Git Version Control → Create** → **Clone a Repository**
+   - Clone URL: `git@github.com:hamzaalmawla/SPU_Website.git` — the SSH form,
+     not `https://`
+   - Repository Path: `repositories/spu-v2`
+5. **Manage** → set the checked-out branch to `dev`.
+
+`.cpanel.yml` is then recognised and **Deploy HEAD Commit** becomes available.
+
+---
+
+## Deploying a change
+
+### 0. Back up the production database
+
+Before a release containing migrations, create and verify a restorable database
+backup. Record its unique identifier in the server's private `.env` file:
+
+```dotenv
+SPU_DATABASE_BACKUP_REFERENCE=cpanel-backup-YYYYMMDD-HHMM-before-release
+```
+
+The deployment script reads this value without exposing database credentials and
+stops before syncing code when `APP_ENV=production` and the reference is absent.
+Use a new backup and reference for every production migration release. Never use
+`migrate:fresh`, `db:wipe`, `db:seed`, or `migrate:rollback` on the production
+content database; restore the verified backup for a database rollback.
+
+### 1. Rebuild the front-end if you touched CSS, JS or Blade
+
+```bash
+php artisan view:clear && npm run build
+git add public/build
+```
+
+`public/build` is committed on purpose — there is no Node on the server, so the
+repository has to carry its own assets.
+
+**`view:clear` first is not optional.** Tailwind scans
+`storage/framework/views/*.php`, so whatever compiled Blade happens to be lying
+around on your machine ends up in the stylesheet. Skipping it produced a 326 KB
+CSS file where a clean build produces 300 KB, and it makes the output hash
+differ between developers for no reason.
+
+### 2. Push
+
+```bash
+git push origin dev
+```
+
+### 3. Deploy
+
+**cPanel → Git Version Control → Manage → Pull or Deploy → Update from Remote**,
+then **Deploy HEAD Commit**.
+
+Watch the log. It ends with `▸ Deployed <commit>`.
+
+For releases containing migrations, the log must show all three schema steps:
+
+1. The production `migrate:status` output.
+2. The `migrate --pretend` SQL preview.
+3. The successful `migrate --force` result.
+
+Review the first two before accepting the release. The media-framing migration
+`2026_10_06_000001` is additive only: it adds `focal_x`, `focal_y`, and
+`display_fit` to `media_assets` with neutral defaults. It does not update or
+delete faculty members, translations, publication states, CMS payloads, or
+existing media metadata. Normal production deployment never runs
+`DatabaseSeeder`, `HomepageSectionTranslationSeeder`, or `NewsCategorySeeder`.
+
+Production deployment also inspects the SQL preview and stops before migration
+when any pending migration contains row `INSERT`, `UPDATE`, or `DELETE`
+statements. The check runs before the source sync (with the release's
+migrations previewed by the code already on the server) and again after it, so
+a refused release leaves the site as it was. A separately reviewed
+data-migration release is approved by placing
+`storage/app/private/legacy-imports/data-migrations.approved` on the server
+(cPanel File Manager or `Fileman save_file_content`), listing every pending
+migration, one per line:
+
+```
+migration=2026_10_19_000004_create_form_definitions_table
+migration=2026_10_20_000001_replace_user_faculty_scope_with_access_scopes
+```
+
+The list must match the pending migrations exactly; the deploy log prints them
+when it refuses. The file is renamed to `.consumed-<time>` after the migrations
+run, so it never approves a later release. `SPU_ALLOW_DATA_MIGRATIONS=1` in the
+process environment still works for an operator with a shell; cPanel's deploy
+cannot pass it, and the script does not read it from `.env`.
+
+---
+
+## What the deploy actually does
+
+`.cpanel.yml` runs `deploy/v2-staging/cpanel-deploy.sh`, which:
+
+1. **Checks preconditions** and refuses to start if any fail — missing `.env`,
+   missing web root, missing asset manifest. Each of these has taken the site
+   down at least once.
+2. **Takes the site down** (`artisan down`) around the destructive part. Between
+   the source sync and the migration, the code and the database schema disagree
+   while PHP is still serving.
+3. **Publishes the front-end build** first, and without `--delete`. Vite
+   content-hashes filenames, and the page cache holds rendered HTML for an hour —
+   removing the old build would strip the stylesheet out from under every page
+   already cached.
+4. **Syncs the source**: `app bootstrap config database lang resources routes`.
+   Never `.env`, never `storage/`, never `bootstrap/cache`.
+5. **Runs composer**, then deletes the compiled package manifest so it is
+   regenerated here rather than inherited.
+6. **Runs migrations** (`--force`).
+7. **Rebuilds framework caches** (`artisan optimize`).
+8. **Rebuilds the search index** and **regenerates the static sitemap**. Neither
+   is in git; neither appears by deploying code. Miss them and the site comes up
+   with a search box that finds nothing.
+9. **Publishes SVG assets**, **restarts queue workers**, **warms caches**.
+10. **Verifies**: proves the routes still boot, then runs `launch:validate`.
+
+On staging a failing gate is a warning. Set `SPU_DEPLOY_ENV=production` and it
+becomes fatal — the check that catches the noindex trap lives in there.
+
+---
+
+## Reading a failed deploy
+
+The log is at `/home/spuedu/.cpanel/logs/vc_*_git_deploy.log`, readable in File
+Manager. The script prints a `▸` line before each stage, so the last one tells
+you where it stopped.
+
+| Message | What it means |
+|---|---|
+| `No Vite manifest in the release` | You did not commit `public/build`. Rebuild and commit. |
+| `No vendor/autoload.php` | Composer never ran or failed. Read the lines above it. |
+| `.env is missing` | Someone deleted it. It is not in git and never should be. Restore from the backup in `/home/spuedu/.spu_backups/`. |
+| `Routes do not boot` | The release is broken. Roll back — see below. |
+| `advertises a different host` | `APP_CANONICAL_URL` changed but the sitemap was not regenerated. Re-run the deploy. |
+
+Three things used to fail on every staging deploy and no longer do. None of
+them was the site:
+
+- **The gate ran against a site in maintenance mode.** `artisan down` was lifted
+  by the deploy script's exit trap, so warm and verify both talked to a kernel
+  that answered 503. That single bug produced most of the noise below, and it
+  meant `cache:warm` had never once warmed a public page — 4,558 of its targets
+  came back 503. It now warms 33 targets and the 503s are gone.
+- **robots.txt correctness** judged the file against `APP_ENV`. v2 runs as
+  production so it behaves like the real thing, while its docroot carries a
+  `Disallow` overlay so it stays out of Google — so the check demanded `Allow: /`
+  from a host whose whole purpose is to be unindexed. It now judges against the
+  environment the deploy is *for*. It also stopped requiring a `Sitemap:` line
+  on a disallow-all file, where such a line does nothing.
+- **Admin preview safety** built its request for host `localhost`, so
+  `EnforcePublicOrigin` answered with a 301 before the token check ran, and the
+  gate reported that redirect as "responded successfully without a token".
+
+What the robots check will now catch, which is the reason it exists: a
+**production** deploy while the staging overlay is still in place. That means
+the live university site telling every search engine to go away. Deleting the
+overlay is a manual cutover step (`Docs/V2_PRE_CUTOVER_ACTIONS.md` §C), so it is
+exactly the kind of thing that gets forgotten.
+
+Still expected on staging: two warnings (the `file` cache store has no tag
+support; the pre-generated sitemap drifts as content changes), and anything
+mentioning content that only exists in production.
+
+A gate that cries wolf on every deploy is worse than no gate, because people
+stop reading it. If a check fails for a reason that is not a defect, fix the
+check.
+
+---
+
+## Rolling back
+
+Both sites live on the same account, so this is not a DNS change:
+
+- **Bad code:** deploy the previous commit. In **Manage**, check out the earlier
+  commit and deploy again.
+- **Worse:** the last known-good tree is in `/home/spuedu/.spu_backups/`.
+  `Docs/V2_PRE_CUTOVER_ACTIONS.md` §E3 explains why restoring from a tar archive
+  went wrong once and why `git archive` is the reliable source.
+
+---
+
+## When `public/build` conflicts on a merge
+
+It will, whenever two people touch the front end. Vite names its output by
+content hash, so two builds from two different sources produce two differently
+named files, and git sees a rename/rename conflict it cannot resolve. This is
+the price of committing the build, which we pay on purpose because the server
+has no Node.
+
+**Do not take either side.** Both are wrong after a merge: theirs was built
+before your source changes, yours before theirs. Rebuild from the merged tree.
+
+```bash
+git merge origin/dev          # source merges cleanly; public/build conflicts
+rm -rf public/build
+php artisan view:clear && npm run build
+git add -A public/build
+git commit
+```
+
+`view:clear` is not optional — Tailwind scans `storage/framework/views`, so stale
+compiled Blade ends up in the stylesheet.
+
+Then run **both** suites before pushing. A merge that leaves the bundle and the
+markup disagreeing produces a page that renders and silently does nothing, which
+is the hardest kind of breakage to notice.
+
+---
+
+## Deploying without the cPanel UI
+
+The two buttons in **Git Version Control → Manage** are a cPanel API call each,
+and the API is usable directly when the UI is slow or unavailable. Both need a
+cPanel API token (**Security → Manage API Tokens**). Never commit one.
+
+```bash
+TOKEN=...   # cPanel API token for the spuedu account
+AUTH="Authorization: cpanel spuedu:$TOKEN"
+REPO=/home/spuedu/repositories/spu-v2
+
+# "Update from Remote" — fetches origin and fast-forwards the checked-out branch
+curl -sS -H "$AUTH" \
+  --data-urlencode "repository_root=$REPO" --data-urlencode 'branch=dev' \
+  'https://spu.edu.sy:2083/execute/VersionControl/update'
+
+# "Deploy HEAD Commit" — queues .cpanel.yml, which runs cpanel-deploy.sh
+curl -sS -H "$AUTH" --data-urlencode "repository_root=$REPO" \
+  'https://spu.edu.sy:2083/execute/VersionControlDeployment/create'
+```
+
+The deploy is asynchronous. Poll `VersionControl/retrieve` until
+`last_deployment.deploy_id` increments and its `timestamps` gain a `succeeded`
+key, then read the log named in `last_deployment.log_path` — that log is the
+output of `cpanel-deploy.sh`, including the launch gate:
+
+```bash
+curl -sS -H "$AUTH" \
+  --data-urlencode 'dir=/home/spuedu/.cpanel/logs' \
+  --data-urlencode 'file=<basename from log_path>' \
+  'https://spu.edu.sy:2083/execute/Fileman/get_file_content'
+```
+
+**Read that log every time.** A deploy reports success as long as the script
+exits zero, and the script deliberately does not fail a staging deploy on a red
+gate. The warm counts and the validation summary at the end are the deploy's
+real result.
+
+Rotate the token when you are done with it, and whenever one has been pasted
+into a chat, a ticket, or a shared terminal.
+
+---
+
+## Verifying a deploy from outside: nginx serves stale static files
+
+nginx caches static responses on this host, and it will hand you a copy from
+before the deploy. This is not theoretical — checking the sitemap immediately
+after the 2 September deploy returned the pre-deploy file, 3,416 entries and a
+`Last-Modified` 44 minutes old, and it looked exactly like a change that had not
+taken effect. The same URL with a query string appended returned the real
+current file.
+
+```bash
+curl -s "https://v2.spu.edu.sy/sitemaps/sitemap-news.xml?b=$RANDOM" | grep -c '<loc>'
+```
+
+Add a unique query parameter to **any** static file you are checking after a
+deploy — sitemaps, `build/manifest.json`, CSS, JS. It costs nothing and it is
+the difference between verifying a deploy and verifying a cache. PHP responses
+are not affected; they are not cached by nginx.
+
+This is an operational fact as well as a verification hazard: for that same
+window, crawlers and visitors are served the pre-deploy file too. A regenerated
+sitemap is not live the instant the deploy finishes. The TTL is nginx's and is
+not ours to set, so plan around it rather than expecting an immediate change.
+
+Note this is the opposite of the rule for measuring *pages*: there, a query
+string does nothing (`CachePublicPages` drops unknown parameters) and you need
+`-H 'Cache-Control: no-cache'`. Static files are served by the web server and
+never reach that middleware. See `Docs/PERFORMANCE_MEASUREMENT.md`.
+
+---
+
+## Why `sitemap-news.xml` advertises zero URLs
+
+It is correct, and it should not be "fixed" by loosening the sitemap.
+
+Every legacy news article is imported with `robots: noindex,nofollow` because
+the import is editorially gated, and since 2 September the sitemap does not
+advertise URLs that render `noindex` — it used to advertise 3,416 of them, three
+quarters of the whole document. Google Search Console will report this child
+sitemap as having 0 discovered URLs. That is the honest state of the content,
+not a defect in the sitemap.
+
+Articles enter it automatically as editors review them and set `index,follow`.
+There is no second switch to flip.
+
+The empty child is still listed in the index on purpose. Omitting it would mean
+the index could no longer be rendered without querying every section, and that
+document is deliberately cheap because crawlers fetch it.
+
+---
+
+## Files the deploy does not touch
+
+The deploy syncs `app bootstrap config database lang resources routes` into the
+application directory, and copies `public/build/` and the SVG assets into the
+docroot. **That is all it copies into the docroot.** Three files live there that
+git does not deploy:
+
+| File | Why it diverges |
+|---|---|
+| `public/.htaccess` | Carries the `STAGING ONLY` blocks — the `X-Robots-Tag: noindex` header and the host guard — which must **not** reach the live domain. Removing them is a cutover step (`Docs/V2_PRE_CUTOVER_ACTIONS.md` §C). |
+| `public/robots.txt` | The staging `Disallow: /` overlay. Deleted at cutover so the application serves its own. Gitignored on purpose: shipping it would send `Disallow: /` to the live site. |
+| `public/.user.ini` | PHP-FPM settings. Owned by cPanel's MultiPHP INI Editor (vhost `v2.spu.edu.sy`), which also writes the same directives to a docroot `php.ini`. It sets `upload_max_filesize = 16M` and `post_max_size = 20M` (2026-10-22): the host default of 2M rejected every admin upload over 2 MB with "The file failed to upload", while the admin allows 10 MB and Livewire's temporary upload 12 MB. |
+
+The divergence is deliberate and correct. The trap is that **editing any of them
+in git changes nothing on the server, and nothing tells you.** A commit can say
+a setting was removed, be entirely true about the repository, and leave the
+server exactly as it was.
+
+That is how `zlib.output_compression = On` stayed live for a day after being
+removed in git — a setting that, combined with the application's own
+compression, would have made every page on the site unreadable. Edit these on
+the server (cPanel File Manager, or the file API), and change the repo copy in
+the same sitting so the two do not drift further.
+
+The deploy now refuses to run if it finds `zlib.output_compression` active in
+the deployed `.user.ini`. That check exists because no amount of care in git can
+catch a file git does not own.
+
+---
+
+## Things that have actually bitten us
+
+**Never ship `bootstrap/cache/`.** It carries your machine's package manifest,
+which lists dev packages the server does not have, and every page returns 500.
+The deploy script excludes it and regenerates it on the server.
+
+**Anchor every `tar --exclude`.** `--exclude=public` matches *every* path segment
+named `public`, including `resources/views/public/`. That silently produced a
+backup missing 118 view files.
+
+**`/images/*.svg` and the legacy trees share a namespace.** `public/.htaccess`
+blocks markup and SVG under the prefixes where old uploads are mounted — but
+`/images/` is also where this application keeps its own icons. The rule needs its
+`RewriteCond %{REQUEST_FILENAME} !-f` guard, or all 37 icons 404 while the files
+sit there perfectly intact. This cost a lot of time to find.
+
+**A menu item that 404s is the worst kind of bug** — visitors read it as "this
+site is broken". Anything that decides whether to render a link must agree with
+what the page actually does. `ProfileAvailabilityTest` states that invariant;
+keep it green.
+
+**Do not add a cron or web endpoint to run deploy commands.** `REM-07` prohibits
+it and cPanel's Git deployment is the approved mechanism.
+
+---
+
+## The admin panel address (`ADMIN_PATH`)
+
+The panel is not served at `/admin`. It lives under the secret prefix in
+`ADMIN_PATH` (`config/admin.php`), and `/admin`, `/admin/login` and every other
+`/admin/...` URL answer the same public 404 as any mistyped address: same page,
+same headers, no redirect, no cookie. Nothing public (pages, robots.txt,
+sitemap, error pages) names the real prefix.
+
+Before the first deploy that carries this change, on the server:
+
+```bash
+cd /home/spuedu/spu_v2_app
+echo "ADMIN_PATH=$(openssl rand -hex 12)" >> .env
+grep ADMIN_PATH .env
+```
+
+`cpanel-deploy.sh` refuses to deploy while `ADMIN_PATH` is missing, shorter than
+12 characters or `admin`, and `launch:validate` fails on the same condition.
+The panel is then at `https://v2.spu.edu.sy/<value>`; editors log in at
+`https://v2.spu.edu.sy/<value>/login`. Send that address to staff privately,
+never in a ticket, chat channel or commit. Rotating it is the same edit followed
+by `php artisan config:cache`; existing sessions keep working.
+
+Optional: `ADMIN_ALLOWED_IPS=203.0.113.4,10.0.0.0/8` makes the hidden path
+404 for every other address too. Leave it empty while staff log in from home or
+mobile data; a wrong value locks everyone out until `.env` is fixed on the server.
+
+The legacy `/admin/...` URLs of the old Business Administration subsite are no
+longer shadowed by the panel and go through the normal redirect lookup again.
+
+## Still outstanding on the server
+
+Two things this deploy did not fix, both one line, neither in code:
+
+**`QUEUE_CONNECTION=sync`** in `/home/spuedu/spu_v2_app/.env`. Seven mailables
+are queued and no worker is running, so every contact-form message and event
+registration is silently discarded while the sender sees a success page. This is
+the most damaging open defect on the site.
+
+**Compression** is no longer one of them. nginx still neither compresses nor
+forwards `Accept-Encoding` upstream, so the `mod_deflate` rules in
+`public/.htaccess` never fire — but the application now compresses its own
+responses in `CompressPublicResponses`, which is what mattered: this origin
+degrades sharply above a ~24KB response and gzip puts every page back under
+that line. The host request in `Docs/V2_PRE_CUTOVER_ACTIONS.md` §B2 and §B4 is
+still worth sending, because compressing in PHP costs CPU that nginx would not,
+and static assets are still shipped uncompressed. It is no longer a blocker.
+
+**Checking whether it is working.** Not with `curl -I`. HEAD is skipped by
+design — a HEAD response must carry the same headers as GET with no body — so
+`curl -I` reports `X-Compressed: off` whether compression works or not. Use a
+GET that throws the body away:
+
+```bash
+curl -s --http1.1 -o /dev/null -D - -H 'Accept-Encoding: gzip' https://v2.spu.edu.sy/ar
+```
+
+`X-Compressed` says what the middleware decided: `negotiated` (the client asked
+and got it), `forced` (no `Accept-Encoding` arrived and forcing is on), `off`
+(declined — wrong method, wrong status, wrong content type, or the client did
+not ask), `skipped` (ran, but the body was too small or did not shrink). An
+absent header means the middleware did not run at all.
+
+If it reports `off` on every page, the likely cause is that nginx strips
+`Accept-Encoding` before PHP sees it. Confirm rather than assume: set
+`COMPRESSION_DIAGNOSTICS=true` in `/home/spuedu/spu_v2_app/.env`, rebuild the
+config cache (the next deploy does this, or run `config:clear` then
+`config:cache`), and read `X-Compress-Debug` from the same GET. Its `accept_encoding=` field is the
+answer. If it says `(absent)`, set `COMPRESS_WITHOUT_ACCEPT_ENCODING=true`;
+if it shows a real value, leave that flag off — the header is arriving and
+something else is declining. Turn diagnostics back off once read.
+
+One thing must be true before forcing is enabled: `X-Compress-Debug`'s `zlib=`
+field must read `(off)`. PHP's own `zlib.output_compression` compresses at the
+output layer *after* this middleware has set its headers, so the middleware
+cannot detect it, and the two together produce `gzip(gzip(body))` under a single
+`Content-Encoding` header — unreadable pages site-wide. `public/.user.ini`
+documents why it was removed.
+
+If the host does enable compression at the edge, set `COMPRESS_RESPONSES=false`
+and delete the middleware in the same change. Two compressors stacked produce
+`gzip(gzip(body))` under one `Content-Encoding` header — unreadable pages
+site-wide, triggered by someone else's config change rather than a deploy of
+ours. The middleware refuses to encode a body that already carries
+`Content-Encoding`, so the realistic failure is wasted CPU rather than
+breakage — but do not rely on that as the plan.
+
+---
+
+## If push-to-deploy cannot be set up
+
+If the GitHub token is genuinely unavailable, the release can still be pushed by
+hand the way the 1 September one was: build a small git repository whose working
+tree is `.cpanel.yml`, `deploy.sh` and a `release.tar.gz`, upload it through the
+cPanel file API, register it, and deploy. It works, but every release is a manual
+repackage and the repository drifts from `dev` immediately.
+
+Prefer the clone. It is five minutes once.
+
+
+## Loading the faculty study plans
+
+The converted curricula (AI, construction, petroleum, pharmacy, medicine, business, dentistry) ship with the release in
+`database/seeders/Data/study_plans/<faculty>.json`, next to the `.report.md` that lists every doubtful
+point in each source. Deploying the code does **not** load them: the visual editor, the new graph and
+the mobile layout go live, and every plan keeps exactly the content it has now.
+
+To load them, a human creates this file on the server (it is not in git, and a deploy cannot create it):
+
+```
+storage/app/private/legacy-imports/study-plans.approved
+actor=auto
+faculty=artificial-intelligence
+faculty=pharmacy
+```
+
+`cpanel-deploy.sh` then runs `faculty:import-study-plan` once for each listed faculty and renames the
+file to `study-plans.approved.consumed-<time>`, so a redeploy cannot repeat it. Rules that protect what
+editors wrote:
+
+- A plan that has ever been saved or published through the admin (any CMS draft or published row) is
+  **skipped and left untouched**. The deploy log says `SKIPPED` for it. Only plans still in their seeded
+  state are loaded.
+- It only writes an **unpublished draft**. Nothing changes publicly until an editor opens the faculty's
+  Study Plan page in the admin, checks the draft and publishes it.
+- Each plan is validated before it is written; a validation error stops the deploy for that plan.
+- The release's verified pre-migration database backup has already been taken.
+
+For a plan that editors have already changed, nothing is merged automatically. Either they update it in
+the visual editor, or someone runs the command by hand with `--replace-edited` after agreeing that
+their changes may be replaced (the previous draft versions stay in `cms_drafts`).
+
+### Moving the old calendar events into articles
+
+Events are now written as articles in the Events category (sessions, speakers, registration; see
+`Docs/EVENTS_UNIFICATION_PLAN.md`). The events still in the old Events page list keep showing until
+they are moved. Deploying does **not** move them. To move them, a human creates this file on the server:
+
+```
+storage/app/private/legacy-imports/calendar-events-move.approved
+actor=auto
+```
+
+`cpanel-deploy.sh` then runs `news:move-calendar-events` (a dry run, then `--write`). It runs after the
+old calendar import (`calendar-events.approved`), so both files can be placed for the same deploy.
+
+- Each published entry becomes a published Events article ("Add to calendar" on, one session per day
+  of the entry). Registrations sent for it move with it and keep counting against its seats.
+- Untouched sample events are left out. The Events page list itself is not changed: a moved entry is
+  hidden, and `/news/events-list/{id}`, `/news/events-list/register?event={id}` and
+  `/news/events-list/past?event={id}` redirect (301) to the article.
+- Re-running only moves entries not moved yet. The file is renamed to
+  `calendar-events-move.approved.consumed-<time>` once everything moved; if an entry could not be moved
+  the deploy log names it and the file stays for the next deploy.
+
+By hand: `php artisan news:move-calendar-events --user=<id or email>` (dry run), then add `--write`.
+
+### The research office register
+
+The research office's register (its spu_sci database) is converted by
+`database/seeders/Data/research/convert_spu_sci.py` into `spu_sci_research.json`, which ships with the
+release. The converter merges papers and researchers entered twice, maps the register's free-text study
+types to the office's codes (kept verbatim in each paper's internal notes) and leaves out researchers'
+emails and phone numbers. Deploying does not load it. To load it, place this empty file on the server:
+
+```
+storage/app/private/legacy-imports/research-register.approved
+```
+
+`cpanel-deploy.sh` then runs `research:import-register` once (dry run, then write) and renames the file.
+Papers the site already has (same title) are left alone, re-running adds nothing twice, and papers with
+no publication date come in hidden until an editor adds one. To refresh the data from a newer dump, re-run
+the converter locally and ship the new JSON.
+
+### Person photos in the legacy media library
+
+To register imported person photos (honor students, alumni, faculty members, persons) as legacy media
+assets searchable by name, place this file on the server:
+
+```
+storage/app/private/legacy-imports/person-photos.approved
+actor=auto
+```
+
+`cpanel-deploy.sh` then runs `legacy-import:person-photos` as a dry run and then with `--write` against
+`/home/spuedu/public_html`, prints both reports in the deploy log, and renames the file to
+`person-photos.approved.consumed-<time>`. It only adds rows to the legacy library and fills empty titles,
+so it is safe to repeat. See `Docs/LEGACY_IMPORT_RUNBOOK.md`.
+
+### Faculty positions typed on profiles (faculty:match-positions)
+
+Faculty positions are picked on each faculty's council page from one shared list (dean, vice dean, head
+of department and the ones editors add). Profiles used to carry a typed position instead, so the council
+page could not see them. Every deploy log has a "Faculty positions dry run" section: the typed positions
+that match a position in the list and would be added to the faculty's council page, those already there,
+heads of department (left to the departments page), matches it will not add (a second dean) and typed text
+that fits no position.
+
+After the dry run has been read and approved, place this file on the server, naming the CMS user the drafts
+are saved as:
+
+```
+storage/app/private/legacy-imports/faculty-positions.approved
+actor=auto
+```
+
+`cpanel-deploy.sh` then runs `faculty:match-positions --write` and renames the file to
+`faculty-positions.approved.consumed-<time>`. It saves each faculty's council page as an **unpublished
+draft** with the matched rows added; an editor reviews and publishes it. It never removes a row, never adds a
+second dean and never edits a profile. The typed text stays on the profile until an editor clears it; the
+profile shows the council page's position once one is published.
+
+Add a `publish=yes` line to the file when the product owner has approved the matched rows going public as
+they are. Each saved draft is then also published, except where an editor already had a draft open on that
+page or the page fails the council rules (for example no dean). Those stay as drafts, and the deploy log
+lists them under "Left as a draft".
+
+### One profile per person (people:unify)
+
+Every deploy log has a "People unify dry run" section. It shows the faculty profile each leadership row
+(dean, rector, vice president, ...) would be tied to, the empty profile fields it would fill from that row,
+and the fields where the two differ (the profile's value is kept). Rows it cannot decide on are listed as
+"Left for an editor", for example when several profiles have the name or a profile only probably matches.
+An editor picks those in the leadership editor.
+
+After the dry run has been read and approved, place this file on the server:
+
+```
+storage/app/private/legacy-imports/people-unify.approved
+```
+
+`cpanel-deploy.sh` then runs `people:unify` as a dry run and then with `--write`, and renames the file to
+`people-unify.approved.consumed-<time>`. It never overwrites or deletes faculty-member data. It only fills
+empty fields, does not touch a profile or leadership row that has an unpublished draft, saves a JSON
+snapshot of every row it touches to `storage/app/private/people-unify/` first, and logs an audit entry per
+person. Plan and as-built notes: `Docs/PEOPLE_SINGLE_PROFILE_PLAN.md`.
+
+Every deploy log also has a "People merge dry run" section: faculty profiles entered twice (same name in
+the same faculty, or a leader's profile with no faculty and that person's faculty profile, where the
+faculty profile is kept and the leadership row moves to it), and researchers entered twice. After it has
+been read and approved, place `storage/app/private/legacy-imports/people-merge.approved`. The deploy runs
+`people:merge` with `--write` and renames the file to `people-merge.approved.consumed-<time>`. Merged-away
+records are soft-deleted and their profile addresses redirect to the kept one.

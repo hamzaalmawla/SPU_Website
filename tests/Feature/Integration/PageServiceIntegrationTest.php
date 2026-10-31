@@ -1,0 +1,620 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Tests\Feature\Integration;
+
+use App\Contracts\Page\PageServiceInterface;
+use App\Contracts\Shared\PreviewServiceInterface;
+use App\DTOs\Page\PageDraftDataDTO;
+use App\DTOs\Page\PageDTO;
+use App\DTOs\Page\PageMetadataDTO;
+use App\DTOs\Page\PageShellDataDTO;
+use App\DTOs\Page\PageTranslationDTO;
+use App\DTOs\Seo\PageSeoInputDTO;
+use App\Models\Page\Page;
+use App\Models\Shared\AuditLog;
+use App\Models\Shared\PreviewToken;
+use App\Models\User\User;
+use Database\Seeders\DatabaseSeeder;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
+
+class PageServiceIntegrationTest extends TestCase
+{
+    use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->seed(DatabaseSeeder::class);
+    }
+
+    // ──────────────────────────────────────────────────────────────
+    //  Page creation with bilingual translations
+    // ──────────────────────────────────────────────────────────────
+
+    public function test_create_page_shell_with_arabic_and_english_translations(): void
+    {
+        $page = $this->pageService()->createPageShell(
+            new PageShellDataDTO(
+                slug: 'about-us',
+                template: 'landing',
+                isHomepageShell: false,
+                status: 'draft',
+            ),
+            $this->author()->id,
+        );
+
+        $this->assertInstanceOf(PageDTO::class, $page);
+        $this->assertSame('about-us', $page->metadata->slug);
+        $this->assertSame('landing', $page->metadata->template);
+        $this->assertSame('draft', $page->metadata->status);
+
+        // Add Arabic translation.
+        $this->assertTrue(
+            $this->pageService()->updateArabicTranslation($page->id, new PageTranslationDTO(
+                title: 'من نحن',
+                headline: 'تعرف على الجامعة',
+                body: '<p>محتوى عربي تجريبي</p>',
+            ), $this->author()->id),
+        );
+
+        // Add English translation.
+        $this->assertTrue(
+            $this->pageService()->updateEnglishTranslation($page->id, new PageTranslationDTO(
+                title: 'About Us',
+                headline: 'Learn About the University',
+                body: '<p>Sample English content</p>',
+            ), $this->author()->id),
+        );
+
+        // Verify both translations are stored correctly.
+        $reloaded = $this->pageService()->getAdminEditorPayload($page->id);
+
+        $this->assertSame('من نحن', $reloaded->arabicTranslation->title);
+        $this->assertSame('تعرف على الجامعة', $reloaded->arabicTranslation->headline);
+        $this->assertSame('About Us', $reloaded->englishTranslation->title);
+        $this->assertSame('Learn About the University', $reloaded->englishTranslation->headline);
+
+        $this->assertDatabaseHas('audit_logs', ['action' => 'page.created']);
+    }
+
+    // ──────────────────────────────────────────────────────────────
+    //  Translation update isolation
+    // ──────────────────────────────────────────────────────────────
+
+    public function test_updating_one_locale_translation_does_not_affect_the_other(): void
+    {
+        $page = $this->createPageWithTranslations();
+
+        // Update only the English translation.
+        $this->assertTrue(
+            $this->pageService()->updateEnglishTranslation($page->id, new PageTranslationDTO(
+                title: 'Updated English Title',
+                headline: 'Updated English Headline',
+                body: '<p>Updated English body</p>',
+            ), $this->author()->id),
+        );
+
+        $reloaded = $this->pageService()->getAdminEditorPayload($page->id);
+
+        // English should be updated.
+        $this->assertSame('Updated English Title', $reloaded->englishTranslation->title);
+        $this->assertSame('Updated English Headline', $reloaded->englishTranslation->headline);
+
+        // Arabic should remain unchanged.
+        $this->assertSame('من نحن', $reloaded->arabicTranslation->title);
+        $this->assertSame('تعرف على الجامعة', $reloaded->arabicTranslation->headline);
+    }
+
+    public function test_updating_arabic_translation_does_not_affect_english(): void
+    {
+        $page = $this->createPageWithTranslations();
+
+        // Update only the Arabic translation.
+        $this->assertTrue(
+            $this->pageService()->updateArabicTranslation($page->id, new PageTranslationDTO(
+                title: 'عنوان عربي محدث',
+                headline: 'عنوان رئيسي محدث',
+                body: '<p>محتوى عربي محدث</p>',
+            ), $this->author()->id),
+        );
+
+        $reloaded = $this->pageService()->getAdminEditorPayload($page->id);
+
+        // Arabic should be updated.
+        $this->assertSame('عنوان عربي محدث', $reloaded->arabicTranslation->title);
+        $this->assertSame('عنوان رئيسي محدث', $reloaded->arabicTranslation->headline);
+
+        // English should remain unchanged.
+        $this->assertSame('About Us', $reloaded->englishTranslation->title);
+        $this->assertSame('Learn About the University', $reloaded->englishTranslation->headline);
+    }
+
+    // ──────────────────────────────────────────────────────────────
+    //  Draft → Publish workflow
+    // ──────────────────────────────────────────────────────────────
+
+    public function test_publish_transitions_status_and_sets_published_at_timestamp(): void
+    {
+        $page = $this->createPageWithTranslations();
+
+        $this->assertSame('draft', $page->metadata->status);
+        $this->assertNull($page->publishedAt);
+
+        // Publish the page.
+        $this->assertTrue(
+            $this->pageService()->publish($page->id, $this->author()->id),
+        );
+
+        $published = $this->pageService()->getAdminEditorPayload($page->id);
+
+        $this->assertSame('published', $published->metadata->status);
+        $this->assertNotNull($published->publishedAt);
+
+        $this->assertDatabaseHas('audit_logs', ['action' => 'page.publish']);
+    }
+
+    public function test_publish_applies_valid_draft_payload(): void
+    {
+        $page = $this->createPageWithTranslations();
+
+        $this->pageService()->saveDraft(
+            $page->id,
+            $this->draftPayloadForPage(
+                $page,
+                arabicTranslation: new PageTranslationDTO(title: 'عنوان المسودة', headline: 'عنوان رئيسي للمسودة'),
+                englishTranslation: new PageTranslationDTO(title: 'Draft Title', headline: 'Draft Headline'),
+            ),
+            $this->author()->id,
+        );
+
+        $this->assertTrue($this->pageService()->publish($page->id, $this->author()->id));
+
+        $published = $this->pageService()->getAdminEditorPayload($page->id);
+
+        $this->assertSame('published', $published->metadata->status);
+        $this->assertSame('عنوان المسودة', $published->arabicTranslation->title);
+        $this->assertSame('عنوان رئيسي للمسودة', $published->arabicTranslation->headline);
+        $this->assertSame('Draft Title', $published->englishTranslation->title);
+        $this->assertSame('Draft Headline', $published->englishTranslation->headline);
+    }
+
+    public function test_due_schedule_does_not_publish_when_scheduling_actor_is_locked(): void
+    {
+        $page = $this->createPageWithTranslations();
+        $actor = $this->author();
+
+        $this->assertTrue($this->pageService()->schedulePublish($page->id, now()->addHour(), $actor->id));
+        Page::query()->whereKey($page->id)->update(['publish_at' => now()->subMinute()]);
+        $actor->forceFill(['is_locked' => true])->save();
+
+        $this->assertSame(0, $this->pageService()->publishDueScheduled());
+        $this->assertDatabaseHas('pages', ['id' => $page->id, 'status' => 'scheduled']);
+    }
+
+    public function test_due_schedule_does_not_publish_after_actor_is_demoted_out_of_faculty_scope(): void
+    {
+        $page = $this->createPageWithTranslations();
+        $actor = $this->author();
+
+        Page::query()->whereKey($page->id)->update(['faculty_scope_slug' => 'dentistry']);
+        $this->assertTrue($this->pageService()->schedulePublish($page->id, now()->addHour(), $actor->id));
+        Page::query()->whereKey($page->id)->update(['publish_at' => now()->subMinute()]);
+        $actor->forceFill([
+            'role_slug' => 'faculty_editor',
+            'faculty_scopes' => ['medicine'],
+        ])->save();
+
+        $this->assertSame(0, $this->pageService()->publishDueScheduled());
+        $this->assertDatabaseHas('pages', ['id' => $page->id, 'status' => 'scheduled']);
+    }
+
+    // ──────────────────────────────────────────────────────────────
+    //  Draft pages excluded from public queries
+    // ──────────────────────────────────────────────────────────────
+
+    public function test_draft_pages_are_not_returned_by_public_query_methods(): void
+    {
+        $page = $this->createPageWithTranslations();
+
+        // Page is still in draft status — should not be publicly accessible.
+        $this->assertNull(
+            $this->pageService()->getPublicPageBySlug('test-page', 'en'),
+        );
+
+        $this->assertNull(
+            $this->pageService()->getPublicPageBySlug('test-page', 'ar'),
+        );
+    }
+
+    public function test_published_page_is_returned_by_public_query(): void
+    {
+        $page = $this->createPageWithTranslations();
+
+        $this->assertTrue(
+            $this->pageService()->publish($page->id, $this->author()->id),
+        );
+
+        $publicPage = $this->pageService()->getPublicPageBySlug('test-page', 'en');
+
+        $this->assertInstanceOf(PageDTO::class, $publicPage);
+        $this->assertSame('About Us', $publicPage->englishTranslation->title);
+    }
+
+    public function test_unpublished_page_is_no_longer_returned_by_public_query(): void
+    {
+        $page = $this->createPageWithTranslations();
+
+        $this->assertTrue($this->pageService()->publish($page->id, $this->author()->id));
+        $this->assertNotNull($this->pageService()->getPublicPageBySlug('test-page', 'en'));
+
+        $this->assertTrue($this->pageService()->unpublish($page->id, $this->author()->id));
+        $this->assertNull($this->pageService()->getPublicPageBySlug('test-page', 'en'));
+
+        $this->assertDatabaseHas('audit_logs', ['action' => 'page.unpublish']);
+    }
+
+    // ──────────────────────────────────────────────────────────────
+    //  Publish validation rejects incomplete pages
+    // ──────────────────────────────────────────────────────────────
+
+    public function test_publish_rejects_page_without_slug(): void
+    {
+        $page = $this->pageService()->createPageShell(
+            new PageShellDataDTO(
+                slug: '',
+                template: 'landing',
+                isHomepageShell: false,
+                status: 'draft',
+            ),
+            $this->author()->id,
+        );
+
+        $this->pageService()->updateEnglishTranslation($page->id, new PageTranslationDTO(
+            title: 'No Slug Page',
+        ), $this->author()->id);
+
+        $this->assertFalse(
+            $this->pageService()->publish($page->id, $this->author()->id),
+        );
+    }
+
+    public function test_publish_rejects_page_without_template(): void
+    {
+        $page = $this->pageService()->createPageShell(
+            new PageShellDataDTO(
+                slug: 'no-template',
+                template: '',
+                isHomepageShell: false,
+                status: 'draft',
+            ),
+            $this->author()->id,
+        );
+
+        $this->pageService()->updateEnglishTranslation($page->id, new PageTranslationDTO(
+            title: 'No Template Page',
+        ), $this->author()->id);
+
+        $this->assertFalse(
+            $this->pageService()->publish($page->id, $this->author()->id),
+        );
+    }
+
+    public function test_publish_rejects_page_without_any_translations(): void
+    {
+        $page = $this->pageService()->createPageShell(
+            new PageShellDataDTO(
+                slug: 'no-translations',
+                template: 'landing',
+                isHomepageShell: false,
+                status: 'draft',
+            ),
+            $this->author()->id,
+        );
+
+        $this->assertFalse(
+            $this->pageService()->publish($page->id, $this->author()->id),
+        );
+    }
+
+    public function test_publish_rejects_page_missing_one_locale_title(): void
+    {
+        $page = $this->pageService()->createPageShell(
+            new PageShellDataDTO(
+                slug: 'english-only-page',
+                template: 'landing',
+                isHomepageShell: false,
+                status: 'draft',
+            ),
+            $this->author()->id,
+        );
+
+        $this->pageService()->updateEnglishTranslation($page->id, new PageTranslationDTO(
+            title: 'English Only Page',
+        ), $this->author()->id);
+
+        $this->assertFalse($this->pageService()->publish($page->id, $this->author()->id));
+    }
+
+    public function test_failed_publish_keeps_incomplete_page_private_without_success_audit(): void
+    {
+        $page = $this->pageService()->createPageShell(
+            new PageShellDataDTO(
+                slug: 'private-incomplete-page',
+                template: 'landing',
+                isHomepageShell: false,
+                status: 'draft',
+            ),
+            $this->author()->id,
+        );
+
+        $this->pageService()->updateEnglishTranslation($page->id, new PageTranslationDTO(
+            title: 'Private Incomplete Page',
+        ), $this->author()->id);
+
+        $this->assertFalse($this->pageService()->publish($page->id, $this->author()->id));
+
+        $reloaded = $this->pageService()->getAdminEditorPayload($page->id);
+
+        $this->assertSame('draft', $reloaded->metadata->status);
+        $this->assertNull($reloaded->publishedAt);
+        $this->assertNull($this->pageService()->getPublicPageBySlug('private-incomplete-page', 'en'));
+        $this->assertNull($this->pageService()->getPublicPageBySlug('private-incomplete-page', 'ar'));
+
+        $this->assertDatabaseMissing('audit_logs', [
+            'action' => 'page.publish',
+            'entity_type' => Page::class,
+            'entity_id' => $page->id,
+        ]);
+    }
+
+    public function test_publish_rejects_draft_payload_with_empty_arabic_title(): void
+    {
+        $page = $this->createPageWithTranslations();
+
+        $this->pageService()->saveDraft(
+            $page->id,
+            $this->draftPayloadForPage(
+                $page,
+                arabicTranslation: new PageTranslationDTO(title: ''),
+            ),
+            $this->author()->id,
+        );
+
+        $this->assertFalse($this->pageService()->publish($page->id, $this->author()->id));
+
+        $reloaded = $this->pageService()->getAdminEditorPayload($page->id);
+        $this->assertSame('draft', $reloaded->metadata->status);
+        $this->assertSame('من نحن', $reloaded->arabicTranslation->title);
+        $this->assertSame('About Us', $reloaded->englishTranslation->title);
+    }
+
+    public function test_publish_rejects_draft_payload_with_empty_english_title(): void
+    {
+        $page = $this->createPageWithTranslations();
+
+        $this->pageService()->saveDraft(
+            $page->id,
+            $this->draftPayloadForPage(
+                $page,
+                englishTranslation: new PageTranslationDTO(title: ''),
+            ),
+            $this->author()->id,
+        );
+
+        $this->assertFalse($this->pageService()->publish($page->id, $this->author()->id));
+
+        $reloaded = $this->pageService()->getAdminEditorPayload($page->id);
+        $this->assertSame('draft', $reloaded->metadata->status);
+        $this->assertSame('من نحن', $reloaded->arabicTranslation->title);
+        $this->assertSame('About Us', $reloaded->englishTranslation->title);
+    }
+
+    public function test_save_draft_invalidates_existing_page_preview_token(): void
+    {
+        $page = $this->createPageWithTranslations();
+        $preview = $this->previewService()->createToken('page', $page->id, 'en', $this->author()->id);
+
+        $this->assertTrue($this->previewService()->validateToken($preview->token));
+
+        $this->pageService()->saveDraft(
+            $page->id,
+            $this->draftPayloadForPage(
+                $page,
+                englishTranslation: new PageTranslationDTO(title: 'Updated Draft Title'),
+            ),
+            $this->author()->id,
+        );
+
+        $this->assertFalse($this->previewService()->validateToken($preview->token));
+        $this->assertDatabaseHas('audit_logs', [
+            'action' => 'preview.invalidated',
+            'entity_type' => PreviewToken::class,
+        ]);
+    }
+
+    public function test_publish_invalidates_existing_page_preview_token(): void
+    {
+        $page = $this->createPageWithTranslations();
+        $preview = $this->previewService()->createToken('page', $page->id, 'en', $this->author()->id);
+
+        $this->assertTrue($this->previewService()->validateToken($preview->token));
+        $this->assertTrue($this->pageService()->publish($page->id, $this->author()->id));
+
+        $this->assertFalse($this->previewService()->validateToken($preview->token));
+        $this->assertDatabaseHas('audit_logs', [
+            'action' => 'preview.invalidated',
+            'entity_type' => PreviewToken::class,
+        ]);
+    }
+
+    public function test_failed_draft_publish_keeps_existing_public_page_and_does_not_audit_success(): void
+    {
+        $page = $this->createPageWithTranslations();
+
+        $this->assertTrue($this->pageService()->publish($page->id, $this->author()->id));
+
+        $publishAuditCount = AuditLog::query()
+            ->where('action', 'page.publish')
+            ->where('entity_type', Page::class)
+            ->where('entity_id', $page->id)
+            ->count();
+
+        $this->pageService()->saveDraft(
+            $page->id,
+            $this->draftPayloadForPage(
+                $page,
+                arabicTranslation: new PageTranslationDTO(title: 'عنوان مسودة غير صالحة'),
+                englishTranslation: new PageTranslationDTO(title: ''),
+            ),
+            $this->author()->id,
+        );
+
+        $this->assertFalse($this->pageService()->publish($page->id, $this->author()->id));
+
+        $reloaded = $this->pageService()->getAdminEditorPayload($page->id);
+        $publicArabic = $this->pageService()->getPublicPageBySlug('test-page', 'ar');
+        $publicEnglish = $this->pageService()->getPublicPageBySlug('test-page', 'en');
+
+        $this->assertSame('published', $reloaded->metadata->status);
+        $this->assertSame('من نحن', $reloaded->arabicTranslation->title);
+        $this->assertSame('About Us', $reloaded->englishTranslation->title);
+        $this->assertInstanceOf(PageDTO::class, $publicArabic);
+        $this->assertSame('من نحن', $publicArabic->arabicTranslation->title);
+        $this->assertInstanceOf(PageDTO::class, $publicEnglish);
+        $this->assertSame('About Us', $publicEnglish->englishTranslation->title);
+        $this->assertSame($publishAuditCount, AuditLog::query()
+            ->where('action', 'page.publish')
+            ->where('entity_type', Page::class)
+            ->where('entity_id', $page->id)
+            ->count());
+    }
+
+    public function test_update_metadata_rejects_self_parent(): void
+    {
+        $page = $this->createPageWithTranslations();
+
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('A page cannot be its own parent.');
+
+        $this->pageService()->updateBaseMetadata($page->id, new PageMetadataDTO(
+            slug: $page->metadata->slug,
+            template: $page->metadata->template,
+            isHomepageShell: $page->metadata->isHomepageShell,
+            status: $page->metadata->status,
+            parentPageId: $page->id,
+        ), $this->author()->id);
+    }
+
+    public function test_update_metadata_rejects_descendant_parent_cycle(): void
+    {
+        $parent = $this->pageService()->createPageShell(
+            new PageShellDataDTO(
+                slug: 'parent-page',
+                template: 'landing',
+                isHomepageShell: false,
+                status: 'draft',
+            ),
+            $this->author()->id,
+        );
+        $child = $this->pageService()->createPageShell(
+            new PageShellDataDTO(
+                slug: 'child-page',
+                template: 'landing',
+                isHomepageShell: false,
+                status: 'draft',
+                parentPageId: $parent->id,
+            ),
+            $this->author()->id,
+        );
+
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('A page cannot use one of its descendants as parent.');
+
+        $this->pageService()->updateBaseMetadata($parent->id, new PageMetadataDTO(
+            slug: $parent->metadata->slug,
+            template: $parent->metadata->template,
+            isHomepageShell: $parent->metadata->isHomepageShell,
+            status: $parent->metadata->status,
+            parentPageId: $child->id,
+        ), $this->author()->id);
+    }
+
+    // ──────────────────────────────────────────────────────────────
+    //  Helpers
+    // ──────────────────────────────────────────────────────────────
+
+    private function pageService(): PageServiceInterface
+    {
+        return app(PageServiceInterface::class);
+    }
+
+    private function previewService(): PreviewServiceInterface
+    {
+        return app(PreviewServiceInterface::class);
+    }
+
+    private function author(): User
+    {
+        return User::query()->where('role_slug', 'super_admin')->firstOrFail();
+    }
+
+    /**
+     * Create a draft page shell with both Arabic and English translations.
+     */
+    private function createPageWithTranslations(): PageDTO
+    {
+        $page = $this->pageService()->createPageShell(
+            new PageShellDataDTO(
+                slug: 'test-page',
+                template: 'landing',
+                isHomepageShell: false,
+                status: 'draft',
+            ),
+            $this->author()->id,
+        );
+
+        $this->pageService()->updateArabicTranslation($page->id, new PageTranslationDTO(
+            title: 'من نحن',
+            headline: 'تعرف على الجامعة',
+            body: '<p>محتوى عربي تجريبي</p>',
+        ), $this->author()->id);
+
+        $this->pageService()->updateEnglishTranslation($page->id, new PageTranslationDTO(
+            title: 'About Us',
+            headline: 'Learn About the University',
+            body: '<p>Sample English content</p>',
+        ), $this->author()->id);
+
+        return $this->pageService()->getAdminEditorPayload($page->id);
+    }
+
+    private function draftPayloadForPage(
+        PageDTO $page,
+        ?PageTranslationDTO $arabicTranslation = null,
+        ?PageTranslationDTO $englishTranslation = null,
+    ): PageDraftDataDTO {
+        return new PageDraftDataDTO(
+            metadata: new PageMetadataDTO(
+                slug: $page->metadata->slug,
+                template: $page->metadata->template,
+                isHomepageShell: $page->metadata->isHomepageShell,
+                status: 'draft',
+                parentPageId: $page->metadata->parentPageId,
+                publishAt: $page->metadata->publishAt,
+                contentJson: $page->metadata->contentJson,
+                isEnabled: $page->metadata->isEnabled,
+                showInBreadcrumbs: $page->metadata->showInBreadcrumbs,
+                showInNav: $page->metadata->showInNav,
+                facultyScopeSlug: $page->metadata->facultyScopeSlug,
+            ),
+            arabicTranslation: $arabicTranslation ?? new PageTranslationDTO(title: $page->arabicTranslation->title),
+            englishTranslation: $englishTranslation ?? new PageTranslationDTO(title: $page->englishTranslation->title),
+            arabicSeo: new PageSeoInputDTO(locale: 'ar', title: 'صفحة اختبار SEO'),
+            englishSeo: new PageSeoInputDTO(locale: 'en', title: 'Test Page SEO'),
+        );
+    }
+}

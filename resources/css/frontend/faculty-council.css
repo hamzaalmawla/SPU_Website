@@ -1,0 +1,299 @@
+/* Faculty council page: the dean, the leadership cards, the council list and the department heads. */
+.fc-section {
+    padding-block: 4.5rem 5rem;
+}
+
+.fc-section--tint {
+    background: #f6f8fc;
+}
+
+.fc-heading {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-block-end: 2.25rem;
+}
+
+.fc-eyebrow {
+    color: var(--color-spu-red);
+    font-size: 0.875rem;
+    font-weight: 700;
+}
+
+.fc-title {
+    color: var(--color-spu-blue);
+    font-size: clamp(1.6rem, 2.6vw, 2rem);
+    font-weight: 800;
+    line-height: 1.25;
+}
+
+.fc-subtitle {
+    color: var(--color-spu-blue);
+    font-size: 1.25rem;
+    font-weight: 800;
+    margin-block-end: 1rem;
+}
+
+.fc-group + .fc-group {
+    margin-block-start: 2.5rem;
+}
+
+.fc-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 19rem), 1fr));
+    gap: 1.25rem;
+}
+
+.fc-grid--heads {
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 16rem), 1fr));
+    gap: 1rem;
+}
+
+.fc-avatar {
+    display: flex;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    width: 4.5rem;
+    height: 4.5rem;
+    border-radius: 999px;
+    background: #e4e9f4;
+}
+
+.fc-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.fc-avatar--md {
+    width: 3.5rem;
+    height: 3.5rem;
+}
+
+.fc-avatar--sm {
+    width: 2.75rem;
+    height: 2.75rem;
+}
+
+.fc-avatar svg {
+    width: 45%;
+    height: 45%;
+    color: #8f99bd;
+}
+
+.fc-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+}
+
+.fc-chip {
+    border-radius: 999px;
+    background: #eef1f8;
+    color: #2c3263;
+    font-size: 0.75rem;
+    font-weight: 700;
+    line-height: 1.5;
+    padding: 0.2rem 0.65rem;
+}
+
+.fc-chip--primary {
+    background: var(--color-spu-blue);
+    color: #fff;
+}
+
+.fc-chip--gold {
+    background: #f3e2bd;
+    color: var(--color-spu-blue);
+}
+
+.fc-card {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    border: 1px solid #e3e7f1;
+    border-radius: 14px;
+    background: #fff;
+    padding: 1.15rem 1.25rem;
+    text-decoration: none;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.fc-card:hover {
+    border-color: rgba(32, 39, 89, 0.28);
+    box-shadow: 0 14px 32px rgba(32, 39, 89, 0.08);
+    transform: translateY(-2px);
+}
+
+.fc-card:focus-visible,
+.fc-dean__link:focus-visible {
+    outline: 2px solid var(--color-spu-blue);
+    outline-offset: 3px;
+}
+
+.fc-card__text {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.fc-card__name {
+    color: var(--color-spu-blue);
+    font-size: 1.05rem;
+    font-weight: 800;
+    line-height: 1.35;
+}
+
+.fc-card__role {
+    color: var(--color-spu-red);
+    font-size: 0.875rem;
+    font-weight: 700;
+    line-height: 1.5;
+}
+
+.fc-card__muted {
+    color: #4a4f6b;
+    font-size: 0.8125rem;
+    line-height: 1.5;
+}
+
+.fc-head {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.9rem;
+}
+
+.fc-head__department {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+}
+
+.fc-head__type {
+    color: var(--color-spu-red);
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+
+.fc-head__person {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    border-block-start: 1px solid #edf0f6;
+    padding-block-start: 0.85rem;
+}
+
+.fc-dean {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: stretch;
+    gap: 2.5rem;
+    border-radius: 18px;
+    background: #f6f8fc;
+    margin-block-end: 1.5rem;
+    padding: 2rem;
+}
+
+.fc-dean__photo {
+    display: flex;
+    flex: 0 1 18.75rem;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    min-width: 13rem;
+    aspect-ratio: 3 / 4;
+    border-radius: 12px;
+    background: #e4e9f4;
+}
+
+.fc-dean__photo img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: top;
+}
+
+.fc-dean__photo svg {
+    width: 30%;
+    height: 30%;
+    color: #8f99bd;
+}
+
+.fc-dean__body {
+    display: flex;
+    flex: 999 1 26rem;
+    min-width: 0;
+    flex-direction: column;
+    justify-content: center;
+    gap: 1.1rem;
+}
+
+.fc-dean__name {
+    color: var(--color-spu-blue);
+    font-size: clamp(1.75rem, 3.4vw, 2.5rem);
+    font-weight: 800;
+    line-height: 1.25;
+}
+
+.fc-dean__bio {
+    max-width: 40rem;
+    color: #3c4160;
+    font-size: 1.0625rem;
+    line-height: 1.9;
+}
+
+.fc-dean__link {
+    display: inline-flex;
+    align-self: flex-start;
+    align-items: center;
+    gap: 0.5rem;
+    min-height: 2.75rem;
+    border-radius: 10px;
+    background: var(--color-spu-blue);
+    color: #fff;
+    font-size: 0.9375rem;
+    font-weight: 700;
+    padding-inline: 1.4rem;
+    text-decoration: none;
+    transition: background-color 0.2s ease;
+}
+
+.fc-dean__link:hover {
+    background: #171d47;
+    color: #fff;
+}
+
+@media (max-width: 640px) {
+    .fc-section {
+        padding-block: 3rem 3.5rem;
+    }
+
+    .fc-dean {
+        gap: 1.25rem;
+        padding: 1.25rem;
+    }
+
+    .fc-dean__photo {
+        flex-basis: 100%;
+        max-height: 22rem;
+    }
+
+    .fc-dean__link {
+        align-self: stretch;
+        justify-content: center;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .fc-card,
+    .fc-dean__link {
+        transition: none;
+    }
+
+    .fc-card:hover {
+        transform: none;
+    }
+}

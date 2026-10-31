@@ -1,0 +1,537 @@
+{
+  "source": "Old site spu.edu.sy, Admission and Registration menu (jx_categories 45 study system, 1235 students' evaluation, 1237 academic warnings, 42 documents granted, 1239 graduation and national exams). Arabic is the old site's own text, with one obvious typo corrected (للطلبة الأكراد → للطلبة الذكور); the English follows the old site's English with its grammar and spelling corrected.",
+  "targets": {
+    "admissions.documents": {
+      "set": {
+        "translations.ar.tabs[id=granted].intro": "الوثائق التي تمنحها الجامعة",
+        "translations.ar.tabs[id=granted].items": [
+          {
+            "title": "وثيقة تأجيل من الخدمة العسكرية (للطلبة الذكور)",
+            "desc": "",
+            "availability": ""
+          },
+          {
+            "title": "وثيقة تسلسل دراسي",
+            "desc": "",
+            "availability": ""
+          },
+          {
+            "title": "وثيقة الحياة الجامعية للطالب",
+            "desc": "",
+            "availability": ""
+          },
+          {
+            "title": "إشعار تخرج",
+            "desc": "",
+            "availability": ""
+          },
+          {
+            "title": "وثيقة تسجيل وإثبات دوام",
+            "desc": "",
+            "availability": ""
+          },
+          {
+            "title": "وثيقة بيان وضع دراسي",
+            "desc": "",
+            "availability": ""
+          },
+          {
+            "title": "بيان إنهاء ساعات الخطة الدراسية",
+            "desc": "",
+            "availability": ""
+          },
+          {
+            "title": "كشف علامات بالمقررات التي درسها الطالب",
+            "desc": "باللغتين العربية والإنكليزية",
+            "availability": ""
+          },
+          {
+            "title": "توصيف مقررات",
+            "desc": "",
+            "availability": ""
+          },
+          {
+            "title": "وثيقة حسن سلوك",
+            "desc": "",
+            "availability": ""
+          }
+        ],
+        "translations.en.tabs[id=granted].intro": "Documents granted by the university",
+        "translations.en.tabs[id=granted].items": [
+          {
+            "title": "Document of semester sequence",
+            "desc": "",
+            "availability": ""
+          },
+          {
+            "title": "Document of university student life",
+            "desc": "",
+            "availability": ""
+          },
+          {
+            "title": "Graduation notice",
+            "desc": "In Arabic and English",
+            "availability": ""
+          },
+          {
+            "title": "Document of registration and proof of attendance",
+            "desc": "",
+            "availability": ""
+          },
+          {
+            "title": "Document of academic status",
+            "desc": "",
+            "availability": ""
+          },
+          {
+            "title": "Statement of completion of study plan hours",
+            "desc": "",
+            "availability": ""
+          },
+          {
+            "title": "Transcript of records",
+            "desc": "In Arabic and English",
+            "availability": ""
+          },
+          {
+            "title": "Courses description",
+            "desc": "",
+            "availability": ""
+          },
+          {
+            "title": "Certificate of good conduct",
+            "desc": "",
+            "availability": ""
+          },
+          {
+            "title": "Document of class rank",
+            "desc": "",
+            "availability": ""
+          }
+        ],
+        "translations.ar.tabs[id=studySystem].label": "نظام الدراسة وتقويم الطلبة",
+        "translations.ar.tabs[id=studySystem].intro": "اعتمدت الجامعة نظام الساعات المعتمدة Credit Hour System نظاماً دراسياً لها، وهو النظام المعتمد في الكثير من الجامعات العالمية، وفي غالبية جامعات المنطقة وفي بعض الجامعات المحلية، ويعد التواصل مع الجامعات المنتشرة محلياً وإقليمياً ودولياً أحد الأسباب التي أدت إلى هذا الاختيار، فضلاً عن الميزات التي يتمتع بها هذا النظام.\n\nيستند نظام الساعات المعتمدة عموماً إلى وجود عدد من المقررات الدراسية التي يتكون كل منها من عدد من الساعات المعتمدة. تُعرّف الساعة المعتمدة على أنها ساعة نظرية واحدة أسبوعياً (أو ساعتان عمليتان أو أكثر) يجري تدريسها خلال فصل دراسي واحد.\n\nيحتاج الطالب للحصول على الإجازة في تخصص معين إلى أن يدرس بنجاح عدداً من الساعات المعتمدة التي تشكل الخطة الدراسية لهذا التخصص.",
+        "translations.ar.tabs[id=studySystem].scaleTitle": "المكافئات الحرفية والنقطية للعلامات",
+        "translations.ar.tabs[id=studySystem].scaleHeaders": [
+          {
+            "key": "percentage",
+            "label": "المكافئ المئوي"
+          },
+          {
+            "key": "gpa",
+            "label": "المكافئ النقطي"
+          },
+          {
+            "key": "grade",
+            "label": "المكافئ الحرفي"
+          },
+          {
+            "key": "descriptor",
+            "label": "التقدير"
+          }
+        ],
+        "translations.ar.tabs[id=studySystem].scaleRows": [
+          {
+            "percentage": "100 > X ≥ 98",
+            "gpa": "4.00",
+            "grade": "A+",
+            "descriptor": "شرف"
+          },
+          {
+            "percentage": "98 > X ≥ 95",
+            "gpa": "3.75",
+            "grade": "A",
+            "descriptor": "شرف"
+          },
+          {
+            "percentage": "95 > X ≥ 90",
+            "gpa": "3.50",
+            "grade": "A-",
+            "descriptor": "امتياز"
+          },
+          {
+            "percentage": "90 > X ≥ 85",
+            "gpa": "3.25",
+            "grade": "B+",
+            "descriptor": "امتياز"
+          },
+          {
+            "percentage": "85 > X ≥ 80",
+            "gpa": "3.00",
+            "grade": "B",
+            "descriptor": "جيد جداً"
+          },
+          {
+            "percentage": "80 > X ≥ 75",
+            "gpa": "2.75",
+            "grade": "B-",
+            "descriptor": "جيد جداً"
+          },
+          {
+            "percentage": "75 > X ≥ 70",
+            "gpa": "2.50",
+            "grade": "C+",
+            "descriptor": "جيد"
+          },
+          {
+            "percentage": "70 > X ≥ 65",
+            "gpa": "2.25",
+            "grade": "C",
+            "descriptor": "جيد"
+          },
+          {
+            "percentage": "65 > X ≥ 60",
+            "gpa": "2.00",
+            "grade": "C-",
+            "descriptor": "مقبول"
+          },
+          {
+            "percentage": "60 > X ≥ 55",
+            "gpa": "1.75",
+            "grade": "D+",
+            "descriptor": ""
+          },
+          {
+            "percentage": "55 > X ≥ 50",
+            "gpa": "1.50",
+            "grade": "D",
+            "descriptor": ""
+          },
+          {
+            "percentage": "50 > X ≥ 0",
+            "gpa": "-",
+            "grade": "F",
+            "descriptor": "راسب"
+          },
+          {
+            "percentage": "-",
+            "gpa": "-",
+            "grade": "Z",
+            "descriptor": "محروم"
+          },
+          {
+            "percentage": "-",
+            "gpa": "-",
+            "grade": "W",
+            "descriptor": "منسحب"
+          },
+          {
+            "percentage": "-",
+            "gpa": "-",
+            "grade": "I",
+            "descriptor": "غير مكتمل"
+          }
+        ],
+        "translations.ar.tabs[id=studySystem].notes": [
+          "X علامة الطالب.",
+          "تعتمد الجامعة الجدول الآتي في حساب المعدل الفصلي والمعدل التراكمي للطالب: من 3.75 إلى 4 شرف، ومن 3.25 إلى 3.74 امتياز، ومن 2.75 إلى 3.24 جيد جداً، ومن 2.25 إلى 2.74 جيد، ومن 2 إلى 2.24 مقبول.",
+          "يحسب المعدل التراكمي المئوي النهائي المكافئ للطالب عند التخرج وفق الآتي: المعدل المئوي = (المعدل النقطي النهائي عند التخرج × 20) + 20."
+        ],
+        "translations.ar.tabs[id=studySystem].sections": [
+          {
+            "title": "نظام الدراسة",
+            "body": "تتكون السنة الدراسية من فصلين دراسيين إلزاميين وفصل صيفي اختياري:\n- الفصل الأول: إلزامي عادي مدته من 16-19 أسبوعاً يخصص بعضها للامتحانات.\n- الفصل الثاني: إلزامي عادي مدته من 16-19 أسبوعاً يخصص بعضها للامتحانات.\n- الفصل الصيفي: اختياري مكثف، مدته ثمانية أسابيع.\n\nيحدد التقويم الجامعي المعتمد من مجلس الجامعة المختص سنوياً تاريخ بدء الدراسة في كل فصل دراسي والامتحانات والعطلة الانتصافية وإعلان النتائج ومواعيد التسجيل."
+          },
+          {
+            "title": "مدد البقاء في الدراسة",
+            "body": "لا يجوز أن تزيد المدة التي يقضيها الطالب مسجلاً في الجامعة للحصول على درجة الإجازة على:\n1. تسع سنوات في كلية الطب (التي مدة الدراسة فيها ست سنوات).\n2. ثمان سنوات في كليات طب الأسنان والصيدلة والكليات الهندسية بكافة فروعها (والتي مدة الدراسة فيها خمس سنوات).\n3. سبع سنوات في الكليات الأخرى (التي مدة الدراسة فيها أربع سنوات)."
+          },
+          {
+            "title": "الدوام في الجامعة",
+            "body": "على الطالب الالتزام بالدوام الكلي، وحضور المحاضرات الخاصة بالمقررات التي سجل فيها، ومتمماتها، وفقاً للساعات المعتمدة لكل مقرر في الخطة الدراسية، ولا يجوز للطالب أن يتغيب أكثر من نسبة 15% من مجموع ساعات الدوام لكل مقرر.\n\nيُحرم الطالب الذي يتجاوز نسبة الغياب النسبة المحددة أعلاه لمقرر ما من الامتحانات النهائية لهذا المقرر وتعد نتيجته في ذلك المقرر صفراً، ويعطى فيه التقدير (Z)، ويعد راسباً فيه، وعليه إعادة تسجيله ودراسته إذا كان إلزامياً. وتدخل نتيجة ذلك المقرر في حساب معدل علامات الطالب الفصلي لأغراض الإنذار والفصل من التخصص.\n\nيجوز لمجلس الكلية النظر في حالات الغياب التي تتجاوز النسبة المبينة أعلاه بحيث يأخذ بالحسبان الأعذار المقبولة أصولاً من قبل رئاسة الجامعة، ويُسمح للطالب الذي تقدم بأعذار مقبولة، بالانسحاب من المقرر، ويمنح تقدير (W)، ولا يعد هذا المقرر بين المقررات التي يحسب منها المعدل التراكمي لعلامات الطالب. يقدم الطالب في حالة العذر المرضي إلى عميد الكلية، تقريراً طبياً صادراً عن الجهة الطبية المعتمدة لدى الجامعة خلال مدة لا تتجاوز أسبوعين من تاريخ انقطاعه عن الدوام، وفي الحالات القاهرة الأخرى يقدم الطالب ما يثبت عذره القهري خلال أسبوع على الأكثر من تاريخ زوال الأسباب.\n\nيعلن عميد الكلية قبل بدء الامتحان بأسبوع على الأقل، بناءً على اقتراح من مجلس القسم وموافقة مجلس الكلية، أسماء الطلاب الذين لم يحققوا نسبة الدوام المطلوبة والذين يحرمون من دخول الامتحان النهائي."
+          },
+          {
+            "title": "الانسحاب من مقرر أو أكثر",
+            "body": "يحق للطالب الانسحاب من المقرر المسجل فيه خلال الفصل الدراسي، ويمنح في هذه الحالة التقدير (W)، وتحدد التواريخ المتعلقة بآخر مهلة للانسحاب من المقررات ضمن التقويم الجامعي الذي يصدر في بداية العام الدراسي، أو في بداية الفصول الدراسية، ولا يدخل المقرر الذي حصل فيه الطالب على تقدير (W) في حساب المعدل التراكمي، وتعد الأيام الأولى للدوام في الفصل (يحدد عددها في التقويم الجامعي) أياماً لسحب وإضافة المقررات، ويحق للطالب خلالها تبديل المقررات التي سبق أن اختارها، وذلك بموافقة المرشد الأكاديمي، ووفق النواظم التي يضعها مجلس الجامعة والمعتمدة من قبل مجلس الأمناء."
+          },
+          {
+            "title": "تجميد الدراسة",
+            "body": "1. يمكن للطالب الذي لا يستطيع متابعة الدراسة في فصل دراسي لأسباب خارجة عن إرادته أن يتقدم إلى عميد الكلية بطلب تجميد دراسته (الانسحاب من جميع المقررات التي سجل فيها) في الفصل المذكور مبيناً فيها الأسباب الداعية لذلك.\n2. يشترط لقبول الطلب أن يقدم قبل نهاية الأسبوع الثامن من بدء الفصل الدراسي.\n3. يصدر قرار التجميد من مجلس الكلية، ويعطى الطالب التقدير (W) في جميع مقررات الفصل التي سجل فيها والذي جمد تسجيله فيه.\n4. تطبق في هذه الحالة النواظم المالية لمجلس الجامعة ذات الصلة، والمعتمدة من قبل مجلس الأمناء.\n5. تحتسب مدة التجميد الدراسي من الحد الأعلى لمدة التسجيل المسموح بها للحصول على درجة الإجازة."
+          },
+          {
+            "title": "الانقطاع عن الدراسة وترقين القيد",
+            "body": "1. يعد الطالب منقطعاً عن الدراسة في أي فصل دراسي عند عدم اكتمال متطلبات التسجيل فيه، وله أن يتقدم للتسجيل في الفصل اللاحق ويخضع عندها لمتطلبات التسجيل المحددة في هذا الفصل، وعليه أن يسدد رسم التسجيل الفصلي المقرر مضافاً إليه رسم الانقطاع عن الفصل السابق المحدد من قبل مجلس الجامعة والمعتمد من قبل مجلس الأمناء.\n2. يرقن قيد الطالب في الحالات الآتية: (أ) إذا انقطع عن الدراسة في فصلين متتاليين. (ب) إذا تجاوز الحد الأعلى لمدد البقاء في الدراسة، المعتمدة من قبل مجلس التعليم العالي. (ج) إذا صدر قرار بفصله نهائياً من الجامعة لأسباب مختلفة (تقديم وثائق مزورة، تجاوز حد الإنذارات الأكاديمية النهائية، المخالفات التي تبرر الفصل من الجامعة).\n3. يمكن للطالب المرقن قيده نتيجة الانقطاع عن الدراسة، إعادة تسجيله في الجامعة وبعد موافقة مجلس الكلية المعني، ويترتب عليه تبرئة ذمته المالية السابقة تجاه الجامعة (إن وجدت) وتسديد رسم التسجيل الفصلي المقرر مضافاً إليه رسم الانقطاع عن الفصول السابقة المحدد من قبل مجلس الجامعة والمعتمد من قبل مجلس الأمناء.\n4. يصدر قرار ترقين قيد الطالب وإعادة تسجيله من قبل مجلس الجامعة بناءً على اقتراح مجلس الكلية المعني."
+          },
+          {
+            "title": "الانسحاب من الجامعة",
+            "body": "1. يكون الانسحاب من الجامعة بناءً على طلب يقدمه الطالب إلى عميد الكلية المعني.\n2. يشترط لقبول الطلب إذا قدِّم قبل بدء الفصل الدراسي أن يكون الطالب بريء الذمة المالية تجاه الجامعة.\n3. يشترط لقبول الطلب إذا قدِّم أثناء الفصل الدراسي، وكان الطالب مسجلاً في ذلك الفصل ومواظباً على الدوام أن يكون مسدداً الرسوم الدراسية المترتبة عليه لذلك الفصل، ولا يحق له المطالبة باسترداد أي جزء منها ويحتفظ له بهذه الرسوم إذا عاد إلى الجامعة خلال الفصل نفسه، مع مراعاة تحقيق نسبة الدوام المطلوبة.\n4. يرفع عميد الكلية الطلب بعد موافقته عليه إلى نائب رئيس الجامعة للشؤون الإدارية وشؤون الطلاب للنظر باعتماده.\n5. يعد الطالب بعد الموافقة على طلبه منسحباً من الجامعة، ويدون بجانب اسمه في سجلات الجامعة (انسحاب من الجامعة بموجب الطلب رقم... تاريخ...)، ويمنح الوثائق الخاصة به.\n6. يحق للطالب الاستنكاف عن طلبه بموجب طلب جديد يقدمه إلى عمادة الكلية، ويشترط موافقة العميد على هذا الطلب."
+          },
+          {
+            "title": "تقويم الطلبة في المقررات",
+            "body": "يُجرى تقويم الطالب في أي مقرر خلال الفصول الدراسية عن طريق الاختبارات والواجبات والأنشطة المختلفة المنسجمة مع طبيعة المقرر والتي تبين مدى استيعاب الطالب للمحتوى العلمي للمقرر.\n\nتوزع الدرجات على عناصر التقويم الفصلي (الاختبارات والواجبات والأنشطة والعملي) وفقاً لما هو منصوص عليه في نظام الجامعة الداخلي وتوصيف مقرراتها مع مراعاة الآتي:\n\nالمقررات النظرية:\n- الكليات التطبيقية: يخصص لأعمال الفصل (الاختبارات والواجبات والأنشطة) نسبة لا تزيد عن 50% من علامة المقرر، على أن يُجرى اختباران على الأقل خلال الفصل الدراسي الواحد، ويخصص للامتحان النهائي على الأقل 50% من النتيجة النهائية ويكون تحريرياً وشاملاً.\n- الكليات النظرية: يخصص لأعمال الفصل (الاختبارات والواجبات والأنشطة) نسبة لا تزيد عن 40% من علامة المقرر، على أن يُجرى اختباران على الأقل خلال الفصل الدراسي الواحد، ويخصص للامتحان النهائي على الأقل 60% من النتيجة النهائية ويكون تحريرياً وشاملاً.\n- لا يجوز دخول الامتحان النهائي لمن لم يحصل على 25% من علامة أعمال الفصل.\n- لا يعد ناجحاً من لم يحصل على 25% من علامة الامتحان النهائي.\n\nالمقررات ذات الطبيعة العملية أو حلقات البحث والمشاريع التطبيقية والعيادات:\n- تقوم مجالس الكليات ببيان كيفية توزيع العلامات التي توضع لهذه المقررات على أن يُعتمد هذا التوزيع في مجلس الكلية المعنية.\n- يصدر مجلس الكلية في بداية كل عام دراسي قراراً يبين توزيع علامات كل من القسمين النظري والعملي (الاختبارات والأنشطة والعملي).\n- يُحدد التقويم النهائي للطالب في مقرر ما عن طريق جمع جميع علامات الاختبارات والامتحانات والواجبات والأنشطة العلمية إلى جانب علامة العملي (حال وجوده) ويشكل مجموع هذه العلامات العلامة الكلية النهائية للطالب في المقرر.\n- يجوز للطالب أن يتقدم بطلب مراجعة علامة ورقة الامتحان النهائي أو الاختبارات الفصلية في مدة أقصاها ثلاثة أيام من إعلان النتائج على نموذج خاص معد لهذه الغاية مقابل رسم يحدده مجلس الجامعة، وتقتصر عملية المراجعة على الخطأ المادي في جمع العلامات أو نسيان تصحيح أسئلة أو أجزاء منها، ويقوم بمراجعة الورقة (عميد الكلية ورئيس القسم ومدرس المقرر أو مدرس آخر من نفس الاختصاص إذا تعذر حضور مدرس المقرر)."
+          },
+          {
+            "title": "أحكام الدوام والانسحاب",
+            "body": "- على الطالب الالتزام بنظام الدوام الكامل وحضور جميع المحاضرات والحصص العملية والمناقشات وفقاً للخطة الدراسية المعتمدة.\n- يعد عمداء الكليات ورؤساء الأقسام وأعضاء الهيئة التدريسية ومدير القبول والتسجيل مسؤولين عن تنفيذ أحكام الدوام.\n- لا يسمح للطالب بالتغيب أكثر من 15% من عدد الساعات المقررة للمقرر.\n- إذا غاب الطالب أكثر من 15% من عدد الساعات المقررة للمقرر من دون عذر مرضي أو قهري يقبله عميد الكلية، يحرم من التقدم للامتحان النهائي، وتُعدُّ نتيجته في ذلك المقرر (صفراً) وتقدير محروم (Z)، وعليه إعادة تسجيله إذا كان إجبارياً، وفي جميع الأحوال تدخل نتيجة ذلك الرسوب في حساب معدل علامات الطالب الفصلي لأغراض الإنذار، والفصل من البرنامج (التخصص).\n- إذا غاب الطالب أكثر من 15% من عدد الساعات المقررة لمقرر ما، وكان هذا الغياب بسبب المرض أو لعذر قهري يقبله العميد المختص، ويقره مجلس الطلبة يعدُّ منسحباً من ذلك المقرر، وتطبق عليه أحكام الانسحاب، ويبلِّغ العميد مدير القبول والتسجيل بذلك، وتثبَّت كلمة (منسحب) والتقدير (W) إزاء ذلك المقرر في السجل الأكاديمي للطالب.\n- يشترط في العذر المرضي أن يكون بتقرير طبي صادر عن طبيب الجامعة، أو عيادة أو مشفى معتمد من قِبل الجامعة ومصدق من قبل مديرية الصحة، وأن يقدم هذا التقرير إلى عميد الكلية خلال مدة لا تتجاوز أسبوعين من تاريخ انقطاع الطالب عن الدوام، وفي الحالات القاهرة الأخرى يقدم الطالب ما يثبت عذره القهري خلال أسبوع من تاريخ زوال أسباب الغياب.\n- يحق للطالب الانسحاب من المقرر المسجل فيه خلال الفصل الدراسي، ويمنح في هذه الحالة تقدير منسحب (W=Withdrawal)، وتحدد التواريخ المتعلقة بآخر مهلة للانسحاب من المقررات ضمن التقويم الجامعي الذي يصدر في بداية العام الدراسي، أو في بداية الفصول الدراسية، ولا يدخل المقرر الذي حصل فيه الطالب على تقدير منسحب (W) في حساب معدله التراكمي، ولا يجوز أن يقل مجموع الساعات المعتمدة المتبقية بعد الانسحاب عن الحد الأدنى للعبء الدراسي المسموح به إلا بموافقة مجلس الجامعة.\n- في حال سحب الطالب جميع مقرراته ضمن الفصل المعني يعدُّ مجمداً لهذا الفصل ويحصل على تقدير منسحب (W) في كل المقررات المسحوبة، ويحسب هذا الفصل من ضمن المدة الزمنية القصوى للدراسة ويظهر في كشف العلامات ويذمم الطالب بكلفته. ولا يؤثر هذا في حساب المعدل التراكمي."
+          },
+          {
+            "title": "حساب المعدل الفصلي (GPA) والمعدل التراكمي (AGPA)",
+            "body": "يحسب المعدل الفصلي (GPA) لكل طالب في نهاية كل فصل دراسي، وهو مجموع العلامات النقطية التي حصل عليها في المقررات التي درسها خلال الفصل بعد ضرب كل منها بعدد الساعات المعتمدة للمقرر مقسوماً على مجموع الساعات المعتمدة التي درسها الطالب خلال الفصل.\n\nيحسب لكل طالب معدل تراكمي كلي (AGPA) بنهاية الفصل بطريقة المعدل الفصلي ذاتها مع الأخذ بالحسبان جميع المقررات التي درسها الطالب منذ بداية دراسته باستثناء المقررات التي تمت إعادتها حيث تؤخذ العلامة الأعلى بالحسبان.\n\nيتم احتساب الـ GPA بجداء المكافئ الرقمي مع عدد الساعات لكل مقرر على حدة ومن ثم يتم جمع نتائج جداء جميع المقررات وتقسم على مجموع ساعات الفصل، مع استثناء المواد الحاصلة على تقدير منسحب (W) من هذا الاحتساب وكأن المادة غير مسجلة.\n\nيتم احتساب الـ AGPA بجداء المكافئ الرقمي مع عدد الساعات لكل مقرر على حدة ومن ثم يتم جمع نتائج جميع المقررات وتقسم على مجموع الساعات منذ دخول الطالب إلى الجامعة وحتى الفصل الحالي.\n1. يتم استثناء المواد الحاصلة على تقدير منسحب (W) من هذا الاحتساب وكأن المادة غير مسجلة.\n2. في حال أن الطالب قد أعاد مادة حاصلة على تقدير (F) ورسب في نفس المادة مرة أخرى فإن المادة تحتسب مرة واحدة فقط وبتعبير آخر لا يمكن احتساب (F) لمادة واحدة أكثر من مرة.\n3. في حال أن الطالب قد أعاد مادة حاصلة على تقدير (F) وانسحب منها فإنه يحصل على تقدير (W) في نفس الفصل أي في احتساب المعدل الفصلي فقط ولا تستبدل الـ (F) بـ (W) في احتساب المعدل التراكمي.\n4. في حال أن الطالب قد أعاد مادة حاصلة على تقدير (F) ونجح في المقرر فيتم استبدال الـ (F) بالمكافئ الجديد في الاحتساب فقط ولا تشطب من قيد الطالب.\n5. في حال أن الطالب حصل على تقدير معين في مقرر ما ورغب في إعادة هذا المقرر لرفع المعدل ولكنه ولسبب ما رسب أو حصل على مكافئ أدنى فتحتسب القيمة الجديدة في الـ GPA ولكن تحتسب القيمة الأكبر في الـ AGPA، وبمعنى آخر فإن الرسوب في مادة معادة يؤثر سلباً على الـ GPA ولا يؤثر على الـ AGPA."
+          },
+          {
+            "title": "التقدير غير المكتمل والرسوب",
+            "body": "- يعطى الطالب الذي لا يتمكن من إنجاز الأعمال المطلوبة منه لتلافي التقصير في المقرر لسبب خارج عن إرادته تقدير \"غير مكتمل\" (I=Incomplete) وذلك بناءً على اقتراح مجلس الكلية وبقرار من مجلس الجامعة، ويتوجب على الطالب الحاصل على هذا التقدير إنجاز الأعمال الإضافية التي تطلب منه لإزالة هذا التقدير قبل نهاية الأسبوع الثالث من الفصل الدراسي التالي، وفي حال تقصير الطالب وعدم التزامه بهذا التوقيت يعطى تقدير محروم أو راسب (Z أو F) في المقرر.\n- يتوجب على الطالب الحاصل على تقدير راسب (F=Fail) أو محروم (Z) في أي مقرر، إعادة التسجيل في المقرر ودراسته مرة أخرى إذا كان إجبارياً أو ما يعادله إن كان اختيارياً، مع تسديد الرسوم والأقساط المعتمدة.\n- يترتب على الطالب التقدم إلى الامتحان النهائي للمقرر، ويعد راسباً في المقرر حال حصوله على علامة تقل عن 25% من علامة الامتحان النهائي أو غيابه عنه مهما كانت علاماته المحصلة في التقويمات السابقة لهذا المقرر ويحصل على تقدير راسب (F=Fail)."
+          },
+          {
+            "title": "العبء الدراسي",
+            "body": "تحدد الساعات المعتمدة التي يمكن للطالب تسجيلها بالحد الأدنى والأعلى خلال الفصول الدراسية المختلفة وفق الآتي:\n- الفصل الأول (الخريف): الحد الأدنى 12، والحد الأعلى 18+3*، والحد الأعلى للكليات التي يزيد عدد الساعات المعتمدة فيها على 200 ساعة 25.\n- الفصل الثاني (الشتاء): الحد الأدنى 12، والحد الأعلى 18+3*، والحد الأعلى للكليات التي يزيد عدد الساعات المعتمدة فيها على 200 ساعة 25.\n- الفصل الثالث (الصيفي): الحد الأدنى 2، والحد الأعلى 9+3*، والحد الأعلى للكليات التي يزيد عدد الساعات المعتمدة فيها على 200 ساعة 9+3*.\n\n* إذا كان معدل الطالب في الفصل السابق لا يقل عن 80% أو 3 نقاط.\n\n- كما يجوز أن يصل العبء الدراسي للطالب في فصل التخرج إلى /21/ ساعة في الفصول العادية و/12/ ساعة في الفصل الصيفي.\n- يمكن للجامعة، وفي حالات وجود عبء دراسي كبير غير محتسب ضمن الساعات المعتمدة للطالب (مثل حالة الترميم في اللغة الأجنبية، أو في العلوم الأساسية)، إعفاء الطالب من تسجيل ساعات معتمدة، ويؤخذ إجمالي العبء الناتج عن الترميم بالحسبان في تقدير مستواه الدراسي لدى منحه وثائق رسمية.\n- يجوز للطالب إعادة دراسة أي مقرر نجح فيه لمرة واحدة فقط وتحسب له أعلى علامة حصل عليها، أما عدد الساعات المعتمدة للمقرر فتدخل في الحساب من خطته الدراسية مرة واحدة."
+          },
+          {
+            "title": "أحكام عامة",
+            "body": "1. لا يجوز إعادة النظر في العلامة المقدّرة أو إعادة تصحيح الورقة الامتحانية إلا في حال وجود خطأ مادي يتعلق بجمع العلامات أو تثبيتها أو عدم تصحيح كامل الجواب أو كامل فقرة من جواب مفصولة عنه.\n2. لا يجوز للجنة امتحان المقرر استرداد الأوراق بعد فتحها كما لا يجوز لها تبديل أي علامة بعد فتح الأوراق.\n3. لا يجوز إطلاع الطالب على ورقته الامتحانية إلا إذا رأى عميد الكلية ضرورة لذلك.\n4. ينظر عميد الكلية أو نائبه مع أساتذة المقرر ومدير القبول والتسجيل في طلبات اعتراض الطلاب على نتائجهم والتأكد من عدم وجود خطأ مادي في أوراقهم الامتحانية عند انتهاء النتائج.\n5. يتم جبر المحصلة الإجمالية لامتحان المقرر إلى الواحد الصحيح مهما كانت قيمة الكسر.\n6. إذا احتاج الطالب إلى أقل من الحد الأدنى للساعات المعتمدة المسموح بها في فصل تخرجه فله أن يسجل ما يحتاج إليه من ساعات.\n7. يعقد الامتحان النهائي لكل مقرر في نهاية الفصل ويكون الامتحان تحريرياً وشاملاً للمقرر ويجوز أن يشمل الامتحان النهائي امتحانات عملية أو شفهية أو تقريراً، ويحدد مجلس الكلية بناءً على توصية من القسم المختص النسبة التي تخصص لها من علامة الامتحان النهائي على أن يعلن ذلك للطلبة في بداية الفصل الدراسي.\n8. يحرم الطالب من التقدم إلى الامتحان النهائي لمقرر ما إذا لم يحقق نسبة الدوام المطلوبة ويعطى فيه تقدير محروم /Z/.\n9. لا تحتسب علامات المقررات التي سبق للطالب أن درسها في جامعة أخرى ضمن معدله التراكمي.\n10. لا يجوز للطالب المنقول من جامعة أخرى التخرج من الجامعة إلا إذا درس ما لا يقل عن 50% من الساعات المعتمدة في الجامعة."
+          }
+        ],
+        "translations.en.tabs[id=studySystem].label": "Study System and Students' Evaluation",
+        "translations.en.tabs[id=studySystem].intro": "The Syrian Private University adopts the credit hour system as a study and assessment system. This system is adopted by many international universities and other universities in the region, in addition to some local universities. The communication with other local and international universities is one of the reasons that led to this choice, as well as the advantages that this system has.\n\nThe system is based on assigning a number of credit hours to each course in the study plan. A credit hour is defined as a one-hour theoretical lecture weekly, or a practical session of two hours or more weekly, taught throughout one study semester.\n\nIn order to have a degree in a certain specialization, students must successfully complete the number of credit hours assigned by the study plan of this specialization.",
+        "translations.en.tabs[id=studySystem].scaleTitle": "Grades and Points Equivalent to Percent Marks",
+        "translations.en.tabs[id=studySystem].scaleHeaders": [
+          {
+            "key": "percentage",
+            "label": "Percent marks"
+          },
+          {
+            "key": "gpa",
+            "label": "Points"
+          },
+          {
+            "key": "grade",
+            "label": "Grade"
+          },
+          {
+            "key": "descriptor",
+            "label": "Grade class"
+          }
+        ],
+        "translations.en.tabs[id=studySystem].scaleRows": [
+          {
+            "percentage": "100 > X ≥ 98",
+            "gpa": "4.00",
+            "grade": "A+",
+            "descriptor": "Honor"
+          },
+          {
+            "percentage": "98 > X ≥ 95",
+            "gpa": "3.75",
+            "grade": "A",
+            "descriptor": "Honor"
+          },
+          {
+            "percentage": "95 > X ≥ 90",
+            "gpa": "3.50",
+            "grade": "A-",
+            "descriptor": "Excellent"
+          },
+          {
+            "percentage": "90 > X ≥ 85",
+            "gpa": "3.25",
+            "grade": "B+",
+            "descriptor": "Excellent"
+          },
+          {
+            "percentage": "85 > X ≥ 80",
+            "gpa": "3.00",
+            "grade": "B",
+            "descriptor": "Very good"
+          },
+          {
+            "percentage": "80 > X ≥ 75",
+            "gpa": "2.75",
+            "grade": "B-",
+            "descriptor": "Very good"
+          },
+          {
+            "percentage": "75 > X ≥ 70",
+            "gpa": "2.50",
+            "grade": "C+",
+            "descriptor": "Good"
+          },
+          {
+            "percentage": "70 > X ≥ 65",
+            "gpa": "2.25",
+            "grade": "C",
+            "descriptor": "Good"
+          },
+          {
+            "percentage": "65 > X ≥ 60",
+            "gpa": "2.00",
+            "grade": "C-",
+            "descriptor": "Acceptable"
+          },
+          {
+            "percentage": "60 > X ≥ 55",
+            "gpa": "1.75",
+            "grade": "D+",
+            "descriptor": ""
+          },
+          {
+            "percentage": "55 > X ≥ 50",
+            "gpa": "1.50",
+            "grade": "D",
+            "descriptor": ""
+          },
+          {
+            "percentage": "50 > X ≥ 0",
+            "gpa": "-",
+            "grade": "F",
+            "descriptor": "Failed"
+          },
+          {
+            "percentage": "-",
+            "gpa": "-",
+            "grade": "Z",
+            "descriptor": "Disqualified"
+          },
+          {
+            "percentage": "-",
+            "gpa": "-",
+            "grade": "W",
+            "descriptor": "Withdrawn"
+          },
+          {
+            "percentage": "-",
+            "gpa": "-",
+            "grade": "I",
+            "descriptor": "Incomplete"
+          }
+        ],
+        "translations.en.tabs[id=studySystem].notes": [
+          "X is the student's mark.",
+          "The university adopts the following table for calculating students' GPA and AGPA: from 95 to 100 (4 to 3.75 points) Honor; from 85 to less than 95 (3.25 to 3.74) Excellent; from 75 to less than 85 (2.75 to 3.24) Very good; from 65 to less than 75 (2.25 to 2.74) Good; from 60 to less than 65 (2 to 2.24) Acceptable.",
+          "A student's AGPA upon graduation is calculated as follows: Percent mark = (final point upon graduation × 20) + 20."
+        ],
+        "translations.en.tabs[id=studySystem].sections": [
+          {
+            "title": "Study System",
+            "body": "The academic year consists of two compulsory semesters and one optional summer semester:\n- The first semester: a compulsory semester that lasts from 16 to 19 weeks, some of which are dedicated to examinations.\n- The second semester: a compulsory semester that lasts from 16 to 19 weeks, some of which are dedicated to examinations.\n- The summer semester: an optional intensive semester that lasts 8 weeks.\n\nThe annual academic calendar adopted by the university council defines the start of the education process in every semester, the examinations' timetable, the duration of the mid-term holiday, the announcement of the examinations' results and registration."
+          },
+          {
+            "title": "Maximum Study Duration",
+            "body": "The study duration for a student registered at the university to get a Bachelor Degree should not exceed:\n1. Nine years at the faculty of medicine (study period in it is 6 years).\n2. Eight years at the faculty of dentistry, pharmacy, and all engineering faculties (study period in these faculties is 5 years).\n3. Seven years in the other faculties (study period in them is 4 years)."
+          },
+          {
+            "title": "Attendance Regulations",
+            "body": "A student must commit to full-time attendance and attend all course lectures and relevant seminars and practical sessions in accordance with the adopted credit hours for every course of the study plan. Students are not allowed to be absent for more than 15% of the adopted semester credit hours.\n\nIf a student is absent for more than 15% of the adopted semester credit hours, he will be disqualified from attending the final examination, his points in that course will be zero, his grade will be (Z), and he must re-register it if it is a compulsory course. In all events, the zero will be counted in calculating the student's GPA concerning warning and dismissal from specialization.\n\nThe faculty council may study absence cases that exceed 15%, considering the excuses formally accepted by the university council, and allow students who have accepted excuses to withdraw from the course and grant them a grade (W) in it, which will not be counted in calculating the student's GPA.\n\nIn case of a medical excuse the student must submit to the dean of the faculty a medical report issued by the medical party adopted by the university within a period not exceeding two weeks from the date of the student's absence. In other force majeure cases, the student must submit a proof of his compelling excuse within one week from the date the reasons for his absence disappear.\n\nUpon a proposal from the department council and approval of the faculty council, the dean of the faculty announces one week before the start of the examination the names of students who did not achieve the stipulated attendance percentage and are therefore deprived from attending the final exam."
+          },
+          {
+            "title": "Withdrawal from One Course or More",
+            "body": "Students may withdraw from a course registered in the semester, and they will be granted grade (W). The final deadlines for withdrawal from courses are stated in the academic calendar issued at the beginning of the academic year or at the beginning of the semesters. A (W) course will not be counted in calculating the student's GPA. The first days of attendance of every semester are course drop and add days (stated in the academic calendar). During these days students may change the courses they have already chosen with the approval of their academic supervisors, according to the regulations set by the University Council and approved by the Board of Trustees."
+          },
+          {
+            "title": "Study Freezing",
+            "body": "1. Students may submit an application for freezing their study (withdrawing from all courses they have registered in) in a semester if they have certain reasons out of their control, provided they are declared.\n2. Freezing applications are accepted only if submitted before the end of the eighth week of the semester.\n3. The faculty council issues the freezing resolution, and grade (W) will be granted in all frozen courses.\n4. The relevant financial regulations of the university council approved by the board of trustees will be applied to frozen courses.\n5. The period of freezing study is counted in the allowed maximum study period to get the Bachelor degree."
+          },
+          {
+            "title": "Study Suspension and Registration Striking Off",
+            "body": "1. Students who do not fulfil all registration requirements are considered in study suspension status. They may apply for registration in the next semester, subject to the registration requirements adopted in it. They should pay the assigned registration fees plus the suspension fees of the previous semester adopted by the university council and approved by the board of trustees.\n2. Students' registrations will be struck off in the following cases: (a) if they suspend their study for two consecutive semesters; (b) if they exceed the maximum study limit approved by the Council of Higher Education; (c) if the university issues a decisive dismissal resolution for various reasons (submitting false documents, exceeding the limits of final academic warnings, violations that justify dismissal from the university).\n3. Students whose registrations are struck off due to study suspension may re-register upon approval of the relevant faculty council. They should settle their financial balance (if any), and pay the registration fees assigned plus the fees of the stopped previous semesters adopted by the university council and approved by the board of trustees.\n4. Resolutions striking off students and resolutions of re-registration are issued by the university council upon a proposal from the relevant faculty council."
+          },
+          {
+            "title": "Withdrawal from the University",
+            "body": "1. Withdrawal from the university is made upon an application submitted to the dean of the faculty.\n2. If the withdrawal application is submitted before the beginning of the study semester, it is accepted provided the student has no outstanding financial obligations to the university.\n3. An application for withdrawal submitted during the study semester is accepted provided the student has officially registered, paid the tuition fees for that semester and committed to attendance. The student will not be allowed to claim a refund of any part of the tuition fees. These fees are kept for the student if he decides to re-enrol in the same semester, taking into consideration the required minimum attendance.\n4. The dean of the faculty passes the application for withdrawal, after approving it, to the vice president of the university for administrative and students' affairs for consideration.\n5. Upon accepting the application for withdrawal, the student is considered withdrawn from the university, it is written beside his name in the university records (withdrawal from the university according to application no. … dated …), and he is granted the relevant documents.\n6. The student may revoke his application for withdrawal by submitting a new application to the faculty deanship, provided it is approved by the dean of the faculty."
+          },
+          {
+            "title": "Students' Evaluation in Courses",
+            "body": "Students' evaluation in every course throughout the academic semesters is done through quizzes, homework and different activities consistent with the nature of the course, which altogether show how well students have understood the course's scientific content.\n\nMarks are distributed over the academic semester evaluation components (quizzes, homework, activities and practical) according to the rules of procedure and courses' descriptions, taking into account the following:\n\nTheoretical courses:\n- Applied faculties: a percentage not more than 50% of the course's mark is assigned to the semester work (quizzes, homework and activities). At least two quizzes must be held during every academic semester. At least 50% of the course's mark is dedicated to the final examination, which is written and comprehensive.\n- Theoretical faculties: a percentage not more than 40% of the course's mark is assigned to the semester work (quizzes, homework and activities). At least two quizzes must be held during every academic semester. At least 60% of the course's mark is dedicated to the final examination, which is written and comprehensive.\n- Students who have not attained 25% of the semester work mark are not allowed to attend the final examination.\n- Students who have not attained 25% of the final examination mark are considered failed.\n\nPractical courses, seminars, applied projects and clinics:\n- Faculty councils define the way of distributing the courses' marks, provided it is adopted by the concerned faculty's council.\n- The faculty's council issues at the beginning of every academic year a resolution that shows the distribution of the marks of the theoretical and practical parts (quizzes, activities and practical).\n- A student's final evaluation in a certain course is defined by summing all marks of the quizzes, examinations, homework and scientific activities along with the practical (if any). The sum of these makes the student's final total mark in that course.\n- A student may submit a special application form for reviewing his answer sheet of the final examination or quizzes within three days following the announcement of the results, against a fee determined by the University Council. The review is limited to checking material mistakes in adding marks or forgetting to correct questions or parts of them. The answer sheets are reviewed by the dean of the faculty, the head of department and the course teacher, or another teacher of the same specialization if the course teacher cannot attend."
+          },
+          {
+            "title": "Attendance and Withdrawal Rules",
+            "body": "- A student must commit to the full attendance system, i.e. attending all lectures, practical sessions and discussions in accordance with the adopted study plan.\n- Deans, heads of departments, teaching staff and the director of admission and registration are responsible for implementing the attendance regulations.\n- Students are not allowed to be absent for more than 15% of the adopted credit hours of a course.\n- If a student is absent for more than 15% of the adopted credit hours of a course without a sick leave or compelling excuse accepted by the dean of the faculty, he will be disqualified from attending the final examination, his points in that course will be zero, his grade will be Z, and he must re-register it if it is a compulsory course. In all events, the zero will be counted in calculating the student's GPA concerning warning and dismissal from specialization.\n- If a student is absent for more than 15% of the adopted credit hours of a course because of illness or a compelling excuse accepted by the dean of the relevant faculty and adopted by the students council, he will be considered withdrawn from that course and subject to the withdrawal regulations. The dean of the relevant faculty informs the director of admission and registration, and the grade class (withdrawn) and grade (W) are recorded for that course in the student's academic record.\n- A sick excuse must be confirmed by a medical report issued by the university physician or a university-accredited clinic or hospital and certified by the directorate of health. This medical report must be submitted to the dean of the faculty within no more than two weeks from the start of the student's absence. In other force majeure cases, the student must submit proof within a week from the date the force majeure ends.\n- A student may withdraw from a registered course during the study semester and receives in this case a grade class (withdrawn) and grade (W = Withdrawal). The deadline for withdrawal from courses is defined in the academic calendar announced at the beginning of the academic year or the study semesters. A course with grade (W) is not counted in calculating the student's cumulative average. The remaining credit hours after withdrawal should not be less than the minimum credit hour load unless permitted by the university council.\n- If a student withdraws from all courses within a specific semester, the semester is regarded as frozen and the student is awarded grade W = Withdrawn in all withdrawn courses. This semester is counted in the maximum study duration and recorded in the student's transcript without being calculated in the GPA; its fees must still be paid."
+          },
+          {
+            "title": "Calculating the GPA and AGPA",
+            "body": "The GPA of every student is calculated at the end of every semester by multiplying the points obtained in every course by the number of its credit hours, summing them and dividing the result by the sum of the credit hours taken by the student during the semester.\n\nEach student's AGPA is calculated at the end of the academic semester for all courses the student has taken since enrolling at the university, applying the same method as the GPA. The highest marks of retaken courses are taken in calculating the AGPA.\n\nThe GPA is calculated by multiplying the numeric equivalent by the number of hours for each course, summing the results for all courses and dividing by the total hours of the semester. Courses with grade withdrawn (W) are excluded from this calculation as if they were not registered.\n\nThe AGPA is calculated by multiplying the numeric equivalent by the number of hours for each course, summing the results for all courses and dividing by the total hours since the student entered the university up to the current semester.\n1. Courses with grade withdrawn (W) are excluded from this calculation as if they were not registered.\n2. If the student retakes a course graded (F) and fails it again, the course is counted only once; in other words, (F) cannot be counted more than once for one course.\n3. If the student retakes a course graded (F) and withdraws from it, he receives (W) in that semester, in the semester GPA only; (F) is not replaced by (W) in the AGPA.\n4. If the student retakes a course graded (F) and passes it, the (F) is replaced by the new equivalent in the calculation only, and is not deleted from the student's record.\n5. If the student has a certain grade in a course and retakes it to raise his average but fails or gets a lower equivalent, the new value is counted in the GPA but the higher value is counted in the AGPA; in other words, failing a retaken course affects the GPA negatively but does not affect the AGPA."
+          },
+          {
+            "title": "Incomplete Grades and Failure",
+            "body": "- A student who cannot complete the tasks required to make up for a shortfall in a course for reasons beyond his control is granted grade I = Incomplete, on a proposal of the faculty council and a resolution of the university council. A student with grade I = Incomplete must perform the extra tasks required to remove this grade before the third week of the following academic semester; if he fails to do so in due time he is granted the grade Disqualified or Failed (Z or F) in that course.\n- A student granted Disqualified or Failed (Z or F) in a course must re-register and restudy it if it is compulsory, or register an equivalent course if it is optional, paying the adopted fees and instalments.\n- A student must attend the course's final examination and will be considered failed and granted grade Failed (F) if he does not attend the final examination or obtains less than 25% of its mark, regardless of the marks obtained in previous evaluations in that course."
+          },
+          {
+            "title": "Study Load",
+            "body": "The minimum and maximum credit hours a student can register are as follows:\n- First semester (autumn): minimum 12; maximum 18+3*; maximum for faculties whose credit hours exceed 200: 25.\n- Second semester (winter): minimum 12; maximum 18+3*; maximum for faculties whose credit hours exceed 200: 25.\n- Third semester (summer): minimum 2; maximum 9+3*; maximum for faculties whose credit hours exceed 200: 9+3*.\n\n* If the student's average in the previous semester is not less than 80% or 3 points.\n\n- A student's study load in the graduation semester may reach 21 credit hours in the autumn and winter semesters and 12 hours in the summer one.\n- If a student has a heavy study load not counted in his credit hours (such as remedial foreign language or basic sciences courses), the university may exempt him from registering credit hours. The total study load of the remedial courses is then considered in evaluating the student's academic level when granting him official documents.\n- A student may retake any course he has already passed only once, and the highest mark is considered in calculating his points. The course's credit hours are counted only once in his study plan."
+          },
+          {
+            "title": "General Rules",
+            "body": "1. Revising a mark or re-correcting an answer sheet is not allowed unless there is a material mistake in summing or recording the marks, or the entire answer or a separate part of it was not corrected.\n2. The course examination committee is not allowed to retrieve the answer sheets or change any mark after opening them.\n3. Students are not allowed to see their answer sheet unless the dean of the faculty deems it necessary.\n4. The dean of the faculty or the vice dean, the course teachers and the director of admission and registration study students' objections to their marks and make sure there are no material mistakes in their answer sheets after the results are completed.\n5. The total course mark is rounded up to the nearest whole number regardless of the value of the fraction.\n6. Graduating students may register the credit hours they need even if they are less than the minimum credit hours allowed in their graduation semester.\n7. A written and comprehensive final examination for every course is held at the end of the semester. It may include practical or oral tests or a report. The faculty council decides their share of the final examination mark upon a recommendation from the relevant department, provided this is announced to students at the beginning of the study semester.\n8. Students who have not achieved the required course attendance are deprived from attending the final examination and granted grade Disqualified (Z).\n9. The marks of courses studied at other universities are not counted in the student's AGPA.\n10. Students transferred from other universities may not graduate from the university unless they study at least 50% of the credit hours at the university."
+          }
+        ],
+        "translations.ar.tabs[id=warnings].intro": "بعد اعتماد النتائج الأكاديمية للطالب في نهاية كل فصل تتولى الجامعة بدءاً من الفصل الدراسي التالي للفصل الذي سجل فيه الطالب، ولا يعد الفصل الصيفي من ضمن هذه الفصول، توجيه إنذار إلى الطالب الذي يقل معدله التراكمي عن (2) نقطة في أي من الفصلين الدراسيين الأول والثاني.",
+        "translations.ar.tabs[id=warnings].levels": [],
+        "translations.ar.tabs[id=warnings].sections": [
+          {
+            "title": "الإنذار والفصل من التخصص",
+            "body": "- عند حصول الطالب على إنذار عليه أن يلغي مفعوله برفع معدله التراكمي إلى (2) نقطة فما فوق، وذلك في مدة أقصاها فصلان دراسيان من تاريخ الإنذار.\n- يفصل الطالب من التخصص بعد انتهاء المدة المقررة في الفقرة السابقة، ويستثنى من ذلك الطالب الذي أتم بنجاح (99) ساعة من الساعات المعتمدة حسب خطته الدراسية، على أن لا يقل معدله التراكمي عن (1.75) نقطة أو ما يعادلها مئوياً، وإذا تدنى معدله التراكمي عن ذلك في أي فصل دراسي لاحق يفصل من التخصص من دون إنذار."
+          },
+          {
+            "title": "الدراسة الخاصة الاستدراكية",
+            "body": "يجوز أن يقبل في الدراسة الخاصة الاستدراكية طالب الإجازة المفصول من الدراسة بسبب تدني معدله التراكمي عن نقطتين وفق الأحكام التالية:\n- إذا كان معدله التراكمي لا يقل عن (1.5) نقطة أو ما يعادلها مئوياً يعطى أربعة فصول دراسية لرفع هذا المعدل إلى الحد الأدنى المقبول ليعود طالباً منتظماً، وإذا أخفق لا يسمح له بمواصلة الدراسة الخاصة إلا إذا كان قد أنهى ما مجموعه (99) ساعة من الساعات المعتمدة المقررة في خطته الدراسية وكان معدله التراكمي فيها لا يقل عن (1.75) نقطة أو ما يعادلها مئوياً وفي هذه الحالة يعطى فصلين دراسيين كحد أعلى يفصل بعدهما إذا لم يتمكن من رفع معدله إلى (2) نقطة.\n- إذا كان معدل الطالب بين (1-1.49) نقطة أو ما يعادلها مئوياً يعطى فصلاً واحداً لرفع هذا المعدل إلى (1.5) نقطة أو ما يعادلها مئوياً، وإذا حقق ذلك يعطى ثلاثة فصول إضافية لرفع المعدل إلى الحد الأدنى المقبول، وإذا أخفق لا يسمح له بمواصلة الدراسة الخاصة الاستدراكية إلا إذا كان قد أنهى ما مجموعه (99) ساعة من الساعات المعتمدة المقررة في خطته الدراسية وكان معدله التراكمي فيها لا يقل عن (1.75) نقطة أو ما يعادلها مئوياً، وفي هذه الحالة يعطى فصلين دراسيين كحد أعلى يفصل بعدهما إذا لم يتمكن من رفع معدله.\n- يفقد الطالب المقبول في الدراسة الخاصة الاستدراكية حقه في الانتقال إلى تخصص آخر إذا أتم الأربعة فصول الممنوحة له في الدراسة الخاصة الاستدراكية ولم يتمكن من رفع معدله التراكمي إلى الحد الأدنى المطلوب ولا يعد الفصل الصيفي فصلاً دراسياً لهذه الغاية.\n- يكون العبء الدراسي للطالب المقبول في الدراسة الخاصة الاستدراكية (15) ساعة معتمدة حداً أعلى لكل من الفصلين الأول والثاني و(6) ساعات معتمدة للفصل الصيفي."
+          },
+          {
+            "title": "الفصل من التخصص أو من الجامعة",
+            "body": "- يفصل من التخصص الطالب الذي يحصل على أقل من نقطة واحدة في المعدل التراكمي في أي فصل من فصول السنة بعد الفصل الأول من التحاقه بالجامعة عدا الفصل الصيفي. وإذا تكرر حصول الطالب على أقل من نقطة واحدة في المعدل التراكمي في أي فصل لاحق يفصل من الجامعة.\n- لا يسمح بقبول الطالب المفصول من تخصص ما في تخصص آخر أكثر من مرة واحدة خلال مدة دراسته في الجامعة. وفي جميع الحالات يتولى مدير القبول والتسجيل إنذار الطالب أو فصله أصولاً، ويبلغ قرار الإنذار أو الفصل للطالب بإبلاغه من خلال مرشده الأكاديمي أو بالطريقة التي تراها الجامعة مناسبة، وكذلك إبلاغ الجهات المعنية فيها.\n- لا يجوز للطالب المفصول أكاديمياً من أي تخصص إعادة قبوله فيه مرة أخرى."
+          },
+          {
+            "title": "التقدير غير المكتمل تحت طائلة الفصل",
+            "body": "إذا حصل الطالب في فصل دراسي ما على تقدير غير مكتمل (I=Incomplete) وكان تحت طائلة الفصل من التخصص أو من الجامعة لتدني معدله التراكمي يطبق عليه ما يأتي:\n- لا يسمح له في الاستمرار في الدراسة في الفصل التالي إلا بعد اكتمال علاماته ورفع معدله إلى الحد الأدنى المطلوب.\n- يفصل الطالب في حالة عدم رفع معدله إلى الحد الأدنى المطلوب، بعد اكتمال علامات ذلك الفصل.\n- يفصل الطالب من الجامعة أو التخصص إذا تجاوز المدة الزمنية القصوى للدراسة المسموح بها للدراسة."
+          }
+        ],
+        "translations.en.tabs[id=warnings].intro": "After adopting the student's academic results at the end of each semester, the university warns the student whose GPA is less than 2 points in either the first or second semester, starting from the beginning of the following registered semester, regardless of the summer semester.",
+        "translations.en.tabs[id=warnings].levels": [],
+        "translations.en.tabs[id=warnings].sections": [
+          {
+            "title": "Warning and Dismissal from Specialization",
+            "body": "- When a student receives a warning, he must deactivate it by raising his GPA to 2 points or more within a maximum of two academic semesters following the warning date.\n- A student is dismissed from the specialization after the end of the period mentioned above. A student who has successfully completed (99) credit hours of his study plan with a GPA not less than (1.75) points or its percentage equivalent is exempted. If the student's GPA drops below (1.75) in any later academic semester, he will be dismissed without warning."
+          },
+          {
+            "title": "Special Catch-up Study",
+            "body": "A bachelor student dismissed because his GPA dropped below 2 points may be accepted in the special catch-up study according to the following provisions:\n- If his GPA is not less than (1.50) or its percentage equivalent, he is allowed four academic semesters to raise the average to the minimum accepted level to become a regular student. If he fails, he will not be permitted to continue the special study unless he has successfully completed 99 credit hours of the study plan with a GPA not less than (1.75) points or its percentage equivalent. In this case he will be permitted a maximum of two academic semesters, after which he will be dismissed if he fails to raise the GPA to (2) points.\n- If the student's GPA is between (1.00-1.49) or its percentage equivalent, he will be allowed one academic semester to raise his GPA to 1.50 or its percentage equivalent. If he achieves that, he will be granted three additional semesters to raise his GPA to the minimum accepted level. If he fails, he will not be allowed to pursue the special catch-up study unless he has completed 99 credit hours of the study plan with a GPA not less than (1.75) points or its percentage equivalent. In this case he will be permitted a maximum of two academic semesters, after which he will be dismissed if he fails to raise the GPA.\n- A student accepted in the special catch-up study loses the right to transfer to another specialization if he completes the four semesters granted in the special catch-up study and fails to raise his GPA to the minimum required level; the summer semester does not count as a semester for this purpose.\n- The maximum study load of a student accepted in the special catch-up study is (15) credit hours in the first and second semesters and (6) credit hours in the summer semester."
+          },
+          {
+            "title": "Dismissal from Specialization or University",
+            "body": "- A student who gets less than (1) GPA point or its percentage equivalent in any semester after his first semester at the university, regardless of the summer semester, will be dismissed from the specialization. If he again gets less than (1) GPA point in any later semester, he will be dismissed from the university.\n- A student who has been dismissed from one specialization is not allowed to be admitted to another specialization more than once during his study at the university. In all of these cases the director of admission and registration warns or dismisses him officially. The warning or dismissal resolution is reported to the student by his academic supervisor or by any other means the university deems appropriate, and to whom it concerns at the university.\n- A student academically dismissed from any specialization is not allowed to be admitted to it again."
+          },
+          {
+            "title": "Incomplete Grade Under Dismissal",
+            "body": "If a student gets I = Incomplete in an academic semester while under dismissal from the specialization or the university due to his low GPA, the following applies:\n- He is not allowed to continue studying in the following semester unless all his marks are complete and his GPA is raised to the required minimum level.\n- He will be dismissed if he fails to raise his GPA to the required minimum after all marks of that semester are complete.\n- He will be dismissed from the specialization or the university if he exceeds the allowed maximum study duration."
+          }
+        ]
+      }
+    },
+    "admissions.graduation-exams": {
+      "ar": {
+        "title": "التخرج والامتحانات الوطنية",
+        "intro": [],
+        "seoDescription": "شروط التخرج وحساب المعدل التراكمي النهائي والامتحان الوطني الموحد في الجامعة السورية الخاصة.",
+        "cardsTitle": "",
+        "cards": [
+          {
+            "title": "التخرج",
+            "body": "يعد الطالب متخرجاً عند نجاحه في جميع مقررات الخطة الدراسية المعتمدة، وإذا كان معدله التراكمي الإجمالي /2/ نقطة فأكثر ولم يتجاوز الحد الأعظمي للسنوات المسموح بها يمنح عندها شهادة ووثيقة تخرج موقعة من عميد الكلية ورئيس الجامعة، إضافة إلى كشف علامات موقع من رئيس الجامعة.\n\nعند التخرج، يحسب المعدل التراكمي النهائي النقطي (AGPA) من مجموع العلامات النقطية التي حصل عليها الطالب في جميع مقررات الخطة الدراسية بعد ضرب كل منها بعدد الساعات المعتمدة للمقرر مقسوماً على مجموع الساعات المعتمدة للخطة.\n\nاستناداً إلى تعميم وزارة التعليم العالي والبحث العلمي، تطلب وثيقة تبرع بالدم من كل طالب عند التخرج وطلب كشف العلامات."
+          },
+          {
+            "title": "الامتحان الوطني",
+            "body": "- يعد الامتحان الوطني الموحد جزءاً لا يتجزأ من اللوائح الداخلية لكليات واختصاصات (الطب، طب الأسنان، الصيدلة، الهندسة المعمارية، الهندسة المعلوماتية) في الجامعات الحكومية والخاصة.\n- علامة النجاح في هذا الامتحان 50% ولا تدخل في معدل درجة الإجازة، ويستفيد الطالب من المساعدات الامتحانية بمقدار علامتين فقط.\n- يجري هذا الامتحان للطلاب الناجحين في جميع مقررات الخطة الدراسية، ويحدد مواعيده ومحاوره مجلس التعليم العالي.\n- يعد الامتحان شرطاً للقبول في الدراسات العليا بشرط ألا تقل علامة نجاح الطالب في هذا الامتحان عن 60%.\n- يسمح للطالب الذي أنجز جميع مقررات الخطة بالتقدم إلى هذا الامتحان ما دام لم يكن مستنفداً مدة الإبقاء في الجامعة، ويستفيد من الدورات الاستثنائية عند صدورها."
+          }
+        ],
+        "stepsTitle": "",
+        "steps": []
+      },
+      "en": {
+        "title": "Graduation and National Examinations",
+        "intro": [],
+        "seoDescription": "Graduation requirements, the final AGPA and the unified national examination at the Syrian Private University.",
+        "cardsTitle": "",
+        "cards": [
+          {
+            "title": "Graduation",
+            "body": "A student is considered graduated upon successfully completing all courses in the approved study plan. If the student's cumulative grade point average (CGPA) is 2.0 or higher, and the maximum permitted years of study have not been exceeded, the student is then awarded a graduation certificate and diploma signed by the Dean of the Faculty and the President of the University, in addition to an official transcript signed by the President of the University.\n\nUpon graduation, the final Accumulative Grade Point Average (AGPA) is calculated from the total grade points obtained in all courses of the study plan, after multiplying each grade point by the number of credit hours assigned to the course, divided by the total credit hours of the plan.\n\nBased on the circular issued by the Ministry of Higher Education and Scientific Research, a blood donation certificate is required from every student upon graduation and when requesting a transcript."
+          },
+          {
+            "title": "National Examination",
+            "body": "- The unified national examination is considered an integral part of the internal regulations of the faculties and specializations of Medicine, Dentistry, Pharmacy, Architecture, and Informatics Engineering in both public and private universities.\n- The passing mark for this examination is 50%, and it does not count toward the bachelor's degree average. Students may benefit from examination assistance of up to two marks only.\n- This examination is administered to students who have successfully completed all courses in the study plan, and its dates and subjects are determined by the Higher Education Council.\n- The examination is a prerequisite for admission to postgraduate studies, provided that the student's passing mark in this examination is not less than 60%.\n- A student who has completed all courses in the study plan is permitted to sit for this examination as long as they have not exhausted the maximum allowed duration of enrollment at the university, and they may benefit from exceptional sessions when issued."
+          }
+        ],
+        "stepsTitle": "",
+        "steps": []
+      }
+    }
+  }
+}

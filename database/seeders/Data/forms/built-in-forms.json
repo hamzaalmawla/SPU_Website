@@ -1,0 +1,1031 @@
+[
+    {
+        "key": "conference-registration",
+        "nameAr": "التسجيل في مؤتمر",
+        "nameEn": "Conference registration",
+        "inbox": "event_registrations",
+        "multiStep": false,
+        "submitLabelAr": "إرسال التسجيل",
+        "submitLabelEn": "Submit Registration",
+        "steps": [
+            {
+                "titleAr": "",
+                "titleEn": "",
+                "fields": [
+                    {
+                        "name": "fullName",
+                        "type": "text",
+                        "labelAr": "الاسم الكامل",
+                        "labelEn": "Full Name",
+                        "placeholderAr": "أدخل اسمك الكامل",
+                        "placeholderEn": "Enter your full name",
+                        "required": true
+                    },
+                    {
+                        "name": "email",
+                        "type": "email",
+                        "labelAr": "البريد الإلكتروني",
+                        "labelEn": "Email Address",
+                        "placeholderAr": "بريدك@الإلكتروني.com",
+                        "placeholderEn": "you@example.com",
+                        "required": true
+                    },
+                    {
+                        "name": "phone",
+                        "type": "tel",
+                        "labelAr": "رقم الهاتف",
+                        "labelEn": "Phone Number",
+                        "placeholderAr": "+963 xxx xxx xxx",
+                        "placeholderEn": "+963 xxx xxx xxx",
+                        "required": false
+                    },
+                    {
+                        "name": "affiliation",
+                        "type": "text",
+                        "labelAr": "المؤسسة / الانتماء",
+                        "labelEn": "Institution / Affiliation",
+                        "placeholderAr": "الجامعة أو المؤسسة",
+                        "placeholderEn": "University or organization",
+                        "required": true
+                    },
+                    {
+                        "name": "role",
+                        "type": "select",
+                        "labelAr": "دور الحضور",
+                        "labelEn": "Attendance Role",
+                        "placeholderAr": "",
+                        "placeholderEn": "",
+                        "required": true,
+                        "options": [
+                            {
+                                "value": "attendee",
+                                "labelAr": "حاضر",
+                                "labelEn": "Attendee"
+                            },
+                            {
+                                "value": "presenter",
+                                "labelAr": "مقدم ورقة",
+                                "labelEn": "Presenter"
+                            },
+                            {
+                                "value": "poster",
+                                "labelAr": "جلسة ملصقات",
+                                "labelEn": "Poster Session"
+                            },
+                            {
+                                "value": "moderator",
+                                "labelAr": "مشرف",
+                                "labelEn": "Moderator / Panelist"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "dietary",
+                        "type": "select",
+                        "labelAr": "متطلبات النظام الغذائي",
+                        "labelEn": "Dietary Requirements",
+                        "placeholderAr": "",
+                        "placeholderEn": "",
+                        "required": false,
+                        "options": [
+                            {
+                                "value": "vegetarian",
+                                "labelAr": "نباتي",
+                                "labelEn": "Vegetarian"
+                            },
+                            {
+                                "value": "vegan",
+                                "labelAr": "نباتي صرف",
+                                "labelEn": "Vegan"
+                            },
+                            {
+                                "value": "halal",
+                                "labelAr": "حلال فقط",
+                                "labelEn": "Halal only"
+                            },
+                            {
+                                "value": "other",
+                                "labelAr": "أخرى (حدد)",
+                                "labelEn": "Other (specify)"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "specialNeeds",
+                        "type": "textarea",
+                        "labelAr": "متطلبات خاصة أو ملاحظات",
+                        "labelEn": "Special Requirements or Notes",
+                        "placeholderAr": "أي احتياجات وصول أو طلبات خاصة...",
+                        "placeholderEn": "Any accessibility needs or special requests...",
+                        "required": false
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "key": "symposium-registration",
+        "nameAr": "التسجيل في ندوة",
+        "nameEn": "Symposium registration",
+        "inbox": "event_registrations",
+        "multiStep": false,
+        "submitLabelAr": "سجل الآن",
+        "submitLabelEn": "Register Now",
+        "steps": [
+            {
+                "titleAr": "",
+                "titleEn": "",
+                "fields": [
+                    {
+                        "name": "fullName",
+                        "type": "text",
+                        "labelAr": "الاسم الكامل",
+                        "labelEn": "Full Name",
+                        "placeholderAr": "أدخل اسمك الكامل",
+                        "placeholderEn": "Enter your full name",
+                        "required": true
+                    },
+                    {
+                        "name": "email",
+                        "type": "email",
+                        "labelAr": "البريد الإلكتروني",
+                        "labelEn": "Email Address",
+                        "placeholderAr": "بريدك@الإلكتروني.com",
+                        "placeholderEn": "you@example.com",
+                        "required": true
+                    },
+                    {
+                        "name": "phone",
+                        "type": "tel",
+                        "labelAr": "رقم الهاتف",
+                        "labelEn": "Phone Number",
+                        "placeholderAr": "+963 xxx xxx xxx",
+                        "placeholderEn": "+963 xxx xxx xxx",
+                        "required": false
+                    },
+                    {
+                        "name": "department",
+                        "type": "text",
+                        "labelAr": "القسم / الكلية",
+                        "labelEn": "Department / Faculty",
+                        "placeholderAr": "قسمك الأكاديمي",
+                        "placeholderEn": "Your academic department",
+                        "required": true
+                    },
+                    {
+                        "name": "year",
+                        "type": "select",
+                        "labelAr": "السنة الأكاديمية",
+                        "labelEn": "Academic Year",
+                        "placeholderAr": "",
+                        "placeholderEn": "",
+                        "required": true,
+                        "options": [
+                            {
+                                "value": "1",
+                                "labelAr": "السنة الأولى",
+                                "labelEn": "First Year"
+                            },
+                            {
+                                "value": "2",
+                                "labelAr": "السنة الثانية",
+                                "labelEn": "Second Year"
+                            },
+                            {
+                                "value": "3",
+                                "labelAr": "السنة الثالثة",
+                                "labelEn": "Third Year"
+                            },
+                            {
+                                "value": "4",
+                                "labelAr": "السنة الرابعة",
+                                "labelEn": "Fourth Year"
+                            },
+                            {
+                                "value": "5",
+                                "labelAr": "السنة الخامسة",
+                                "labelEn": "Fifth Year"
+                            },
+                            {
+                                "value": "master",
+                                "labelAr": "طالب ماجستير",
+                                "labelEn": "Master's Student"
+                            },
+                            {
+                                "value": "phd",
+                                "labelAr": "طالب دكتوراه",
+                                "labelEn": "PhD Student"
+                            },
+                            {
+                                "value": "faculty",
+                                "labelAr": "عضو هيئة تدريس",
+                                "labelEn": "Faculty Member"
+                            },
+                            {
+                                "value": "external",
+                                "labelAr": "حاضر خارجي",
+                                "labelEn": "External Attendee"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "specialNeeds",
+                        "type": "textarea",
+                        "labelAr": "متطلبات خاصة أو ملاحظات",
+                        "labelEn": "Special Requirements or Notes",
+                        "placeholderAr": "أي احتياجات وصول أو طلبات خاصة...",
+                        "placeholderEn": "Any accessibility needs or special requests...",
+                        "required": false
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "key": "activity-registration",
+        "nameAr": "التسجيل في نشاط",
+        "nameEn": "Activity registration",
+        "inbox": "event_registrations",
+        "multiStep": false,
+        "submitLabelAr": "إرسال",
+        "submitLabelEn": "Submit",
+        "steps": [
+            {
+                "titleAr": "",
+                "titleEn": "",
+                "fields": [
+                    {
+                        "name": "fullName",
+                        "type": "text",
+                        "labelAr": "الاسم الكامل",
+                        "labelEn": "Full Name",
+                        "placeholderAr": "أدخل اسمك الكامل",
+                        "placeholderEn": "Enter your full name",
+                        "required": true
+                    },
+                    {
+                        "name": "email",
+                        "type": "email",
+                        "labelAr": "البريد الإلكتروني",
+                        "labelEn": "Email Address",
+                        "placeholderAr": "بريدك@الإلكتروني.com",
+                        "placeholderEn": "you@example.com",
+                        "required": true
+                    },
+                    {
+                        "name": "phone",
+                        "type": "tel",
+                        "labelAr": "رقم الهاتف",
+                        "labelEn": "Phone Number",
+                        "placeholderAr": "+963 xxx xxx xxx",
+                        "placeholderEn": "+963 xxx xxx xxx",
+                        "required": false
+                    },
+                    {
+                        "name": "studentId",
+                        "type": "text",
+                        "labelAr": "رقم الطالب",
+                        "labelEn": "Student ID",
+                        "placeholderAr": "مثال: 2024001",
+                        "placeholderEn": "e.g. 2024001",
+                        "required": false
+                    },
+                    {
+                        "name": "notes",
+                        "type": "textarea",
+                        "labelAr": "ملاحظات",
+                        "labelEn": "Notes",
+                        "placeholderAr": "أي معلومات إضافية...",
+                        "placeholderEn": "Any additional information...",
+                        "required": false
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "key": "admissions-application",
+        "nameAr": "طلب قبول جامعي",
+        "nameEn": "Admissions application",
+        "inbox": "admissions",
+        "multiStep": false,
+        "submitLabelAr": "إرسال الطلب للمراجعة",
+        "submitLabelEn": "Submit for Admissions Review",
+        "steps": [
+            {
+                "titleAr": "",
+                "titleEn": "",
+                "fields": [
+                    {
+                        "name": "fullName",
+                        "type": "text",
+                        "labelAr": "الاسم الكامل",
+                        "labelEn": "Full Name",
+                        "placeholderAr": "",
+                        "placeholderEn": "",
+                        "required": true
+                    },
+                    {
+                        "name": "email",
+                        "type": "email",
+                        "labelAr": "البريد الإلكتروني",
+                        "labelEn": "Email Address",
+                        "placeholderAr": "",
+                        "placeholderEn": "",
+                        "required": true
+                    },
+                    {
+                        "name": "phone",
+                        "type": "tel",
+                        "labelAr": "رقم الهاتف",
+                        "labelEn": "Phone Number",
+                        "placeholderAr": "",
+                        "placeholderEn": "",
+                        "required": true
+                    },
+                    {
+                        "name": "applicantType",
+                        "type": "select",
+                        "labelAr": "فئة المتقدم",
+                        "labelEn": "Applicant Type",
+                        "placeholderAr": "",
+                        "placeholderEn": "",
+                        "required": true,
+                        "options": [
+                            {
+                                "value": "new",
+                                "labelAr": "طالب مستجد",
+                                "labelEn": "New Entrant"
+                            },
+                            {
+                                "value": "transfer",
+                                "labelAr": "طالب تحويل",
+                                "labelEn": "Transfer Student"
+                            },
+                            {
+                                "value": "equivalency",
+                                "labelAr": "طالب معادلة",
+                                "labelEn": "Certificate Equivalency"
+                            },
+                            {
+                                "value": "international",
+                                "labelAr": "طالب دولي",
+                                "labelEn": "International Applicant"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "targetFaculty",
+                        "type": "select",
+                        "labelAr": "الكلية المرغوبة",
+                        "labelEn": "Preferred Faculty",
+                        "placeholderAr": "",
+                        "placeholderEn": "",
+                        "required": true,
+                        "options": [
+                            {
+                                "value": "medicine",
+                                "labelAr": "كلية الطب البشري",
+                                "labelEn": "Faculty of Medicine"
+                            },
+                            {
+                                "value": "dentistry",
+                                "labelAr": "كلية طب الأسنان",
+                                "labelEn": "Faculty of Dentistry"
+                            },
+                            {
+                                "value": "pharmacy",
+                                "labelAr": "كلية الصيدلة",
+                                "labelEn": "Faculty of Pharmacy"
+                            },
+                            {
+                                "value": "artificial-intelligence",
+                                "labelAr": "كلية الذكاء الاصطناعي",
+                                "labelEn": "Faculty of Artificial Intelligence"
+                            },
+                            {
+                                "value": "building-construction-engineering",
+                                "labelAr": "كلية هندسة التشييد والبناء",
+                                "labelEn": "Faculty of Building Construction Engineering"
+                            },
+                            {
+                                "value": "petroleum",
+                                "labelAr": "كلية هندسة البترول",
+                                "labelEn": "Faculty of Petroleum Engineering"
+                            },
+                            {
+                                "value": "business-administration",
+                                "labelAr": "كلية إدارة الأعمال",
+                                "labelEn": "Faculty of Business Administration"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "secondaryCertificate",
+                        "type": "text",
+                        "labelAr": "نوع الشهادة الثانوية",
+                        "labelEn": "Secondary Certificate Type",
+                        "placeholderAr": "",
+                        "placeholderEn": "",
+                        "required": true
+                    },
+                    {
+                        "name": "certificateCountry",
+                        "type": "text",
+                        "labelAr": "بلد إصدار الشهادة",
+                        "labelEn": "Certificate Issuing Country",
+                        "placeholderAr": "",
+                        "placeholderEn": "",
+                        "required": true
+                    },
+                    {
+                        "name": "notes",
+                        "type": "textarea",
+                        "labelAr": "معلومات إضافية",
+                        "labelEn": "Additional Information",
+                        "placeholderAr": "لا تدرج بيانات مصرفية أو كلمات مرور أو أرقام وثائق الهوية.",
+                        "placeholderEn": "Do not include bank details, passwords, or identity document numbers.",
+                        "required": false
+                    },
+                    {
+                        "name": "agreeToTerms",
+                        "type": "checkbox",
+                        "labelAr": "أؤكد صحة المعلومات وأفهم أن إرسال الطلب لا يحجز مقعداً ولا يضمن القبول.",
+                        "labelEn": "I confirm that the information is accurate and understand that submission does not reserve a seat or guarantee admission.",
+                        "placeholderAr": "",
+                        "placeholderEn": "",
+                        "required": true
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "key": "job-application",
+        "nameAr": "طلب توظيف",
+        "nameEn": "Job application",
+        "inbox": "jobs",
+        "multiStep": true,
+        "submitLabelAr": "إرسال الطلب",
+        "submitLabelEn": "Submit Application",
+        "steps": [
+            {
+                "titleAr": "المعلومات الشخصية",
+                "titleEn": "Personal Information",
+                "fields": [
+                    {
+                        "name": "firstNameAr",
+                        "type": "text",
+                        "labelAr": "الاسم الأول بالعربية",
+                        "labelEn": "First Name (Arabic)",
+                        "placeholderAr": "",
+                        "placeholderEn": "",
+                        "required": true
+                    },
+                    {
+                        "name": "lastNameAr",
+                        "type": "text",
+                        "labelAr": "الاسم الأخير بالعربية كما ورد في جواز السفر",
+                        "labelEn": "Last Name (Arabic)",
+                        "placeholderAr": "",
+                        "placeholderEn": "",
+                        "required": true
+                    },
+                    {
+                        "name": "email",
+                        "type": "email",
+                        "labelAr": "البريد الإلكتروني",
+                        "labelEn": "Email Address",
+                        "placeholderAr": "",
+                        "placeholderEn": "",
+                        "required": true
+                    },
+                    {
+                        "name": "phone",
+                        "type": "tel",
+                        "labelAr": "رقم الهاتف المحمول",
+                        "labelEn": "Mobile Phone",
+                        "placeholderAr": "",
+                        "placeholderEn": "",
+                        "required": true
+                    },
+                    {
+                        "name": "gender",
+                        "type": "select",
+                        "labelAr": "الجنس",
+                        "labelEn": "Gender",
+                        "placeholderAr": "",
+                        "placeholderEn": "",
+                        "required": true,
+                        "options": [
+                            {
+                                "value": "male",
+                                "labelAr": "ذكر",
+                                "labelEn": "Male"
+                            },
+                            {
+                                "value": "female",
+                                "labelAr": "أنثى",
+                                "labelEn": "Female"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "profession",
+                        "type": "text",
+                        "labelAr": "المهنة",
+                        "labelEn": "Profession",
+                        "placeholderAr": "",
+                        "placeholderEn": "",
+                        "required": true
+                    },
+                    {
+                        "name": "birthDate",
+                        "type": "date",
+                        "labelAr": "تاريخ الميلاد",
+                        "labelEn": "Date of Birth",
+                        "placeholderAr": "",
+                        "placeholderEn": "",
+                        "required": true
+                    },
+                    {
+                        "name": "address",
+                        "type": "text",
+                        "labelAr": "العنوان بالتفصيل",
+                        "labelEn": "Detailed Address",
+                        "placeholderAr": "",
+                        "placeholderEn": "",
+                        "required": false
+                    }
+                ]
+            },
+            {
+                "titleAr": "المؤهلات العلمية",
+                "titleEn": "Academic Qualifications",
+                "fields": [
+                    {
+                        "name": "educationLevel",
+                        "type": "select",
+                        "labelAr": "المستوى التعليمي",
+                        "labelEn": "Education Level",
+                        "placeholderAr": "",
+                        "placeholderEn": "",
+                        "required": true,
+                        "options": [
+                            {
+                                "value": "phd",
+                                "labelAr": "دكتوراه",
+                                "labelEn": "PhD"
+                            },
+                            {
+                                "value": "master",
+                                "labelAr": "ماجستير",
+                                "labelEn": "Master's"
+                            },
+                            {
+                                "value": "bachelor",
+                                "labelAr": "بكالوريوس",
+                                "labelEn": "Bachelor's"
+                            },
+                            {
+                                "value": "institute",
+                                "labelAr": "معهد",
+                                "labelEn": "Institute"
+                            },
+                            {
+                                "value": "none",
+                                "labelAr": "غير مدخول",
+                                "labelEn": "Not enrolled"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "highestUniversity",
+                        "type": "text",
+                        "labelAr": "الجامعة المنارة لأعلى دفعة علمية",
+                        "labelEn": "Highest University Attended",
+                        "placeholderAr": "",
+                        "placeholderEn": "",
+                        "required": true
+                    },
+                    {
+                        "name": "academicExperience",
+                        "type": "number",
+                        "labelAr": "سنوات الخبرة الأكاديمية",
+                        "labelEn": "Academic Experience (Years)",
+                        "placeholderAr": "0",
+                        "placeholderEn": "0",
+                        "required": false
+                    },
+                    {
+                        "name": "englishLevel",
+                        "type": "select",
+                        "labelAr": "مستوى اللغة الإنجليزية",
+                        "labelEn": "English Language Level",
+                        "placeholderAr": "",
+                        "placeholderEn": "",
+                        "required": true,
+                        "options": [
+                            {
+                                "value": "native",
+                                "labelAr": "لغة أم",
+                                "labelEn": "Native"
+                            },
+                            {
+                                "value": "fluent",
+                                "labelAr": "طلاقة",
+                                "labelEn": "Fluent"
+                            },
+                            {
+                                "value": "advanced",
+                                "labelAr": "متقدم",
+                                "labelEn": "Advanced"
+                            },
+                            {
+                                "value": "intermediate",
+                                "labelAr": "متوسط",
+                                "labelEn": "Intermediate"
+                            },
+                            {
+                                "value": "basic",
+                                "labelAr": "أساسي",
+                                "labelEn": "Basic"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "personalSkills",
+                        "type": "select",
+                        "labelAr": "مستوى المهارات الشخصية",
+                        "labelEn": "Personal Skills Level",
+                        "placeholderAr": "",
+                        "placeholderEn": "",
+                        "required": false,
+                        "options": [
+                            {
+                                "value": "excellent",
+                                "labelAr": "ممتاز",
+                                "labelEn": "Excellent"
+                            },
+                            {
+                                "value": "very-good",
+                                "labelAr": "جيد جداً",
+                                "labelEn": "Very Good"
+                            },
+                            {
+                                "value": "good",
+                                "labelAr": "جيد",
+                                "labelEn": "Good"
+                            },
+                            {
+                                "value": "acceptable",
+                                "labelAr": "مقبول",
+                                "labelEn": "Acceptable"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "institutionName",
+                        "type": "text",
+                        "labelAr": "اسم المؤسسة أو الجامعة",
+                        "labelEn": "Institution / University Name",
+                        "placeholderAr": "",
+                        "placeholderEn": "",
+                        "required": false
+                    }
+                ]
+            },
+            {
+                "titleAr": "المعلومات الأكاديمية",
+                "titleEn": "Academic Information",
+                "fields": [
+                    {
+                        "name": "targetFaculty",
+                        "type": "select",
+                        "labelAr": "الكلية المراد التقدم لها",
+                        "labelEn": "Faculty to Apply To",
+                        "placeholderAr": "",
+                        "placeholderEn": "",
+                        "required": true,
+                        "options": [
+                            {
+                                "value": "ai",
+                                "labelAr": "كلية الذكاء الاصطناعي",
+                                "labelEn": "Faculty of Artificial Intelligence"
+                            },
+                            {
+                                "value": "business",
+                                "labelAr": "كلية إدارة الأعمال",
+                                "labelEn": "Faculty of Business Administration"
+                            },
+                            {
+                                "value": "construction",
+                                "labelAr": "كلية هندسة التشييد والبناء",
+                                "labelEn": "Faculty of Building Construction Engineering"
+                            },
+                            {
+                                "value": "dentistry",
+                                "labelAr": "كلية طب الأسنان",
+                                "labelEn": "Faculty of Dentistry"
+                            },
+                            {
+                                "value": "medicine",
+                                "labelAr": "كلية الطب",
+                                "labelEn": "Faculty of Medicine"
+                            },
+                            {
+                                "value": "petroleum",
+                                "labelAr": "كلية هندسة النفط",
+                                "labelEn": "Faculty of Petroleum Engineering"
+                            },
+                            {
+                                "value": "pharmacy",
+                                "labelAr": "كلية الصيدلة",
+                                "labelEn": "Faculty of Pharmacy"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "generalSpecialization",
+                        "type": "text",
+                        "labelAr": "التخصص العام",
+                        "labelEn": "General Specialization",
+                        "placeholderAr": "مثال: علوم الحاسوب",
+                        "placeholderEn": "e.g. Computer Science",
+                        "required": true
+                    },
+                    {
+                        "name": "preciseSpecialization",
+                        "type": "text",
+                        "labelAr": "التخصص الدقيق",
+                        "labelEn": "Precise Specialization",
+                        "placeholderAr": "مثال: تعلم الآلة",
+                        "placeholderEn": "e.g. Machine Learning",
+                        "required": true
+                    },
+                    {
+                        "name": "academicRank",
+                        "type": "select",
+                        "labelAr": "الرتبة الأكاديمية",
+                        "labelEn": "Academic Rank",
+                        "placeholderAr": "",
+                        "placeholderEn": "",
+                        "required": true,
+                        "options": [
+                            {
+                                "value": "professor",
+                                "labelAr": "أستاذ",
+                                "labelEn": "Professor"
+                            },
+                            {
+                                "value": "associate-professor",
+                                "labelAr": "أستاذ مشارك",
+                                "labelEn": "Associate Professor"
+                            },
+                            {
+                                "value": "assistant-professor",
+                                "labelAr": "أستاذ مساعد",
+                                "labelEn": "Assistant Professor"
+                            },
+                            {
+                                "value": "lecturer",
+                                "labelAr": "محاضر",
+                                "labelEn": "Lecturer"
+                            },
+                            {
+                                "value": "teaching-assistant",
+                                "labelAr": "مساعد تدريس",
+                                "labelEn": "Teaching Assistant"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "contractType",
+                        "type": "select",
+                        "labelAr": "نوع التعاقد",
+                        "labelEn": "Contract Type",
+                        "placeholderAr": "",
+                        "placeholderEn": "",
+                        "required": true,
+                        "options": [
+                            {
+                                "value": "full-time",
+                                "labelAr": "دوام كامل",
+                                "labelEn": "Full-time"
+                            },
+                            {
+                                "value": "part-time",
+                                "labelAr": "دوام جزئي",
+                                "labelEn": "Part-time"
+                            },
+                            {
+                                "value": "visiting",
+                                "labelAr": "زائر",
+                                "labelEn": "Visiting"
+                            },
+                            {
+                                "value": "contract",
+                                "labelAr": "عقد",
+                                "labelEn": "Contract"
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                "titleAr": "السيرة الذاتية والمستندات",
+                "titleEn": "CV & Documents",
+                "fields": [
+                    {
+                        "name": "cvFile",
+                        "type": "file",
+                        "labelAr": "رفع السيرة الذاتية (PDF)",
+                        "labelEn": "Upload CV (PDF)",
+                        "placeholderAr": "",
+                        "placeholderEn": "",
+                        "required": true,
+                        "accept": ".pdf",
+                        "maxKilobytes": 5120
+                    },
+                    {
+                        "name": "coverLetter",
+                        "type": "textarea",
+                        "labelAr": "رسالة التغطية / بيانات الغرض",
+                        "labelEn": "Cover Letter / Statement of Purpose",
+                        "placeholderAr": "أخبرنا عن نفسك ولماذا تقدم...",
+                        "placeholderEn": "Tell us about yourself and why you are applying...",
+                        "required": false
+                    }
+                ]
+            },
+            {
+                "titleAr": "المتطلبات الإضافية",
+                "titleEn": "Additional Requirements",
+                "fields": [
+                    {
+                        "name": "hasPriorCriminalRecord",
+                        "type": "select",
+                        "labelAr": "هل لديك أي سجل جنائي سابق؟",
+                        "labelEn": "Do you have any prior criminal record?",
+                        "placeholderAr": "",
+                        "placeholderEn": "",
+                        "required": true,
+                        "options": [
+                            {
+                                "value": "no",
+                                "labelAr": "لا",
+                                "labelEn": "No"
+                            },
+                            {
+                                "value": "yes",
+                                "labelAr": "نعم",
+                                "labelEn": "Yes"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "canProvideReferences",
+                        "type": "select",
+                        "labelAr": "هل تستطيع تقديم مراجع مهنية؟",
+                        "labelEn": "Can you provide professional references?",
+                        "placeholderAr": "",
+                        "placeholderEn": "",
+                        "required": true,
+                        "options": [
+                            {
+                                "value": "yes",
+                                "labelAr": "نعم",
+                                "labelEn": "Yes"
+                            },
+                            {
+                                "value": "no",
+                                "labelAr": "لا",
+                                "labelEn": "No"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "agreeToTerms",
+                        "type": "checkbox",
+                        "labelAr": "أقر بأن جميع المعلومات المقدمة صحيحة وأوافق على سياسات التوظيف في الجامعة.",
+                        "labelEn": "I confirm that all information provided is accurate and I agree to the university's hiring policies.",
+                        "placeholderAr": "",
+                        "placeholderEn": "",
+                        "required": true
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "key": "suggestions-complaints",
+        "nameAr": "المقترحات والشكاوى",
+        "nameEn": "Suggestions and complaints",
+        "inbox": "suggestions",
+        "multiStep": false,
+        "submitLabelAr": "إرسال الطلب",
+        "submitLabelEn": "Submit Request",
+        "steps": [
+            {
+                "titleAr": "",
+                "titleEn": "",
+                "fields": [
+                    {
+                        "name": "fullName",
+                        "type": "text",
+                        "labelAr": "الاسم الكامل",
+                        "labelEn": "Full Name",
+                        "placeholderAr": "",
+                        "placeholderEn": "",
+                        "required": true,
+                        "maxLength": 120
+                    },
+                    {
+                        "name": "email",
+                        "type": "email",
+                        "labelAr": "البريد الإلكتروني",
+                        "labelEn": "Email",
+                        "placeholderAr": "",
+                        "placeholderEn": "",
+                        "required": true
+                    },
+                    {
+                        "name": "phone",
+                        "type": "tel",
+                        "labelAr": "رقم الهاتف",
+                        "labelEn": "Phone",
+                        "placeholderAr": "",
+                        "placeholderEn": "",
+                        "required": true
+                    },
+                    {
+                        "name": "requestType",
+                        "type": "select",
+                        "labelAr": "نوع الطلب",
+                        "labelEn": "Request Type",
+                        "placeholderAr": "",
+                        "placeholderEn": "",
+                        "required": true,
+                        "options": [
+                            {
+                                "value": "suggestion",
+                                "labelAr": "اقتراح",
+                                "labelEn": "Suggestion"
+                            },
+                            {
+                                "value": "complaint",
+                                "labelAr": "شكوى",
+                                "labelEn": "Complaint"
+                            },
+                            {
+                                "value": "inquiry",
+                                "labelAr": "استفسار",
+                                "labelEn": "Inquiry"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "subject",
+                        "type": "text",
+                        "labelAr": "الموضوع",
+                        "labelEn": "Subject",
+                        "placeholderAr": "",
+                        "placeholderEn": "",
+                        "required": true,
+                        "maxLength": 180
+                    },
+                    {
+                        "name": "message",
+                        "type": "textarea",
+                        "labelAr": "الرسالة",
+                        "labelEn": "Message",
+                        "placeholderAr": "",
+                        "placeholderEn": "",
+                        "required": true,
+                        "maxLength": 5000
+                    },
+                    {
+                        "name": "attachment",
+                        "type": "file",
+                        "labelAr": "مرفق",
+                        "labelEn": "Attachment",
+                        "placeholderAr": "",
+                        "placeholderEn": "",
+                        "required": false,
+                        "accept": ".pdf,.jpg,.jpeg,.png,.webp",
+                        "maxKilobytes": 5120
+                    },
+                    {
+                        "name": "consent",
+                        "type": "checkbox",
+                        "labelAr": "أوافق على معالجة بياناتي للرد على هذا الطلب.",
+                        "labelEn": "I consent to the processing of my data to respond to this request.",
+                        "placeholderAr": "",
+                        "placeholderEn": "",
+                        "required": true
+                    }
+                ]
+            }
+        ]
+    }
+]

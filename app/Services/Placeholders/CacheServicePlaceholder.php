@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\Placeholders;
 
-use App\Contracts\CacheServiceInterface;
+use App\Contracts\Shared\CacheServiceInterface;
 use BadMethodCallException;
 use Closure;
 

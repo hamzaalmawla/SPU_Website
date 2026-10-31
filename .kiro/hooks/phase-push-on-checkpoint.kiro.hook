@@ -1,0 +1,13 @@
+{
+  "enabled": true,
+  "name": "Push on Phase Checkpoint",
+  "description": "When a checkpoint task completes (Tasks 4, 8, 10, 18), automatically commit all changes with a descriptive message and push the current branch to origin.",
+  "version": "1",
+  "when": {
+    "type": "postTaskExecution"
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "Check the task that just completed. If it is a checkpoint task (Task 4, Task 8, Task 10, or Task 18), do the following:\n1. Run: git add -A\n2. Run: git commit -m \"PHASE_NAME: description of what was completed\" (e.g., \"PX06: Filament admin panel resources and pages\")\n3. Run: git push -u origin BRANCH_NAME\n\nUse semicolons (;) not ampersands (&&) to chain commands in PowerShell.\n\nIf the task is NOT a checkpoint task, do nothing."
+  }
+}
