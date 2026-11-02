@@ -155,7 +155,7 @@ class NavigationSeeder extends Seeder
     }
 
     /**
-     * 8 header nav items matching frontend navigationMenuItems, for both AR and EN.
+     * 9 header nav items, for both AR and EN: the frontend's navigationMenuItems plus Centers.
      *
      * @return array<int, array<string, mixed>>
      */
@@ -212,7 +212,12 @@ class NavigationSeeder extends Seeder
         ]];
 
         // ── Admissions (sort 3) ──
-        $items[] = ['type' => 'header', 'group_key' => 'header', 'locale' => 'ar', 'label' => 'القبول والتسجيل', 'target_kind' => 'page', 'page_slug' => 'admissions', 'url' => null, 'target' => null, 'icon' => null, 'is_utility' => false, 'open_in_new_tab' => false, 'sort_order' => 3, 'children' => [
+        // Centers: the university's centers and units (config/centers.php), after Faculties.
+        // A plain link: the Centers page lists every center, and nine items need the room.
+        $items[] = ['type' => 'header', 'group_key' => 'header', 'locale' => 'ar', 'label' => 'المراكز', 'target_kind' => 'url', 'page_slug' => null, 'url' => '/ar/centers', 'target' => null, 'icon' => null, 'is_utility' => false, 'open_in_new_tab' => false, 'sort_order' => 3, 'children' => []];
+        $items[] = ['type' => 'header', 'group_key' => 'header', 'locale' => 'en', 'label' => 'Centers', 'target_kind' => 'url', 'page_slug' => null, 'url' => '/en/centers', 'target' => null, 'icon' => null, 'is_utility' => false, 'open_in_new_tab' => false, 'sort_order' => 3, 'children' => []];
+
+        $items[] = ['type' => 'header', 'group_key' => 'header', 'locale' => 'ar', 'label' => 'القبول والتسجيل', 'target_kind' => 'page', 'page_slug' => 'admissions', 'url' => null, 'target' => null, 'icon' => null, 'is_utility' => false, 'open_in_new_tab' => false, 'sort_order' => 4, 'children' => [
             ['label' => 'شروط القبول', 'target_kind' => 'url', 'url' => '/ar/admissions/requirements'],
             ['label' => 'الرسوم الدراسية', 'target_kind' => 'url', 'url' => '/ar/admissions/tuition'],
             ['label' => 'كيفية التقديم', 'target_kind' => 'url', 'url' => '/ar/admissions/how-to-apply'],
@@ -223,7 +228,7 @@ class NavigationSeeder extends Seeder
             ['label' => 'التخرج والامتحانات الوطنية', 'target_kind' => 'url', 'url' => '/ar/admissions/graduation-exams'],
             ['label' => 'الأسئلة الشائعة', 'target_kind' => 'url', 'url' => '/ar/admissions/faq'],
         ]];
-        $items[] = ['type' => 'header', 'group_key' => 'header', 'locale' => 'en', 'label' => 'Admissions', 'target_kind' => 'page', 'page_slug' => 'admissions', 'url' => null, 'target' => null, 'icon' => null, 'is_utility' => false, 'open_in_new_tab' => false, 'sort_order' => 3, 'children' => [
+        $items[] = ['type' => 'header', 'group_key' => 'header', 'locale' => 'en', 'label' => 'Admissions', 'target_kind' => 'page', 'page_slug' => 'admissions', 'url' => null, 'target' => null, 'icon' => null, 'is_utility' => false, 'open_in_new_tab' => false, 'sort_order' => 4, 'children' => [
             ['label' => 'Admission Requirements', 'target_kind' => 'url', 'url' => '/en/admissions/requirements'],
             ['label' => 'Tuition & Fees', 'target_kind' => 'url', 'url' => '/en/admissions/tuition'],
             ['label' => 'How to Apply', 'target_kind' => 'url', 'url' => '/en/admissions/how-to-apply'],
@@ -236,11 +241,11 @@ class NavigationSeeder extends Seeder
         ]];
 
         // ── Research (sort 4) ──
-        $items[] = ['type' => 'header', 'group_key' => 'header', 'locale' => 'ar', 'label' => 'البحث العلمي', 'target_kind' => 'page', 'page_slug' => 'research', 'url' => null, 'target' => null, 'icon' => null, 'is_utility' => false, 'open_in_new_tab' => false, 'sort_order' => 4, 'children' => $this->researchChildren('ar')];
-        $items[] = ['type' => 'header', 'group_key' => 'header', 'locale' => 'en', 'label' => 'Research', 'target_kind' => 'page', 'page_slug' => 'research', 'url' => null, 'target' => null, 'icon' => null, 'is_utility' => false, 'open_in_new_tab' => false, 'sort_order' => 4, 'children' => $this->researchChildren('en')];
+        $items[] = ['type' => 'header', 'group_key' => 'header', 'locale' => 'ar', 'label' => 'البحث العلمي', 'target_kind' => 'page', 'page_slug' => 'research', 'url' => null, 'target' => null, 'icon' => null, 'is_utility' => false, 'open_in_new_tab' => false, 'sort_order' => 5, 'children' => $this->researchChildren('ar')];
+        $items[] = ['type' => 'header', 'group_key' => 'header', 'locale' => 'en', 'label' => 'Research', 'target_kind' => 'page', 'page_slug' => 'research', 'url' => null, 'target' => null, 'icon' => null, 'is_utility' => false, 'open_in_new_tab' => false, 'sort_order' => 5, 'children' => $this->researchChildren('en')];
 
         // ── Campus Life (sort 5) ──
-        $items[] = ['type' => 'header', 'group_key' => 'header', 'locale' => 'ar', 'label' => 'الحياة الجامعية', 'target_kind' => 'url', 'page_slug' => null, 'url' => '/ar/campus-life', 'target' => null, 'icon' => null, 'is_utility' => false, 'open_in_new_tab' => false, 'sort_order' => 5, 'children' => [
+        $items[] = ['type' => 'header', 'group_key' => 'header', 'locale' => 'ar', 'label' => 'الحياة الجامعية', 'target_kind' => 'url', 'page_slug' => null, 'url' => '/ar/campus-life', 'target' => null, 'icon' => null, 'is_utility' => false, 'open_in_new_tab' => false, 'sort_order' => 6, 'children' => [
             ['label' => 'خدمات الحرم الجامعي', 'target_kind' => 'url', 'url' => '/ar/campus-life/services'],
             ['label' => 'النقل', 'target_kind' => 'url', 'url' => '/ar/campus-life/transport'],
             ['label' => 'الصحة والتأمين', 'target_kind' => 'url', 'url' => '/ar/campus-life/health-insurance'],
@@ -255,7 +260,7 @@ class NavigationSeeder extends Seeder
             ['label' => 'التعليمات الامتحانية', 'target_kind' => 'url', 'url' => '/ar/campus-life/exam-instructions'],
             ['label' => 'العقوبات الامتحانية', 'target_kind' => 'url', 'url' => '/ar/campus-life/exam-penalties'],
         ]];
-        $items[] = ['type' => 'header', 'group_key' => 'header', 'locale' => 'en', 'label' => 'Campus Life', 'target_kind' => 'url', 'page_slug' => null, 'url' => '/en/campus-life', 'target' => null, 'icon' => null, 'is_utility' => false, 'open_in_new_tab' => false, 'sort_order' => 5, 'children' => [
+        $items[] = ['type' => 'header', 'group_key' => 'header', 'locale' => 'en', 'label' => 'Campus Life', 'target_kind' => 'url', 'page_slug' => null, 'url' => '/en/campus-life', 'target' => null, 'icon' => null, 'is_utility' => false, 'open_in_new_tab' => false, 'sort_order' => 6, 'children' => [
             ['label' => 'Campus Services', 'target_kind' => 'url', 'url' => '/en/campus-life/services'],
             ['label' => 'Transport', 'target_kind' => 'url', 'url' => '/en/campus-life/transport'],
             ['label' => 'Health & Insurance', 'target_kind' => 'url', 'url' => '/en/campus-life/health-insurance'],
@@ -272,7 +277,7 @@ class NavigationSeeder extends Seeder
         ]];
 
         // ── E-Services (sort 6) ──
-        $items[] = ['type' => 'header', 'group_key' => 'header', 'locale' => 'ar', 'label' => 'الخدمات الإلكترونية', 'target_kind' => 'url', 'page_slug' => null, 'url' => '/ar/e-services', 'target' => null, 'icon' => null, 'is_utility' => false, 'open_in_new_tab' => false, 'sort_order' => 6, 'children' => [
+        $items[] = ['type' => 'header', 'group_key' => 'header', 'locale' => 'ar', 'label' => 'الخدمات الإلكترونية', 'target_kind' => 'url', 'page_slug' => null, 'url' => '/ar/e-services', 'target' => null, 'icon' => null, 'is_utility' => false, 'open_in_new_tab' => false, 'sort_order' => 7, 'children' => [
             ['label' => 'بوابة الخدمات', 'target_kind' => 'url', 'url' => '/ar/e-services#portal-access'],
             ['label' => 'مساعدة وصول الطلاب', 'target_kind' => 'url', 'url' => '/ar/e-services/it-support'],
             ['label' => 'المكتبة الإلكترونية', 'target_kind' => 'url', 'url' => '/ar/e-services/library'],
@@ -281,7 +286,7 @@ class NavigationSeeder extends Seeder
             ['label' => 'البريد الإلكتروني للموظفين', 'target_kind' => 'url', 'url' => '/ar/e-services/staff-email'],
             ['label' => 'الاقتراحات والشكاوى', 'target_kind' => 'url', 'url' => '/ar/e-services/suggestions-complaints'],
         ]];
-        $items[] = ['type' => 'header', 'group_key' => 'header', 'locale' => 'en', 'label' => 'E-Services', 'target_kind' => 'url', 'page_slug' => null, 'url' => '/en/e-services', 'target' => null, 'icon' => null, 'is_utility' => false, 'open_in_new_tab' => false, 'sort_order' => 6, 'children' => [
+        $items[] = ['type' => 'header', 'group_key' => 'header', 'locale' => 'en', 'label' => 'E-Services', 'target_kind' => 'url', 'page_slug' => null, 'url' => '/en/e-services', 'target' => null, 'icon' => null, 'is_utility' => false, 'open_in_new_tab' => false, 'sort_order' => 7, 'children' => [
             ['label' => 'Service Portal', 'target_kind' => 'url', 'url' => '/en/e-services#portal-access'],
             ['label' => 'Student Access Help', 'target_kind' => 'url', 'url' => '/en/e-services/it-support'],
             ['label' => 'E-Library', 'target_kind' => 'url', 'url' => '/en/e-services/library'],
@@ -292,7 +297,7 @@ class NavigationSeeder extends Seeder
         ]];
 
         // ── News (sort 7) ──
-        $items[] = ['type' => 'header', 'group_key' => 'header', 'locale' => 'ar', 'label' => 'الأخبار', 'target_kind' => 'page', 'page_slug' => 'news', 'url' => null, 'target' => null, 'icon' => null, 'is_utility' => false, 'open_in_new_tab' => false, 'sort_order' => 7, 'children' => [
+        $items[] = ['type' => 'header', 'group_key' => 'header', 'locale' => 'ar', 'label' => 'الأخبار', 'target_kind' => 'page', 'page_slug' => 'news', 'url' => null, 'target' => null, 'icon' => null, 'is_utility' => false, 'open_in_new_tab' => false, 'sort_order' => 8, 'children' => [
             ['label' => 'الأخبار', 'target_kind' => 'url', 'url' => '/ar/news/articles'],
             ['label' => 'الاتفاقيات ومذكرات التفاهم', 'target_kind' => 'url', 'url' => '/ar/news/agreements'],
             ['label' => 'فعاليات المجتمع', 'target_kind' => 'url', 'url' => '/ar/news/society-events'],
@@ -300,7 +305,7 @@ class NavigationSeeder extends Seeder
             ['label' => 'تقويم الفعاليات', 'target_kind' => 'url', 'url' => '/ar/news/events'],
             ['label' => 'معرض الوسائط', 'target_kind' => 'url', 'url' => '/ar/news/gallery'],
         ]];
-        $items[] = ['type' => 'header', 'group_key' => 'header', 'locale' => 'en', 'label' => 'News', 'target_kind' => 'page', 'page_slug' => 'news', 'url' => null, 'target' => null, 'icon' => null, 'is_utility' => false, 'open_in_new_tab' => false, 'sort_order' => 7, 'children' => [
+        $items[] = ['type' => 'header', 'group_key' => 'header', 'locale' => 'en', 'label' => 'News', 'target_kind' => 'page', 'page_slug' => 'news', 'url' => null, 'target' => null, 'icon' => null, 'is_utility' => false, 'open_in_new_tab' => false, 'sort_order' => 8, 'children' => [
             ['label' => 'News', 'target_kind' => 'url', 'url' => '/en/news/articles'],
             ['label' => 'Agreements and Memoranda of Understanding', 'target_kind' => 'url', 'url' => '/en/news/agreements'],
             ['label' => "Society's Events", 'target_kind' => 'url', 'url' => '/en/news/society-events'],
@@ -310,12 +315,12 @@ class NavigationSeeder extends Seeder
         ]];
 
         // ── Contact (sort 8) ──
-        $items[] = ['type' => 'header', 'group_key' => 'header', 'locale' => 'ar', 'label' => 'تواصل معنا', 'target_kind' => 'page', 'page_slug' => 'contact', 'url' => null, 'target' => null, 'icon' => null, 'is_utility' => false, 'open_in_new_tab' => false, 'sort_order' => 8, 'children' => [
+        $items[] = ['type' => 'header', 'group_key' => 'header', 'locale' => 'ar', 'label' => 'تواصل معنا', 'target_kind' => 'page', 'page_slug' => 'contact', 'url' => null, 'target' => null, 'icon' => null, 'is_utility' => false, 'open_in_new_tab' => false, 'sort_order' => 9, 'children' => [
             ['label' => 'نموذج التواصل', 'target_kind' => 'url', 'url' => '/ar/contact#contact-form'],
             ['label' => 'معلومات التواصل', 'target_kind' => 'url', 'url' => '/ar/contact#contact-info'],
             ['label' => 'خريطة الحرم الجامعي', 'target_kind' => 'url', 'url' => '/ar/contact#campus-map'],
         ]];
-        $items[] = ['type' => 'header', 'group_key' => 'header', 'locale' => 'en', 'label' => 'Contact', 'target_kind' => 'page', 'page_slug' => 'contact', 'url' => null, 'target' => null, 'icon' => null, 'is_utility' => false, 'open_in_new_tab' => false, 'sort_order' => 8, 'children' => [
+        $items[] = ['type' => 'header', 'group_key' => 'header', 'locale' => 'en', 'label' => 'Contact', 'target_kind' => 'page', 'page_slug' => 'contact', 'url' => null, 'target' => null, 'icon' => null, 'is_utility' => false, 'open_in_new_tab' => false, 'sort_order' => 9, 'children' => [
             ['label' => 'Contact Form', 'target_kind' => 'url', 'url' => '/en/contact#contact-form'],
             ['label' => 'Contact Information', 'target_kind' => 'url', 'url' => '/en/contact#contact-info'],
             ['label' => 'Campus Map', 'target_kind' => 'url', 'url' => '/en/contact#campus-map'],

@@ -42,23 +42,24 @@
          * instead of one element hogging the slack.
          *
          *                        @1280px     @1800px
-         *   --nav-link-size        14px        17px
-         *   --nav-link-pad        6.4px        14px
+         *   --nav-link-size        14px        17px   (12.5px at 1280px: see the 1280-1535 ramp)
+         *   --nav-link-pad        4.8px        14px
          *   --nav-toggle-w         22px        26px
          *   --nav-brand-w         104px       184px
          */
         --nav-link-size: clamp(0.875rem, 0.4134rem + 0.5769vw, 1.0625rem);
         /*
-         * @1280px 6.4px → @1800px 14px. The 6.4px floor is affordable because
+         * @1280px 4.8px → @1800px 14px (6.4px until Centers made nine items).
+         * The floor is affordable because
          * the resting labels sit at 400, not because dropping them from 700 to
          * 600 bought anything: it bought nothing, since 600 and 700 render the
          * same on the Latin fallback stack. Raising this floor without also
          * keeping the weight at 400 puts the English row back into ellipsis.
          */
-        --nav-link-pad: clamp(0.4rem, -1.1234rem + 1.9038vw, 0.875rem);
+        --nav-link-pad: clamp(0.3rem, -1.1154rem + 1.7692vw, 0.875rem);
         --nav-toggle-w: clamp(1.375rem, 0.7597rem + 0.7692vw, 1.625rem);
         --nav-brand-w: clamp(6.5rem, -5.806rem + 15.385vw, 11.5rem);
-        --nav-row-gap: clamp(0.3rem, -1.177rem + 1.846vw, 0.9rem);
+        --nav-row-gap: clamp(0.2rem, -1.5231rem + 2.1538vw, 0.9rem);
         --nav-radius: 10px;
     }
 
@@ -211,6 +212,15 @@
         min-width: 0;
         overflow: hidden;
         text-overflow: ellipsis;
+    }
+
+    /*
+     * A top-level link with no submenu (Centers) has no arrow after it, so it
+     * would sit closer to the next item than the others do. The arrow's room
+     * goes after it as margin, which keeps the active underline under the text.
+     */
+    .site-nav-list > .site-nav-item > a.site-nav-link {
+        margin-inline-end: calc(var(--nav-toggle-w) * 0.75);
     }
 
     button.site-nav-link {
@@ -760,6 +770,19 @@
      * globe icon and the CTA tightens so the eight Arabic labels keep their
      * room; both controls stay labelled for screen readers.
      */
+    /*
+     * Nine top-level items (Centers joined in November 2026) need about 80px
+     * more than the eight did at 1280px. Up to 1535px the labels ride their
+     * own ramp, 12.5px at 1280px to 15.4px at 1535px, where it meets the main
+     * ramp (15.5px at 1536px). Measured with Arial metrics, every width from
+     * 1280px keeps 11-40px spare in both languages (tightest at 1480px).
+     */
+    @media (min-width: 1280px) and (max-width: 1535px) {
+        :where(#site-header) {
+            --nav-link-size: clamp(0.78125rem, -0.1286rem + 1.1373vw, 0.9625rem);
+        }
+    }
+
     @media (min-width: 1280px) and (max-width: 1479px) {
         .site-nav-lang span:not(.sr-only) {
             display: none;

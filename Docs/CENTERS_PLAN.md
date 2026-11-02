@@ -84,9 +84,24 @@ faculty limit). The staff page lists the published ones in display order;
 the manager (`managerMemberId` on the center page, which must be one of them)
 comes first and fills the manager block. Their profile page names the center.
 
+## Header menu
+
+Centers is a top-level header item right after Faculties, a plain link with
+no submenu (the Centers page lists every center). The migration
+`2026_11_02_000003_add_centers_to_header_menu` adds it to the live menu of
+each language unless that header already links to `/centers`, moving the
+items after Faculties down one place; `NavigationSeeder` has it for fresh
+databases. Editors can rename, move or hide it in Menu Builder.
+
+The header was sized for eight items at 1280px. With nine, labels follow a
+smaller ramp between 1280px and 1535px (12.5px at 1280px, meeting the usual
+size at 1536px), the link padding and row gap floors are lower, and a
+top-level link without a submenu keeps the arrow's room after it. Measured
+with Arial metrics, every width from 1280px keeps 11-40px spare in both
+languages; the tightest point is about 1480px. A tenth item will not fit
+without another change.
+
 ## Not done here
 
-- The header menu: add "Centers" in Menu Builder (the page picker offers the
-  new pages). It was not inserted from code to avoid changing the live menu.
 - Site search does not index the centers pages yet.
 - Other center templates.
