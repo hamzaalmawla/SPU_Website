@@ -125,7 +125,9 @@ final class ResearchNavigationLandingGateTest extends TestCase
         // all three profiles with it. Both surfaces render from the same menu
         // tree, so they are asserted against the same expectation.
         foreach (['en', 'ar'] as $locale) {
-            $html = (string) $this->get('/'.$locale)->assertOk()->getContent();
+            // Count the menu's markup, not the homepage's inline stylesheet, which
+            // names the same classes in its rules.
+            $html = (string) preg_replace('#<style id="public-stylesheet">.*?</style>#s', '', (string) $this->get('/'.$locale)->assertOk()->getContent());
 
             $this->assertSame(
                 3,
