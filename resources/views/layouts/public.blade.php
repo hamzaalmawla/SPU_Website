@@ -42,7 +42,8 @@
                 @endif
             @endforeach
         @endif
-        <link rel="icon" href="{{ asset('images/single-logo.png') }}" type="image/png">
+        {{-- favicon.ico carries 16-64px sizes; single-logo.png is a 99 KB 500px PNG. --}}
+        <link rel="icon" href="{{ asset('favicon.ico') }}" sizes="any">
         <link rel="apple-touch-icon" href="{{ asset('apple-touch-icon.png') }}">
         <link rel="manifest" href="{{ asset('site.webmanifest') }}">
         {{-- Per-image object-fit / focal-point overrides for this page's images.

@@ -365,15 +365,17 @@ for root_file in "${SOURCE}"/public/{favicon.ico,apple-touch-icon.png,site.webma
 done
 shopt -u nullglob
 
-# The header logo's sized WebP copies. They are raster files, so the SVG step
-# below skips them, and the header showed a broken image when they were first
-# added. Fail rather than ship a page whose logo 404s.
-log "Publishing header logo"
+# Raster images the public pages load on every visit and that git owns: the
+# header logo's sized WebP copies and the default hero slides. The SVG step
+# below skips raster files, so these never reached the docroot otherwise (the
+# header showed a broken logo when its copies were first added). Fail rather
+# than ship a page whose logo or hero 404s.
+log "Publishing header logo and hero slides"
 mkdir -p "${WEB}/images"
-for logo_width in 240 480; do
-    logo_file="${SOURCE}/public/images/logo-spu-${logo_width}.webp"
-    [[ -s "${logo_file}" ]] || fail "Missing ${logo_file}; the header links it."
-    install -m 0644 "${logo_file}" "${WEB}/images/logo-spu-${logo_width}.webp"
+for image_name in logo-spu-240.webp logo-spu-480.webp slider-1.webp slider-2.webp slider-3.webp slider-4.webp; do
+    image_file="${SOURCE}/public/images/${image_name}"
+    [[ -s "${image_file}" ]] || fail "Missing ${image_file}; the public pages load it."
+    install -m 0644 "${image_file}" "${WEB}/images/${image_name}"
 done
 
 # ── Legacy static mounts ─────────────────────────────────────────────────────
