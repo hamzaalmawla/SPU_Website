@@ -75,7 +75,7 @@
             </div>
 
             @foreach ($groups as $group)
-                <div class="fm-group" data-group-section="{{ $group }}" x-show="groupVisible($el)">
+                <div class="fm-group" data-group-section="{{ $group }}" x-bind:class="groupClass($el)">
                     @if ($showHeadings)
                         <h2 class="fm-group__title">{{ $groupLabels[$group] }}</h2>
                     @endif
@@ -90,7 +90,7 @@
                                data-group="{{ $group }}"
                                data-department="{{ $member['department'] ?? '' }}"
                                data-search="{{ $searchText($member) }}"
-                               x-show="cardVisible($el)">
+                               x-bind:class="cardClass($el)">
                                 <span class="fm-card__media">
                                     @if (! empty($member['image']))
                                         <img src="{{ $member['image'] }}" alt="{{ $member['name'] ?? '' }}" loading="lazy">

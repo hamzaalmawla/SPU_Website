@@ -178,7 +178,11 @@
     cursor: pointer;
 }
 
-.fm-group + .fm-group {
+.fm-hidden {
+    display: none !important;
+}
+
+.fm-group:not(.fm-hidden) ~ .fm-group:not(.fm-hidden) {
     margin-block-start: 3.25rem;
 }
 

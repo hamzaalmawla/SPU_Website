@@ -69,6 +69,15 @@ export function createFacultyMembers() {
             return this.cards.some((card) => card.group === group && this.matches(card));
         },
 
+        // Classes, not x-show: nested x-show (a group and its cards) can drop a card's hide.
+        cardClass(el) {
+            return this.cardVisible(el) ? '' : 'fm-hidden';
+        },
+
+        groupClass(el) {
+            return this.groupVisible(el) ? '' : 'fm-hidden';
+        },
+
         visibleCount() {
             return this.cards.filter((card) => this.matches(card)).length;
         },
