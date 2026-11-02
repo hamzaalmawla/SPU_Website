@@ -344,7 +344,7 @@ class ManageCampusLife extends Page implements HasForms
 
         try {
             $targetKey = $this->currentTargetKey();
-            $draft = $this->cmsWorkflowService->saveDraft($targetKey, $this->payloadFromForm($this->form->getState()), (int) $user->id, $this->draftVersion);
+            $draft = $this->cmsWorkflowService->saveDraft($targetKey, $this->payloadFromForm($this->validatedFormData()), (int) $user->id, $this->draftVersion);
             $this->draftVersion = $draft->version;
             $this->cmsWorkflowService->publish($targetKey, (int) $user->id);
 
@@ -364,7 +364,7 @@ class ManageCampusLife extends Page implements HasForms
 
         try {
             $targetKey = $this->currentTargetKey();
-            $draft = $this->cmsWorkflowService->saveDraft($targetKey, $this->payloadFromForm($this->form->getState()), (int) $user->id, $this->draftVersion);
+            $draft = $this->cmsWorkflowService->saveDraft($targetKey, $this->payloadFromForm($this->validatedFormData()), (int) $user->id, $this->draftVersion);
             $this->draftVersion = $draft->version;
             $this->cmsWorkflowService->schedule($targetKey, new \DateTimeImmutable($publishAt), (int) $user->id);
 
@@ -561,6 +561,15 @@ class ManageCampusLife extends Page implements HasForms
     private function currentFormData(): array
     {
         return is_array($this->data) ? $this->data : [];
+    }
+
+    /** @return array<string, mixed> */
+    private function validatedFormData(): array
+    {
+        // getState() leaves out hidden fields, and the Job Board hides the page
+        // selector, so target_key went missing and every publish or schedule
+        // there failed with "this page's form will be structured later".
+        return ['target_key' => $this->currentTargetKey()] + $this->form->getState();
     }
 
     /** @return array<int, Section> */

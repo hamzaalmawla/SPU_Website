@@ -149,6 +149,37 @@ final class AdminJobsWorkspaceTest extends TestCase
         $this->assertSame('Edited Bilingual Vacancy', $enJobs->first()['title'] ?? null);
     }
 
+    public function test_publishing_a_vacancy_from_the_job_board_reaches_the_public_page(): void
+    {
+        $this->actingAs($this->editor(), 'web');
+
+        $component = Livewire::test(ManageJobBoard::class);
+        /** @var array<string, mixed> $data */
+        $data = $component->get('data');
+        $vacancyKey = array_key_first($data['jobs_workspace']['vacancies'] ?? []);
+
+        $this->assertNotNull($vacancyKey);
+
+        $component
+            ->set('data.jobs_workspace.vacancies.'.$vacancyKey.'.title_en', 'Published Lab Engineer')
+            ->call('publish')
+            ->assertHasNoErrors()
+            ->assertNotified(__('admin.campus_workspace.notifications.published'));
+
+        $this->get('/en/campus-life/career-development/jobs')
+            ->assertOk()
+            ->assertSee('Published Lab Engineer');
+    }
+
+    public function test_scheduling_from_the_job_board_keeps_its_page(): void
+    {
+        $this->actingAs($this->editor(), 'web');
+
+        Livewire::test(ManageJobBoard::class)
+            ->call('schedule', now()->addDay()->toDateTimeString())
+            ->assertNotified(__('admin.campus_workspace.notifications.scheduled'));
+    }
+
     private function editor(): User
     {
         return User::factory()->create([
