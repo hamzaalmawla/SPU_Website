@@ -15,39 +15,30 @@ final class MediaDisplaySettingsService implements MediaDisplaySettingsServiceIn
 
     public function stylesheet(): string
     {
-        return $this->cacheService->tags(['media', 'public-pages'])->remember('media:display-settings:v1', function (): string {
-            return MediaAsset::query()
-                ->where('media_type', 'image')
-                ->where('library_scope', 'main')
-                ->where(function ($query): void {
-                    $query->where('display_fit', '!=', 'cover')
-                        ->orWhere('focal_x', '!=', 50)
-                        ->orWhere('focal_y', '!=', 50);
-                })
-                ->get(['path', 'webp_path', 'disk', 'focal_x', 'focal_y', 'display_fit'])
-                ->map(function (MediaAsset $asset): string {
-                    $urls = array_values(array_unique(array_filter([
-                        MediaUrlResolver::resolve($asset->path, $asset->disk),
-                        MediaUrlResolver::resolve($asset->webp_path, $asset->disk),
-                    ])));
-                    $selectors = array_map(
-                        fn (string $url): string => 'img[src*="'.$this->escapeCssString($this->urlPath($url)).'"]',
-                        $urls,
-                    );
+        return implode("\n", array_column($this->rules(), 'css'));
+    }
 
-                    if ($selectors === []) {
-                        return '';
-                    }
+    public function stylesheetFor(string $html): string
+    {
+        if ($html === '') {
+            return '';
+        }
 
-                    $fit = in_array($asset->display_fit, ['cover', 'contain'], true) ? $asset->display_fit : 'cover';
-                    $x = max(0, min(100, (float) $asset->focal_x));
-                    $y = max(0, min(100, (float) $asset->focal_y));
+        $css = [];
 
-                    return implode(',', $selectors).'{object-fit:'.$fit.'!important;object-position:'.$x.'% '.$y.'%!important;}';
-                })
-                ->filter()
-                ->implode("\n");
-        }, 3600);
+        foreach ($this->rules() as $rule) {
+            foreach ($rule['paths'] as $path) {
+                // Alpine-rendered images carry their URL in a JSON attribute,
+                // where json_encode escapes the slashes.
+                if (str_contains($html, $path) || str_contains($html, str_replace('/', '\/', $path))) {
+                    $css[] = $rule['css'];
+
+                    break;
+                }
+            }
+        }
+
+        return implode("\n", $css);
     }
 
     public function version(): string
@@ -59,6 +50,52 @@ final class MediaDisplaySettingsService implements MediaDisplaySettingsServiceIn
         );
     }
 
+    /** @return list<array{paths: list<string>, css: string}> */
+    private function rules(): array
+    {
+        return $this->cacheService->tags(['media', 'public-pages'])->remember('media:display-settings:v2', function (): array {
+            return MediaAsset::query()
+                ->where('media_type', 'image')
+                ->where('library_scope', 'main')
+                ->where(function ($query): void {
+                    $query->where('display_fit', '!=', 'cover')
+                        ->orWhere('focal_x', '!=', 50)
+                        ->orWhere('focal_y', '!=', 50);
+                })
+                ->get(['path', 'webp_path', 'disk', 'focal_x', 'focal_y', 'display_fit'])
+                ->map(function (MediaAsset $asset): ?array {
+                    $paths = array_values(array_unique(array_map(
+                        fn (string $url): string => $this->urlPath($url),
+                        array_filter([
+                            MediaUrlResolver::resolve($asset->path, $asset->disk),
+                            MediaUrlResolver::resolve($asset->webp_path, $asset->disk),
+                        ]),
+                    )));
+
+                    if ($paths === []) {
+                        return null;
+                    }
+
+                    $selectors = array_map(
+                        fn (string $path): string => 'img[src*="'.$this->escapeCssString($path).'"]',
+                        $paths,
+                    );
+
+                    $fit = in_array($asset->display_fit, ['cover', 'contain'], true) ? $asset->display_fit : 'cover';
+                    $x = max(0, min(100, (float) $asset->focal_x));
+                    $y = max(0, min(100, (float) $asset->focal_y));
+
+                    return [
+                        'paths' => $paths,
+                        'css' => implode(',', $selectors).'{object-fit:'.$fit.'!important;object-position:'.$x.'% '.$y.'%!important;}',
+                    ];
+                })
+                ->filter()
+                ->values()
+                ->all();
+        }, 3600);
+    }
+
     private function urlPath(string $url): string
     {
         $path = parse_url($url, PHP_URL_PATH);
@@ -68,6 +105,7 @@ final class MediaDisplaySettingsService implements MediaDisplaySettingsServiceIn
 
     private function escapeCssString(string $value): string
     {
-        return addcslashes($value, "\\\"\n\r\f");
+        // The rules are inlined in a <style> element, where `<` could close it.
+        return str_replace('<', '\3c ', addcslashes($value, "\\\"\n\r\f"));
     }
 }

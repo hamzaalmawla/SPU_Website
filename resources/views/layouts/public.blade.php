@@ -44,10 +44,12 @@
         <link rel="icon" href="{{ asset('images/single-logo.png') }}" type="image/png">
         <link rel="apple-touch-icon" href="{{ asset('apple-touch-icon.png') }}">
         <link rel="manifest" href="{{ asset('site.webmanifest') }}">
-        {{-- Per-image object-fit / focal-point overrides. They load before the
-             first paint, or a framed photo shows centred and then jumps to its
-             framing; the versioned URL is cached for good, so later pages pay nothing. --}}
-        <link rel="stylesheet" href="{{ route('media.display-styles', ['v' => $mediaDisplayStylesVersion ?? null]) }}">
+        {{-- Per-image object-fit / focal-point overrides for this page's images.
+             Inline, so they apply at the first paint without a blocking request;
+             otherwise a framed photo shows centred and then jumps. --}}
+        @if (($mediaDisplayStyles ?? '') !== '')
+            <style id="media-display-styles">{!! $mediaDisplayStyles !!}</style>
+        @endif
         @php
             $publicViteJsEntries = ['resources/js/app.js'];
             $requestedPublicViteJsEntries = trim($__env->yieldContent('publicViteJsEntries'));

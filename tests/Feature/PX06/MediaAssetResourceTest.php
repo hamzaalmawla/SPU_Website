@@ -113,21 +113,35 @@ class MediaAssetResourceTest extends TestCase
             ->assertSee('object-position:25% 80%!important', false);
     }
 
-    public function test_public_pages_load_the_framing_stylesheet_before_the_first_paint_at_a_versioned_url(): void
+    public function test_public_pages_inline_only_the_framing_rules_for_their_own_images(): void
     {
         $this->seed(DatabaseSeeder::class);
+        // The seeded homepage hero shows /images/slider-1.webp.
+        $this->createMediaAsset(['path' => '/images/slider-1.webp', 'focal_x' => 30, 'focal_y' => 20]);
+        $this->createMediaAsset(['path' => 'media/image/elsewhere.jpg', 'focal_x' => 10, 'focal_y' => 90]);
+
+        foreach (['ar', 'en'] as $locale) {
+            $this->get('/'.$locale)
+                ->assertOk()
+                ->assertSee('<style id="media-display-styles">img[src*="/images/slider-1.webp"]{object-fit:cover!important;object-position:30% 20%!important;}</style>', false)
+                ->assertDontSee('media/image/elsewhere.jpg', false)
+                ->assertDontSee('media-display.css', false);
+        }
+
+        $displaySettings = app(MediaDisplaySettingsServiceInterface::class);
+        $this->assertStringContainsString(
+            'elsewhere.jpg',
+            $displaySettings->stylesheetFor('<div data-items="[{&quot;image&quot;:&quot;\/storage\/media\/image\/elsewhere.jpg&quot;}]"></div>'),
+        );
+        $this->assertSame('', $displaySettings->stylesheetFor('<img src="/storage/media/image/unframed.jpg">'));
+    }
+
+    public function test_the_full_framing_stylesheet_is_cached_at_its_versioned_url(): void
+    {
         $this->createMediaAsset(['path' => 'media/image/framed.jpg', 'focal_x' => 30, 'focal_y' => 20]);
         $displaySettings = app(MediaDisplaySettingsServiceInterface::class);
         $version = $displaySettings->version();
         $url = route('media.display-styles', ['v' => $version], false);
-
-        foreach (['ar', 'en'] as $locale) {
-            // A print stylesheet switched on load paints framed photos centred first.
-            $this->get('/'.$locale)
-                ->assertOk()
-                ->assertSee('<link rel="stylesheet" href="'.e(url($url)).'">', false)
-                ->assertDontSee('media="print" onload', false);
-        }
 
         $cacheControl = (string) $this->get($url)->assertOk()->headers->get('Cache-Control');
         $this->assertStringContainsString('immutable', $cacheControl);

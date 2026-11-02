@@ -39,7 +39,9 @@ Route::get('/sitemaps/sitemap-{section}.xml', [SitemapController::class, 'sectio
     ->where('section', '[a-z]+(?:-[0-9]+)?')
     ->name('sitemap.section');
 Route::get('/robots.txt', [SitemapController::class, 'robots'])->name('robots');
-Route::get('/media-display.css', MediaDisplayStylesheetController::class)->name('media.display-styles');
+// Public pages inline the rules they need; the full sheet stays for anything
+// that still links it.
+Route::get('/media-display.css', MediaDisplayStylesheetController::class)->middleware('compress')->name('media.display-styles');
 
 // Unprefixed reference paths negotiate a locale and redirect to /{locale}/...
 // The leading lookahead keeps legacy URLs out of this route: paths such as

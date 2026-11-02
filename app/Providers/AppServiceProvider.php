@@ -433,19 +433,21 @@ class AppServiceProvider extends ServiceProvider
     }
 
     /**
-     * Supply the public layout with the media framing stylesheet's version, so
-     * it links a URL that browsers can cache until a framing changes.
+     * Supply the public layout with the framing rules for the images its page
+     * shows. A page's sections render before its layout, so the main content
+     * is known here. Inlining them replaced a render-blocking stylesheet that
+     * held a rule for every framed image in the library.
      */
     private function registerMediaDisplayStylesComposer(): void
     {
         View::composer('layouts.public', function (ViewContract $view): void {
             try {
-                $version = app(MediaDisplaySettingsServiceInterface::class)->version();
+                $styles = app(MediaDisplaySettingsServiceInterface::class)->stylesheetFor(View::yieldContent('content'));
             } catch (\Throwable) {
-                $version = null;
+                $styles = '';
             }
 
-            $view->with('mediaDisplayStylesVersion', $version);
+            $view->with('mediaDisplayStyles', $styles);
         });
     }
 
