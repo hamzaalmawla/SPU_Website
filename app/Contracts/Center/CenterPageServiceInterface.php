@@ -35,6 +35,16 @@ interface CenterPageServiceInterface
     public function previewPage(string $targetKey, string $locale, array $payload, string $subpageSlug = ''): ?CenterPageDTO;
 
     /**
+     * What site search indexes for the centers in one language, as visitors
+     * see it now (published content, else the defaults): the centers page,
+     * each center's page, staff page and course lists, and every course on
+     * its own, linked to its place in its list.
+     *
+     * @return list<array{key: string, title: string, summary: string, text: list<string>, url: string, meta: string}>
+     */
+    public function searchEntries(string $locale): array;
+
+    /**
      * The center's staff profiles for the admin pickers, any publication state.
      *
      * @return array<int, string> profile id => name

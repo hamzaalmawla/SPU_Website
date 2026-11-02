@@ -17,7 +17,7 @@ use Illuminate\Console\Command;
 final class SearchIndexCommand extends Command
 {
     protected $signature = 'search:index
-        {--source= : Rebuild a single source only (news, research, pages, faculty-members, persons, faculties, faculty-pages)}
+        {--source= : Rebuild a single source only (news, research, pages, faculty-members, persons, faculties, faculty-pages, centers)}
         {--fresh : Delete each source\'s existing documents before rebuilding}';
 
     protected $description = 'Rebuild the public site-search index from published content';

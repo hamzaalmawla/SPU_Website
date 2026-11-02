@@ -628,7 +628,7 @@ final class SiteSearchTest extends TestCase
         // A new content domain must be added to SOURCES deliberately, not
         // silently forgotten; this pins the list the backfill walks.
         $this->assertSame(
-            ['news', 'research', 'pages', 'faculty-members', 'persons', 'faculties', 'faculty-pages'],
+            ['news', 'research', 'pages', 'faculty-members', 'persons', 'faculties', 'faculty-pages', 'centers'],
             SearchIndexServiceInterface::SOURCES,
         );
     }

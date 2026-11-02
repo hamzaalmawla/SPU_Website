@@ -101,7 +101,24 @@ with Arial metrics, every width from 1280px keeps 11-40px spare in both
 languages; the tightest point is about 1480px. A tenth item will not fit
 without another change.
 
+## Site search
+
+The `centers` search source (`search:index --source=centers`, part of the
+full rebuild on every deploy) indexes what visitors see in each language:
+the centers page, each center's page (tabs, manager, cards), staff page
+(staff names and positions), the required and elective lists, and every
+course on its own (title, unit code, each faculty's name and code,
+description, teachers, lessons), linked to `…-courses#course-{id}`. So a
+search for a course name or a faculty code such as UNRE103 opens the course.
+
+The pages are CMS content, not records: `CenterPageServiceInterface::searchEntries`
+lists them, and `SearchIndexService::rebuildCenters` writes one document per
+page or course and language, under `searchable_type` CmsTargetContent with
+`searchable_id` = crc32 of its key, removing any id it did not write.
+`SearchIndexObserver` re-runs it after commit whenever a `centers.*` page is
+published, scheduled-published or unpublished, or a center staff profile is
+saved.
+
 ## Not done here
 
-- Site search does not index the centers pages yet.
 - Other center templates.

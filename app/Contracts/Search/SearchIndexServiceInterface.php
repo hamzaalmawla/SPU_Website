@@ -24,6 +24,7 @@ interface SearchIndexServiceInterface
         'persons',
         'faculties',
         'faculty-pages',
+        'centers',
     ];
 
     /**

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Observers;
 
 use App\Contracts\Search\SearchIndexServiceInterface;
+use App\Models\Cms\CmsTargetContent;
 use App\Models\Faculty\Faculty;
 use App\Models\Faculty\FacultyPage;
 use App\Models\Faculty\FacultyPageTranslation;
@@ -20,6 +21,7 @@ use App\Models\Person\PersonTranslation;
 use App\Models\Research\ResearchPublication;
 use App\Models\Research\ResearchPublicationTranslation;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
 use Throwable;
 
 /**
@@ -73,7 +75,7 @@ final class SearchIndexObserver
      */
     public static function observedModels(): array
     {
-        return array_keys(self::SOURCE_MAP);
+        return [...array_keys(self::SOURCE_MAP), CmsTargetContent::class];
     }
 
     public function saved(Model $model): void
@@ -98,6 +100,12 @@ final class SearchIndexObserver
 
     private function sync(Model $model): void
     {
+        // A centers page is published or unpublished (its content row is saved),
+        // or a center's staff profile changes: the centers pages are re-read.
+        if ($this->touchesCenters($model)) {
+            $this->syncCentersAfterCommit();
+        }
+
         $mapping = self::SOURCE_MAP[$model::class] ?? null;
 
         if ($mapping === null) {
@@ -128,6 +136,35 @@ final class SearchIndexObserver
         } catch (Throwable) {
             // Search indexing is derived data and never blocks a content write.
         }
+    }
+
+    private function touchesCenters(Model $model): bool
+    {
+        if ($model instanceof CmsTargetContent) {
+            return str_starts_with((string) $model->target_key, 'centers.');
+        }
+
+        return $model instanceof FacultyMember
+            && (filled($model->center_slug) || filled($model->getOriginal('center_slug')));
+    }
+
+    /**
+     * After the publish commits, so the index reads the new content and not
+     * the old one through another connection or a cache filled meanwhile.
+     */
+    private function syncCentersAfterCommit(): void
+    {
+        DB::afterCommit(static function (): void {
+            try {
+                $indexer = app(SearchIndexServiceInterface::class);
+
+                if ($indexer->isAvailable()) {
+                    $indexer->syncRecord('centers', 0);
+                }
+            } catch (Throwable) {
+                // Search indexing is derived data and never blocks a content write.
+            }
+        });
     }
 
     private function syncFacultyDependents(SearchIndexServiceInterface $indexer, Faculty $faculty): void

@@ -4,8 +4,11 @@ declare(strict_types=1);
 
 namespace App\Services\Search;
 
+use App\Contracts\Center\CenterPageServiceInterface;
 use App\Contracts\Content\PersonIdentityServiceInterface;
 use App\Contracts\Search\SearchIndexServiceInterface;
+use App\Contracts\Shared\CacheServiceInterface;
+use App\Models\Cms\CmsTargetContent;
 use App\Models\Faculty\Faculty;
 use App\Models\Faculty\FacultyPage;
 use App\Models\News\NewsArticle;
@@ -49,6 +52,8 @@ final class SearchIndexService implements SearchIndexServiceInterface
 
     public function __construct(
         private readonly PersonIdentityServiceInterface $identityService,
+        private readonly CenterPageServiceInterface $centerPages,
+        private readonly CacheServiceInterface $cacheService,
     ) {}
 
     /**
@@ -104,6 +109,8 @@ final class SearchIndexService implements SearchIndexServiceInterface
         'persons' => ['type' => 'people', 'weight' => 9, 'model' => Person::class],
         'faculties' => ['type' => 'pages', 'weight' => 14, 'model' => Faculty::class],
         'faculty-pages' => ['type' => 'pages', 'weight' => 11, 'model' => FacultyPage::class],
+        // The centers pages are CMS pages, not records: see rebuildCenters().
+        'centers' => ['type' => 'pages', 'weight' => 12, 'model' => CmsTargetContent::class],
     ];
 
     /** Longest plain-text body kept per document. */
@@ -168,6 +175,13 @@ final class SearchIndexService implements SearchIndexServiceInterface
             return false;
         }
 
+        // A centers page has no record of its own: any change re-reads them all.
+        if ($source === 'centers') {
+            $this->rebuildCenters(false);
+
+            return true;
+        }
+
         $record = $this->publicQuery($source)->whereKey($recordId)->first();
 
         if (! $record instanceof Model) {
@@ -207,6 +221,10 @@ final class SearchIndexService implements SearchIndexServiceInterface
 
     private function rebuildSource(string $source, bool $fresh): int
     {
+        if ($source === 'centers') {
+            return $this->rebuildCenters($fresh);
+        }
+
         $model = self::SOURCE_CONFIG[$source]['model'];
 
         if ($fresh) {
@@ -238,6 +256,73 @@ final class SearchIndexService implements SearchIndexServiceInterface
         SearchDocument::query()
             ->where('searchable_type', $model)
             ->where('updated_at', '<', $startedAt)
+            ->delete();
+
+        return $written;
+    }
+
+    /**
+     * The centers pages (CMS targets `centers.*`, config/centers.php) as their
+     * visitors see them: published content, else the default content. They
+     * are few, so every change rebuilds all of them. Each page and each
+     * course is a document; its id is a checksum of its key (`landing`,
+     * `requirements-unit.staff`, `requirements-unit.course.sociology`), so a
+     * page keeps its id between runs, and what is no longer listed is removed.
+     * A page shown in only one language is indexed under both, like records.
+     */
+    private function rebuildCenters(bool $fresh): int
+    {
+        $model = self::SOURCE_CONFIG['centers']['model'];
+
+        if ($fresh) {
+            SearchDocument::query()->where('searchable_type', $model)->delete();
+        }
+
+        // Read what was just published, not a cached copy of the old content.
+        $this->cacheService->flushTag('centers');
+
+        $byKey = [];
+
+        foreach (self::LOCALES as $locale) {
+            foreach ($this->centerPages->searchEntries($locale) as $entry) {
+                $title = SearchTextNormalizer::plainText($entry['title']);
+
+                if ($title === '') {
+                    continue;
+                }
+
+                $text = array_map(static fn (string $part): string => SearchTextNormalizer::plainText($part), $entry['text']);
+                $summary = SearchTextNormalizer::plainText($entry['summary']);
+                $document = $this->document(
+                    source: 'centers',
+                    record: null,
+                    locale: $locale,
+                    title: $title,
+                    summary: $summary,
+                    bodyParts: [$title, $summary, ...$text],
+                    url: $entry['url'],
+                    meta: SearchTextNormalizer::plainText($entry['meta']),
+                    publishedAt: null,
+                );
+                $document['searchable_id'] = crc32('centers:'.$entry['key']);
+                $byKey[$entry['key']][] = $document;
+            }
+        }
+
+        $written = 0;
+        $keptIds = [];
+        foreach ($byKey as $documents) {
+            $documents = $this->withBothLanguages($documents);
+            $this->writeDocuments($documents);
+            $written += count($documents);
+            $keptIds[] = (int) $documents[0]['searchable_id'];
+        }
+
+        // By id, not by time: two runs in the same second must still drop a
+        // course that was removed between them.
+        SearchDocument::query()
+            ->where('searchable_type', $model)
+            ->whereNotIn('searchable_id', $keptIds === [] ? [0] : $keptIds)
             ->delete();
 
         return $written;
@@ -760,7 +845,7 @@ final class SearchIndexService implements SearchIndexServiceInterface
      */
     private function document(
         string $source,
-        Model $record,
+        ?Model $record,
         string $locale,
         string $title,
         string $summary,
@@ -777,7 +862,7 @@ final class SearchIndexService implements SearchIndexServiceInterface
 
         return [
             'searchable_type' => $config['model'],
-            'searchable_id' => (int) $record->getKey(),
+            'searchable_id' => $record instanceof Model ? (int) $record->getKey() : 0,
             'type' => $config['type'],
             'locale' => $locale,
             'title' => Str::limit($title, 500, ''),

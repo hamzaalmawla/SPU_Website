@@ -58,6 +58,78 @@ final class CenterPageService implements CenterPageServiceInterface
         return $this->pageDto((string) $target['center'], $subpage, $locale, [], [$target['part'] => $payload]);
     }
 
+    public function searchEntries(string $locale): array
+    {
+        $landing = $this->getLanding($locale);
+        $centersTitle = trim((string) ($landing->content['hero']['title'] ?? ''));
+        $offers = is_array($landing->content['offers'] ?? null) ? $landing->content['offers'] : [];
+        $entries = [[
+            'key' => 'landing',
+            'title' => $centersTitle,
+            'summary' => (string) ($landing->content['hero']['summary'] ?? ''),
+            'text' => [
+                (string) ($landing->content['centersTitle'] ?? ''),
+                (string) ($offers['title'] ?? ''),
+                (string) ($offers['summary'] ?? ''),
+                ...$this->fieldTexts(is_array($offers['items'] ?? null) ? $offers['items'] : [], ['title', 'summary']),
+                ...$this->fieldTexts($landing->cards, ['title', 'summary']),
+            ],
+            'url' => '/'.$locale.'/centers',
+            'meta' => '',
+        ]];
+
+        foreach ($this->catalog->centerSlugs() as $centerSlug) {
+            foreach (['', ...CenterCatalogServiceInterface::SUBPAGES] as $subpageSlug) {
+                $page = $this->getPage($centerSlug, $subpageSlug, $locale);
+
+                if (! $page instanceof CenterPageDTO) {
+                    continue;
+                }
+
+                $text = match ($subpageSlug) {
+                    '' => [
+                        ...$this->fieldTexts(is_array($page->content['tabs'] ?? null) ? $page->content['tabs'] : [], ['label', 'body']),
+                        ...($page->manager !== null ? [$page->manager['title'], $page->manager['name'], $page->manager['message']] : []),
+                        ...$this->fieldTexts(is_array($page->content['highlights'] ?? null) ? $page->content['highlights'] : [], ['title', 'summary']),
+                        ...$this->fieldTexts(is_array($page->content['stats'] ?? null) ? $page->content['stats'] : [], ['value', 'label']),
+                    ],
+                    'staff' => [(string) ($page->content['body'] ?? ''), ...$this->fieldTexts($page->staff, ['name', 'position'])],
+                    default => $this->fieldTexts($page->courses, ['title', 'code']),
+                };
+
+                $entries[] = [
+                    'key' => $centerSlug.($subpageSlug !== '' ? '.'.$subpageSlug : ''),
+                    'title' => $page->title,
+                    'summary' => (string) ($page->content['hero']['summary'] ?? ''),
+                    'text' => [$page->center['name'], ...$text],
+                    'url' => $page->path,
+                    'meta' => $subpageSlug === '' ? $centersTitle : $page->center['name'],
+                ];
+
+                foreach ($page->courses as $course) {
+                    $faculties = array_map(static fn (array $link): string => $link['name'].' '.$link['code'], $course['faculties']);
+                    $entries[] = [
+                        'key' => $centerSlug.'.course.'.$course['id'],
+                        'title' => $course['title'],
+                        'summary' => $course['description'] !== '' ? $course['description'] : $page->title.' · '.implode(' · ', $faculties),
+                        'text' => [
+                            $page->title,
+                            $course['code'],
+                            $course['description'],
+                            ...$faculties,
+                            ...$this->fieldTexts($course['teachers'], ['name']),
+                            ...$this->fieldTexts($course['lessons'], ['title']),
+                        ],
+                        'url' => $page->path.'#'.$course['anchor'],
+                        'meta' => $page->center['name'].' · '.$page->title,
+                    ];
+                }
+            }
+        }
+
+        return array_values(array_filter($entries, static fn (array $entry): bool => trim($entry['title']) !== ''));
+    }
+
     public function staffOptions(string $centerSlug, string $locale): array
     {
         if (! $this->catalog->isCenter($centerSlug)) {
@@ -449,6 +521,28 @@ final class CenterPageService implements CenterPageServiceInterface
         return $member->photoMedia instanceof MediaAsset
             ? MediaUrlResolver::resolveImage($member->photoMedia->webp_path, $member->photoMedia->path, $member->photoMedia->disk)
             : MediaUrlResolver::resolveLegacy($member->legacy_photo_path);
+    }
+
+    /**
+     * The non-empty text of these fields in each item.
+     *
+     * @param  array<int|string, mixed>  $items
+     * @param  list<string>  $fields
+     * @return list<string>
+     */
+    private function fieldTexts(array $items, array $fields): array
+    {
+        $texts = [];
+        foreach ($items as $item) {
+            foreach ($fields as $field) {
+                $value = is_array($item) ? $item[$field] ?? null : null;
+                if (is_scalar($value) && trim((string) $value) !== '') {
+                    $texts[] = trim((string) $value);
+                }
+            }
+        }
+
+        return $texts;
     }
 
     /** @param array<string, mixed> $item */
