@@ -43,7 +43,7 @@
             </div>
             <div class="flex items-center gap-3">
                 @if ($section->payload->sectionAction)
-                    <a href="{{ $section->payload->sectionAction->url }}" class="me-2 hidden h-10 items-center justify-center rounded-xl bg-spu-blue px-6 text-sm font-bold text-white transition hover:bg-opacity-90 sm:inline-flex" @if ($section->payload->sectionAction->target) target="{{ $section->payload->sectionAction->target }}" rel="noreferrer" @endif>{{ $section->payload->sectionAction->label }}</a>
+                    <a href="{{ $section->payload->sectionAction->url }}" class="me-2 hidden h-10 items-center justify-center rounded-xl bg-spu-blue px-6 text-sm font-bold text-white transition hover:bg-opacity-90 sm:inline-flex" @if ($section->payload->sectionAction->target) target="{{ $section->payload->sectionAction->target }}" rel="noreferrer" @endif>{{ $section->payload->sectionAction->label }}<span class="sr-only"> — {{ $sectionTitle }}</span></a>
                 @endif
                 <button @click="handleManual('prev')" type="button" class="w-12 h-12 rounded-full border border-slate-200 flex items-center justify-center hover:bg-slate-50 transition-all" aria-controls="honor-panels" aria-label="{{ __('public.previous') }}"><img src="/images/icon-chevron-left-outline.svg" class="w-4 h-4 rtl:rotate-180" alt="" width="24" height="24" loading="lazy" decoding="async"></button>
                 <button @click="handleManual('next')" type="button" class="w-12 h-12 rounded-full border border-slate-200 flex items-center justify-center hover:bg-slate-50 transition-all" aria-controls="honor-panels" aria-label="{{ __('public.next') }}"><img src="/images/icon-chevron-right-outline.svg" class="w-4 h-4 rtl:rotate-180" alt="" width="24" height="24" loading="lazy" decoding="async"></button>
@@ -51,7 +51,7 @@
         </div>
 
         @if ($section->payload->sectionAction)
-            <a href="{{ $section->payload->sectionAction->url }}" class="mb-6 inline-flex h-10 items-center justify-center rounded-xl bg-spu-blue px-6 text-sm font-bold text-white sm:hidden" @if ($section->payload->sectionAction->target) target="{{ $section->payload->sectionAction->target }}" rel="noreferrer" @endif>{{ $section->payload->sectionAction->label }}</a>
+            <a href="{{ $section->payload->sectionAction->url }}" class="mb-6 inline-flex h-10 items-center justify-center rounded-xl bg-spu-blue px-6 text-sm font-bold text-white sm:hidden" @if ($section->payload->sectionAction->target) target="{{ $section->payload->sectionAction->target }}" rel="noreferrer" @endif>{{ $section->payload->sectionAction->label }}<span class="sr-only"> — {{ $sectionTitle }}</span></a>
         @endif
 
         @if ($honorItems !== [])

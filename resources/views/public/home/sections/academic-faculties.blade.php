@@ -15,7 +15,7 @@
                     </h2>
                     @if ($section->payload->sectionAction)
                         <a href="{{ $section->payload->sectionAction->url }}" class="bg-white mx-auto absolute inset-x-0 bottom-10 w-[195px] h-[40px] text-spu-blue justify-center rounded-[10px] font-bold text-[16px] flex items-center gap-2 hover:bg-gray-100 transition-all shadow-card-elevated group/btn overflow-hidden" @if ($section->payload->sectionAction->target) target="{{ $section->payload->sectionAction->target }}" rel="noreferrer" @endif>
-                            <span>{{ $section->payload->sectionAction->label }}</span>
+                            <span>{{ $section->payload->sectionAction->label }}</span><span class="sr-only"> — {{ $section->payload->title }}</span>
                             <img src="/images/icon-arrow-right-outline.svg" class="w-2.5 h-2.5 mt-1 transition-transform group-hover:translate-x-1 rtl:rotate-180" alt="" width="24" height="24" loading="lazy" decoding="async">
                         </a>
                     @endif
