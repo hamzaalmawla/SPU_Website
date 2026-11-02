@@ -81,7 +81,19 @@
             @php($loadedViteCss = [])
 
             @if (is_array($cssEntry) && ! empty($cssEntry['file']))
-                <link rel="stylesheet" href="{{ asset('build/'.$cssEntry['file']) }}">
+                {{-- The host answers every request slowly (~0.4 s before the first
+                     byte, plus a TLS handshake per HTTP/1.1 connection), and the
+                     stylesheet blocks the first paint. A page that opts in
+                     carries it inline instead, and prefetches the file so the
+                     next page finds it in the cache. --}}
+                @php($inlineStylesheetPath = public_path('build/'.$cssEntry['file']))
+                @php($inlineStylesheet = trim($__env->yieldContent('inlinePublicStylesheet')) === '1' && is_file($inlineStylesheetPath) ? file_get_contents($inlineStylesheetPath) : false)
+                @if (is_string($inlineStylesheet) && $inlineStylesheet !== '' && ! str_contains(strtolower($inlineStylesheet), '</style'))
+                    <style id="public-stylesheet">{!! $inlineStylesheet !!}</style>
+                    <link rel="prefetch" href="{{ asset('build/'.$cssEntry['file']) }}">
+                @else
+                    <link rel="stylesheet" href="{{ asset('build/'.$cssEntry['file']) }}">
+                @endif
                 @php($loadedViteCss[] = $cssEntry['file'])
             @endif
 

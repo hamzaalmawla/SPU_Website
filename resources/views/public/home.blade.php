@@ -1,5 +1,9 @@
 @extends('layouts.public')
 
+{{-- Most visits start here: inline the stylesheet so the first paint does not
+     wait for a second connection to the server. See layouts/public. --}}
+@section('inlinePublicStylesheet', '1')
+
 @section('content')
     @php
         $homepageSections = collect($homepage->sections);
