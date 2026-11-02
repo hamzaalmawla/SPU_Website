@@ -6,6 +6,7 @@ namespace Tests\Feature;
 
 use App\Contracts\Cms\AboutEntityCmsServiceInterface;
 use App\Contracts\Content\PeopleUnifyServiceInterface;
+use App\Contracts\Page\FacultyPageServiceInterface;
 use App\Contracts\Research\ResearcherAdminServiceInterface;
 use App\Enums\PublicationStatus;
 use App\Filament\Resources\FacultyMemberResource\Pages\EditFacultyMember;
@@ -263,6 +264,33 @@ final class OnePersonProfileTest extends TestCase
         $this->assertSame('Rector biography.', $profile->translations()->where('locale', 'en')->value('bio'));
         Cache::flush();
         $this->get('/en/about/profile/test-rector')->assertOk()->assertSee('Prof. Rana Uniquename')->assertSee('Rector');
+    }
+
+    public function test_people_unify_gives_a_deans_profile_without_a_faculty_the_faculty_they_lead(): void
+    {
+        Storage::fake('local');
+        $this->member->forceFill(['faculty_id' => null])->save();
+        $this->dean->forceFill(['faculty_member_id' => $this->member->getKey()])->save();
+        $this->dean->appointments()->delete();
+        $other = Faculty::query()->where('public_slug', 'medicine')->firstOrFail();
+        $kept = FacultyMember::query()->create(['slug' => 'kept-faculty-dean', 'faculty_id' => $other->getKey(), 'is_enabled' => true, 'publication_status' => PublicationStatus::Published->value, 'published_at' => now()->subDay()]);
+        $kept->translations()->create(['locale' => 'en', 'full_name' => 'Dr. Kept Faculty']);
+        $keptDean = Person::query()->create(['slug' => 'kept-dean-row', 'category' => 'dean', 'faculty_scope_slug' => 'artificial-intelligence', 'faculty_member_id' => $kept->getKey(), 'is_enabled' => true, 'publication_status' => PublicationStatus::Published->value, 'published_at' => now()->subDay()]);
+        $keptDean->translations()->create(['locale' => 'en', 'name' => 'Dr. Kept Faculty', 'role' => 'Dean']);
+
+        $dryRun = app(PeopleUnifyServiceInterface::class)->unify(false, null);
+        $this->assertStringContainsString('fill: faculty_id (artificial-intelligence)', implode("\n", $dryRun->lines));
+        $this->assertNull($this->member->refresh()->faculty_id);
+
+        app(PeopleUnifyServiceInterface::class)->unify(true, PeopleUnifyService::APPROVAL_TOKEN);
+
+        $this->assertSame((int) $this->faculty->getKey(), (int) $this->member->refresh()->faculty_id);
+        // A profile that has a faculty keeps it.
+        $this->assertSame((int) $other->getKey(), (int) $kept->refresh()->faculty_id);
+
+        Cache::flush();
+        $members = app(FacultyPageServiceInterface::class)->getSubpage('artificial-intelligence', 'members', 'en')?->items ?? [];
+        $this->assertSame(['zayd-testdean', 'dean'], [$members[0]['slug'] ?? null, $members[0]['tier'] ?? null]);
     }
 
     public function test_writing_requires_the_approval_token(): void

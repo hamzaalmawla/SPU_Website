@@ -239,6 +239,12 @@ final class PeopleUnifyService implements PeopleUnifyServiceInterface
                 $columns[$column] = $value;
             }
         }
+        // A dean's profile made without a faculty belongs to the faculty they lead,
+        // or the faculty's members and council pages leave them out.
+        $facultyId = blank($member->faculty_id) ? $this->personFacultyId($person) : null;
+        if ($facultyId !== null) {
+            $columns['faculty_id'] = $facultyId;
+        }
         // A photo kept only as a path in the old image column.
         if (blank($member->photo_media_id) && blank($member->legacy_photo_path) && ! isset($columns['photo_media_id']) && ! isset($columns['legacy_photo_path']) && filled($person->image)) {
             $columns['legacy_photo_path'] = $person->image;
@@ -294,6 +300,9 @@ final class PeopleUnifyService implements PeopleUnifyServiceInterface
     private function describeFills(array $changes): array
     {
         $fills = array_map(static fn (string $column): string => $column, array_keys($changes['columns']));
+        if (isset($changes['columns']['faculty_id'])) {
+            $fills[array_search('faculty_id', $fills, true)] = 'faculty_id ('.Faculty::query()->whereKey($changes['columns']['faculty_id'])->value('public_slug').')';
+        }
         foreach ($changes['translations'] as $locale => $translation) {
             $fills[] = $translation['create']
                 ? $locale.' text (the profile has none in '.$locale.')'
