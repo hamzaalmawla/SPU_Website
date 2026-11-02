@@ -2250,7 +2250,23 @@ final class FacilitiesWorkflowTest extends TestCase
             ->firstWhere('id', $courseId);
 
         $this->assertSame('AI Edited Selected Course', $savedCourse['title'] ?? null);
-        $this->assertSame($untouched['terms'] ?? [], $savedDepartments->firstWhere('id', $untouched['id'])['terms'] ?? []);
+
+        // A course is one course across programs: the other program's copy carries the edit,
+        // and everything else in that program, rows included, is as it was.
+        $savedUntouched = $savedDepartments->firstWhere('id', $untouched['id'])['terms'] ?? [];
+        $withoutCourse = static fn (array $terms): array => array_map(static fn (array $term): array => [
+            ...$term,
+            'courses' => array_values(array_filter($term['courses'] ?? [], static fn (array $course): bool => (string) $course['id'] !== $courseId)),
+        ], $terms);
+        $this->assertSame($withoutCourse($untouched['terms'] ?? []), $withoutCourse($savedUntouched));
+
+        $sharedCopy = collect($savedUntouched)->flatMap(fn (array $term): array => $term['courses'] ?? [])->firstWhere('id', $courseId);
+        $originalCopy = collect($untouched['terms'] ?? [])->flatMap(fn (array $term): array => $term['courses'] ?? [])->firstWhere('id', $courseId);
+
+        if ($originalCopy !== null) {
+            $this->assertSame('AI Edited Selected Course', $sharedCopy['title'] ?? null);
+            $this->assertSame($originalCopy['row'] ?? null, $sharedCopy['row'] ?? null);
+        }
     }
 
     public function test_artificial_intelligence_study_plan_admin_board_persists_prerequisite_removal(): void

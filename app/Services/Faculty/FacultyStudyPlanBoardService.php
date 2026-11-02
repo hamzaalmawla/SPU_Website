@@ -338,7 +338,12 @@ final class FacultyStudyPlanBoardService implements FacultyStudyPlanBoardService
                     ? $clean['prerequisites']
                     : $this->sharedPrerequisites($clean['prerequisites'], $existing, $department, $departmentCourseIds);
 
-                $departments[$index] = $this->placeCourse($department, $record, (string) $termId, $existing);
+                // Another program holding the course where it already is keeps its own
+                // layout: the shared record replaces its copy at the same row, and its
+                // other courses keep their rows.
+                $departments[$index] = $currentId !== $departmentId && $existing !== null && $this->termOfCourse($department, $id) === (string) $termId
+                    ? $this->replaceCourse($department, $record, $existing)
+                    : $this->placeCourse($department, $record, (string) $termId, $existing);
             }
 
             $payload['translations'][$locale]['payload']['plan']['departments'] = $departments;
@@ -1020,6 +1025,36 @@ final class FacultyStudyPlanBoardService implements FacultyStudyPlanBoardService
         }
 
         $department['terms'] = $this->withRows($terms);
+
+        return $department;
+    }
+
+    /**
+     * The department with the course's record swapped for `$record` where it stands, keeping
+     * its row and every other course's row.
+     *
+     * @param  array<string, mixed>  $department
+     * @param  array<string, mixed>  $record
+     * @param  array<string, mixed>  $existing
+     * @return array<string, mixed>
+     */
+    private function replaceCourse(array $department, array $record, array $existing): array
+    {
+        $terms = $this->records($department['terms'] ?? []);
+
+        foreach ($terms as $t => $term) {
+            $courses = $this->records($term['courses'] ?? []);
+
+            foreach ($courses as $c => $course) {
+                if ((string) ($course['id'] ?? '') === (string) $record['id']) {
+                    $courses[$c] = [...$record, 'row' => $existing['row'] ?? $course['row'] ?? $c + 1];
+                }
+            }
+
+            $terms[$t]['courses'] = $courses;
+        }
+
+        $department['terms'] = $terms;
 
         return $department;
     }
