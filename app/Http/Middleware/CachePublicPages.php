@@ -292,6 +292,7 @@ final class CachePublicPages
                 'labs' => ['lab', 'page'],
                 default => [],
             },
+            'public.centers.subpage' => in_array($request->route('subpage'), ['required-courses', 'elective-courses'], true) ? ['faculty'] : [],
             'public.faculties.study-plan' => ['department'],
             'public.faculties.study-plan.course' => ['department', 'course', 'type'],
             'public.news.articles' => ['type', 'category', 'search', 'page'],

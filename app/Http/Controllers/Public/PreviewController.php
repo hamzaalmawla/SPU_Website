@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Public;
 
+use App\Contracts\Center\CenterPageServiceInterface;
 use App\Contracts\Cms\AboutEntityCmsServiceInterface;
 use App\Contracts\Navigation\NavigationServiceInterface;
 use App\Contracts\News\NewsArticleCmsServiceInterface;
@@ -22,6 +23,7 @@ use App\Contracts\Seo\SeoMetadataServiceInterface;
 use App\Contracts\Settings\SettingsServiceInterface;
 use App\Contracts\Shared\PreviewServiceInterface;
 use App\DTOs\About\PartnershipDirectoryDTO;
+use App\DTOs\Center\CenterPageDTO;
 use App\DTOs\Navigation\LanguageSwitchLinkDTO;
 use App\DTOs\Page\PageDTO;
 use App\DTOs\Page\PageTranslationDTO;
@@ -52,6 +54,7 @@ final class PreviewController extends Controller
         private readonly AboutEntityCmsServiceInterface $aboutEntityCmsService,
         private readonly NewsArticleCmsServiceInterface $newsArticleCmsService,
         private readonly NewsRelatedLinkServiceInterface $relatedLinks,
+        private readonly CenterPageServiceInterface $centerPageService,
     ) {}
 
     public function __invoke(Request $request, string $locale): View
@@ -244,6 +247,10 @@ final class PreviewController extends Controller
 
         if ($targetKey === 'facilities.landing') {
             return $this->renderFacilitiesHubPreview($locale, $preview, $localizedContent);
+        }
+
+        if (is_string($targetKey) && str_starts_with($targetKey, 'centers.')) {
+            return $this->renderCenterPreview($request, $locale, $preview, $targetKey, $payload);
         }
 
         if (is_string($targetKey) && $this->isFacultyHomepageTarget($targetKey)) {
@@ -673,6 +680,57 @@ final class PreviewController extends Controller
             ]),
             'page' => $page,
             'preview' => $preview,
+        ]);
+    }
+
+    /**
+     * A center target's draft: the centers page, a center's page, its staff
+     * page, or its required (or, with ?subpage=elective-courses, elective)
+     * course list.
+     *
+     * @param  array<string, mixed>  $payload
+     */
+    private function renderCenterPreview(Request $request, string $locale, PreviewDTO $preview, string $targetKey, array $payload): View
+    {
+        $subpage = $request->query('subpage') === 'elective-courses' ? 'elective-courses' : '';
+        $shell = [
+            'locale' => $locale,
+            'direction' => $locale === 'ar' ? 'rtl' : 'ltr',
+            'settings' => $this->settingsService->getPublicSettings($locale),
+            'languageSwitch' => $this->cmsLanguageSwitchLinks($preview->token, $locale, $subpage !== '' ? ['subpage' => $subpage] : []),
+            'isPreview' => true,
+            'preview' => $preview,
+        ];
+
+        if ($targetKey === 'centers.landing') {
+            $page = $this->centerPageService->previewLanding($locale, $payload);
+
+            return view('public.centers.landing', [
+                ...$shell,
+                'navigation' => $preview->payload->navigation ?? $this->navigationService->getFullNavigationPayload($locale, $locale.'/centers'),
+                'seo' => $this->seoMetadataService->buildFallback($locale, [
+                    'path' => '/'.$locale.'/centers',
+                    'locale_paths' => ['ar' => '/ar/centers', 'en' => '/en/centers'],
+                    'title' => $page->seoTitle,
+                    'meta_description' => $page->seoDescription,
+                ]),
+                'page' => $page,
+            ]);
+        }
+
+        $page = $this->centerPageService->previewPage($targetKey, $locale, $payload, $subpage);
+        abort_if(! $page instanceof CenterPageDTO, 404);
+
+        return view($page->subpageSlug === '' ? 'public.centers.show' : 'public.centers.subpage', [
+            ...$shell,
+            'navigation' => $preview->payload->navigation ?? $this->navigationService->getFullNavigationPayload($locale, ltrim($page->path, '/')),
+            'seo' => $this->seoMetadataService->buildFallback($locale, [
+                'path' => $page->path,
+                'locale_paths' => ['ar' => '/ar'.substr($page->path, 3), 'en' => '/en'.substr($page->path, 3)],
+                'title' => $page->seoTitle,
+                'meta_description' => $page->seoDescription,
+            ]),
+            'page' => $page,
         ]);
     }
 

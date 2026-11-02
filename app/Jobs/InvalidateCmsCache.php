@@ -70,6 +70,12 @@ final class InvalidateCmsCache implements ShouldQueue
             $tags[] = 'about';
         }
 
+        // A center's course list is linked from every faculty study plan, and a
+        // profile can belong to a center's staff.
+        if (str_starts_with($targetKey, 'centers.') || str_starts_with($targetKey, 'entity.faculty-member.')) {
+            array_push($tags, 'centers', 'facilities');
+        }
+
         if (str_starts_with($targetKey, 'research.')) {
             $tags[] = 'research';
         }

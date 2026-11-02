@@ -61,6 +61,7 @@ class AdminPanelProvider extends PanelProvider
                 NavigationGroup::make(fn (): string => __('admin.navigation.groups.content')),
                 NavigationGroup::make(fn (): string => __('admin.navigation.groups.news')),
                 NavigationGroup::make(fn (): string => __('admin.navigation.groups.facilities')),
+                NavigationGroup::make(fn (): string => __('admin.navigation.groups.centers')),
                 NavigationGroup::make(fn (): string => __('admin.navigation.groups.about')),
                 NavigationGroup::make(fn (): string => __('admin.navigation.groups.admissions')),
                 NavigationGroup::make(fn (): string => __('admin.navigation.groups.campus_life')),

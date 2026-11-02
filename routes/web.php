@@ -12,6 +12,7 @@ use App\Http\Controllers\Public\AdmissionsController;
 use App\Http\Controllers\Public\AlumniController;
 use App\Http\Controllers\Public\BrowserLocaleRedirectController;
 use App\Http\Controllers\Public\CampusLifeController;
+use App\Http\Controllers\Public\CenterController;
 use App\Http\Controllers\Public\DynamicFormSubmissionController;
 use App\Http\Controllers\Public\EServicesController;
 use App\Http\Controllers\Public\FacultyController;
@@ -53,7 +54,7 @@ Route::get('/media-display.css', MediaDisplayStylesheetController::class)->name(
 // /facilities still redirected. facilities stays for the links already out
 // there. search, events and student-life were never listed at all.
 Route::get('/{referencePath}', BrowserLocaleRedirectController::class)
-    ->where('referencePath', '(?!.*\.php$)(?:about|achievements|admissions|alumni|research|campus-life|e-services|events|faculties|facilities|news|contact|projects|search|student-life|virtual-tour)(?:/.*)?')
+    ->where('referencePath', '(?!.*\.php$)(?:about|achievements|admissions|alumni|centers|research|campus-life|e-services|events|faculties|facilities|news|contact|projects|search|student-life|virtual-tour)(?:/.*)?')
     ->name('reference.locale');
 
 // Staff intake links sent to each faculty's academic staff. Kept out of the
@@ -129,6 +130,23 @@ Route::prefix('{locale}')
                         'faculty' => 'medicine|dentistry|pharmacy|artificial-intelligence|building-construction-engineering|petroleum|business-administration',
                         'subpage' => 'overview|departments|labs|projects|alumni|valedictorians|training|clinical-cases|final-exams|research|members|council|master-program',
                     ])
+                    ->name('subpage');
+            });
+
+        // University centers (config/centers.php): the centers page, each
+        // center's page and its staff and course subpages.
+        Route::controller(CenterController::class)
+            ->prefix('centers')
+            ->name('public.centers.')
+            ->group(function (): void {
+                $centers = implode('|', array_map(static fn (string $slug): string => preg_quote($slug, '/'), array_keys((array) config('centers.centers', [])))) ?: 'no-center';
+
+                Route::get('/', 'landing')->name('landing');
+                Route::get('/{center}', 'show')
+                    ->where(['center' => $centers])
+                    ->name('show');
+                Route::get('/{center}/{subpage}', 'subpage')
+                    ->where(['center' => $centers, 'subpage' => 'staff|required-courses|elective-courses'])
                     ->name('subpage');
             });
 

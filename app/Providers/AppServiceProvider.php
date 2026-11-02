@@ -13,6 +13,8 @@ use App\Contracts\Auth\RoleAdminServiceInterface;
 use App\Contracts\Auth\TotpAuthenticatorInterface;
 use App\Contracts\Career\AlumniDirectoryServiceInterface;
 use App\Contracts\Career\StudentListImportServiceInterface;
+use App\Contracts\Center\CenterCatalogServiceInterface;
+use App\Contracts\Center\CenterPageServiceInterface;
 use App\Contracts\Cms\AboutEntityCmsServiceInterface;
 use App\Contracts\Cms\CmsPageTextImportServiceInterface;
 use App\Contracts\Cms\CmsTargetRegistryInterface;
@@ -215,6 +217,8 @@ use App\Services\Auth\RoleAdminService;
 use App\Services\Auth\TotpAuthenticator;
 use App\Services\Career\AlumniDirectoryService;
 use App\Services\Career\StudentListImportService;
+use App\Services\Center\CenterCatalogService;
+use App\Services\Center\CenterPageService;
 use App\Services\Cms\AboutEntityCmsService;
 use App\Services\Cms\CmsPageTextImportService;
 use App\Services\Cms\CmsTargetRegistry;
@@ -728,6 +732,8 @@ class AppServiceProvider extends ServiceProvider
             FacultyMasterProgramServiceInterface::class => FacultyMasterProgramService::class,
             ProjectFieldBlockParserInterface::class => ProjectFieldBlockParser::class,
             FacultyPageServiceInterface::class => FacultyPageService::class,
+            CenterCatalogServiceInterface::class => CenterCatalogService::class,
+            CenterPageServiceInterface::class => CenterPageService::class,
             SitemapServiceInterface::class => SitemapService::class,
             MediaServiceInterface::class => MediaService::class,
             MediaDisplaySettingsServiceInterface::class => MediaDisplaySettingsService::class,

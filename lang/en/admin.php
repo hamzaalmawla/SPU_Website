@@ -75,6 +75,7 @@ return [
             'e_services' => 'Manage e-services page content and links.',
             'research' => 'Manage research content and connect it to dynamic page sections.',
             'admissions' => 'Manage admissions content and related subpages.',
+            'centers' => 'Manage the centers page and each center: its page, staff page and course list.',
             'campus_life' => 'Manage campus life content, services, and activities.',
             'virtual_tour' => 'Manage virtual tour content and related facility highlights.',
             'administration' => 'Manage users, audit logs, and administrative system controls.',
@@ -82,6 +83,12 @@ return [
         ],
         'targets' => [
             'homepage' => 'Homepage',
+            'centers' => [
+                'landing' => 'Centers',
+                'page' => 'Center Page',
+                'staff' => 'Center Staff',
+                'courses' => 'Center Courses',
+            ],
             'about' => [
                 'landing' => 'About',
                 'vision-mission' => 'Vision and Mission',
@@ -186,6 +193,7 @@ return [
             'content' => 'Content',
             'news' => 'News',
             'facilities' => 'Facilities',
+            'centers' => 'Centers',
             'about' => 'About',
             'admissions' => 'Admissions',
             'campus_life' => 'Campus Life',
@@ -218,6 +226,7 @@ return [
             'research' => 'Research',
             'two_factor_auth' => 'Two-Factor Auth',
             'facilities_hub' => 'Facilities Hub',
+            'centers' => 'Centers',
             'faculty_medicine' => 'Medicine Faculty',
             'faculty_dentistry' => 'Dentistry Faculty',
             'faculty_pharmacy' => 'Pharmacy Faculty',
@@ -1420,6 +1429,9 @@ return [
             ],
         ],
         'board' => [
+            'unit_course' => 'Requirements Unit course',
+            'unit_course_auto' => 'Match by this course\'s code',
+            'unit_course_help' => 'For a university requirement: the course on the Requirements Unit page this one opens. By default it is the unit course that lists this faculty and code.',
             'teachers' => 'Teachers',
             'theory_teacher' => 'Theory teacher',
             'practical_teacher' => 'Practical teacher',

@@ -46,6 +46,9 @@
             <div class="mx-auto max-w-4xl">
                 <p class="text-[12px] font-bold uppercase tracking-[0.16em] text-white/75">{{ ($plan['faculty'] ?? $faculty['title']).' / '.($activeDepartment['name'] ?? '') }}</p>
                 <h1 class="mt-3 text-[34px] font-bold leading-tight md:text-[46px]">{{ $course['title'] ?? '' }}</h1>
+                @if (is_string($course['unitCourseUrl'] ?? null) && str_starts_with($course['unitCourseUrl'], '/'))
+                    <a href="{{ $course['unitCourseUrl'] }}" class="mt-5 inline-flex items-center gap-2 rounded-[6px] border border-white/40 px-5 py-2.5 text-[13px] font-bold text-white transition hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white">{{ __('centers.unit_course_link') }}</a>
+                @endif
             </div>
         @else
             <h1 class="text-[34px] font-bold leading-tight md:text-[46px]">{{ $label('notFound') }}</h1>

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Filament\Concerns;
 
+use App\Contracts\Center\CenterCatalogServiceInterface;
 use App\Contracts\Content\ProfileAdminServiceInterface;
 use App\Contracts\Faculty\FacultyStudyPlanBoardServiceInterface;
 use App\Contracts\Media\MediaServiceInterface;
@@ -127,6 +128,16 @@ trait ManagesStudyPlanBoard
     public function boardTeacherChoices(): array
     {
         return $this->boardTeacherCache ??= app(ProfileAdminServiceInterface::class)->teacherOptions($this->facultyScope, (int) auth()->id());
+    }
+
+    /**
+     * Requirements Unit courses a university requirement can open.
+     *
+     * @return array<string, string>
+     */
+    public function boardUnitCourseOptions(): array
+    {
+        return app(CenterCatalogServiceInterface::class)->unitCourseOptions(app()->getLocale() === 'ar' ? 'ar' : 'en');
     }
 
     public function selectBoardDepartment(string $departmentId): void

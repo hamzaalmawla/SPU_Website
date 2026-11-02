@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services\Cms;
 
 use App\Contracts\Auth\AdminAccessServiceInterface;
+use App\Contracts\Center\CenterCatalogServiceInterface;
 use App\Contracts\Cms\AboutEntityCmsServiceInterface;
 use App\Contracts\Cms\CmsTargetRegistryInterface;
 use App\Contracts\Cms\CmsWorkflowServiceInterface;
@@ -60,6 +61,7 @@ final class CmsWorkflowService implements CmsWorkflowServiceInterface
         private readonly FacultyMasterProgramServiceInterface $masterProgramService,
         private readonly FormDefinitionServiceInterface $formDefinitions,
         private readonly AdminAccessServiceInterface $access,
+        private readonly CenterCatalogServiceInterface $centerCatalog,
     ) {}
 
     /** @param array<string, mixed> $payload */
@@ -397,6 +399,13 @@ final class CmsWorkflowService implements CmsWorkflowServiceInterface
         }
 
         foreach ($this->masterProgramService->validationErrors($target->key, $payload) as $field => $messages) {
+            $errors[$field] = array_values(array_unique([
+                ...($errors[$field] ?? []),
+                ...$messages,
+            ]));
+        }
+
+        foreach ($this->centerCatalog->validationErrors($target->key, $payload) as $field => $messages) {
             $errors[$field] = array_values(array_unique([
                 ...($errors[$field] ?? []),
                 ...$messages,

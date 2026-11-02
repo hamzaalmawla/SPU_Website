@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services\Seo;
 
 use App\Contracts\Career\AlumniDirectoryServiceInterface;
+use App\Contracts\Center\CenterCatalogServiceInterface;
 use App\Contracts\Content\PersonIdentityServiceInterface;
 use App\Contracts\Page\FacultyPageServiceInterface;
 use App\Contracts\Page\PageServiceInterface;
@@ -57,6 +58,7 @@ final class SitemapService implements SitemapServiceInterface
         private readonly AlumniDirectoryServiceInterface $alumniDirectoryService,
         private readonly PersonIdentityServiceInterface $identityService,
         private readonly FacultyPageServiceInterface $facultyPageService,
+        private readonly CenterCatalogServiceInterface $centerCatalog,
     ) {}
 
     public function generateEntries(): Collection
@@ -78,6 +80,7 @@ final class SitemapService implements SitemapServiceInterface
         $this->appendResearchCatalogEntries($entries, $baseUrl);
         $this->appendResearchPublicationEntries($entries, $baseUrl);
         $this->appendCmsRouteEntries($entries, $baseUrl);
+        $this->appendCenterEntries($entries, $baseUrl);
         $this->appendClubDetailEntries($entries, $baseUrl);
         $this->appendNewsArticleEntries($entries, $baseUrl);
 
@@ -114,6 +117,7 @@ final class SitemapService implements SitemapServiceInterface
                 $this->appendAlumniEntries($entries, $baseUrl);
                 $this->appendAchievementArchiveEntries($entries, $baseUrl);
                 $this->appendCmsRouteEntries($entries, $baseUrl);
+                $this->appendCenterEntries($entries, $baseUrl);
                 $this->appendClubDetailEntries($entries, $baseUrl);
                 break;
             default:
@@ -308,6 +312,42 @@ final class SitemapService implements SitemapServiceInterface
                 $entries->push(new SitemapEntryDTO(
                     loc: $baseUrl.'/'.$locale.$path,
                     lastmod: $this->w3c($content->updated_at),
+                    changefreq: null,
+                    priority: null,
+                    alternates: $alternates,
+                ));
+            }
+        }
+    }
+
+    /**
+     * The centers page and every center's page and subpages. They show their
+     * default content until published, so they are listed either way.
+     *
+     * @param  Collection<int, SitemapEntryDTO>  $entries
+     */
+    private function appendCenterEntries(Collection $entries, string $baseUrl): void
+    {
+        $paths = ['/centers'];
+        foreach ($this->centerCatalog->centerSlugs() as $centerSlug) {
+            array_push($paths, '/centers/'.$centerSlug, '/centers/'.$centerSlug.'/staff', '/centers/'.$centerSlug.'/required-courses', '/centers/'.$centerSlug.'/elective-courses');
+        }
+
+        $updatedAt = CmsTargetContent::query()
+            ->where('target_key', 'like', 'centers.%')
+            ->where('status', PublicationStatus::Published->value)
+            ->max('updated_at');
+
+        foreach ($paths as $path) {
+            $alternates = [
+                ['locale' => 'ar', 'url' => $baseUrl.'/ar'.$path],
+                ['locale' => 'en', 'url' => $baseUrl.'/en'.$path],
+            ];
+
+            foreach (['ar', 'en'] as $locale) {
+                $entries->push(new SitemapEntryDTO(
+                    loc: $baseUrl.'/'.$locale.$path,
+                    lastmod: $this->w3c($updatedAt),
                     changefreq: null,
                     priority: null,
                     alternates: $alternates,

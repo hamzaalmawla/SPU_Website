@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services\Cms;
 
 use App\Contracts\Auth\AdminAccessServiceInterface;
+use App\Contracts\Center\CenterCatalogServiceInterface;
 use App\Contracts\Cms\AboutEntityCmsServiceInterface;
 use App\Contracts\Content\PersonIdentityServiceInterface;
 use App\Contracts\Faculty\FacultyStudyPlanLinkServiceInterface;
@@ -49,6 +50,7 @@ final class AboutEntityCmsService implements AboutEntityCmsServiceInterface
         private readonly AdminAccessServiceInterface $access,
         private readonly PersonIdentityServiceInterface $identityService,
         private readonly FacultyStudyPlanLinkServiceInterface $studyPlanLinkService,
+        private readonly CenterCatalogServiceInterface $centerCatalog,
     ) {}
 
     public function prepareDraft(AboutEntityCmsDataDTO $data, int $userId): AboutEntityCmsDataDTO
@@ -404,7 +406,8 @@ final class AboutEntityCmsService implements AboutEntityCmsServiceInterface
             title: $this->nullableString($translation['title'] ?? null),
             position: $this->nullableString($translation['position'] ?? null),
             category: null,
-            facultyName: $this->facultyName($this->nullableInt($payload['faculty_id'] ?? null), $locale),
+            facultyName: $this->facultyName($this->nullableInt($payload['faculty_id'] ?? null), $locale)
+                ?? (($center = $this->centerSlug($payload)) !== null ? $this->centerCatalog->centerName($center, $locale) : null),
             departmentName: $this->departmentName($this->nullableInt($payload['department_id'] ?? null), $locale),
             email: $this->nullableString($payload['email'] ?? null),
             phone: $this->nullableString($payload['phone'] ?? null),
@@ -494,6 +497,7 @@ final class AboutEntityCmsService implements AboutEntityCmsServiceInterface
                 'slug' => $slug,
                 'faculty_id' => $this->nullableInt($payload['faculty_id'] ?? null),
                 'department_id' => $this->nullableInt($payload['department_id'] ?? null),
+                'center_slug' => $this->centerSlug($payload),
                 'publication_status' => PublicationStatus::Draft->value,
                 'published_at' => null,
                 'is_enabled' => (bool) ($payload['is_enabled'] ?? false),
@@ -650,6 +654,7 @@ final class AboutEntityCmsService implements AboutEntityCmsServiceInterface
             'faculty_id' => $this->nullableInt($payload['faculty_id'] ?? null),
             'department_id' => $this->nullableInt($payload['department_id'] ?? null),
             'specialization_id' => $this->nullableString($payload['specialization_id'] ?? null),
+            'center_slug' => $this->centerSlug($payload),
             'email' => $this->nullableString($payload['email'] ?? null),
             'phone' => $this->nullableString($payload['phone'] ?? null),
             'office_location' => $this->nullableString($payload['office_location'] ?? null),
@@ -855,6 +860,7 @@ final class AboutEntityCmsService implements AboutEntityCmsServiceInterface
             'faculty_id' => $member->faculty_id,
             'department_id' => $member->department_id,
             'specialization_id' => $member->specialization_id,
+            'center_slug' => $member->center_slug,
             'email' => $member->email,
             'phone' => $member->phone,
             'office_location' => $member->office_location,
@@ -1063,6 +1069,13 @@ final class AboutEntityCmsService implements AboutEntityCmsServiceInterface
             }
             if ($departmentId !== null && ($facultyId === null || ! Department::query()->whereKey($departmentId)->where('faculty_id', $facultyId)->exists())) {
                 $errors['department_id'][] = 'The selected department must belong to the selected faculty.';
+            }
+            $centerSlug = $this->nullableString($payload['center_slug'] ?? null);
+            if ($centerSlug !== null && ! $this->centerCatalog->isCenter($centerSlug)) {
+                $errors['center_slug'][] = 'The selected center does not exist.';
+            }
+            if ($centerSlug !== null && $facultyId !== null) {
+                $errors['center_slug'][] = 'A profile belongs to a faculty or to a center, not both.';
             }
             $specializationId = $this->nullableString($payload['specialization_id'] ?? null);
             if ($specializationId !== null && $this->specializationName($facultyId, $specializationId, 'en') === null) {
@@ -1490,6 +1503,21 @@ final class AboutEntityCmsService implements AboutEntityCmsServiceInterface
         $value = $this->stringValue($value);
 
         return $value !== '' ? $value : null;
+    }
+
+    /**
+     * The center a profile belongs to: a known center, and only when the
+     * profile has no faculty.
+     *
+     * @param  array<string, mixed>  $payload
+     */
+    private function centerSlug(array $payload): ?string
+    {
+        $centerSlug = $this->nullableString($payload['center_slug'] ?? null);
+
+        return $centerSlug !== null && $this->nullableInt($payload['faculty_id'] ?? null) === null && $this->centerCatalog->isCenter($centerSlug)
+            ? $centerSlug
+            : null;
     }
 
     private function nullableInt(mixed $value): ?int

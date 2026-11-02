@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\Page;
 
+use App\Contracts\Center\CenterCatalogServiceInterface;
 use App\Contracts\Content\PersonIdentityServiceInterface;
 use App\Contracts\Faculty\FacultyLeadershipServiceInterface;
 use App\Contracts\Faculty\FacultyStudyPlanLinkServiceInterface;
@@ -42,6 +43,7 @@ final class ProfilePageService implements ProfilePageServiceInterface
         private readonly PersonIdentityServiceInterface $identityService,
         private readonly FacultyStudyPlanLinkServiceInterface $studyPlanLinkService,
         private readonly FacultyLeadershipServiceInterface $leadershipService,
+        private readonly CenterCatalogServiceInterface $centerCatalog,
     ) {}
 
     public function getProfile(string $locale, string $source, string $slug): ?ProfilePageDTO
@@ -406,6 +408,11 @@ final class ProfilePageService implements ProfilePageServiceInterface
                 ?? $member->faculty->translations->firstWhere('locale', 'ar')
                 ?? $member->faculty->translations->first();
             $facultyName = $facultyTranslation?->name;
+        }
+
+        // A center's staff (the Requirements Unit) name their center instead.
+        if ($facultyName === null && is_string($member->center_slug) && $member->center_slug !== '') {
+            $facultyName = $this->centerCatalog->centerName($member->center_slug, $locale);
         }
 
         $departmentName = null;

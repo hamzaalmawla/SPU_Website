@@ -422,6 +422,7 @@ final class ProfileAdminService implements ProfileAdminServiceInterface
             'faculty_id' => $data->facultyId,
             'department_id' => $data->departmentId,
             'specialization_id' => $data->specializationId,
+            'center_slug' => $data->centerSlug,
             'email' => $data->email,
             'phone' => $data->phone,
             'office_location' => $data->officeLocation,
@@ -699,6 +700,7 @@ final class ProfileAdminService implements ProfileAdminServiceInterface
             ))->values()->all(),
             educations: $member->educations->map(fn (FacultyMemberEducation $education): EducationDataDTO => $this->mapFacultyEducationData($education))->values()->all(),
             specializationId: $member->specialization_id !== null ? (string) $member->specialization_id : null,
+            centerSlug: $member->center_slug !== null ? (string) $member->center_slug : null,
         );
     }
 

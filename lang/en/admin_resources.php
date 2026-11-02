@@ -61,7 +61,9 @@ return [
     ],
     'faculty_member' => [
         'leadership_role' => 'Leadership role',
-        'faculty_optional_for_leaders' => 'Leave empty only for a university leader who belongs to no faculty (for example the rector).',
+        'faculty_optional_for_leaders' => 'Leave empty only for a university leader who belongs to no faculty (for example the rector), or for the staff of a center.',
+        'center' => 'Center',
+        'center_help' => 'For staff of a university center such as the Requirements Unit: the profile has no faculty and shows on the center\'s staff page.',
         'basic_details' => 'Member details',
         'basic_details_description' => 'Fill in these fields to add the member. Everything else is optional and lives under "Additional details" below.',
         'additional_details' => 'Additional details (optional)',

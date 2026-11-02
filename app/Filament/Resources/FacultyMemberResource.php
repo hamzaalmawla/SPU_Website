@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Filament\Resources;
 
 use App\Contracts\Auth\AdminAccessServiceInterface;
+use App\Contracts\Center\CenterCatalogServiceInterface;
 use App\Contracts\Cms\CmsWorkflowServiceInterface;
 use App\Contracts\Content\ProfileAdminServiceInterface;
 use App\Contracts\Faculty\FacultyLeadershipServiceInterface;
@@ -134,6 +135,16 @@ class FacultyMemberResource extends Resource
                         ->disabled(fn (mixed $livewire): bool => self::contextFacultyId($livewire) !== null)
                         ->dehydrated()
                         ->live()
+                        ->columnSpanFull(),
+                    // A university center's staff (the Requirements Unit) have a
+                    // profile with no faculty; the center lists them on its staff page.
+                    Select::make('center_slug')
+                        ->label(__('admin_resources.faculty_member.center'))
+                        ->helperText(__('admin_resources.faculty_member.center_help'))
+                        ->options(fn (): array => app(CenterCatalogServiceInterface::class)->centerOptions(app()->getLocale() === 'ar' ? 'ar' : 'en'))
+                        ->native(false)
+                        ->hidden(fn (Get $get): bool => filled($get('faculty_id')) || (auth()->user()?->hasFacultyLimit() ?? true))
+                        ->dehydrateStateUsing(fn (mixed $state, Get $get): ?string => filled($get('faculty_id')) || ! is_string($state) || $state === '' ? null : $state)
                         ->columnSpanFull(),
                     Hidden::make('translations.ar.locale')->default('ar'),
                     Hidden::make('translations.en.locale')->default('en'),
@@ -270,6 +281,9 @@ class FacultyMemberResource extends Resource
             SelectFilter::make('faculty_id')
                 ->label(__('admin_resources.faculty_member.faculty'))
                 ->options(fn (): array => app(ProfileAdminServiceInterface::class)->facultyOptions((int) auth()->id())),
+            SelectFilter::make('center_slug')
+                ->label(__('admin_resources.faculty_member.center'))
+                ->options(fn (): array => app(CenterCatalogServiceInterface::class)->centerOptions(app()->getLocale() === 'ar' ? 'ar' : 'en')),
         ])->actions([
             Tables\Actions\EditAction::make(),
             Tables\Actions\ViewAction::make(),

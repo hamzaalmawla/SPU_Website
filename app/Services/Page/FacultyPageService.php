@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\Page;
 
+use App\Contracts\Center\CenterCatalogServiceInterface;
 use App\Contracts\Cms\CmsWorkflowServiceInterface;
 use App\Contracts\Content\PersonIdentityServiceInterface;
 use App\Contracts\Faculty\FacultyLeadershipServiceInterface;
@@ -108,6 +109,7 @@ final class FacultyPageService implements FacultyPageServiceInterface
         private readonly PersonIdentityServiceInterface $identityService,
         private readonly FacultyLeadershipServiceInterface $leadershipService,
         private readonly FacultyMasterProgramServiceInterface $masterProgramService,
+        private readonly CenterCatalogServiceInterface $centerCatalog,
     ) {}
 
     public function getHub(string $locale): FacultyHubPageDTO
@@ -388,7 +390,7 @@ final class FacultyPageService implements FacultyPageServiceInterface
             $pageData['payload']['plan']['pdfUrl'] = $this->studyPlanLinkService->sanitizeCourseMaterialPath(
                 $pageData['payload']['plan']['pdfUrl'] ?? null,
             );
-            $selection = $this->studyPlanSelection($pageData, $filters, $locale, $subpageSlug === 'study-plan-course');
+            $selection = $this->studyPlanSelection($pageData, $filters, $locale, $subpageSlug === 'study-plan-course', $this->publicSlug($faculty));
 
             if ($selection === null) {
                 return null;
@@ -2302,7 +2304,7 @@ final class FacultyPageService implements FacultyPageServiceInterface
      * @param  array<string, mixed>  $filters
      * @return array{filters: array<string, string>, detail: array<string, mixed>}|null
      */
-    private function studyPlanSelection(array $pageData, array $filters, string $locale, bool $coursePage): ?array
+    private function studyPlanSelection(array $pageData, array $filters, string $locale, bool $coursePage, string $facultySlug = ''): ?array
     {
         if (($filters['_invalid'] ?? false) === true) {
             return null;
@@ -2322,7 +2324,7 @@ final class FacultyPageService implements FacultyPageServiceInterface
             return null;
         }
 
-        $activeDepartment = $this->sanitizedStudyPlanDepartment($activeDepartment);
+        $activeDepartment = $this->sanitizedStudyPlanDepartment($activeDepartment, $facultySlug, $locale);
 
         $validatedFilters = [];
         if (is_string($departmentId)) {
@@ -2486,14 +2488,22 @@ final class FacultyPageService implements FacultyPageServiceInterface
     }
 
     /** @param array<string, mixed> $department @return array<string, mixed> */
-    private function sanitizedStudyPlanDepartment(array $department): array
+    private function sanitizedStudyPlanDepartment(array $department, string $facultySlug = '', string $locale = 'ar'): array
     {
         $department['terms'] = collect(is_array($department['terms'] ?? null) ? $department['terms'] : [])
             ->filter(fn (mixed $term): bool => is_array($term))
-            ->map(function (array $term): array {
+            ->map(function (array $term) use ($facultySlug, $locale): array {
                 $term['courses'] = collect(is_array($term['courses'] ?? null) ? $term['courses'] : [])
                     ->filter(fn (mixed $course): bool => is_array($course))
-                    ->map(function (array $course): array {
+                    ->map(function (array $course) use ($facultySlug, $locale): array {
+                        // A university requirement is taught by the Requirements Unit:
+                        // link it to the unit's course (or its required/elective list).
+                        $unitCourseUrl = $facultySlug !== '' ? $this->centerCatalog->studyPlanCourseUrl($facultySlug, $course, $locale) : null;
+                        unset($course['unitCourseUrl']);
+                        if ($unitCourseUrl !== null) {
+                            $course['unitCourseUrl'] = $unitCourseUrl;
+                        }
+
                         $course['lessons'] = collect(is_array($course['lessons'] ?? null) ? $course['lessons'] : [])
                             ->filter(fn (mixed $lesson): bool => is_array($lesson))
                             ->map(fn (array $lesson): array => [

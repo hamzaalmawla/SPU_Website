@@ -496,6 +496,15 @@ function createStudyPlanPage(root) {
         modal.querySelector('[data-modal-description]').textContent = text(course, 'description');
         modal.querySelector('[data-modal-details]').setAttribute('href', courseHref(course.id));
 
+        // A university requirement links to its course on the Requirements Unit page.
+        const unitLink = modal.querySelector('[data-modal-unit]');
+        if (unitLink) {
+            const unitUrl = typeof course.unitCourseUrl === 'string' && course.unitCourseUrl.startsWith('/') ? course.unitCourseUrl : '';
+            unitLink.setAttribute('href', unitUrl || '#');
+            unitLink.classList.toggle('hidden', unitUrl === '');
+            unitLink.classList.toggle('inline-flex', unitUrl !== '');
+        }
+
         const creditRule = modal.querySelector('[data-modal-credit-rule]');
         const requiredCredits = Number(course.prerequisiteCredits) || 0;
         if (creditRule) {

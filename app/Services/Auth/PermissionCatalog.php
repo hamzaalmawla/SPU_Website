@@ -36,6 +36,7 @@ final class PermissionCatalog implements PermissionCatalogInterface
         'e_services' => 'e_services',
         'news' => 'news_pages',
         'research' => 'research_pages',
+        'centers' => 'centers',
     ];
 
     /** Records edited through the CMS workflow, by target key prefix. */
@@ -64,6 +65,7 @@ final class PermissionCatalog implements PermissionCatalogInterface
                 'events' => self::SCREEN,
                 'research_pages' => self::SCREEN,
                 'faculties_hub' => self::SCREEN,
+                'centers' => self::SCREEN,
                 'pages' => self::PUBLISHED_RECORDS,
             ],
             'faculties' => [

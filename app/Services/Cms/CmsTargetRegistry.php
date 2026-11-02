@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\Cms;
 
+use App\Contracts\Center\CenterCatalogServiceInterface;
 use App\Contracts\Cms\AboutEntityCmsServiceInterface;
 use App\Contracts\Cms\CmsTargetRegistryInterface;
 use App\Contracts\News\NewsArticleCmsServiceInterface;
@@ -17,6 +18,7 @@ final class CmsTargetRegistry implements CmsTargetRegistryInterface
         private readonly AboutEntityCmsServiceInterface $aboutEntityCmsService,
         private readonly NewsArticleCmsServiceInterface $newsArticleCmsService,
         private readonly ResearchPublicationCmsServiceInterface $researchPublicationCmsService,
+        private readonly CenterCatalogServiceInterface $centerCatalog,
     ) {}
 
     /** @return Collection<int, CmsTargetDTO> */
@@ -31,6 +33,7 @@ final class CmsTargetRegistry implements CmsTargetRegistryInterface
             ...$this->servicePageTargets(),
             ...$this->newsTargets(),
             ...$this->researchTargets(),
+            ...$this->centerTargets(),
         ]);
     }
 
@@ -197,6 +200,29 @@ final class CmsTargetRegistry implements CmsTargetRegistryInterface
             $this->target('research.office', 'research', 'admin.cms.targets.research.office', '/research/office', 'public.research.office', 'research.index'),
             $this->target('research.policies', 'research', 'admin.cms.targets.research.policies', '/research/policies', 'public.research.policies', 'research.index'),
         ];
+    }
+
+    /**
+     * The centers page and, for each center (config/centers.php), its page,
+     * staff page and course list. The course list is one target shown on two
+     * pages: required-courses and elective-courses.
+     *
+     * @return array<int, CmsTargetDTO>
+     */
+    private function centerTargets(): array
+    {
+        $targets = [
+            $this->target('centers.landing', 'centers', 'admin.cms.targets.centers.landing', '/centers', 'public.centers.landing'),
+        ];
+
+        foreach ($this->centerCatalog->centerSlugs() as $centerSlug) {
+            $centerKey = 'centers.'.$centerSlug;
+            $targets[] = $this->target($centerKey, 'centers', 'admin.cms.targets.centers.page', '/centers/'.$centerSlug, 'public.centers.show', 'centers.landing');
+            $targets[] = $this->target($centerKey.'.staff', 'centers', 'admin.cms.targets.centers.staff', '/centers/'.$centerSlug.'/staff', 'public.centers.subpage', $centerKey);
+            $targets[] = $this->target($centerKey.'.courses', 'centers', 'admin.cms.targets.centers.courses', '/centers/'.$centerSlug.'/required-courses', 'public.centers.subpage', $centerKey);
+        }
+
+        return $targets;
     }
 
     private function target(

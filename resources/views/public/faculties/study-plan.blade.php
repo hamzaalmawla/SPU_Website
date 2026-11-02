@@ -11,7 +11,9 @@
         ...$plan,
         'departments' => $departments->map(function (array $department) use ($activeDepartment): array {
             if (($department['id'] ?? null) === ($activeDepartment['id'] ?? null)) {
-                return $department;
+                // The service's copy: its files are checked and its university
+                // requirements carry their Requirements Unit link (unitCourseUrl).
+                return $activeDepartment;
             }
 
             return [
@@ -268,6 +270,7 @@
                 <a data-modal-details href="{{ route('public.faculties.study-plan', ['locale' => $locale, 'faculty' => $page->facultySlug]) }}" class="inline-flex items-center gap-2 rounded-lg bg-spu-blue px-4 py-2.5 text-[12px] font-bold text-white transition-colors hover:bg-spu-blue/90"><span>{{ $label('viewDetails') }}</span><svg class="h-3.5 w-3.5 rtl:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg></a>
                 <button type="button" data-modal-close class="inline-flex items-center rounded-lg border border-slate-200 px-4 py-2.5 text-[12px] font-bold text-slate-600 transition-colors hover:bg-slate-50">{{ $label('close') }}</button>
             </div>
+            <a data-modal-unit href="#" class="mt-4 hidden items-center gap-2 text-[12px] font-bold text-spu-red underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-spu-blue"><span>{{ __('centers.unit_course_link') }}</span><svg class="h-3.5 w-3.5 rtl:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg></a>
         </div>
     </div>
 </div>

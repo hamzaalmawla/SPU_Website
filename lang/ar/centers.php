@@ -1,0 +1,41 @@
+<?php
+
+declare(strict_types=1);
+
+// تسميات واجهة صفحات المراكز. نصوص الصفحات من نظام إدارة المحتوى.
+return [
+    'home' => 'الرئيسية',
+    'centers' => 'المراكز',
+    'explore' => 'استكشف المركز',
+    'visit' => 'زيارة',
+    'no_centers' => 'لا توجد مراكز منشورة بعد.',
+    'manager_message' => 'كلمة المدير',
+    'message_from' => 'كلمة',
+    'staff_count' => ':count من أعضاء الكادر',
+    'no_staff' => 'لا توجد صفحات تعريفية منشورة لأعضاء الكادر بعد.',
+    'view_all_staff' => 'كل الكادر',
+    'courses_count' => ':count مقررات',
+    'no_courses' => 'لا توجد مقررات في هذه القائمة بعد.',
+    'no_courses_for_faculty' => 'لا يوجد مقرر من هذه القائمة في هذه الكلية.',
+    'filter_by_faculty' => 'عرض مقررات',
+    'all_faculties' => 'كل الكليات',
+    'required' => 'إجباري',
+    'elective' => 'اختياري',
+    'credits' => 'الساعات المعتمدة',
+    'credits_short' => ':count س.م',
+    'theory' => 'ساعات نظرية',
+    'practical' => 'ساعات عملية',
+    'code' => 'الرمز',
+    'faculties' => 'الكليات والرموز',
+    'faculty_code' => 'الرمز في :faculty',
+    'prerequisites' => 'المتطلبات السابقة',
+    'teachers' => 'يدرّسه',
+    'teacher_parts' => ['theory' => 'نظري', 'practical' => 'عملي'],
+    'lessons' => 'مواد المقرر',
+    'lesson_types' => ['lecture' => 'محاضرة', 'lab' => 'عملي'],
+    'specification' => 'توصيف المقرر (PDF)',
+    'details' => 'تفاصيل المقرر',
+    'open_study_plan' => 'فتح الخطة الدراسية في :faculty',
+    'unit_course_link' => 'عرض المقرر في وحدة المتطلبات',
+    'section_nav' => 'صفحات المركز',
+];

@@ -210,6 +210,7 @@ final class FacultyStudyPlanBoardService implements FacultyStudyPlanBoardService
             'prerequisiteCredits' => (int) ($en['prerequisiteCredits'] ?? 0),
             'lessons' => $lessons,
             'specificationUrl' => (string) ($en['specificationUrl'] ?? ''),
+            'requirementsUnitCourseId' => (string) ($en['requirementsUnitCourseId'] ?? ''),
             ...$this->teacherFormFields($en['teachers'] ?? null),
         ];
     }
@@ -234,6 +235,7 @@ final class FacultyStudyPlanBoardService implements FacultyStudyPlanBoardService
             'prerequisiteCredits' => 0,
             'lessons' => [],
             'specificationUrl' => '',
+            'requirementsUnitCourseId' => '',
             ...$this->teacherFormFields(null),
         ];
     }
@@ -313,6 +315,16 @@ final class FacultyStudyPlanBoardService implements FacultyStudyPlanBoardService
                 $record['lessons'] = $this->lessonsFromForm($form['lessons'], $this->records($existing['lessons'] ?? []), $id, $locale, $this->lessonIds($department, $id));
             } else {
                 $record['lessons'] = $this->records($existing['lessons'] ?? []);
+            }
+
+            // A university requirement may name the Requirements Unit course it
+            // opens; without one the unit course listing this faculty and code is used.
+            $unitCourseId = array_key_exists('requirementsUnitCourseId', $form)
+                ? trim((string) $form['requirementsUnitCourseId'])
+                : trim((string) ($existing['requirementsUnitCourseId'] ?? ''));
+            unset($record['requirementsUnitCourseId']);
+            if ($clean['type'] === 'university' && preg_match('/^[a-z0-9]+(?:-[a-z0-9]+)*$/', $unitCourseId) === 1) {
+                $record['requirementsUnitCourseId'] = $unitCourseId;
             }
 
             // One course specification PDF per course, shared by both languages.

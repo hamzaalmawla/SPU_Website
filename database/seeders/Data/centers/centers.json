@@ -1,0 +1,112 @@
+{
+  "landing": {
+    "heroImage": "/images/uni-main-place.JPG",
+    "translations": {
+      "ar": {
+        "hero": {
+          "title": "المراكز والوحدات",
+          "summary": "مراكز الجامعة ووحداتها التي تخدم طلاب جميع الكليات وتكمّل مسيرتهم الأكاديمية."
+        },
+        "centersTitle": "مراكزنا",
+        "offers": {
+          "title": "ماذا تقدّم لنا المراكز",
+          "summary": "تعمل المراكز إلى جانب الكليات لتقدّم ما يشترك فيه طلاب الجامعة جميعاً.",
+          "items": [
+            {"title": "مقررات مشتركة", "summary": "مقررات متطلبات الجامعة التي يدرسها طلاب جميع الكليات، بخطة واحدة ومحتوى موحّد."},
+            {"title": "كادر تدريسي متخصص", "summary": "أعضاء هيئة تدريسية مختصون في مقررات المركز، لكلٍّ منهم صفحة تعريفية."},
+            {"title": "مرجع واحد للطالب", "summary": "معلومات كل مقرر وساعاته ومتطلباته السابقة وكلياته في مكان واحد."}
+          ]
+        }
+      },
+      "en": {
+        "hero": {
+          "title": "Centers and Units",
+          "summary": "The university's centers and units that serve students of every faculty and complete their academic path."
+        },
+        "centersTitle": "Our centers",
+        "offers": {
+          "title": "What the centers offer",
+          "summary": "The centers work alongside the faculties to provide what all of the university's students share.",
+          "items": [
+            {"title": "Shared courses", "summary": "The university requirement courses that students of every faculty take, with one plan and the same content."},
+            {"title": "Specialist teaching staff", "summary": "Teaching staff who specialise in the center's courses, each with a profile page."},
+            {"title": "One reference for students", "summary": "Each course's details, hours, prerequisites and faculties in one place."}
+          ]
+        }
+      }
+    }
+  },
+  "requirements-unit": {
+    "page": {
+      "heroImage": "/images/uni-main-place.JPG",
+      "gallery": [],
+      "managerMemberId": null,
+      "translations": {
+        "ar": {
+          "hero": {
+            "title": "وحدة المتطلبات",
+            "summary": "تدرّس الوحدة مقررات متطلبات الجامعة الإجبارية والاختيارية لطلاب جميع الكليات."
+          },
+          "tabs": [
+            {"label": "عن الوحدة", "body": "وحدة المتطلبات جزء من الجامعة وليست كلية مستقلة. تتولى تدريس مقررات متطلبات الجامعة التي يدرسها طلاب جميع الكليات، الإجبارية منها والاختيارية، وتنسّق مع الكليات مواعيدها وخططها."}
+          ],
+          "manager": {
+            "title": "مدير الوحدة",
+            "message": ""
+          },
+          "stats": [],
+          "highlightsTitle": "استكشف الوحدة",
+          "highlights": [
+            {"subpage": "staff", "title": "الكادر التدريسي", "summary": "أعضاء الهيئة التدريسية في الوحدة وصفحاتهم التعريفية."},
+            {"subpage": "required-courses", "title": "المقررات الإجبارية", "summary": "متطلبات الجامعة التي يدرسها كل طالب، والكليات التي تدرّسها."},
+            {"subpage": "elective-courses", "title": "المقررات الاختيارية", "summary": "متطلبات الجامعة الاختيارية التي يختار منها الطالب."}
+          ]
+        },
+        "en": {
+          "hero": {
+            "title": "Requirements Unit",
+            "summary": "The unit teaches the required and elective university requirement courses to students of every faculty."
+          },
+          "tabs": [
+            {"label": "About the unit", "body": "The Requirements Unit is part of the university, not a faculty of its own. It teaches the university requirement courses that students of every faculty take, both required and elective, and coordinates their schedules and plans with the faculties."}
+          ],
+          "manager": {
+            "title": "Unit Manager",
+            "message": ""
+          },
+          "stats": [],
+          "highlightsTitle": "Explore the unit",
+          "highlights": [
+            {"subpage": "staff", "title": "Teaching staff", "summary": "The unit's teaching staff and their profiles."},
+            {"subpage": "required-courses", "title": "Required courses", "summary": "The university requirements every student takes, and the faculties that include them."},
+            {"subpage": "elective-courses", "title": "Elective courses", "summary": "The elective university requirements students choose from."}
+          ]
+        }
+      }
+    },
+    "staff": {
+      "translations": {
+        "ar": {
+          "hero": {"title": "الكادر التدريسي", "summary": "أعضاء الهيئة التدريسية في وحدة المتطلبات."},
+          "body": ""
+        },
+        "en": {
+          "hero": {"title": "Teaching Staff", "summary": "The teaching staff of the Requirements Unit."},
+          "body": ""
+        }
+      }
+    },
+    "courses": {
+      "translations": {
+        "ar": {
+          "hero": {"title": "المقررات الإجبارية", "summary": "متطلبات الجامعة الإجبارية التي يدرسها طلاب الكليات، مع رمز كل مقرر في كل كلية."},
+          "electiveHero": {"title": "المقررات الاختيارية", "summary": "متطلبات الجامعة الاختيارية التي يختار منها الطلاب، مع رمز كل مقرر في كل كلية."}
+        },
+        "en": {
+          "hero": {"title": "Required Courses", "summary": "The required university courses that students of the faculties take, with each course's code in each faculty."},
+          "electiveHero": {"title": "Elective Courses", "summary": "The elective university courses students choose from, with each course's code in each faculty."}
+        }
+      }
+    }
+  }
+}

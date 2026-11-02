@@ -119,7 +119,7 @@
                         </label>
                         <label>{{ $t('credits') }}<input type="number" step="0.5" min="0" max="40" wire:model="boardCourse.credits"></label>
                         <label>{{ $t('type') }}
-                            <select wire:model="boardCourse.type">
+                            <select wire:model.live="boardCourse.type">
                                 @foreach (['university', 'faculty', 'specialization'] as $type)
                                     <option value="{{ $type }}">{{ $t('types.'.$type) }}</option>
                                 @endforeach
@@ -128,6 +128,17 @@
                         <label>{{ $t('theory') }}<input type="number" step="0.5" min="0" max="40" wire:model="boardCourse.theory"></label>
                         <label>{{ $t('practical') }}<input type="number" step="0.5" min="0" max="40" wire:model="boardCourse.practical"></label>
                         <label class="spu-board-form__check"><input type="checkbox" wire:model="boardCourse.required"> {{ $t('required') }}</label>
+                        @if (($this->boardCourse['type'] ?? '') === 'university')
+                            <label>{{ $t('unit_course') }}
+                                <select wire:model="boardCourse.requirementsUnitCourseId" aria-describedby="board-unit-course-help">
+                                    <option value="">{{ $t('unit_course_auto') }}</option>
+                                    @foreach ($this->boardUnitCourseOptions() as $unitCourseId => $unitCourseLabel)
+                                        <option value="{{ $unitCourseId }}">{{ $unitCourseLabel }}</option>
+                                    @endforeach
+                                </select>
+                                <small id="board-unit-course-help">{{ $t('unit_course_help') }}</small>
+                            </label>
+                        @endif
                     </div>
 
                     <fieldset class="spu-board-form">

@@ -81,6 +81,30 @@ final class AdminStudyPlanBoardTest extends TestCase
         $this->assertSame($before, $this->courseCount());
     }
 
+    public function test_a_university_requirement_can_name_its_requirements_unit_course(): void
+    {
+        $page = $this->page();
+
+        $page->call('newBoardCourse', '1')
+            ->set('boardCourse.code', 'DEN-907')
+            ->set('boardCourse.titleEn', 'University Course')
+            ->set('boardCourse.titleAr', 'مقرر جامعة')
+            ->set('boardCourse.type', 'university')
+            ->assertSeeHtml('wire:model="boardCourse.requirementsUnitCourseId"')
+            ->set('boardCourse.requirementsUnitCourseId', 'sociology')
+            ->call('saveBoardCourse');
+
+        $this->assertSame('sociology', $this->course('den-907')['requirementsUnitCourseId'] ?? null);
+
+        // Another type keeps no unit course.
+        $page->call('openBoardCourse', 'den-907')
+            ->assertSet('boardCourse.requirementsUnitCourseId', 'sociology')
+            ->set('boardCourse.type', 'faculty')
+            ->call('saveBoardCourse');
+
+        $this->assertArrayNotHasKey('requirementsUnitCourseId', $this->course('den-907') ?? []);
+    }
+
     public function test_an_invalid_course_is_not_saved(): void
     {
         $page = $this->page();
