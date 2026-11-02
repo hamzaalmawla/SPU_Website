@@ -41,7 +41,7 @@
                 <input id="alumni-search" type="search" name="q" value="{{ $filters['q'] ?? '' }}" placeholder="{{ $isAr ? 'ابحث بالاسم' : 'Search by name' }}" class="h-10 w-full min-w-0 rounded-[6px] border border-slate-200 bg-white px-4 text-[12px] font-semibold text-spu-blue outline-none transition-colors focus:border-spu-blue sm:w-auto sm:min-w-[240px]">
 
                 <label class="sr-only" for="alumni-faculty">{{ $isAr ? 'الكلية' : 'Faculty' }}</label>
-                <select id="alumni-faculty" name="faculty" onchange="this.form.submit()" class="h-10 w-full min-w-0 rounded-[6px] border border-slate-200 bg-white px-4 text-[12px] font-semibold text-spu-blue outline-none transition-colors focus:border-spu-blue sm:w-auto sm:min-w-[190px]">
+                <select id="alumni-faculty" name="faculty" data-autosubmit class="h-10 w-full min-w-0 rounded-[6px] border border-slate-200 bg-white px-4 text-[12px] font-semibold text-spu-blue outline-none transition-colors focus:border-spu-blue sm:w-auto sm:min-w-[190px]">
                     <option value="">{{ $isAr ? 'كل الكليات' : 'All faculties' }}</option>
                     @foreach (($options['faculties'] ?? []) as $faculty)
                         <option value="{{ $faculty['value'] }}" @selected(($filters['faculty'] ?? '') === (string) $faculty['value'])>{{ $faculty['label'] }}</option>
@@ -49,7 +49,7 @@
                 </select>
 
                 <label class="sr-only" for="alumni-year">{{ $isAr ? 'سنة التخرج' : 'Graduation year' }}</label>
-                <select id="alumni-year" name="year" onchange="this.form.submit()" class="h-10 w-full min-w-0 rounded-[6px] border border-slate-200 bg-white px-4 text-[12px] font-semibold text-spu-blue outline-none transition-colors focus:border-spu-blue sm:w-auto sm:min-w-[160px]">
+                <select id="alumni-year" name="year" data-autosubmit class="h-10 w-full min-w-0 rounded-[6px] border border-slate-200 bg-white px-4 text-[12px] font-semibold text-spu-blue outline-none transition-colors focus:border-spu-blue sm:w-auto sm:min-w-[160px]">
                     <option value="">{{ $isAr ? 'كل السنوات' : 'All years' }}</option>
                     @foreach (($options['years'] ?? []) as $year)
                         <option value="{{ $year }}" @selected(($filters['year'] ?? '') === (string) $year)>{{ $year }}</option>
@@ -58,7 +58,7 @@
 
                 @if (($options['departments'] ?? []) !== [])
                     <label class="sr-only" for="alumni-department">{{ $isAr ? 'القسم' : 'Department' }}</label>
-                    <select id="alumni-department" name="department" onchange="this.form.submit()" class="h-10 w-full min-w-0 rounded-[6px] border border-slate-200 bg-white px-4 text-[12px] font-semibold text-spu-blue outline-none transition-colors focus:border-spu-blue sm:w-auto sm:min-w-[190px]">
+                    <select id="alumni-department" name="department" data-autosubmit class="h-10 w-full min-w-0 rounded-[6px] border border-slate-200 bg-white px-4 text-[12px] font-semibold text-spu-blue outline-none transition-colors focus:border-spu-blue sm:w-auto sm:min-w-[190px]">
                         <option value="">{{ $isAr ? 'كل الأقسام' : 'All departments' }}</option>
                         @foreach ($options['departments'] as $department)
                             <option value="{{ $department['value'] }}" @selected(($filters['department'] ?? '') === (string) $department['value'])>{{ $department['label'] }}</option>

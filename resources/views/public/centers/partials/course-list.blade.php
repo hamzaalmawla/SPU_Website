@@ -160,23 +160,3 @@
     </div>
 </section>
 
-<script>
-    (function () {
-        // A link from a study plan names one course (#course-<id>): open its details.
-        function openLinkedCourse() {
-            var id = decodeURIComponent((window.location.hash || '').slice(1));
-            if (id.indexOf('course-') !== 0) return;
-            var course = document.getElementById(id);
-            if (!course) return;
-            var details = course.querySelector('[data-course-details]');
-            if (details) details.open = true;
-            course.scrollIntoView({ block: 'start', behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
-        }
-        window.addEventListener('hashchange', openLinkedCourse);
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', openLinkedCourse);
-        } else {
-            openLinkedCourse();
-        }
-    })();
-</script>

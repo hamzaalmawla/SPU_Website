@@ -12,6 +12,13 @@ use Symfony\Component\HttpFoundation\Response;
 
 final class SecurityHeadersMiddleware
 {
+    /**
+     * The one inline script the public site keeps, in the layout's <head>: it
+     * marks the page as scripted before the first paint. The public policy
+     * allows it by hash, so this must match the layout byte for byte.
+     */
+    public const JS_CLASS_BOOTSTRAP = "document.documentElement.classList.add('js');";
+
     public function __construct(
         private readonly AnalyticsServiceInterface $analyticsService,
     ) {}
@@ -40,6 +47,14 @@ final class SecurityHeadersMiddleware
 
         $response->headers->set('X-Frame-Options', 'SAMEORIGIN');
         $response->headers->set('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=(), usb=()');
+
+        // Keeps pages this site opens from reaching back into it through
+        // window.opener, while popups it opens (share dialogs) still work.
+        $coop = trim((string) config('security.coop', 'same-origin-allow-popups'));
+        if ($coop !== '') {
+            $response->headers->set('Cross-Origin-Opener-Policy', $coop);
+        }
+
         $response->headers->set('Content-Security-Policy', $this->contentSecurityPolicy($request, $response));
 
         if ($request->is('*/preview')) {
@@ -109,7 +124,9 @@ final class SecurityHeadersMiddleware
         // below gain the configured provider's origins — and only those
         // origins — when analytics is switched on. With analytics off (the
         // default) `analyticsSources()` is empty and the policy is byte-for-byte
-        // the strict one: script-src 'self' 'unsafe-inline', connect-src 'self'.
+        // the strict one: script-src 'self' plus the bootstrap's hash,
+        // connect-src 'self'. Public views carry no other inline script or
+        // on* attribute; their behaviour lives in resources/js.
         $analytics = $this->analyticsSources();
 
         return implode('; ', [
@@ -121,10 +138,15 @@ final class SecurityHeadersMiddleware
             "img-src 'self' data: https:",
             "font-src 'self' data: https:",
             "style-src 'self' 'unsafe-inline' https:",
-            $this->directive('script-src', ["'self'", "'unsafe-inline'"], $analytics),
+            $this->directive('script-src', ["'self'", self::inlineScriptHash(self::JS_CLASS_BOOTSTRAP)], $analytics),
             "frame-src 'self' https://www.google.com https://maps.google.com",
             $this->directive('connect-src', ["'self'"], $analytics),
         ]);
+    }
+
+    public static function inlineScriptHash(string $script): string
+    {
+        return "'sha256-".base64_encode(hash('sha256', $script, true))."'";
     }
 
     /**

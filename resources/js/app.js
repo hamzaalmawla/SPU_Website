@@ -23,6 +23,7 @@ import { initMasterProgramPages } from './alpine/masterProgram.js';
 import { initRevealSections }   from './alpine/scrollReveal.js';
 import { createVirtualizedSchedule } from './alpine/virtualizedSchedule.js';
 import { registerHomepageComponents } from './homepage.js';
+import { initPageBehaviours } from './public/pageBehaviours.js';
 
 // Alpine components (x-data="name()")
 Alpine.data('mobileNav',       createMobileNav);
@@ -71,6 +72,8 @@ function initAfterAlpineStart() {
 
 async function bootAlpine() {
     await whenDomReady();
+
+    initPageBehaviours();
 
     Alpine.start();
     initAfterAlpineStart();

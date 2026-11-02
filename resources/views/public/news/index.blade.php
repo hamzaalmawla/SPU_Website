@@ -41,7 +41,7 @@
             <div class="container">
                 <article class="group flex flex-col items-center gap-12 lg:flex-row">
                     <a href="{{ $featured->url ?? '/'.$locale.'/news/articles' }}" class="aspect-video w-full overflow-hidden rounded-2xl lg:w-1/2">
-                        <img src="{{ $featured->imageUrl ?: '/images/news/first-webo.jpeg' }}" onerror="this.onerror=null;this.src='/images/news/first-webo.jpeg'" alt="{{ $featured->title }}" class="content-media-image h-full w-full">
+                        <img src="{{ $featured->imageUrl ?: '/images/news/first-webo.jpeg' }}" data-fallback-src="/images/news/first-webo.jpeg" alt="{{ $featured->title }}" class="content-media-image h-full w-full">
                     </a>
 
                     <div class="w-full lg:w-1/2">
@@ -80,7 +80,7 @@
                     <article data-news-card class="group flex h-full min-w-0 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_12px_34px_rgba(32,39,89,0.07)] transition duration-300 hover:-translate-y-1 hover:border-spu-blue/20 hover:shadow-[0_22px_52px_rgba(32,39,89,0.13)]">
                         <a href="{{ $news->url ?? '#' }}" class="block">
                             <div class="relative aspect-[16/10] w-full overflow-hidden border-b border-slate-100 bg-slate-100">
-                                <img src="{{ $news->imageUrl ?: '/images/news/researches.jpeg' }}" onerror="this.onerror=null;this.src='/images/news/researches.jpeg'" alt="{{ $news->title }}" class="content-media-image h-full w-full">
+                                <img src="{{ $news->imageUrl ?: '/images/news/researches.jpeg' }}" data-fallback-src="/images/news/researches.jpeg" alt="{{ $news->title }}" class="content-media-image h-full w-full">
                                 <span class="absolute start-4 top-4 max-w-[calc(100%_-_2rem)] truncate rounded-full bg-white/95 px-3.5 py-1.5 text-[11px] font-bold text-spu-blue shadow-md backdrop-blur-sm">{{ $news->categoryLabel ?: ($page['newsFallbackCategory'] ?? ($isAr ? 'أخبار' : 'News')) }}</span>
                             </div>
                         </a>

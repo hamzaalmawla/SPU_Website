@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Http\Middleware\SecurityHeadersMiddleware;
 use App\Models\User\User;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -60,11 +61,40 @@ class MiddlewarePipelineTest extends TestCase
             ->assertHeader('Referrer-Policy', 'strict-origin-when-cross-origin')
             ->assertHeader('X-Frame-Options', 'SAMEORIGIN')
             ->assertHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=(), usb=()')
+            ->assertHeader('Cross-Origin-Opener-Policy', 'same-origin-allow-popups')
             ->assertHeader('Content-Security-Policy');
 
-        $this->assertStringContainsString("script-src 'self' 'unsafe-inline'", (string) $response->headers->get('Content-Security-Policy'));
-        $this->assertStringNotContainsString("'unsafe-eval'", (string) $response->headers->get('Content-Security-Policy'));
-        $this->assertStringNotContainsString("script-src 'self' 'unsafe-inline' https:", (string) $response->headers->get('Content-Security-Policy'));
+        $policy = (string) $response->headers->get('Content-Security-Policy');
+        $this->assertStringContainsString("script-src 'self' 'sha256-", $policy);
+        $this->assertDoesNotMatchRegularExpression("/script-src[^;]*'unsafe-inline'/", $policy);
+        $this->assertStringNotContainsString("'unsafe-eval'", $policy);
+    }
+
+    /**
+     * The public policy allows inline script only by hash, so any other inline
+     * script or on* handler in a public view silently stops working.
+     */
+    public function test_every_inline_script_on_public_pages_is_allowed_by_the_policy(): void
+    {
+        foreach (['/en', '/ar', '/en/achievements', '/en/contact', '/en/news', '/ar/research/publications', '/en/alumni'] as $path) {
+            $response = $this->get($path);
+            $this->assertSame(200, $response->getStatusCode(), $path);
+            $policy = (string) $response->headers->get('Content-Security-Policy');
+            $html = (string) $response->getContent();
+
+            preg_match_all('#<script(?![^>]*\bsrc=)(?![^>]*type="application/(?:ld\+)?json")[^>]*>(.*?)</script>#is', $html, $scripts);
+
+            $this->assertNotEmpty($scripts[1], $path);
+            foreach ($scripts[1] as $script) {
+                $this->assertStringContainsString(
+                    SecurityHeadersMiddleware::inlineScriptHash($script),
+                    $policy,
+                    "{$path} has an inline script the policy blocks: ".mb_substr($script, 0, 120),
+                );
+            }
+
+            $this->assertDoesNotMatchRegularExpression('/<[a-z][^>]*\son[a-z]+=/i', $html, "{$path} has an inline event handler the policy blocks.");
+        }
     }
 
     public function test_admin_routes_include_security_headers(): void

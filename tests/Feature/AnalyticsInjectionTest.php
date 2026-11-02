@@ -51,7 +51,7 @@ final class AnalyticsInjectionTest extends TestCase
     {
         $policy = $this->publicPolicy();
 
-        $this->assertStringContainsString("script-src 'self' 'unsafe-inline'", $policy);
+        $this->assertStringContainsString("script-src 'self' 'sha256-", $policy);
         $this->assertStringContainsString("connect-src 'self'", $policy);
         $this->assertStringNotContainsString('googletagmanager', $policy);
         $this->assertStringNotContainsString('google-analytics', $policy);
@@ -67,8 +67,9 @@ final class AnalyticsInjectionTest extends TestCase
         $content = $this->get('/ar')->assertOk()->getContent() ?: '';
 
         $this->assertStringContainsString('https://www.googletagmanager.com/gtag/js?id='.self::MEASUREMENT_ID, $content);
-        $this->assertStringContainsString('gtag(', $content);
-        $this->assertStringContainsString(self::MEASUREMENT_ID, $content);
+        // app.js bootstraps gtag from the tag's data attributes; no inline script.
+        $this->assertStringContainsString('data-gtag-id="'.self::MEASUREMENT_ID.'"', $content);
+        $this->assertStringNotContainsString('gtag(', $content);
     }
 
     /**
@@ -97,8 +98,8 @@ final class AnalyticsInjectionTest extends TestCase
         $this->assertStringContainsString('https://www.google-analytics.com', $connectSrc);
         $this->assertStringContainsString('https://*.analytics.google.com', $connectSrc);
 
-        // The inline gtag bootstrap relies on the pre-existing 'unsafe-inline'.
-        $this->assertStringContainsString("'unsafe-inline'", $scriptSrc);
+        // The gtag bootstrap runs from app.js, so no inline script is allowed.
+        $this->assertStringNotContainsString("'unsafe-inline'", $scriptSrc);
 
         // Baseline sources must survive the merge.
         $this->assertStringContainsString("'self'", $scriptSrc);

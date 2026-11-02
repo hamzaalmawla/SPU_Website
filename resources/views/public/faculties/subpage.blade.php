@@ -415,33 +415,33 @@
             <div class="container">
                 <form method="GET" action="{{ $studentListUrl }}" class="mb-8 flex flex-wrap items-center gap-4">
                     <input type="search" name="q" value="{{ $filters['q'] ?? '' }}" placeholder="{{ $isAr ? 'ابحث عن اسم الطالب' : 'Search student name' }}" class="h-9 w-full min-w-0 rounded-[6px] border border-slate-200 bg-white px-4 text-[12px] font-semibold text-spu-blue outline-none transition-colors focus:border-spu-blue sm:w-auto sm:min-w-[220px]">
-                    <select name="year" onchange="this.form.submit()" class="h-9 w-full min-w-0 rounded-[6px] border border-slate-200 bg-white px-4 text-[12px] font-semibold text-spu-blue outline-none transition-colors focus:border-spu-blue sm:w-auto sm:min-w-[150px]">
+                    <select name="year" data-autosubmit class="h-9 w-full min-w-0 rounded-[6px] border border-slate-200 bg-white px-4 text-[12px] font-semibold text-spu-blue outline-none transition-colors focus:border-spu-blue sm:w-auto sm:min-w-[150px]">
                         <option value="">{{ $isAr ? 'سنة التخرج' : 'Graduation Year' }}</option>
                         @foreach (($filterOptions['years'] ?? []) as $year)
                             <option value="{{ $year }}" @selected(($filters['year'] ?? '') === (string) $year)>{{ $year }}</option>
                         @endforeach
                     </select>
                     @if (($filterOptions['semesters'] ?? []) !== [])
-                        <select name="semester" onchange="this.form.submit()" class="h-9 w-full min-w-0 rounded-[6px] border border-slate-200 bg-white px-4 text-[12px] font-semibold text-spu-blue outline-none transition-colors focus:border-spu-blue sm:w-auto sm:min-w-[150px]">
+                        <select name="semester" data-autosubmit class="h-9 w-full min-w-0 rounded-[6px] border border-slate-200 bg-white px-4 text-[12px] font-semibold text-spu-blue outline-none transition-colors focus:border-spu-blue sm:w-auto sm:min-w-[150px]">
                             <option value="">{{ $isAr ? 'كل الفصول' : 'All Semesters' }}</option>
                             @foreach ($filterOptions['semesters'] as $semester)
                                 <option value="{{ $semester['key'] }}" @selected(($filters['semester'] ?? '') === (string) $semester['key'])>{{ $semester['label'] }}</option>
                             @endforeach
                         </select>
                     @endif
-                    <select name="department" onchange="this.form.submit()" class="h-9 w-full min-w-0 rounded-[6px] border border-slate-200 bg-white px-4 text-[12px] font-semibold text-spu-blue outline-none transition-colors focus:border-spu-blue sm:w-auto sm:min-w-[150px]">
+                    <select name="department" data-autosubmit class="h-9 w-full min-w-0 rounded-[6px] border border-slate-200 bg-white px-4 text-[12px] font-semibold text-spu-blue outline-none transition-colors focus:border-spu-blue sm:w-auto sm:min-w-[150px]">
                         <option value="">{{ $isAr ? 'القسم' : 'Department' }}</option>
                         @foreach (($filterOptions['departments'] ?? []) as $department)
                             <option value="{{ $department }}" @selected(($filters['department'] ?? '') === (string) $department)>{{ $department }}</option>
                         @endforeach
                     </select>
-                    <select name="faculty" onchange="this.form.submit()" class="h-9 w-full min-w-0 rounded-[6px] border border-slate-200 bg-white px-4 text-[12px] font-semibold text-spu-blue outline-none transition-colors focus:border-spu-blue sm:w-auto sm:min-w-[150px]">
+                    <select name="faculty" data-autosubmit class="h-9 w-full min-w-0 rounded-[6px] border border-slate-200 bg-white px-4 text-[12px] font-semibold text-spu-blue outline-none transition-colors focus:border-spu-blue sm:w-auto sm:min-w-[150px]">
                         <option value="">{{ $isAr ? 'الكلية' : 'Faculty' }}</option>
                         @foreach (($filterOptions['faculties'] ?? []) as $facultyOption)
                             <option value="{{ $facultyOption }}" @selected(($filters['faculty'] ?? '') === (string) $facultyOption)>{{ $facultyOption }}</option>
                         @endforeach
                     </select>
-                    <select name="academic_phase" onchange="this.form.submit()" class="h-9 w-full min-w-0 rounded-[6px] border border-slate-200 bg-white px-4 text-[12px] font-semibold text-spu-blue outline-none transition-colors focus:border-spu-blue sm:w-auto sm:min-w-[150px]">
+                    <select name="academic_phase" data-autosubmit class="h-9 w-full min-w-0 rounded-[6px] border border-slate-200 bg-white px-4 text-[12px] font-semibold text-spu-blue outline-none transition-colors focus:border-spu-blue sm:w-auto sm:min-w-[150px]">
                         <option value="">{{ $isAr ? 'المرحلة الأكاديمية' : 'Academic Phase' }}</option>
                         @foreach (($filterOptions['academicPhases'] ?? []) as $phase)
                             <option value="{{ $phase }}" @selected(($filters['academic_phase'] ?? '') === (string) $phase)>{{ $phase }}</option>
@@ -489,19 +489,19 @@
                 <form method="GET" action="{{ $studentListUrl }}" class="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
                     <div class="flex flex-wrap items-center gap-3">
                         <input type="search" name="q" value="{{ $filters['q'] ?? '' }}" placeholder="{{ $isAr ? 'ابحث عن اسم الطالب' : 'Search student name' }}" class="honor-select w-full min-w-0 sm:w-auto sm:min-w-[220px]">
-                        <select name="semester" onchange="this.form.submit()" class="honor-select">
+                        <select name="semester" data-autosubmit class="honor-select">
                             <option value="">{{ $isAr ? 'كل الفصول' : 'All Semesters' }}</option>
                             @foreach (($filterOptions['semesters'] ?? []) as $semester)
                                 <option value="{{ $semester['key'] }}" @selected(($filters['semester'] ?? '') === (string) $semester['key'])>{{ $semester['label'] }}</option>
                             @endforeach
                         </select>
-                        <select name="department" onchange="this.form.submit()" class="honor-select">
+                        <select name="department" data-autosubmit class="honor-select">
                             <option value="">{{ $isAr ? 'القسم' : 'Department' }}</option>
                             @foreach (($filterOptions['departments'] ?? []) as $department)
                                 <option value="{{ $department }}" @selected(($filters['department'] ?? '') === (string) $department)>{{ $department }}</option>
                             @endforeach
                         </select>
-                        <select name="year" onchange="this.form.submit()" class="honor-select">
+                        <select name="year" data-autosubmit class="honor-select">
                             <option value="">{{ $isAr ? 'السنة' : 'Year' }}</option>
                             @foreach (($filterOptions['years'] ?? []) as $year)
                                 <option value="{{ $year }}" @selected(($filters['year'] ?? '') === (string) $year)>{{ $year }}</option>

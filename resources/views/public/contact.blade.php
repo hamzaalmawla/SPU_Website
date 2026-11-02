@@ -30,7 +30,7 @@
                         </div>
                     @endif
 
-                    <form method="POST" action="{{ route('public.contact.submit', ['locale' => $locale]) }}" class="grid gap-6" @if(!empty($isPreview)) onsubmit="return false" @endif>
+                    <form method="POST" action="{{ route('public.contact.submit', ['locale' => $locale]) }}" class="grid gap-6" @if(!empty($isPreview)) data-preview-form @endif>
                         @csrf
                         <fieldset @disabled(!empty($isPreview))>
                         <input type="text" name="website" value="" tabindex="-1" autocomplete="off" class="sr-only" aria-label="Website">

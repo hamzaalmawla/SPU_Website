@@ -9,14 +9,9 @@
     The origins this markup contacts are declared in config/analytics.php and
     are added to the Content-Security-Policy by SecurityHeadersMiddleware from
     that same config, so the policy and the script cannot drift apart. The
-    inline gtag bootstrap is permitted by the existing script-src 'unsafe-inline'.
+    public policy allows no inline script, so the gtag bootstrap runs from
+    app.js (initAnalytics), reading the ID and options off this tag.
 --}}
 @if (($analytics ?? null) !== null)
-    <script async src="{{ $analytics->scriptUrl }}"></script>
-    <script>
-        window.dataLayer = window.dataLayer || [];
-        function gtag(){dataLayer.push(arguments);}
-        gtag('js', new Date());
-        gtag('config', @json($analytics->measurementId), @json((object) $analytics->options));
-    </script>
+    <script async src="{{ $analytics->scriptUrl }}" data-gtag-id="{{ $analytics->measurementId }}" data-gtag-options="{{ json_encode((object) $analytics->options) }}"></script>
 @endif

@@ -1,7 +1,8 @@
 <!DOCTYPE html>
 <html lang="{{ $locale }}" dir="{{ $direction }}">
     <head>
-        <script>document.documentElement.classList.add('js');</script>
+        {{-- Allowed by hash in the CSP: SecurityHeadersMiddleware::JS_CLASS_BOOTSTRAP. --}}
+        <script>{!! \App\Http\Middleware\SecurityHeadersMiddleware::JS_CLASS_BOOTSTRAP !!}</script>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="csrf-token" content="{{ csrf_token() }}">

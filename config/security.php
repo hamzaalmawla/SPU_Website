@@ -49,4 +49,9 @@ return [
     'hsts_preload' => (bool) env('HSTS_PRELOAD', false),
 
     'hsts_include_subdomains' => (bool) env('HSTS_INCLUDE_SUBDOMAINS', true),
+
+    // Cross-Origin-Opener-Policy. same-origin-allow-popups isolates the page
+    // from windows that open it, and still lets the share buttons' popups work.
+    // An empty value sends no header.
+    'coop' => (string) env('SECURITY_COOP', 'same-origin-allow-popups'),
 ];

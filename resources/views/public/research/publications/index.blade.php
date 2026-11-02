@@ -18,7 +18,7 @@
                         {{-- The payload never supplied these, so every select shipped
                              with an empty sr-only span and no accessible name. --}}
                         <span class="sr-only">{{ $data['filters'][$labelKey] ?? __('public.'.$fallbackKey) }}</span>
-                        <select name="{{ $inputName }}" onchange="this.form.submit()" class="h-[49px] w-full appearance-none rounded-[8px] border border-[#dde2ea] bg-white px-5 text-[15px] font-bold text-[#344054] shadow-[0_8px_18px_rgba(16,24,40,0.08)] outline-none transition focus:border-spu-blue">
+                        <select name="{{ $inputName }}" data-autosubmit class="h-[49px] w-full appearance-none rounded-[8px] border border-[#dde2ea] bg-white px-5 text-[15px] font-bold text-[#344054] shadow-[0_8px_18px_rgba(16,24,40,0.08)] outline-none transition focus:border-spu-blue">
                             @foreach (($data['filters'][$key] ?? []) as $option)
                                 <option value="{{ $option['value'] ?? '' }}" @selected(($activeFilters[$inputName] ?? '') === (string) ($option['value'] ?? ''))>{{ $option['label'] ?? '' }}</option>
                             @endforeach

@@ -29,7 +29,7 @@
                     <div class="flex flex-col gap-3 sm:flex-row md:w-auto">
                         <label>
                             <span class="sr-only">{{ $allFaculties }}</span>
-                            <select name="faculty" onchange="this.form.submit()" class="h-12 w-full sm:w-auto sm:min-w-[160px] cursor-pointer rounded-lg border border-spu-blue/10 bg-white px-4 text-sm text-spu-blue focus:border-spu-blue focus:outline-none focus:ring-2 focus:ring-spu-blue/20">
+                            <select name="faculty" data-autosubmit class="h-12 w-full sm:w-auto sm:min-w-[160px] cursor-pointer rounded-lg border border-spu-blue/10 bg-white px-4 text-sm text-spu-blue focus:border-spu-blue focus:outline-none focus:ring-2 focus:ring-spu-blue/20">
                                 <option value="">{{ $allFaculties }}</option>
                                 @foreach (($data['faculties'] ?? []) as $faculty)
                                     @php($facultyValue = (string) ($faculty['id'] ?? $faculty['value'] ?? ''))
@@ -40,7 +40,7 @@
                         @unless ($isExpertFinder)
                             <label>
                                 <span class="sr-only">{{ $allExpertise }}</span>
-                                <select name="expertise" onchange="this.form.submit()" class="h-12 w-full sm:w-auto sm:min-w-[160px] cursor-pointer rounded-lg border border-spu-blue/10 bg-white px-4 text-sm text-spu-blue focus:border-spu-blue focus:outline-none focus:ring-2 focus:ring-spu-blue/20">
+                                <select name="expertise" data-autosubmit class="h-12 w-full sm:w-auto sm:min-w-[160px] cursor-pointer rounded-lg border border-spu-blue/10 bg-white px-4 text-sm text-spu-blue focus:border-spu-blue focus:outline-none focus:ring-2 focus:ring-spu-blue/20">
                                     <option value="">{{ $allExpertise }}</option>
                                     @foreach (($data['expertiseAreas'] ?? []) as $area)
                                         @php($expertiseValue = (string) ($area['id'] ?? $area['value'] ?? ''))
