@@ -346,17 +346,3 @@
         }
     }
 }
-
-/**
- * No-JS safety net for hero content animated via Alpine :class bindings.
- * Alpine adds `opacity-0 translate-y-6` before it boots; without JS those
- * classes are never removed, making the hero text permanently invisible.
- * When the `.js` sentinel class is absent we force the content visible.
- */
-:not(.js) .home-hero .opacity-0 {
-    opacity: 1 !important;
-}
-
-:not(.js) .home-hero .translate-y-6 {
-    transform: none !important;
-}

@@ -120,7 +120,7 @@ final class HomepageImageDeliveryTest extends TestCase
                     && ! str_contains($tag, 'site-nav')
                     && ! str_contains($tag, 'brightness-0 invert rtl:rotate-180')
                     && ! str_contains($tag, 'h-[1rem] w-[1rem]')
-                    && ! str_contains($tag, 'logo-spu.png')
+                    && ! str_contains($tag, 'logo-spu-480.webp')
                     && ! str_contains($tag, 'ic_outline-language.svg')
                     && ! str_contains($tag, 'mobileToggleIcon'),
             ));

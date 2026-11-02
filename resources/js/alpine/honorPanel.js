@@ -7,6 +7,8 @@ export function createHonorPanel() {
         _timer: null,
         _removeMotionObserver: null,
         reducedMotion: false,
+        wide: false,
+        _loaded: new Set(),
 
         init() {
             try {
@@ -14,6 +16,11 @@ export function createHonorPanel() {
             } catch {
                 this.items = [];
             }
+
+            this._loaded = new Set();
+            this.wide = typeof window !== 'undefined'
+                && typeof window.matchMedia === 'function'
+                && window.matchMedia('(min-width: 1024px)').matches;
 
             this._removeMotionObserver = observeReducedMotion((reduced) => {
                 this.reducedMotion = reduced;
@@ -129,8 +136,25 @@ export function createHonorPanel() {
             return item.title || '';
         },
 
-        itemSrcset(item) {
-            return item.imageSrcset || null;
+        // Off-screen cards are zero-sized rather than display:none, so they can
+        // grow into place, and lazy loading fetched every one of them. A card
+        // gets its image once it is on screen (the first on a phone, three on
+        // a desktop) or next to rotate in, and keeps it from then on.
+        shouldLoad(index) {
+            if (this._loaded.has(index)) return true;
+            if (this.getPos(index) > (this.wide ? 2 : 0) + 1) return false;
+
+            this._loaded.add(index);
+
+            return true;
+        },
+
+        itemImage(item, index) {
+            return this.shouldLoad(index) ? item.image || null : null;
+        },
+
+        itemSrcset(item, index) {
+            return this.shouldLoad(index) ? item.imageSrcset || null : null;
         },
 
         actionTarget(item) {

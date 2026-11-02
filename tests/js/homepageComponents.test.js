@@ -233,3 +233,56 @@ test('research slider measures the card selector it is given', () => {
     assert.deepEqual(selectors, ['.news-slide']);
     assert.deepEqual(scrollCalls, [{ left: 352, behavior: 'smooth' }]);
 });
+
+test('honor panel fetches images only for the cards on screen and the next one', () => {
+    installReducedMotionBrowser();
+    globalThis.window.matchMedia = (query) => ({
+        matches: query.includes('reduce') || false,
+        addEventListener() {},
+        removeEventListener() {},
+    });
+
+    const honor = createHonorPanel();
+    honor.$el = root({
+        items: JSON.stringify([1, 2, 3, 4, 5].map((id) => ({ id, image: `/honor-${id}.webp`, imageSrcset: `/honor-${id}-480.webp 480w` }))),
+    });
+    honor.init();
+
+    // A phone shows one card, so it fetches that one and the next.
+    assert.deepEqual([0, 1, 2, 3, 4].map((index) => honor.itemImage(honor.items[index], index)), ['/honor-1.webp', '/honor-2.webp', null, null, null]);
+    assert.equal(honor.itemSrcset(honor.items[4], 4), null);
+
+    // A card keeps its image once fetched, so it does not blank as it leaves.
+    honor.next();
+    assert.equal(honor.itemImage(honor.items[0], 0), '/honor-1.webp');
+    assert.equal(honor.itemImage(honor.items[2], 2), '/honor-3.webp');
+    assert.equal(honor.itemImage(honor.items[3], 3), null);
+});
+
+test('honor panel fetches the three desktop cards and the next one on a wide screen', () => {
+    installReducedMotionBrowser();
+    globalThis.window.matchMedia = (query) => ({
+        matches: true,
+        addEventListener() {},
+        removeEventListener() {},
+    });
+
+    const honor = createHonorPanel();
+    honor.$el = root({ items: JSON.stringify([1, 2, 3, 4, 5, 6].map((id) => ({ id, image: `/honor-${id}.webp` }))) });
+    honor.init();
+
+    assert.deepEqual(honor.items.map((item, index) => honor.itemImage(item, index)), ['/honor-1.webp', '/honor-2.webp', '/honor-3.webp', '/honor-4.webp', null, null]);
+});
+
+test('hero switches only the next slide to eager loading', () => {
+    installReducedMotionBrowser();
+    const slides = [{ loading: 'eager' }, { loading: 'lazy' }, { loading: 'lazy' }];
+
+    const hero = createHeroSlider();
+    hero.$el = { ...root({ images: JSON.stringify(['/one.webp', '/two.webp', '/three.webp']) }), querySelectorAll: () => slides };
+    hero.init();
+
+    hero.preloadSlide(hero.currentIndex + 1);
+
+    assert.deepEqual(slides.map((slide) => slide.loading), ['eager', 'eager', 'lazy']);
+});

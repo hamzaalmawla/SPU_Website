@@ -31,7 +31,12 @@
                   nothing and slides 2-4 downloaded alongside the stylesheet and
                   slide 1. x-show takes over the display property once it runs. --}}
              @unless ($loop->first) style="display: none;" @endunless>
-            <img src="{{ $img }}" alt="{{ $loop->first ? $section->payload->title : ($section->payload->slideAlts[$loop->index] ?? $section->payload->title.' '.($loop->index + 1)) }}" class="h-full w-full object-cover" @if ($loop->first) fetchpriority="high" @else loading="lazy" decoding="async" @endif width="1920" height="800">
+            {{-- Slides cover a box that is taller than wide on a phone (the hero is
+                 at least 46rem high), so the rendered width follows the height:
+                 a 3:2 photo needs about 1.5x the hero's height. 100vw would pick
+                 a phone-width file and blur it. --}}
+            @php($slideSrcset = \App\Support\MediaUrlResolver::legacySrcset($img))
+            <img src="{{ $img }}" @if ($slideSrcset) srcset="{{ $slideSrcset }}" sizes="max(100vw, calc(1.5 * clamp(46rem, 100svh, 58rem)))" @endif alt="{{ $loop->first ? $section->payload->title : ($section->payload->slideAlts[$loop->index] ?? $section->payload->title.' '.($loop->index + 1)) }}" class="h-full w-full object-cover" data-hero-slide @if ($loop->first) fetchpriority="high" @else loading="lazy" fetchpriority="low" decoding="async" @endif width="1920" height="800">
         </div>
     @endforeach
 
@@ -42,7 +47,7 @@
         <div class="home-hero__inner">
             <div class="home-hero__content">
                 @if ($section->payload->eyebrow)
-                    <p class="home-hero__eyebrow transition duration-700 ease-out" :class="visibleClass()">
+                    <p class="home-hero__eyebrow">
                         <span class="home-hero__eyebrow-line" aria-hidden="true"></span>
                         <span>{{ $section->payload->eyebrow }}</span>
                     </p>
@@ -52,20 +57,20 @@
                     <span class="home-hero__badge">{{ $section->payload->badge }}</span>
                 @endif
 
-                <h1 class="home-hero__title transition duration-700 ease-out delay-75" :class="visibleClass()">{{ $section->payload->title }}</h1>
+                <h1 class="home-hero__title">{{ $section->payload->title }}</h1>
 
                 @if ($section->payload->subtitle)
-                    <p class="home-hero__summary transition duration-700 ease-out delay-150" :class="visibleClass()">{{ $section->payload->subtitle }}</p>
+                    <p class="home-hero__summary">{{ $section->payload->subtitle }}</p>
                 @endif
 
                 @if ($section->payload->summary)
-                    <p class="home-hero__summary transition duration-700 ease-out delay-150" :class="visibleClass()">{{ $section->payload->summary }}</p>
+                    <p class="home-hero__summary">{{ $section->payload->summary }}</p>
                 @elseif ($section->payload->body)
-                    <p class="home-hero__summary transition duration-700 ease-out delay-150" :class="visibleClass()">{{ $section->payload->body }}</p>
+                    <p class="home-hero__summary">{{ $section->payload->body }}</p>
                 @endif
 
                 @if ($section->payload->primaryAction || $section->payload->secondaryAction)
-                    <div class="home-hero__actions transition duration-700 ease-out delay-200" :class="visibleClass()">
+                    <div class="home-hero__actions">
                         @if ($section->payload->primaryAction)
                             <a href="{{ $section->payload->primaryAction->url }}" class="home-hero__primary-btn rounded-[8px]" @if ($section->payload->primaryAction->target) target="{{ $section->payload->primaryAction->target }}" rel="noreferrer" @endif>
                                 <span>{{ $section->payload->primaryAction->label }}</span>

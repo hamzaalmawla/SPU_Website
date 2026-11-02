@@ -37,7 +37,8 @@
         <div class="site-nav-shell" :class="shellClass()">
             <div class="site-nav-shell__main">
                 <a href="/{{ $locale }}" aria-label="{{ __('public.home') }}" class="site-nav-brand">
-                    <img src="/images/logo-spu.png" alt="{{ __('public.spu_logo_alt') }}" width="562" height="118" class="h-auto" decoding="async">
+                    {{-- Shown 104-184px wide; the 562px PNG was 26 KB on every page. --}}
+                    <img src="/images/logo-spu-480.webp" srcset="/images/logo-spu-240.webp 240w, /images/logo-spu-480.webp 480w" sizes="(max-width: 420px) 108px, 184px" alt="{{ __('public.spu_logo_alt') }}" width="562" height="118" class="h-auto" decoding="async">
                 </a>
 
                 <nav class="site-nav-primary hidden nav:flex" aria-label="{{ __('public.primary_navigation') }}">

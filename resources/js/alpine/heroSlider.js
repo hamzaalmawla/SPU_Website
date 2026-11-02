@@ -3,10 +3,10 @@ import { horizontalKeyAction, observeReducedMotion } from '../utils/motionDirect
 export function createHeroSlider() {
     return {
         currentIndex: 0,
-        heroVisible: false,
         pageLoaded: false,
         images: [],
         _timer: null,
+        _preloadTimer: null,
         _removeMotionObserver: null,
         reducedMotion: false,
 
@@ -17,8 +17,6 @@ export function createHeroSlider() {
                 this.images = [];
             }
 
-            this.heroVisible = true;
-
             // Rotation starts counting once the page has loaded. A slide that
             // swaps in while the page is still loading paints a new, larger
             // image, and Chrome reports it as a later Largest Contentful Paint.
@@ -26,11 +24,8 @@ export function createHeroSlider() {
             if (!this.pageLoaded) {
                 window.addEventListener('load', () => {
                     this.pageLoaded = true;
-                    this.preloadSlides();
                     if (!this.reducedMotion) this.startAuto();
                 }, { once: true });
-            } else {
-                this.preloadSlides();
             }
 
             this._removeMotionObserver = observeReducedMotion((reduced) => {
@@ -40,16 +35,15 @@ export function createHeroSlider() {
         },
 
         // The hidden slides are lazy and display:none, so nothing fetches them
-        // during the page load. Fetch them once it is over, so the first
-        // rotation fades in a decoded image rather than an empty frame.
-        preloadSlides() {
-            if (typeof Image === 'undefined') return;
+        // during the page load. Fetching every one on window.load pulled ~2 MB
+        // of editor-added slides into each visit, so only the slide about to
+        // rotate in is fetched, a second before it does. Switching its <img>
+        // to eager lets the browser pick from its srcset as it would on screen.
+        preloadSlide(index) {
+            if (this.images.length <= 1 || typeof this.$el.querySelectorAll !== 'function') return;
 
-            this.images.slice(1).forEach((src) => {
-                const image = new Image();
-                image.decoding = 'async';
-                image.src = src;
-            });
+            const slide = this.$el.querySelectorAll('img[data-hero-slide]')[index % this.images.length];
+            if (slide && slide.loading === 'lazy') slide.loading = 'eager';
         },
 
         destroy() {
@@ -62,11 +56,14 @@ export function createHeroSlider() {
             if (!this.pageLoaded || this.reducedMotion || this.images.length <= 1 || this.hasActiveInteraction()) return;
 
             this._timer = setInterval(() => this.next(), 5000);
+            this._preloadTimer = setTimeout(() => this.preloadSlide(this.currentIndex + 1), 4000);
         },
 
         stopAuto() {
             if (this._timer) clearInterval(this._timer);
+            if (this._preloadTimer) clearTimeout(this._preloadTimer);
             this._timer = null;
+            this._preloadTimer = null;
         },
 
         hasActiveInteraction() {
@@ -82,7 +79,14 @@ export function createHeroSlider() {
         },
 
         next() {
-            if (this.images.length > 0) this.currentIndex = (this.currentIndex + 1) % this.images.length;
+            if (this.images.length === 0) return;
+
+            this.currentIndex = (this.currentIndex + 1) % this.images.length;
+
+            if (this._timer) {
+                if (this._preloadTimer) clearTimeout(this._preloadTimer);
+                this._preloadTimer = setTimeout(() => this.preloadSlide(this.currentIndex + 1), 4000);
+            }
         },
 
         previous() {
@@ -96,10 +100,6 @@ export function createHeroSlider() {
             event.preventDefault();
             this.stopAuto();
             action === 'next' ? this.next() : this.previous();
-        },
-
-        visibleClass() {
-            return this.heroVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6';
         },
 
         isCurrent(index) {

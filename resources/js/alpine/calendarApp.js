@@ -34,6 +34,7 @@ function normalizeEvent(event, index) {
         title: event.title ?? 'Untitled Event',
         description: event.summary ?? event.description ?? '',
         image: event.image ?? event.imageUrl ?? '/images/slider-1.webp',
+        imageSrcset: event.image || event.imageUrl ? event.imageSrcset ?? null : null,
         link: event.url ?? event.link ?? '#',
         dateKey: parsed.format('YYYY-MM-DD'),
         endKey: lastDay.format('YYYY-MM-DD'),
@@ -173,6 +174,10 @@ export function createCalendarApp() {
 
         selectedEventImage() {
             return this.selectedEvent?.image || '';
+        },
+
+        selectedEventSrcset() {
+            return this.selectedEvent?.imageSrcset || null;
         },
 
         selectedEventAlt() {
