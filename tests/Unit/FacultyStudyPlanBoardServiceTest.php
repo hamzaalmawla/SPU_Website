@@ -221,6 +221,153 @@ final class FacultyStudyPlanBoardServiceTest extends TestCase
         }
     }
 
+    public function test_a_shared_course_is_one_course_in_every_department_that_has_it(): void
+    {
+        $payload = $this->sharedPayload();
+
+        $form = $this->form($payload, 'cs-101', ['titleEn' => 'Programming I', 'credits' => 4, 'theoryTeacherIds' => ['7']]);
+        $this->assertSame(['is' => '2'], $form['placements']);
+
+        $payload = $this->service->saveCourse($payload, 'cs', $form);
+
+        foreach (['en', 'ar'] as $locale) {
+            $is = $this->courseOf($payload, $locale, 'is', 'cs-101');
+            $this->assertSame('Programming I', $is['titleEn']);
+            $this->assertSame(4, $is['credits']);
+            $this->assertSame([7], $is['teachers']['theory']['memberIds']);
+            // Its place in the other department stays as it was.
+            $this->assertSame(2, $is['term']);
+        }
+
+        // Editing from the other department changes the first one too.
+        $other = $this->service->courseForm($payload, 'is', 'cs-101');
+        $this->assertSame(['cs' => '1'], $other['placements']);
+        $payload = $this->service->saveCourse($payload, 'is', [...$other, 'titleAr' => 'برمجة ١']);
+        $this->assertSame('برمجة ١', $this->courseOf($payload, 'ar', 'cs', 'cs-101')['title']);
+        $this->assertSame(1, $this->courseOf($payload, 'en', 'cs', 'cs-101')['term']);
+
+        $board = $this->service->board($payload, 'en', 'cs');
+        $this->assertSame(['Information Systems'], $board['terms'][0]['courses'][0]['sharedIn']);
+        $this->assertSame([], $board['terms'][1]['courses'][0]['sharedIn']);
+        $this->assertSame([['id' => '1', 'label' => '1'], ['id' => '2', 'label' => '2']], $board['departments'][1]['terms']);
+    }
+
+    public function test_a_course_can_be_added_to_and_removed_from_other_departments(): void
+    {
+        $payload = $this->sharedPayload();
+
+        $payload = $this->service->saveCourse($payload, 'cs', $this->form($payload, 'cs-201', ['placements' => ['is' => '1']]));
+        foreach (['en', 'ar'] as $locale) {
+            $copy = $this->courseOf($payload, $locale, 'is', 'cs-201');
+            $this->assertSame(1, $copy['term']);
+            $this->assertSame('Data Structures', $copy['titleEn']);
+            // Its prerequisite is a course there too, so the link comes along.
+            $this->assertSame(['cs-101'], $copy['prerequisites']);
+        }
+
+        $payload = $this->service->saveCourse($payload, 'cs', $this->form($payload, 'cs-101', ['placements' => ['is' => '']]));
+        $this->assertNull($this->courseOf($payload, 'en', 'is', 'cs-101'));
+        $this->assertNotNull($this->courseOf($payload, 'en', 'cs', 'cs-101'));
+        // The other department no longer has the course, so nothing there may need it.
+        $this->assertSame([], $this->courseOf($payload, 'ar', 'is', 'cs-201')['prerequisites']);
+        $this->assertSame(['cs-101'], $this->courseOf($payload, 'ar', 'cs', 'cs-201')['prerequisites']);
+    }
+
+    public function test_a_new_course_can_be_placed_in_several_departments(): void
+    {
+        $payload = $this->sharedPayload();
+        $form = [...$this->service->emptyCourseForm('2'), 'code' => 'GEN-1', 'titleEn' => 'English', 'titleAr' => 'اللغة الإنكليزية', 'placements' => ['is' => '1']];
+
+        $payload = $this->service->saveCourse($payload, 'cs', $form);
+
+        foreach (['en', 'ar'] as $locale) {
+            $this->assertSame(2, $this->courseOf($payload, $locale, 'cs', 'gen-1')['term']);
+            $this->assertSame(1, $this->courseOf($payload, $locale, 'is', 'gen-1')['term']);
+        }
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->service->saveCourse($payload, 'cs', [...$form, 'code' => 'GEN-2', 'placements' => ['is' => '9']]);
+    }
+
+    public function test_moving_and_files_keep_the_shared_copies(): void
+    {
+        $payload = $this->sharedPayload();
+
+        $payload = $this->service->moveCourse($payload, 'cs', 'cs-101', '2');
+        $this->assertSame(2, $this->courseOf($payload, 'en', 'cs', 'cs-101')['term']);
+        $this->assertSame(2, $this->courseOf($payload, 'en', 'is', 'cs-101')['term']);
+
+        $payload = $this->service->addLessons($payload, 'is', 'cs-101', [['titleAr' => 'م١', 'titleEn' => 'L1', 'pdfUrl' => '/a.pdf']]);
+        $payload = $this->service->setSpecification($payload, 'is', 'cs-101', '/spec.pdf');
+
+        foreach (['cs', 'is'] as $department) {
+            $course = $this->courseOf($payload, 'en', $department, 'cs-101');
+            $this->assertSame(['L1'], array_column($course['lessons'], 'title'));
+            $this->assertSame('/spec.pdf', $course['specificationUrl']);
+        }
+    }
+
+    public function test_deleting_a_shared_course_removes_only_this_departments_copy(): void
+    {
+        $payload = $this->sharedPayload();
+
+        $payload = $this->service->deleteCourse($payload, 'is', 'cs-101');
+
+        $this->assertNull($this->courseOf($payload, 'en', 'is', 'cs-101'));
+        $this->assertSame(['cs-101'], $this->courseOf($payload, 'en', 'cs', 'cs-201')['prerequisites']);
+
+        $payload = $this->service->removeDepartment($this->sharedPayload(), 'is');
+        $this->assertSame(['cs-101'], $this->courseOf($payload, 'en', 'cs', 'cs-201')['prerequisites']);
+    }
+
+    /** @return array<string, mixed>|null */
+    private function courseOf(array $payload, string $locale, string $departmentId, string $courseId): ?array
+    {
+        foreach ($payload['translations'][$locale]['payload']['plan']['departments'] as $department) {
+            if ($department['id'] !== $departmentId) {
+                continue;
+            }
+
+            foreach ($department['terms'] as $term) {
+                foreach ($term['courses'] as $course) {
+                    if ($course['id'] === $courseId) {
+                        return $course;
+                    }
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * The test plan with a second department, Information Systems, that shares cs-101 in its
+     * second term and has its own course needing it.
+     *
+     * @return array<string, mixed>
+     */
+    private function sharedPayload(): array
+    {
+        $payload = $this->payload();
+
+        foreach (['en', 'ar'] as $locale) {
+            $cs = $payload['translations'][$locale]['payload']['plan']['departments'][0];
+            $shared = [...$cs['terms'][0]['courses'][0], 'term' => 2, 'row' => 1];
+            $own = [...$cs['terms'][1]['courses'][0], 'id' => 'is-301', 'code' => 'IS-301', 'term' => 2, 'row' => 2];
+            $payload['translations'][$locale]['payload']['plan']['departments'][] = [
+                'id' => 'is', 'nameEn' => 'Information Systems', 'nameAr' => 'نظم المعلومات',
+                'name' => $locale === 'ar' ? 'نظم المعلومات' : 'Information Systems', 'totalCredits' => 6,
+                'terms' => [
+                    ['id' => 1, 'labelEn' => '1', 'labelAr' => '1', 'label' => '1', 'courses' => []],
+                    ['id' => 2, 'labelEn' => '2', 'labelAr' => '2', 'label' => '2', 'courses' => [$shared, $own]],
+                ],
+                'electivePools' => [], 'promotionRequirements' => [],
+            ];
+        }
+
+        return $payload;
+    }
+
     /**
      * @param  array<string, mixed>  $payload
      * @param  array<string, mixed>  $override

@@ -74,8 +74,9 @@
                                     x-on:focus="highlight('{{ $course['id'] }}')" x-on:blur="highlight('')">
                                     <span class="spu-board__card-meta"><span>{{ $course['code'] }}</span><span>{{ $course['credits'] }} {{ $creditsShort }}</span></span>
                                     <span class="spu-board__card-title" dir="auto">{{ $course['title'] }}</span>
-                                    @if ($course['lessonCount'] > 0 || $course['prerequisiteCredits'] > 0 || $course['warning'])
+                                    @if ($course['lessonCount'] > 0 || $course['prerequisiteCredits'] > 0 || $course['warning'] || $course['sharedIn'] !== [])
                                         <span class="spu-board__card-flags">
+                                            @if ($course['sharedIn'] !== [])<span class="is-shared" title="{{ $t('shared_in', ['names' => implode(app()->getLocale() === 'ar' ? '، ' : ', ', $course['sharedIn'])]) }}">{{ $t('shared_short', ['count' => count($course['sharedIn']) + 1]) }}</span>@endif
                                             @if ($course['lessonCount'] > 0)<span title="{{ $t('lectures') }}">PDF {{ $course['lessonCount'] }}</span>@endif
                                             @if ($course['prerequisiteCredits'] > 0)<span>&ge;{{ $course['prerequisiteCredits'] }} {{ $creditsShort }}</span>@endif
                                             @if ($course['warning'])<span class="is-warning" title="{{ $t('warnings') }}">!</span>@endif
@@ -140,6 +141,24 @@
                             </label>
                         @endif
                     </div>
+
+                    @if (count($board['departments']) > 1)
+                        <fieldset class="spu-board-form" wire:key="board-course-sections">
+                            <legend>{{ $t('sections') }}</legend>
+                            <p class="spu-board-hint">{{ $t('sections_help') }}</p>
+                            @foreach ($board['departments'] as $department)
+                                @continue($department['id'] === $board['departmentId'])
+                                <label wire:key="board-section-{{ $department['id'] }}">{{ $department['name'] }}
+                                    <select wire:model="boardCourse.placements.{{ $department['id'] }}">
+                                        <option value="">{{ $t('section_not_in') }}</option>
+                                        @foreach ($department['terms'] as $term)
+                                            <option value="{{ $term['id'] }}">{{ $t('term') }} {{ $term['label'] }}</option>
+                                        @endforeach
+                                    </select>
+                                </label>
+                            @endforeach
+                        </fieldset>
+                    @endif
 
                     <fieldset class="spu-board-form">
                         <legend>{{ $t('teachers') }}</legend>

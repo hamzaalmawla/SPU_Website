@@ -66,6 +66,20 @@ final class FacultyStudyPlanBoardService implements FacultyStudyPlanBoardService
         }
 
         $department ??= $departments[0];
+        $sharedIn = [];
+
+        foreach ($departments as $other) {
+            if ((string) $other['id'] === (string) $department['id']) {
+                continue;
+            }
+
+            foreach ($this->records($other['terms'] ?? []) as $term) {
+                foreach ($this->records($term['courses'] ?? []) as $course) {
+                    $sharedIn[(string) $course['id']][] = $this->text($other, 'name', $locale) ?: (string) $other['id'];
+                }
+            }
+        }
+
         $termOf = [];
         $byId = [];
 
@@ -118,6 +132,7 @@ final class FacultyStudyPlanBoardService implements FacultyStudyPlanBoardService
                     'prerequisites' => $prerequisites,
                     'prerequisiteCredits' => (int) ($course['prerequisiteCredits'] ?? 0),
                     'lessonCount' => count($this->records($course['lessons'] ?? [])),
+                    'sharedIn' => array_values(array_unique($sharedIn[$id] ?? [])),
                     'warning' => $courseWarnings !== [],
                 ];
             }
@@ -142,6 +157,10 @@ final class FacultyStudyPlanBoardService implements FacultyStudyPlanBoardService
             'departments' => array_map(fn (array $item): array => [
                 'id' => (string) $item['id'],
                 'name' => $this->text($item, 'name', $locale) ?: (string) $item['id'],
+                'terms' => array_map(fn (array $term): array => [
+                    'id' => (string) $term['id'],
+                    'label' => $this->text($term, 'label', $locale) ?: (string) $term['id'],
+                ], $this->records($item['terms'] ?? [])),
             ], $departments),
             'departmentId' => (string) $department['id'],
             'department' => [
@@ -211,8 +230,31 @@ final class FacultyStudyPlanBoardService implements FacultyStudyPlanBoardService
             'lessons' => $lessons,
             'specificationUrl' => (string) ($en['specificationUrl'] ?? ''),
             'requirementsUnitCourseId' => (string) ($en['requirementsUnitCourseId'] ?? ''),
+            'placements' => $this->otherPlacements($payload, $departmentId, $courseId),
             ...$this->teacherFormFields($en['teachers'] ?? null),
         ];
+    }
+
+    /**
+     * The other departments that hold the course: department id => term id ('' when it is
+     * not there), for the course panel's "also in" pickers.
+     *
+     * @param  array<string, mixed>  $payload
+     * @return array<string, string>
+     */
+    private function otherPlacements(array $payload, string $departmentId, string $courseId): array
+    {
+        $placements = [];
+
+        foreach ($this->departments($payload, 'en') as $department) {
+            $id = (string) ($department['id'] ?? '');
+
+            if ($id !== $departmentId) {
+                $placements[$id] = $courseId === '' ? '' : (string) ($this->termOfCourse($department, $courseId) ?? '');
+            }
+        }
+
+        return $placements;
     }
 
     public function emptyCourseForm(string $termId): array
@@ -236,6 +278,7 @@ final class FacultyStudyPlanBoardService implements FacultyStudyPlanBoardService
             'lessons' => [],
             'specificationUrl' => '',
             'requirementsUnitCourseId' => '',
+            'placements' => [],
             ...$this->teacherFormFields(null),
         ];
     }
@@ -246,6 +289,10 @@ final class FacultyStudyPlanBoardService implements FacultyStudyPlanBoardService
         $originalId = trim((string) ($form['originalId'] ?? ''));
         $id = $originalId !== '' ? $originalId : $this->uniqueId($this->slug($clean['code']), $this->allCourseIds($payload));
         $departmentCourseIds = $this->departmentCourseIds($payload, $departmentId);
+
+        if ($this->department($payload, 'en', $departmentId) === []) {
+            throw new InvalidArgumentException('That department no longer exists. Reload the page.');
+        }
 
         if ($originalId !== '' && ! in_array($originalId, $departmentCourseIds, true)) {
             throw new InvalidArgumentException('That course no longer exists. Reload the page.');
@@ -261,91 +308,41 @@ final class FacultyStudyPlanBoardService implements FacultyStudyPlanBoardService
             }
         }
 
-        $payload = $this->mapDepartment($payload, $departmentId, function (array $department, string $locale) use ($clean, $id, $form): array {
-            $terms = $this->records($department['terms'] ?? []);
-            $existing = [];
-            $fromTerm = null;
+        $placements = $this->placementsFor($payload, $departmentId, $id, $clean['termId'], $form);
+        $lessonIds = $this->allLessonIds($payload);
 
-            foreach ($terms as $termIndex => $term) {
-                foreach ($this->records($term['courses'] ?? []) as $courseIndex => $course) {
-                    if ((string) $course['id'] === $id) {
-                        $existing = $course;
-                        $fromTerm = $termIndex;
-                        unset($terms[$termIndex]['courses'][$courseIndex]);
-                        $terms[$termIndex]['courses'] = array_values($this->records($terms[$termIndex]['courses']));
+        foreach (self::LOCALES as $locale) {
+            $departments = $this->departments($payload, $locale);
+            $base = $this->courseIn($this->department($payload, $locale, $departmentId), $id)
+                ?? $this->courseAnywhere($payload, $locale, $id)
+                ?? [];
+            $shared = $this->sharedCourseRecord($base, $clean, $form, $id, $locale, $lessonIds);
+
+            foreach ($departments as $index => $department) {
+                $currentId = (string) ($department['id'] ?? '');
+                $termId = $placements[$currentId] ?? null;
+                $existing = $this->courseIn($department, $id);
+
+                if ($termId === null) {
+                    if ($existing !== null) {
+                        $departments[$index] = $this->withoutCourse($department, $id);
                     }
+
+                    continue;
                 }
+
+                $record = $shared;
+                $record['term'] = (int) $termId;
+                $record['forced'] = (bool) (($existing ?? $base)['forced'] ?? false);
+                $record['prerequisites'] = $currentId === $departmentId
+                    ? $clean['prerequisites']
+                    : $this->sharedPrerequisites($clean['prerequisites'], $existing, $department, $departmentCourseIds);
+
+                $departments[$index] = $this->placeCourse($department, $record, (string) $termId, $existing);
             }
 
-            $targetIndex = null;
-
-            foreach ($terms as $termIndex => $term) {
-                if ((string) $term['id'] === $clean['termId']) {
-                    $targetIndex = $termIndex;
-                }
-            }
-
-            if ($targetIndex === null) {
-                throw new InvalidArgumentException('Choose a term that exists in this department.');
-            }
-
-            $record = $existing;
-            $record['id'] = $id;
-            $record['code'] = $clean['code'];
-            $record['titleAr'] = $clean['titleAr'];
-            $record['titleEn'] = $clean['titleEn'];
-            $record['title'] = $locale === 'ar' ? $clean['titleAr'] : $clean['titleEn'];
-            $record['descriptionAr'] = $clean['descriptionAr'];
-            $record['descriptionEn'] = $clean['descriptionEn'];
-            $record['description'] = $locale === 'ar' ? $clean['descriptionAr'] : $clean['descriptionEn'];
-            $record['term'] = (int) $clean['termId'];
-            $record['type'] = $clean['type'];
-            $record['required'] = $clean['required'];
-            $record['forced'] = (bool) ($existing['forced'] ?? false);
-            $record['credits'] = $clean['credits'];
-            $record['prerequisites'] = $clean['prerequisites'];
-            $record['prerequisiteCredits'] = $clean['prerequisiteCredits'];
-            $record['instructor'] = $existing['instructor'] ?? null;
-            $record['hours'] = ['theory' => $clean['theory'], 'practical' => $clean['practical']];
-            // Who teaches each part: a faculty profile id, never a copy of the name,
-            // so the course page shows the profile as it is now.
-            $record['teachers'] = $clean['teachers'] ?? $this->storedTeachers($existing['teachers'] ?? null);
-
-            if (array_key_exists('lessons', $form)) {
-                $record['lessons'] = $this->lessonsFromForm($form['lessons'], $this->records($existing['lessons'] ?? []), $id, $locale, $this->lessonIds($department, $id));
-            } else {
-                $record['lessons'] = $this->records($existing['lessons'] ?? []);
-            }
-
-            // A university requirement may name the Requirements Unit course it
-            // opens; without one the unit course listing this faculty and code is used.
-            $unitCourseId = array_key_exists('requirementsUnitCourseId', $form)
-                ? trim((string) $form['requirementsUnitCourseId'])
-                : trim((string) ($existing['requirementsUnitCourseId'] ?? ''));
-            unset($record['requirementsUnitCourseId']);
-            if ($clean['type'] === 'university' && preg_match('/^[a-z0-9]+(?:-[a-z0-9]+)*$/', $unitCourseId) === 1) {
-                $record['requirementsUnitCourseId'] = $unitCourseId;
-            }
-
-            // One course specification PDF per course, shared by both languages.
-            $specificationUrl = array_key_exists('specificationUrl', $form)
-                ? trim((string) $form['specificationUrl'])
-                : trim((string) ($existing['specificationUrl'] ?? ''));
-            unset($record['specificationUrl']);
-            if ($specificationUrl !== '') {
-                $record['specificationUrl'] = $specificationUrl;
-            }
-
-            if ($fromTerm === $targetIndex && isset($existing['row'])) {
-                array_splice($terms[$targetIndex]['courses'], max(0, min((int) $existing['row'] - 1, count($terms[$targetIndex]['courses']))), 0, [$record]);
-            } else {
-                $terms[$targetIndex]['courses'][] = $record;
-            }
-
-            $department['terms'] = $this->withRows($terms);
-
-            return $department;
-        });
+            $payload['translations'][$locale]['payload']['plan']['departments'] = $departments;
+        }
 
         return $payload;
     }
@@ -356,7 +353,12 @@ final class FacultyStudyPlanBoardService implements FacultyStudyPlanBoardService
             throw new InvalidArgumentException('That course no longer exists. Reload the page.');
         }
 
-        return $this->removeCourseIds($payload, $departmentId, [$courseId]);
+        // Only this department's copy goes: a course shared with other departments stays there.
+        $payload = $this->mapDepartment($payload, $departmentId, fn (array $department): array => $this->withoutCourse($department, $courseId));
+
+        return in_array($courseId, $this->allCourseIds($payload), true)
+            ? $payload
+            : $this->stripPrerequisites($payload, [$courseId]);
     }
 
     public function moveCourse(array $payload, string $departmentId, string $courseId, string $termId): array
@@ -563,7 +565,8 @@ final class FacultyStudyPlanBoardService implements FacultyStudyPlanBoardService
             $payload['translations'][$locale]['payload']['plan']['departments'] = $kept;
         }
 
-        return $this->stripPrerequisites($payload, $courseIds);
+        // Courses this department shared with others are still in the plan; keep links to them.
+        return $this->stripPrerequisites($payload, array_values(array_diff($courseIds, $this->allCourseIds($payload))));
     }
 
     public function addLessons(array $payload, string $departmentId, string $courseId, array $lessons): array
@@ -842,45 +845,297 @@ final class FacultyStudyPlanBoardService implements FacultyStudyPlanBoardService
         return $lessons;
     }
 
-    /** @return list<string> */
-    private function lessonIds(array $department, string $exceptCourseId): array
+    /**
+     * Where the course sits after the save: department id => term id. The edited department
+     * takes the form's term. Other departments follow the form's `placements` (department id =>
+     * term id, empty for "not in this department") when it is sent, and otherwise keep the
+     * course where it already is, so a move or a file upload never drops a shared copy.
+     *
+     * @param  array<string, mixed>  $payload
+     * @param  array<string, mixed>  $form
+     * @return array<string, string>
+     */
+    private function placementsFor(array $payload, string $departmentId, string $courseId, string $termId, array $form): array
     {
-        $ids = [];
+        $placements = [];
+
+        foreach ($this->departments($payload, 'en') as $department) {
+            $otherId = (string) ($department['id'] ?? '');
+
+            if ($otherId === $departmentId) {
+                $placements[$otherId] = $termId;
+
+                continue;
+            }
+
+            if (array_key_exists('placements', $form)) {
+                $chosen = is_array($form['placements']) ? trim((string) ($form['placements'][$otherId] ?? '')) : '';
+            } else {
+                $chosen = (string) ($this->termOfCourse($department, $courseId) ?? '');
+            }
+
+            if ($chosen === '') {
+                continue;
+            }
+
+            if (! in_array($chosen, $this->termIds($department), true)) {
+                $name = $this->text($department, 'name', 'en') ?: $otherId;
+
+                throw new InvalidArgumentException('Choose a term that exists in '.$name.'.');
+            }
+
+            $placements[$otherId] = $chosen;
+        }
+
+        if (! in_array($termId, $this->termIds($this->department($payload, 'en', $departmentId)), true)) {
+            throw new InvalidArgumentException('Choose a term that exists in this department.');
+        }
+
+        return $placements;
+    }
+
+    /**
+     * The course record every department holding it shares, in one language. Only the term,
+     * row and prerequisites differ between departments.
+     *
+     * @param  array<string, mixed>  $base
+     * @param  array<string, mixed>  $clean
+     * @param  array<string, mixed>  $form
+     * @param  list<string>  $lessonIds
+     * @return array<string, mixed>
+     */
+    private function sharedCourseRecord(array $base, array $clean, array $form, string $id, string $locale, array $lessonIds): array
+    {
+        $record = $base;
+        unset($record['row']);
+        $record['id'] = $id;
+        $record['code'] = $clean['code'];
+        $record['titleAr'] = $clean['titleAr'];
+        $record['titleEn'] = $clean['titleEn'];
+        $record['title'] = $locale === 'ar' ? $clean['titleAr'] : $clean['titleEn'];
+        $record['descriptionAr'] = $clean['descriptionAr'];
+        $record['descriptionEn'] = $clean['descriptionEn'];
+        $record['description'] = $locale === 'ar' ? $clean['descriptionAr'] : $clean['descriptionEn'];
+        $record['term'] = (int) $clean['termId'];
+        $record['type'] = $clean['type'];
+        $record['required'] = $clean['required'];
+        $record['forced'] = (bool) ($base['forced'] ?? false);
+        $record['credits'] = $clean['credits'];
+        $record['prerequisites'] = $clean['prerequisites'];
+        $record['prerequisiteCredits'] = $clean['prerequisiteCredits'];
+        $record['instructor'] = $base['instructor'] ?? null;
+        $record['hours'] = ['theory' => $clean['theory'], 'practical' => $clean['practical']];
+        // Who teaches each part: a faculty profile id, never a copy of the name,
+        // so the course page shows the profile as it is now.
+        $record['teachers'] = $clean['teachers'] ?? $this->storedTeachers($base['teachers'] ?? null);
+
+        if (array_key_exists('lessons', $form)) {
+            $record['lessons'] = $this->lessonsFromForm($form['lessons'], $this->records($base['lessons'] ?? []), $id, $locale, $lessonIds);
+        } else {
+            $record['lessons'] = $this->records($base['lessons'] ?? []);
+        }
+
+        // A university requirement may name the Requirements Unit course it
+        // opens; without one the unit course listing this faculty and code is used.
+        $unitCourseId = array_key_exists('requirementsUnitCourseId', $form)
+            ? trim((string) $form['requirementsUnitCourseId'])
+            : trim((string) ($base['requirementsUnitCourseId'] ?? ''));
+        unset($record['requirementsUnitCourseId']);
+        if ($clean['type'] === 'university' && preg_match('/^[a-z0-9]+(?:-[a-z0-9]+)*$/', $unitCourseId) === 1) {
+            $record['requirementsUnitCourseId'] = $unitCourseId;
+        }
+
+        // One course specification PDF per course, shared by both languages.
+        $specificationUrl = array_key_exists('specificationUrl', $form)
+            ? trim((string) $form['specificationUrl'])
+            : trim((string) ($base['specificationUrl'] ?? ''));
+        unset($record['specificationUrl']);
+        if ($specificationUrl !== '') {
+            $record['specificationUrl'] = $specificationUrl;
+        }
+
+        return $record;
+    }
+
+    /**
+     * Prerequisites of a shared course in another department: the edited ones that are courses
+     * there, plus the ones that department had which the editor could not see (courses that are
+     * not in the edited department).
+     *
+     * @param  list<string>  $chosen
+     * @param  array<string, mixed>|null  $existing
+     * @param  array<string, mixed>  $department
+     * @param  list<string>  $editedDepartmentCourseIds
+     * @return list<string>
+     */
+    private function sharedPrerequisites(array $chosen, ?array $existing, array $department, array $editedDepartmentCourseIds): array
+    {
+        $here = [];
 
         foreach ($this->records($department['terms'] ?? []) as $term) {
             foreach ($this->records($term['courses'] ?? []) as $course) {
-                foreach ($this->records($course['lessons'] ?? []) as $lesson) {
-                    $ids[] = (string) ($lesson['id'] ?? '');
+                $here[(string) $course['id']] = true;
+            }
+        }
+
+        $kept = array_filter(
+            $this->stringList($existing['prerequisites'] ?? []),
+            static fn (string $id): bool => ! in_array($id, $editedDepartmentCourseIds, true),
+        );
+
+        return array_values(array_unique([
+            ...array_filter($chosen, static fn (string $id): bool => isset($here[$id])),
+            ...$kept,
+        ]));
+    }
+
+    /**
+     * Puts the record in the term, keeping its row when it stays in the same term.
+     *
+     * @param  array<string, mixed>  $department
+     * @param  array<string, mixed>  $record
+     * @param  array<string, mixed>|null  $existing
+     * @return array<string, mixed>
+     */
+    private function placeCourse(array $department, array $record, string $termId, ?array $existing): array
+    {
+        $fromTerm = $this->termOfCourse($department, (string) $record['id']);
+        $department = $this->withoutCourse($department, (string) $record['id'], false);
+        $terms = $this->records($department['terms'] ?? []);
+
+        foreach ($terms as $index => $term) {
+            if ((string) $term['id'] !== $termId) {
+                continue;
+            }
+
+            $courses = $this->records($term['courses'] ?? []);
+
+            if ($fromTerm === $termId && isset($existing['row'])) {
+                array_splice($courses, max(0, min((int) $existing['row'] - 1, count($courses))), 0, [$record]);
+            } else {
+                $courses[] = $record;
+            }
+
+            $terms[$index]['courses'] = $courses;
+        }
+
+        $department['terms'] = $this->withRows($terms);
+
+        return $department;
+    }
+
+    /**
+     * The department without the course, and (unless only moving it) without prerequisite
+     * links to it from its other courses.
+     *
+     * @param  array<string, mixed>  $department
+     * @return array<string, mixed>
+     */
+    private function withoutCourse(array $department, string $courseId, bool $stripLinks = true): array
+    {
+        $terms = $this->records($department['terms'] ?? []);
+
+        foreach ($terms as $index => $term) {
+            $courses = array_values(array_filter(
+                $this->records($term['courses'] ?? []),
+                static fn (array $course): bool => (string) $course['id'] !== $courseId,
+            ));
+
+            if ($stripLinks) {
+                foreach ($courses as $c => $course) {
+                    $courses[$c]['prerequisites'] = array_values(array_diff($this->stringList($course['prerequisites'] ?? []), [$courseId]));
+                }
+            }
+
+            $terms[$index]['courses'] = $courses;
+        }
+
+        $department['terms'] = $this->withRows($terms);
+
+        return $department;
+    }
+
+    /**
+     * @param  array<string, mixed>  $department
+     * @return array<string, mixed>|null
+     */
+    private function courseIn(array $department, string $courseId): ?array
+    {
+        foreach ($this->records($department['terms'] ?? []) as $term) {
+            foreach ($this->records($term['courses'] ?? []) as $course) {
+                if ((string) $course['id'] === $courseId) {
+                    return $course;
                 }
             }
         }
 
-        return $ids;
+        return null;
     }
 
     /**
      * @param  array<string, mixed>  $payload
-     * @param  list<string>  $courseIds
-     * @return array<string, mixed>
+     * @return array<string, mixed>|null
      */
-    private function removeCourseIds(array $payload, string $departmentId, array $courseIds): array
+    private function courseAnywhere(array $payload, string $locale, string $courseId): ?array
     {
-        $payload = $this->mapDepartment($payload, $departmentId, function (array $department) use ($courseIds): array {
-            $terms = $this->records($department['terms'] ?? []);
+        foreach ($this->departments($payload, $locale) as $department) {
+            $course = $this->courseIn($department, $courseId);
 
-            foreach ($terms as $index => $term) {
-                $terms[$index]['courses'] = array_values(array_filter(
-                    $this->records($term['courses'] ?? []),
-                    static fn (array $course): bool => ! in_array((string) $course['id'], $courseIds, true),
-                ));
+            if ($course !== null) {
+                return $course;
             }
+        }
 
-            $department['terms'] = $this->withRows($terms);
+        return null;
+    }
 
-            return $department;
-        });
+    /** @param array<string, mixed> $department */
+    private function termOfCourse(array $department, string $courseId): ?string
+    {
+        foreach ($this->records($department['terms'] ?? []) as $term) {
+            foreach ($this->records($term['courses'] ?? []) as $course) {
+                if ((string) $course['id'] === $courseId) {
+                    return (string) $term['id'];
+                }
+            }
+        }
 
-        return $this->stripPrerequisites($payload, $courseIds);
+        return null;
+    }
+
+    /**
+     * @param  array<string, mixed>  $department
+     * @return list<string>
+     */
+    private function termIds(array $department): array
+    {
+        return array_map(static fn (array $term): string => (string) ($term['id'] ?? ''), $this->records($department['terms'] ?? []));
+    }
+
+    /**
+     * Lesson ids in use anywhere in the plan, so a new lesson never takes one that a
+     * department holding the course already has.
+     *
+     * @param  array<string, mixed>  $payload
+     * @return list<string>
+     */
+    private function allLessonIds(array $payload): array
+    {
+        $ids = [];
+
+        foreach (self::LOCALES as $locale) {
+            foreach ($this->departments($payload, $locale) as $department) {
+                foreach ($this->records($department['terms'] ?? []) as $term) {
+                    foreach ($this->records($term['courses'] ?? []) as $course) {
+                        foreach ($this->records($course['lessons'] ?? []) as $lesson) {
+                            $ids[] = (string) ($lesson['id'] ?? '');
+                        }
+                    }
+                }
+            }
+        }
+
+        return array_values(array_unique($ids));
     }
 
     /**

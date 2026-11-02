@@ -281,6 +281,64 @@ final class AdminStudyPlanBoardTest extends TestCase
         $this->assertNotNull($this->course('den-905'));
     }
 
+    public function test_a_shared_course_is_placed_and_edited_from_any_department(): void
+    {
+        $page = $this->page();
+        $first = (string) $this->payload()['translations']['en']['payload']['plan']['departments'][0]['id'];
+
+        $page->call('newBoardDepartment')
+            ->set('boardDepartmentForm.nameEn', 'Oral Surgery')
+            ->set('boardDepartmentForm.nameAr', 'جراحة الفم')
+            ->call('saveBoardDepartment')
+            ->assertSet('boardDepartmentId', 'oral-surgery');
+
+        $page->call('selectBoardDepartment', $first)
+            ->call('newBoardCourse', '1')
+            ->assertSeeHtml('wire:model="boardCourse.placements.oral-surgery"')
+            ->set('boardCourse.code', 'DEN-903')
+            ->set('boardCourse.titleEn', 'Shared Course')
+            ->set('boardCourse.titleAr', 'مقرر مشترك')
+            ->set('boardCourse.placements.oral-surgery', '2')
+            ->call('saveBoardCourse')
+            ->assertSet('boardCourse', null);
+
+        $this->assertSame(1, $this->courseIn($first, 'den-903')['term']);
+        $this->assertSame(2, $this->courseIn('oral-surgery', 'den-903')['term']);
+
+        $page->call('selectBoardDepartment', 'oral-surgery')
+            ->call('openBoardCourse', 'den-903')
+            ->assertSet('boardCourse.placements.'.$first, '1')
+            ->set('boardCourse.titleEn', 'Shared Course Renamed')
+            ->call('saveBoardCourse');
+
+        $this->assertSame('Shared Course Renamed', $this->courseIn($first, 'den-903')['title']);
+        $this->assertSame('Shared Course Renamed', $this->courseIn('oral-surgery', 'den-903')['title']);
+
+        $page->call('openBoardCourse', 'den-903')->call('deleteBoardCourse');
+        $this->assertNull($this->courseIn('oral-surgery', 'den-903'));
+        $this->assertNotNull($this->courseIn($first, 'den-903'));
+    }
+
+    /** @return array<string, mixed>|null */
+    private function courseIn(string $departmentId, string $id): ?array
+    {
+        foreach ($this->payload()['translations']['en']['payload']['plan']['departments'] as $department) {
+            if ($department['id'] !== $departmentId) {
+                continue;
+            }
+
+            foreach ($department['terms'] as $term) {
+                foreach ($term['courses'] as $course) {
+                    if ($course['id'] === $id) {
+                        return $course;
+                    }
+                }
+            }
+        }
+
+        return null;
+    }
+
     private function page(): Testable
     {
         return Livewire::withQueryParams(['target' => self::TARGET])->test(ManageDentistryFaculty::class);

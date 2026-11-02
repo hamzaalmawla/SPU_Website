@@ -40,6 +40,12 @@ interface FacultyStudyPlanBoardServiceInterface
     public function emptyCourseForm(string $termId): array;
 
     /**
+     * Saves the course in every department that holds it: a course id is one course, so its
+     * code, titles, hours, teachers, lectures and specification are the same everywhere; only
+     * its term and row (and prerequisites that are not courses there) differ. `termId` places
+     * it in this department; `placements` (department id => term id, '' for none) places it
+     * in the others, and when it is not sent the other copies stay where they are.
+     *
      * @param  array<string, mixed>  $payload
      * @param  array<string, mixed>  $form
      * @return array<string, mixed>
@@ -47,6 +53,8 @@ interface FacultyStudyPlanBoardServiceInterface
     public function saveCourse(array $payload, string $departmentId, array $form): array;
 
     /**
+     * Removes this department's copy of the course; departments sharing it keep theirs.
+     *
      * @param  array<string, mixed>  $payload
      * @return array<string, mixed>
      */
