@@ -18,8 +18,6 @@ import { createFacultyMembers } from './alpine/facultyMembers.js';
 import { createVirtualTour } from './alpine/virtualTour.js';
 import { registerDynamicFormStore } from './alpine/dynamicFormStore.js';
 import { createDynamicFormShell, createDynamicFormView } from './alpine/dynamicFormView.js';
-import { initStudyPlanPages } from './alpine/studyPlan.js';
-import { initMasterProgramPages } from './alpine/masterProgram.js';
 import { initRevealSections }   from './alpine/scrollReveal.js';
 import { createVirtualizedSchedule } from './alpine/virtualizedSchedule.js';
 import { registerHomepageComponents } from './homepage.js';
@@ -60,12 +58,24 @@ function whenDomReady() {
     });
 }
 
+// The study plan board is the largest public module, and admin.js shares it,
+// which made it a separate chunk every page waited for before app.js could
+// run. Only the pages that show a plan fetch it now.
+function initPlanPages() {
+    if (document.querySelector('[data-study-plan]')) {
+        import('./alpine/studyPlan.js').then(({ initStudyPlanPages }) => initStudyPlanPages());
+    }
+
+    if (document.querySelector('[data-master-program]')) {
+        import('./alpine/masterProgram.js').then(({ initMasterProgramPages }) => initMasterProgramPages());
+    }
+}
+
 function initAfterAlpineStart() {
     requestAnimationFrame(() => {
         requestAnimationFrame(() => {
             initRevealSections();
-            initStudyPlanPages();
-            initMasterProgramPages();
+            initPlanPages();
         });
     });
 }

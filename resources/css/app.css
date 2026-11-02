@@ -1,4 +1,13 @@
-@import 'tailwindcss';
+/* source(none): automatic detection scanned the whole project, and with the
+   compiled views it pulled the Filament admin's classes (and their dark-mode
+   rules) into the public stylesheet. The public sources are listed below. */
+@import 'tailwindcss' source(none);
+
+/* The built-in rtl/ltr variants also match :dir(), which the older browsers
+   in vite.config.js's cssTarget lack, so every use expanded into a long
+   :lang() list. Every public page sets dir on <html>. */
+@custom-variant rtl (&:where([dir="rtl"], [dir="rtl"] *));
+@custom-variant ltr (&:where([dir="ltr"], [dir="ltr"] *));
 
 @theme {
     /* Where the full menu gives way to the hamburger. 1480 put a 13" laptop
@@ -13,9 +22,18 @@
 }
 
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
-@source '../../storage/framework/views/*.php';
-@source '../**/*.blade.php';
-@source '../**/*.js';
+@source '../views/layouts';
+@source '../views/public';
+@source '../views/components/public';
+@source '../views/errors';
+@source '../js';
+@source not '../js/filament';
+/* Services, presenters and seeded CMS content that emit class names. */
+@source '../../app';
+@source not '../../app/Filament';
+@source '../../config';
+@source '../../lang';
+@source '../../database/seeders';
 
 [x-cloak] {
     display: none !important;
