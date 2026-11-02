@@ -85,6 +85,11 @@ async function bootAlpine() {
 
     initPageBehaviours();
 
+    // Evaluating this bundle and starting Alpine ran as one task long enough to
+    // block input; yielding once lets the browser handle anything pending
+    // in between.
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
     Alpine.start();
     initAfterAlpineStart();
 }
