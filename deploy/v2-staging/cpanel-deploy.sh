@@ -365,6 +365,17 @@ for root_file in "${SOURCE}"/public/{favicon.ico,apple-touch-icon.png,site.webma
 done
 shopt -u nullglob
 
+# The header logo's sized WebP copies. They are raster files, so the SVG step
+# below skips them, and the header showed a broken image when they were first
+# added. Fail rather than ship a page whose logo 404s.
+log "Publishing header logo"
+mkdir -p "${WEB}/images"
+for logo_width in 240 480; do
+    logo_file="${SOURCE}/public/images/logo-spu-${logo_width}.webp"
+    [[ -s "${logo_file}" ]] || fail "Missing ${logo_file}; the header links it."
+    install -m 0644 "${logo_file}" "${WEB}/images/logo-spu-${logo_width}.webp"
+done
+
 # ── Legacy static mounts ─────────────────────────────────────────────────────
 # Old files stay in the old document root and are exposed read-only under
 # _legacy/, answered at their original URLs by public/.htaccess (README §4).
