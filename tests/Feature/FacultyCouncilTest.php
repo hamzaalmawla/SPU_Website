@@ -365,6 +365,70 @@ final class FacultyCouncilTest extends TestCase
         $this->assertSame('Dean', $members['profile-dean']['position']);
     }
 
+    public function test_the_members_page_lists_the_dean_then_leaders_heads_council_and_staff(): void
+    {
+        // Created staff first, so only the rank can put the others ahead of them.
+        $this->member('rank-staff', 'Dr. Rank Staff', 'د. عضو الهيئة');
+        $secretary = $this->member('rank-secretary', 'Dr. Rank Secretary', 'د. أمين السر');
+        $head = $this->member('rank-head', 'Dr. Rank Head', 'د. رئيس القسم');
+        $vice = $this->member('rank-vice', 'Dr. Rank Vice', 'د. نائب العميد');
+        $dean = $this->member('rank-dean', 'Dr. Rank Dean', 'د. العميد');
+        $secretaryPosition = $this->addPosition('أمين سر المجلس', 'Council Secretary', 'council');
+        $this->publishDepartments([
+            ['slug' => 'surgery-rank', 'title' => ['قسم الجراحة', 'Department of Surgery'], 'headMemberId' => (int) $head->getKey()],
+        ]);
+        $this->publishCouncil([
+            ['positionSlug' => $secretaryPosition, 'memberId' => (int) $secretary->getKey()],
+            ['positionSlug' => 'vice_dean', 'memberId' => (int) $vice->getKey()],
+            ['positionSlug' => 'dean', 'memberId' => (int) $dean->getKey()],
+        ]);
+        Cache::flush();
+
+        $items = app(FacultyPageServiceInterface::class)->getSubpage('medicine', 'members', 'en')?->items ?? [];
+        $ranked = collect($items)->filter(fn (array $item): bool => str_starts_with($item['slug'], 'rank-'))->values();
+
+        $this->assertSame(['rank-dean', 'rank-vice', 'rank-head', 'rank-secretary', 'rank-staff'], $ranked->pluck('slug')->all());
+        $this->assertSame(['dean', 'leadership', 'head', 'council', 'staff'], $ranked->pluck('tier')->all());
+
+        $this->get('/ar/faculties/medicine/members')
+            ->assertOk()
+            ->assertSeeInOrder(['قيادة الكلية', 'د. العميد', 'د. نائب العميد', 'رؤساء الأقسام', 'د. رئيس القسم', 'أعضاء مجلس الكلية', 'د. أمين السر', 'أعضاء الهيئة التدريسية', 'د. عضو الهيئة'])
+            ->assertSee('ابحث بالاسم أو المنصب أو القسم');
+    }
+
+    public function test_before_the_council_places_them_the_members_page_ranks_by_the_typed_position(): void
+    {
+        $this->member('typed-technician', 'Lab Supervisor', 'مشرف المخبر', position: ['مشرف مخبر', 'Lab supervisor']);
+        $this->member('typed-lecturer', 'Lecturer Person', 'المدرس', position: ['مدرس', 'Lecturer']);
+        $this->member('typed-professor', 'Professor Person', 'أ. د. الأستاذ', position: ['عضو هيئة تدريسية', 'Faculty member']);
+        $this->member('typed-associate', 'Associate Person', 'الأستاذ المساعد', position: ['أستاذ مساعد', 'Associate Professor']);
+        $this->member('typed-secretary', 'Secretary Person', 'أمين السر', position: ['أمين سر مجلس الكلية', 'Council Secretary']);
+        $this->member('typed-head', 'Head Person', 'رئيس القسم', position: ['رئيس قسم الجراحة', 'Head of Surgery']);
+        $this->member('typed-vice', 'Vice Person', 'نائب العميد', position: ['نائب العميد', 'Vice Dean']);
+        $this->member('typed-dean', 'Dean Person', 'العميد', position: ['عميد كلية الطب البشري', 'Dean of Medicine']);
+        Cache::flush();
+
+        $items = app(FacultyPageServiceInterface::class)->getSubpage('medicine', 'members', 'ar')?->items ?? [];
+        $typed = collect($items)->filter(fn (array $item): bool => str_starts_with($item['slug'], 'typed-'))->values();
+
+        $this->assertSame(
+            ['typed-dean', 'typed-vice', 'typed-head', 'typed-secretary', 'typed-professor', 'typed-associate', 'typed-lecturer', 'typed-technician'],
+            $typed->pluck('slug')->all(),
+        );
+    }
+
+    public function test_a_profile_page_has_share_links(): void
+    {
+        $this->member('share-profile', 'Dr. Share Profile', 'د. مشاركة الملف');
+
+        $this->get('/en/about/profile/share-profile')
+            ->assertOk()
+            ->assertSee('Share this profile')
+            ->assertSee('https://www.facebook.com/sharer/sharer.php?u='.urlencode(url('/en/about/profile/share-profile')), false)
+            ->assertSee('https://wa.me/?text=', false)
+            ->assertSee('Copy link');
+    }
+
     public function test_publishing_the_council_makes_its_dean_the_leadership_dean(): void
     {
         $oldDean = $this->member('previous-dean', 'Dr. Previous Dean', 'د. العميد السابق');

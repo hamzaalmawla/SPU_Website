@@ -61,6 +61,7 @@
     @include('public.partials.profile-view', [
         'profile' => $mappedProfile,
         'coverImage' => $coverImage,
+        'shareUrl' => url($profile->profileUrl),
         'isResearchProfile' => false
     ])
 @endsection

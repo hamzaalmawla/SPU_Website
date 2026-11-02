@@ -192,6 +192,11 @@
                     @endif
                 </div>
 
+                <div class="rounded-2xl border border-spu-blue/[0.08] bg-white p-6 shadow-[0_4px_24px_rgba(32,39,89,0.06)]">
+                    <h3 class="mb-5 border-b border-spu-blue/[0.08] pb-3 text-base font-bold text-spu-blue">{{ $isAr ? 'شارك الملف الشخصي' : 'Share this profile' }}</h3>
+                    <x-public.share-links :url="$shareUrl ?? url()->current()" :title="$name" :locale="$locale" :heading="false" />
+                </div>
+
                 @if (count($specializations) > 0)
                     <div class="rounded-2xl border border-spu-blue/[0.08] bg-white p-6 shadow-[0_4px_24px_rgba(32,39,89,0.06)]">
                         <h3 class="mb-5 border-b border-spu-blue/[0.08] pb-3 text-base font-bold text-spu-blue">{{ $isAr ? 'التخصصات' : 'Specializations' }}</h3>

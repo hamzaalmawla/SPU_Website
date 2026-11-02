@@ -85,6 +85,9 @@ final class FacultyPageService implements FacultyPageServiceInterface
 
     private const SUBPAGE_SLUGS = ['overview', 'departments', 'study-plan', 'study-plan-course', 'labs', 'projects', 'alumni', 'valedictorians', 'training', 'clinical-cases', 'final-exams', 'research', 'members', 'council', 'master-program'];
 
+    /** The members page lists the dean first, then the other leaders, the department heads, the council and the rest of the staff. */
+    private const MEMBER_TIERS = ['dean', 'leadership', 'head', 'council', 'staff'];
+
     private const ALUMNI_LIST_PER_PAGE = 12;
 
     private const HONOR_LIST_PER_PAGE = 6;
@@ -1268,10 +1271,17 @@ final class FacultyPageService implements FacultyPageServiceInterface
             })
             ->filter(fn (?array $item): bool => $item !== null);
 
+        $ranks = $this->memberRanks($faculty, $locale);
+        $hasDean = in_array('dean', array_column($ranks, 'tier'), true);
+
         return collect($personItems->values()->all())
             ->merge($facultyMemberItems->values()->all())
             ->unique('slug')
             ->sortBy('sort_order')
+            ->values()
+            ->map(fn (array $item, int $index): array => [...$item, 'rank' => $ranks[$item['slug']] ?? $this->typedPositionRank((string) $item['position'], (string) $item['name'], $hasDean), 'index' => $index])
+            ->sort(fn (array $left, array $right): int => [array_search($left['rank']['tier'], self::MEMBER_TIERS, true), $left['rank']['order'], $left['index']]
+                <=> [array_search($right['rank']['tier'], self::MEMBER_TIERS, true), $right['rank']['order'], $right['index']])
             ->values()
             ->map(fn (array $item): array => [
                 'slug' => $item['slug'],
@@ -1280,8 +1290,89 @@ final class FacultyPageService implements FacultyPageServiceInterface
                 'department' => $item['department'],
                 'image' => $item['image'],
                 'profileUrl' => $item['profileUrl'],
+                'tier' => $item['rank']['tier'],
             ])
             ->all();
+    }
+
+    /**
+     * Where each profile stands in the faculty, by profile slug, from the council page:
+     * the dean, the other leadership positions, the department heads and the council
+     * members, each in the council page's order. Everyone else is `staff`.
+     *
+     * @return array<string, array{tier: string, order: int}>
+     */
+    private function memberRanks(Faculty $faculty, string $locale): array
+    {
+        $council = $this->leadershipService->council($this->publicSlug($faculty), $locale);
+        $groups = [
+            'dean' => $council->dean !== null ? [$council->dean] : [],
+            'leadership' => $council->leadership,
+            'head' => $council->heads,
+            'council' => $council->members,
+        ];
+        $ranks = [];
+
+        foreach ($groups as $tier => $people) {
+            foreach (array_values($people) as $order => $person) {
+                $slug = basename((string) ($person['url'] ?? ''));
+
+                // Someone in two groups (a head who sits on the council) takes the higher one.
+                if ($slug !== '' && ! isset($ranks[$slug])) {
+                    $ranks[$slug] = ['tier' => $tier, 'order' => $order];
+                }
+            }
+        }
+
+        return $ranks;
+    }
+
+    /**
+     * The rank of a profile the council page does not place, read from the position it shows:
+     * a typed dean (when the council names none), vice dean, head of department or council
+     * role. Everyone else is staff, by academic rank (from the position or the name's
+     * "أ. د." / "أ. م." prefix): professors, associate professors, lecturers, other teaching
+     * staff, then technical staff. These come after the council page's own people.
+     *
+     * @return array{tier: string, order: int}
+     */
+    private function typedPositionRank(string $position, string $name, bool $hasDean): array
+    {
+        $position = mb_strtolower((string) preg_replace('/[\x{064B}-\x{0652}\x{0640}]/u', '', $position));
+        $name = trim((string) preg_replace('/[\x{064B}-\x{0652}\x{0640}]/u', '', $name));
+
+        if (preg_match('/نائب\s*(ال)?عميد|vice[\s-]*dean|associate\s+dean/u', $position) === 1) {
+            return ['tier' => 'leadership', 'order' => 1000];
+        }
+
+        if (preg_match('/عميد|\bdean\b/u', $position) === 1) {
+            return $hasDean ? ['tier' => 'leadership', 'order' => 999] : ['tier' => 'dean', 'order' => 0];
+        }
+
+        if (preg_match('/رئيس(ة)?\s*(ال)?قسم|head\s+of|\bchair/u', $position) === 1) {
+            return ['tier' => 'head', 'order' => 1000];
+        }
+
+        if (preg_match('/مجلس|أمين\s*(ال)?سر|secretary/u', $position) === 1) {
+            return ['tier' => 'council', 'order' => 1000];
+        }
+
+        $order = match (true) {
+            preg_match('/[أا]ستاذ\s*مساعد|associate\s+professor/u', $position) === 1 => 1,
+            preg_match('/مدرس|محاضر|lecturer|assistant\s+professor/u', $position) === 1 => 2,
+            preg_match('/[أا]ستاذ|professor/u', $position) === 1 => 0,
+            preg_match('/فني|فنية|مشرف|مخبر|technical|technician|supervisor/u', $position) === 1 => 4,
+            default => 3,
+        };
+
+        // The name's academic title, when it says more than the position.
+        $titleOrder = match (true) {
+            preg_match('/^(أ\s*\.\s*د(\.|\s|$)|prof\b)/iu', $name) === 1 => 0,
+            preg_match('/^أ\s*\.\s*م(\.|\s|$)/u', $name) === 1 => 1,
+            default => $order,
+        };
+
+        return ['tier' => 'staff', 'order' => min($order, $titleOrder)];
     }
 
     /** @return array<int, array<string, mixed>> */
