@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\Staff;
 
+use App\Contracts\Center\CenterCatalogServiceInterface;
 use App\Contracts\Staff\StaffIntakeServiceInterface;
 use App\DTOs\Staff\StaffIntakeFormDTO;
 use App\DTOs\Staff\StaffIntakeLinkDTO;
@@ -38,6 +39,12 @@ use Throwable;
  * A teacher picks their profile from suggestions by an encrypted reference
  * (link, profile, time), never by a raw id, so a profile cannot be claimed
  * through a link of another faculty or by guessing numbers.
+ *
+ * A center's link (center_slug) works the same way for the center's staff:
+ * their profiles have no faculty and the center's slug, there is no
+ * department, and the position is required. A profile in a faculty or
+ * another center is a starting point for a new profile in this center, as a
+ * profile in another faculty is for a faculty link.
  */
 final class StaffIntakeService implements StaffIntakeServiceInterface
 {
@@ -46,11 +53,15 @@ final class StaffIntakeService implements StaffIntakeServiceInterface
     /** How long a form opened from a reference may still be sent. */
     private const REF_LIFETIME_SECONDS = 86400;
 
+    public function __construct(
+        private readonly CenterCatalogServiceInterface $centers,
+    ) {}
+
     public function resolveLink(string $token): ?StaffIntakeLinkDTO
     {
         $link = $this->activeLink($token);
 
-        return $link instanceof StaffIntakeLink ? StaffIntakeLinkService::toDto($link) : null;
+        return $link instanceof StaffIntakeLink ? StaffIntakeLinkService::toDto($link, $this->centers) : null;
     }
 
     public function recordOpened(string $token, ?string $ipAddress, ?string $userAgent): bool
@@ -93,8 +104,7 @@ final class StaffIntakeService implements StaffIntakeServiceInterface
             return null;
         }
 
-        $faculty = $link->faculty()->with('translations')->first();
-        $facultyName = $faculty instanceof Faculty ? $this->facultyName($faculty, $locale) : '';
+        $facultyName = $this->unitName($link, $locale);
         if ($ref !== null && $ref !== '') {
             $decoded = $this->decodeRef($link, $ref);
             $member = $decoded !== null && $decoded['m'] !== null ? $this->member($decoded['m']) : null;
@@ -123,7 +133,8 @@ final class StaffIntakeService implements StaffIntakeServiceInterface
                 // Another faculty's profile passes on only media library files.
                 photoUrl: $sameFaculty || $member->photo_media_id !== null ? $this->photoUrl($member) : null,
                 cvUrl: $sameFaculty || $member->cv_media_id !== null ? $this->cvUrl($member) : null,
-                relatedFacultyName: $sameFaculty || ! $member->faculty instanceof Faculty ? null : $this->facultyName($member->faculty, $locale),
+                relatedFacultyName: $sameFaculty ? null : $this->memberUnitName($member, $locale),
+                isCenter: $link->isForCenter(),
             );
         }
 
@@ -145,6 +156,7 @@ final class StaffIntakeService implements StaffIntakeServiceInterface
             photoUrl: null,
             cvUrl: null,
             relatedFacultyName: null,
+            isCenter: $link->isForCenter(),
         );
     }
 
@@ -166,6 +178,11 @@ final class StaffIntakeService implements StaffIntakeServiceInterface
         }
 
         $isUpdate = $claimed instanceof FacultyMember && $this->joinsLinkFaculty($claimed, $link);
+        if ($link->isForCenter()) {
+            $this->requireCenterPosition($submission);
+            // A center has no departments: whatever was sent is dropped.
+            $submission = $this->withFields($submission, ['department_id' => null] + $submission->fields);
+        }
         $this->requireFiles($submission, $claimed, $isUpdate);
         $fields = $this->cleanFields(
             $submission->fields,
@@ -202,6 +219,7 @@ final class StaffIntakeService implements StaffIntakeServiceInterface
                 'reference' => $this->newReference(),
                 'staff_intake_link_id' => $lockedLink->getKey(),
                 'faculty_id' => $lockedLink->faculty_id,
+                'center_slug' => $lockedLink->center_slug,
                 'type' => $isUpdate ? StaffIntakeRequest::TYPE_UPDATE : StaffIntakeRequest::TYPE_CREATE,
                 'faculty_member_id' => $isUpdate ? $claimed->getKey() : null,
                 'related_faculty_member_id' => ! $isUpdate && $claimed instanceof FacultyMember ? $claimed->getKey() : null,
@@ -259,13 +277,20 @@ final class StaffIntakeService implements StaffIntakeServiceInterface
     }
 
     /**
-     * The link's own profiles and those with no faculty yet (a leader's
-     * profile made from the leadership row): sending one updates it, and
-     * approval places it in the link's faculty, instead of starting a copy.
+     * The link's own profiles and those with no faculty and no center yet (a
+     * leader's profile made from the leadership row): sending one updates it,
+     * and approval places it in the link's faculty or center, instead of
+     * starting a copy.
      */
     private function joinsLinkFaculty(FacultyMember $member, StaffIntakeLink $link): bool
     {
-        return $member->faculty_id === null || (int) $member->faculty_id === (int) $link->faculty_id;
+        $memberCenter = is_string($member->center_slug) && $member->center_slug !== '' ? $member->center_slug : null;
+
+        if ($link->isForCenter()) {
+            return $member->faculty_id === null && ($memberCenter === null || $memberCenter === $link->center_slug);
+        }
+
+        return ($member->faculty_id === null && $memberCenter === null) || (int) $member->faculty_id === (int) $link->faculty_id;
     }
 
     private function rank(string $typedName, FacultyMember $member): int
@@ -287,7 +312,7 @@ final class StaffIntakeService implements StaffIntakeServiceInterface
             nameEn: (string) ($member->translations->firstWhere('locale', 'en')?->full_name ?? ''),
             title: $translation?->title,
             department: $department,
-            faculty: $member->faculty instanceof Faculty ? $this->facultyName($member->faculty, $locale) : null,
+            faculty: $this->memberUnitName($member, $locale),
             inLinkFaculty: $this->joinsLinkFaculty($member, $link),
             photoUrl: $this->photoUrl($member),
             rank: $rank,
@@ -342,7 +367,11 @@ final class StaffIntakeService implements StaffIntakeServiceInterface
     {
         $query = StaffIntakeRequest::query()
             ->whereKeyNot($request->getKey())
-            ->where('faculty_id', $request->faculty_id)
+            ->when(
+                $request->isForCenter(),
+                fn ($requests) => $requests->where('center_slug', $request->center_slug),
+                fn ($requests) => $requests->where('faculty_id', $request->faculty_id),
+            )
             ->where('status', StaffIntakeRequest::STATUS_PENDING)
             ->lockForUpdate();
 
@@ -586,11 +615,10 @@ final class StaffIntakeService implements StaffIntakeServiceInterface
         }
 
         try {
-            $faculty = $link->faculty()->with('translations')->first();
             Mail::to($creator->email)->queue(new StaffIntakeSubmittedNotification(
                 reference: (string) $request->reference,
                 submitterName: (string) $request->submitter_name,
-                facultyName: $faculty instanceof Faculty ? $this->facultyName($faculty, 'ar') : '',
+                facultyName: $this->unitName($link, 'ar'),
                 isNewProfile: $request->type === StaffIntakeRequest::TYPE_CREATE,
                 possibleDuplicate: (bool) $request->possible_duplicate,
                 contentLocale: 'ar',
@@ -605,6 +633,63 @@ final class StaffIntakeService implements StaffIntakeServiceInterface
         return (string) ($member->translations->firstWhere('locale', $locale)?->full_name
             ?? $member->translations->first()?->full_name
             ?? $member->slug);
+    }
+
+    /** The link's faculty or center, by name. */
+    private function unitName(StaffIntakeLink $link, string $locale): string
+    {
+        if ($link->isForCenter()) {
+            return (string) ($this->centers->centerName((string) $link->center_slug, $locale) ?? $link->center_slug);
+        }
+
+        $faculty = $link->faculty()->with('translations')->first();
+
+        return $faculty instanceof Faculty ? $this->facultyName($faculty, $locale) : '';
+    }
+
+    /** The faculty or center a profile belongs to, by name; null for neither. */
+    private function memberUnitName(FacultyMember $member, string $locale): ?string
+    {
+        if ($member->faculty instanceof Faculty) {
+            return $this->facultyName($member->faculty, $locale);
+        }
+
+        return is_string($member->center_slug) && $member->center_slug !== ''
+            ? ($this->centers->centerName($member->center_slug, $locale) ?? $member->center_slug)
+            : null;
+    }
+
+    /** A center's staff page shows each person's position, so it is required in both languages. */
+    private function requireCenterPosition(StaffIntakeSubmissionDTO $submission): void
+    {
+        $errors = [];
+        foreach (['position_ar', 'position_en'] as $key) {
+            $value = $submission->fields[$key] ?? null;
+            if (! is_string($value) || trim(strip_tags($value)) === '') {
+                $errors[$key] = __('staff_intake.public.errors.position_required', [], $submission->locale);
+            }
+        }
+
+        if ($errors !== []) {
+            throw ValidationException::withMessages($errors);
+        }
+    }
+
+    /** @param array<string, mixed> $fields */
+    private function withFields(StaffIntakeSubmissionDTO $submission, array $fields): StaffIntakeSubmissionDTO
+    {
+        return new StaffIntakeSubmissionDTO(
+            token: $submission->token,
+            ref: $submission->ref,
+            locale: $submission->locale,
+            fields: $fields,
+            educations: $submission->educations,
+            photo: $submission->photo,
+            cv: $submission->cv,
+            confirmedNotDuplicate: $submission->confirmedNotDuplicate,
+            ipAddress: $submission->ipAddress,
+            userAgent: $submission->userAgent,
+        );
     }
 
     private function facultyName(Faculty $faculty, string $locale): string

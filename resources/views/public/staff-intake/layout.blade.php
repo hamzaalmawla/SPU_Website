@@ -7,7 +7,8 @@
         <meta name="csrf-token" content="{{ csrf_token() }}">
         <meta name="robots" content="noindex,nofollow,noarchive">
         <meta name="referrer" content="no-referrer">
-        <title>{{ __('staff_intake.public.page_title', [], $locale) }} | {{ __('staff_intake.public.university', [], $locale) }}</title>
+        @php($pageTitle = __(! empty($isCenter) ? 'staff_intake.center.page_title' : 'staff_intake.public.page_title', [], $locale))
+        <title>{{ $pageTitle }} | {{ __('staff_intake.public.university', [], $locale) }}</title>
         <link rel="icon" href="{{ asset('images/single-logo.png') }}" type="image/png">
         @if (file_exists(public_path('hot')))
             @vite(['resources/css/app.css', 'resources/js/staffIntake.js'])
@@ -31,7 +32,7 @@
                 <img src="{{ asset('images/single-logo.png') }}" alt="" class="h-12 w-12 rounded-full bg-white p-1">
                 <div>
                     <p class="text-sm opacity-80">{{ __('staff_intake.public.university', [], $locale) }}</p>
-                    <h1 class="text-xl font-bold sm:text-2xl">{{ __('staff_intake.public.page_title', [], $locale) }}</h1>
+                    <h1 class="text-xl font-bold sm:text-2xl">{{ $pageTitle }}</h1>
                 </div>
             </div>
         </header>

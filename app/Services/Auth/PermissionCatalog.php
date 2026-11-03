@@ -76,6 +76,10 @@ final class PermissionCatalog implements PermissionCatalogInterface
                 'staff_intake_links' => ['view', 'create', 'update'],
                 // update: approve or reject what staff sent.
                 'staff_intake_requests' => ['view', 'update'],
+                // Links for a center's staff and their requests (create: make a
+                // link; update: rotate, revoke, approve, reject). No default role
+                // holds it: super admins only until a centers editor role exists.
+                'center_staff_intake' => ['view', 'create', 'update'],
             ],
             'news_media' => [
                 'news_articles' => self::PUBLISHED_RECORDS,

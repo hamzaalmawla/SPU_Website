@@ -10,7 +10,9 @@
         data-other-faculty="{{ __('staff_intake.public.other_faculty', ['faculty' => ':faculty'], $locale) }}"
         data-this-is-me="{{ __('staff_intake.public.this_is_me', [], $locale) }}"
         data-no-results="{{ __('staff_intake.public.no_results', [], $locale) }}">
-        <p class="mb-6 text-slate-600">{{ __('staff_intake.public.intro', ['faculty' => $facultyName], $locale) }}</p>
+        <p class="mb-6 text-slate-600">{{ $link->centerSlug !== null
+            ? __('staff_intake.center.intro', ['center' => $facultyName], $locale)
+            : __('staff_intake.public.intro', ['faculty' => $facultyName], $locale) }}</p>
 
         <form method="GET" action="{{ route('public.staff-intake.show', ['locale' => $locale, 'token' => $token]) }}" role="search" class="space-y-2">
             <label for="staff-intake-name" class="block text-sm font-bold text-spu-blue">{{ __('staff_intake.public.search_label', [], $locale) }}</label>

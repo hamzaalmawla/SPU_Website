@@ -14,6 +14,7 @@ class StaffIntakeLink extends Model
 {
     protected $fillable = [
         'faculty_id',
+        'center_slug',
         'token_hash',
         'token_encrypted',
         'label',
@@ -54,6 +55,12 @@ class StaffIntakeLink extends Model
     public function accessLogs(): HasMany
     {
         return $this->hasMany(StaffIntakeAccessLog::class);
+    }
+
+    /** A center's link or request (config/centers.php) rather than a faculty's. */
+    public function isForCenter(): bool
+    {
+        return is_string($this->center_slug) && $this->center_slug !== '';
     }
 
     public function isActive(): bool

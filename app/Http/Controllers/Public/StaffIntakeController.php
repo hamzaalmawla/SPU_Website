@@ -14,8 +14,9 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
 /**
- * The link a faculty sends its academic staff: find your profile by name,
- * correct it (or enter a new one), and send it for review.
+ * The link a faculty sends its academic staff (or a center its staff): find
+ * your profile by name, correct it (or enter a new one), and send it for
+ * review.
  */
 final class StaffIntakeController extends Controller
 {
@@ -37,6 +38,7 @@ final class StaffIntakeController extends Controller
             'locale' => $locale,
             'token' => $token,
             'link' => $link,
+            'isCenter' => $link->centerSlug !== null,
             'typed' => $typed,
             'suggestions' => $typed !== '' ? $this->intake->suggestions($token, $typed, $locale) : collect(),
         ]);
@@ -73,6 +75,7 @@ final class StaffIntakeController extends Controller
             'locale' => $locale,
             'token' => $token,
             'form' => $form,
+            'isCenter' => $form->isCenter,
             'duplicates' => $request->session()->get('staff_intake_duplicates', []),
         ]);
     }
@@ -103,6 +106,7 @@ final class StaffIntakeController extends Controller
         return view('public.staff-intake.sent', [
             'locale' => $locale,
             'token' => $token,
+            'isCenter' => $this->intake->resolveLink($token)?->centerSlug !== null,
             'reference' => $request->session()->get('staff_intake_reference'),
         ]);
     }

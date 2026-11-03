@@ -8,9 +8,10 @@ use App\DTOs\Staff\StaffIntakeLinkCreatedDTO;
 use App\DTOs\Staff\StaffIntakeLinkInputDTO;
 
 /**
- * Makes, rotates and revokes the per-faculty links sent to academic staff.
- * Access comes from the staff_intake_links permissions, within the user's
- * faculty limit when they have one.
+ * Makes, rotates and revokes the links sent to a faculty's academic staff, or
+ * to a center's staff (config/centers.php). Faculty links need the
+ * staff_intake_links permissions, within the user's faculty limit; center
+ * links need center_staff_intake.
  */
 interface StaffIntakeLinkServiceInterface
 {
@@ -36,4 +37,7 @@ interface StaffIntakeLinkServiceInterface
     public function facultyOptions(int $actorId, string $permission = 'staff_intake_links.view'): array;
 
     public function canManage(int $linkId, int $actorId): bool;
+
+    /** Whether the actor holds center_staff_intake.<action> (center links and requests). */
+    public function canUseCenters(int $actorId, string $action = 'view'): bool;
 }

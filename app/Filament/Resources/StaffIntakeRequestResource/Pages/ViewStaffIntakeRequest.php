@@ -118,7 +118,7 @@ class ViewStaffIntakeRequest extends ViewRecord
             $options['claimed'] = __('staff_intake.admin.actions.target_claimed').': '.$details->claimedMember['name'];
         }
         if ($details->type === StaffIntakeRequest::TYPE_CREATE) {
-            $options['new'] = __('staff_intake.admin.actions.target_new');
+            $options['new'] = __($details->isCenter ? 'staff_intake.admin.actions.target_new_center' : 'staff_intake.admin.actions.target_new');
             // Started from a profile with no faculty (sent before such profiles were updated in place).
             if ($details->relatedMember !== null && $details->relatedMember['faculty'] === '') {
                 $options['member:'.$details->relatedMember['id']] = __('staff_intake.admin.actions.target_existing', ['name' => $details->relatedMember['name']]);

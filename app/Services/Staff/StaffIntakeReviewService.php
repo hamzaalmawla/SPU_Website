@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services\Staff;
 
 use App\Contracts\Auth\AdminAccessServiceInterface;
+use App\Contracts\Center\CenterCatalogServiceInterface;
 use App\Contracts\Cms\AboutEntityCmsServiceInterface;
 use App\Contracts\Cms\CmsWorkflowServiceInterface;
 use App\Contracts\Content\PersonIdentityServiceInterface;
@@ -38,6 +39,10 @@ use Illuminate\Validation\ValidationException;
  * faculty scope, cache invalidation and audit are the ones every profile edit
  * already gets. A faculty editor's approval leaves a draft for an editor to
  * publish, as their own edits do.
+ *
+ * A center's request (center_slug, no faculty) is reviewed by holders of
+ * center_staff_intake and applies to a profile with no faculty in that
+ * center (or a new one), which then shows on the center's staff page.
  */
 final class StaffIntakeReviewService implements StaffIntakeReviewServiceInterface
 {
@@ -51,6 +56,7 @@ final class StaffIntakeReviewService implements StaffIntakeReviewServiceInterfac
         private readonly AdminAccessServiceInterface $access,
         private readonly StaffIntakeLinkServiceInterface $links,
         private readonly PersonIdentityServiceInterface $identities,
+        private readonly CenterCatalogServiceInterface $centers,
     ) {}
 
     public function reviewableFacultyIds(int $actorId): array
@@ -71,7 +77,7 @@ final class StaffIntakeReviewService implements StaffIntakeReviewServiceInterfac
 
         $links = StaffIntakeLink::query()->orderBy('id')->get()->map(fn (StaffIntakeLink $link): array => [
             'link' => (int) $link->getKey(),
-            'faculty' => $facultyLabel($link->faculty_id !== null ? (int) $link->faculty_id : null),
+            'faculty' => $link->isForCenter() ? 'center:'.$link->center_slug : $facultyLabel($link->faculty_id !== null ? (int) $link->faculty_id : null),
             'active' => $link->isActive(),
             'submissions' => (int) $link->submissions_count,
             'requests' => ($counts[$link->getKey()] ?? collect())->mapWithKeys(fn ($row): array => [(string) $row->status => (int) $row->total])->all(),
@@ -82,12 +88,12 @@ final class StaffIntakeReviewService implements StaffIntakeReviewServiceInterfac
 
         return [
             'links' => $links,
-            'orphans' => StaffIntakeRequest::query()->whereNotIn('faculty_id', $faculties->where('is_enabled', true)->keys()->all())->count(),
+            'orphans' => StaffIntakeRequest::query()->whereNull('center_slug')->whereNotIn('faculty_id', $faculties->where('is_enabled', true)->keys()->all())->count(),
             'references' => array_map(fn (string $reference): array => $found->has($reference) ? [
                 'reference' => $reference,
                 'request' => (int) $found[$reference]->getKey(),
                 'link' => $found[$reference]->staff_intake_link_id !== null ? (int) $found[$reference]->staff_intake_link_id : null,
-                'faculty' => $facultyLabel($found[$reference]->faculty_id !== null ? (int) $found[$reference]->faculty_id : null),
+                'faculty' => $found[$reference]->isForCenter() ? 'center:'.$found[$reference]->center_slug : $facultyLabel($found[$reference]->faculty_id !== null ? (int) $found[$reference]->faculty_id : null),
                 'type' => (string) $found[$reference]->type,
                 'status' => (string) $found[$reference]->status,
                 'created' => $found[$reference]->created_at?->toDateTimeString(),
@@ -97,10 +103,25 @@ final class StaffIntakeReviewService implements StaffIntakeReviewServiceInterfac
 
     public function canDecide(int $requestId, int $actorId): bool
     {
-        $facultyId = StaffIntakeRequest::query()->whereKey($requestId)->value('faculty_id');
+        $request = StaffIntakeRequest::query()->whereKey($requestId)->first(['id', 'faculty_id', 'center_slug']);
+        if (! $request instanceof StaffIntakeRequest) {
+            return false;
+        }
 
-        return $facultyId !== null
-            && array_key_exists((int) $facultyId, $this->links->facultyOptions($actorId, 'staff_intake_requests.update'));
+        if ($request->isForCenter()) {
+            return $this->links->canUseCenters($actorId, 'update');
+        }
+
+        return $request->faculty_id !== null
+            && array_key_exists((int) $request->faculty_id, $this->links->facultyOptions($actorId, 'staff_intake_requests.update'));
+    }
+
+    public function pendingCenterCount(int $actorId): int
+    {
+        return $this->links->canUseCenters($actorId) ? StaffIntakeRequest::query()
+            ->whereNotNull('center_slug')
+            ->where('status', StaffIntakeRequest::STATUS_PENDING)
+            ->count() : 0;
     }
 
     public function pendingCount(int $actorId): int
@@ -138,8 +159,8 @@ final class StaffIntakeReviewService implements StaffIntakeReviewServiceInterfac
             ->map(fn (FacultyMember $member): array => [
                 'id' => (int) $member->getKey(),
                 'name' => $this->memberName($member, $locale),
-                'faculty' => $member->faculty instanceof Faculty ? $this->facultyName($member->faculty, $locale) : '',
-                'sameFaculty' => $member->faculty_id === null || (int) $member->faculty_id === (int) $request->faculty_id,
+                'faculty' => $this->memberUnitName($member, $locale),
+                'sameFaculty' => $this->fitsRequest($member, $request),
             ])
             ->values()
             ->all();
@@ -178,7 +199,11 @@ final class StaffIntakeReviewService implements StaffIntakeReviewServiceInterfac
             reference: (string) $request->reference,
             status: (string) $request->status,
             type: (string) $request->type,
-            facultyName: $request->faculty instanceof Faculty ? $this->facultyName($request->faculty, $locale) : '',
+            facultyName: match (true) {
+                $request->isForCenter() => (string) ($this->centers->centerName((string) $request->center_slug, $locale) ?? $request->center_slug),
+                $request->faculty instanceof Faculty => $this->facultyName($request->faculty, $locale),
+                default => '',
+            },
             submitterName: (string) $request->submitter_name,
             submittedAt: (string) $request->created_at?->toDateTimeString(),
             possibleDuplicate: (bool) $request->possible_duplicate,
@@ -188,7 +213,7 @@ final class StaffIntakeReviewService implements StaffIntakeReviewServiceInterfac
             relatedMember: $related instanceof FacultyMember ? [
                 'id' => (int) $related->getKey(),
                 'name' => $this->memberName($related, $locale),
-                'faculty' => $related->faculty instanceof Faculty ? $this->facultyName($related->faculty, $locale) : '',
+                'faculty' => $this->memberUnitName($related, $locale),
             ] : null,
             linkedPersonSlug: is_string($linkedPersonSlug) ? $linkedPersonSlug : null,
             hasNewPhoto: is_array($uploads['photo'] ?? null),
@@ -198,6 +223,7 @@ final class StaffIntakeReviewService implements StaffIntakeReviewServiceInterfac
             reviewNote: $request->review_note,
             appliedMemberId: $request->applied_faculty_member_id !== null ? (int) $request->applied_faculty_member_id : null,
             accessLog: $accessLog,
+            isCenter: $request->isForCenter(),
         );
     }
 
@@ -213,10 +239,10 @@ final class StaffIntakeReviewService implements StaffIntakeReviewServiceInterfac
             }
 
             $targetId = $targetMemberId ?? ($locked->type === StaffIntakeRequest::TYPE_UPDATE ? $locked->faculty_member_id : null);
-            // A profile with no faculty yet is placed in the request's faculty.
-            if ($targetId !== null && ! FacultyMember::query()->whereKey($targetId)
-                ->where(fn ($query) => $query->where('faculty_id', $locked->faculty_id)->orWhereNull('faculty_id'))
-                ->exists()) {
+            // A profile with no faculty (and no center) yet is placed in the
+            // request's faculty or center.
+            $target = $targetId !== null ? FacultyMember::query()->find($targetId) : null;
+            if ($targetId !== null && (! $target instanceof FacultyMember || ! $this->fitsRequest($target, $locked))) {
                 throw ValidationException::withMessages(['target' => __('staff_intake.admin.errors.target_faculty')]);
             }
 
@@ -305,6 +331,14 @@ final class StaffIntakeReviewService implements StaffIntakeReviewServiceInterfac
     private function authorizedRequest(int $requestId, int $actorId): StaffIntakeRequest
     {
         $request = StaffIntakeRequest::query()->findOrFail($requestId);
+        if ($request->isForCenter()) {
+            if (! $this->links->canUseCenters($actorId)) {
+                throw new AuthorizationException('You may not review center staff requests.');
+            }
+
+            return $request;
+        }
+
         if (! in_array((int) $request->faculty_id, $this->reviewableFacultyIds($actorId), true)) {
             throw new AuthorizationException('You may only review requests of your own faculties.');
         }
@@ -342,7 +376,8 @@ final class StaffIntakeReviewService implements StaffIntakeReviewServiceInterfac
         } else {
             $base = [
                 'slug' => $this->slugService->generate((string) ($fields['name_en'] ?? '') ?: 'faculty-member', FacultyMember::class, 'en'),
-                'faculty_id' => (int) $request->faculty_id,
+                'faculty_id' => $request->faculty_id !== null ? (int) $request->faculty_id : null,
+                'center_slug' => $request->isForCenter() ? (string) $request->center_slug : null,
                 'sort_order' => $this->profiles->nextFacultyMemberSortOrder(),
                 'is_enabled' => true,
                 'translations' => [],
@@ -350,7 +385,11 @@ final class StaffIntakeReviewService implements StaffIntakeReviewServiceInterfac
                 'social_links' => [],
             ];
         }
-        if (! is_numeric($base['faculty_id'] ?? null)) {
+        if ($request->isForCenter()) {
+            // The center's staff have no faculty and no department.
+            $base['faculty_id'] = null;
+            $base['center_slug'] = (string) $request->center_slug;
+        } elseif (! is_numeric($base['faculty_id'] ?? null)) {
             $base['faculty_id'] = (int) $request->faculty_id;
         }
 
@@ -364,7 +403,7 @@ final class StaffIntakeReviewService implements StaffIntakeReviewServiceInterfac
             $base['translations'][$locale] = $translation;
         }
 
-        $base['department_id'] = $fields['department_id'] ?? null;
+        $base['department_id'] = $request->isForCenter() ? null : ($fields['department_id'] ?? null);
 
         // The link asks only for the department; the profile keeps the specialization an editor
         // set. One that is no longer a program of the faculty's plan is cleared rather than
@@ -525,6 +564,33 @@ final class StaffIntakeReviewService implements StaffIntakeReviewServiceInterfac
                 $years,
             ], static fn (string $part): bool => trim($part, ' /') !== '')));
         }, $educations));
+    }
+
+    /**
+     * Whether a request may be applied to this profile: one of the request's
+     * faculty or center, or one with neither yet.
+     */
+    private function fitsRequest(FacultyMember $member, StaffIntakeRequest $request): bool
+    {
+        $memberCenter = is_string($member->center_slug) && $member->center_slug !== '' ? $member->center_slug : null;
+
+        if ($request->isForCenter()) {
+            return $member->faculty_id === null && ($memberCenter === null || $memberCenter === $request->center_slug);
+        }
+
+        return ($member->faculty_id === null && $memberCenter === null) || (int) $member->faculty_id === (int) $request->faculty_id;
+    }
+
+    /** The faculty or center a profile belongs to, by name ('' for neither). */
+    private function memberUnitName(FacultyMember $member, string $locale): string
+    {
+        if ($member->faculty instanceof Faculty) {
+            return $this->facultyName($member->faculty, $locale);
+        }
+
+        return is_string($member->center_slug) && $member->center_slug !== ''
+            ? (string) ($this->centers->centerName($member->center_slug, $locale) ?? $member->center_slug)
+            : '';
     }
 
     private function memberName(FacultyMember $member, string $locale): string

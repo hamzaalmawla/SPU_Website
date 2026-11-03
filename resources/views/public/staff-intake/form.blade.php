@@ -10,7 +10,7 @@
         <p class="text-slate-600">{{ $form->facultyName }}</p>
         <p class="mt-2 text-slate-600">{{ __($form->mode === 'update' ? 'staff_intake.public.form_intro_update' : 'staff_intake.public.form_intro_create', [], $locale) }}</p>
         @if ($form->relatedFacultyName)
-            <p class="mt-3 rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-900">{{ __('staff_intake.public.from_other_faculty', ['faculty' => $form->relatedFacultyName], $locale) }}</p>
+            <p class="mt-3 rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-900">{{ __($form->isCenter ? 'staff_intake.center.from_other' : 'staff_intake.public.from_other_faculty', ['faculty' => $form->relatedFacultyName], $locale) }}</p>
         @endif
 
         @if ($errors->has('form'))
@@ -47,8 +47,9 @@
                     @include('public.staff-intake.field', ['name' => 'name_en', 'value' => $fields['name_en'], 'required' => true])
                     @include('public.staff-intake.field', ['name' => 'title_ar', 'value' => $fields['title_ar']])
                     @include('public.staff-intake.field', ['name' => 'title_en', 'value' => $fields['title_en']])
-                    @include('public.staff-intake.field', ['name' => 'position_ar', 'value' => $fields['position_ar']])
-                    @include('public.staff-intake.field', ['name' => 'position_en', 'value' => $fields['position_en']])
+                    {{-- A center's staff page shows each person's position, so a center link asks for it. --}}
+                    @include('public.staff-intake.field', ['name' => 'position_ar', 'value' => $fields['position_ar'], 'required' => $form->isCenter, 'hint' => $form->isCenter ? __('staff_intake.center.position_hint', [], $locale) : null])
+                    @include('public.staff-intake.field', ['name' => 'position_en', 'value' => $fields['position_en'], 'required' => $form->isCenter])
                 </div>
             </fieldset>
 
@@ -63,8 +64,9 @@
             </fieldset>
 
             <fieldset class="space-y-4">
-                <legend class="mb-2 text-lg font-bold text-spu-blue">{{ __('staff_intake.public.section_contact', [], $locale) }}</legend>
+                <legend class="mb-2 text-lg font-bold text-spu-blue">{{ __($form->isCenter ? 'staff_intake.center.section_contact' : 'staff_intake.public.section_contact', [], $locale) }}</legend>
                 <div class="grid gap-4 sm:grid-cols-2">
+                    @unless ($form->isCenter)
                     <div class="space-y-1">
                         <label for="si-department-id" class="block text-sm font-bold text-slate-700">{{ __('staff_intake.fields.department_id', [], $locale) }}</label>
                         <select id="si-department-id" name="department_id" class="w-full rounded-lg border border-slate-300 px-3 py-2 outline-none focus:border-spu-blue focus:ring-4 focus:ring-spu-blue/10"
@@ -76,6 +78,7 @@
                         </select>
                         @error('department_id')<p class="text-xs font-bold text-spu-red" role="alert">{{ $message }}</p>@enderror
                     </div>
+                    @endunless
                     @include('public.staff-intake.field', ['name' => 'office_location', 'value' => $fields['office_location']])
                     @include('public.staff-intake.field', ['name' => 'email', 'value' => $fields['email'], 'type' => 'email', 'dir' => 'ltr', 'autocomplete' => 'email'])
                     @include('public.staff-intake.field', ['name' => 'phone', 'value' => $fields['phone'], 'type' => 'tel', 'dir' => 'ltr', 'max' => 30, 'autocomplete' => 'tel'])
@@ -139,7 +142,7 @@
             @endif
 
             <div class="border-t border-slate-100 pt-6">
-                <p class="mb-4 text-sm text-slate-500">{{ __('staff_intake.public.review_note', [], $locale) }}</p>
+                <p class="mb-4 text-sm text-slate-500">{{ __($form->isCenter ? 'staff_intake.center.review_note' : 'staff_intake.public.review_note', [], $locale) }}</p>
                 <button type="submit" class="rounded-lg bg-spu-red px-6 py-3 font-bold text-white hover:bg-spu-red/90 focus:outline-none focus:ring-4 focus:ring-spu-red/30">{{ __('staff_intake.public.submit', [], $locale) }}</button>
             </div>
         </form>

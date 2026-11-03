@@ -9,9 +9,11 @@ use DateTimeInterface;
 final readonly class StaffIntakeLinkInputDTO
 {
     public function __construct(
-        public int $facultyId,
+        public ?int $facultyId,
         public ?string $label,
         public ?DateTimeInterface $expiresAt,
         public ?int $maxSubmissions,
+        // A center's link (config/centers.php) instead of a faculty's.
+        public ?string $centerSlug = null,
     ) {}
 }

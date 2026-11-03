@@ -17,7 +17,11 @@ interface StaffIntakeReviewServiceInterface
     /** @return list<int> Faculties whose requests and links the actor may see. */
     public function reviewableFacultyIds(int $actorId): array;
 
+    /** Pending faculty requests the actor may see. */
     public function pendingCount(int $actorId): int;
+
+    /** Pending center requests, for holders of center_staff_intake.view. */
+    public function pendingCenterCount(int $actorId): int;
 
     /**
      * Read-only overview for the deploy log: each link with its request counts

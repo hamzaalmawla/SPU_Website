@@ -34,5 +34,7 @@ final readonly class StaffIntakeRequestDetailDTO
         public ?string $reviewNote,
         public ?int $appliedMemberId,
         public array $accessLog,
+        // A center's request: facultyName holds the center's name.
+        public bool $isCenter = false,
     ) {}
 }

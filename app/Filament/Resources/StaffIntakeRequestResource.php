@@ -81,13 +81,14 @@ class StaffIntakeRequestResource extends Resource
 
     public static function getRecordTitle(?Model $record): string
     {
-        return $record instanceof StaffIntakeRequest ? (string) $record->submitter_name : self::getModelLabel();
+        return $record instanceof StaffIntakeRequest ? (string) $record->submitter_name : static::getModelLabel();
     }
 
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()
             ->with(['faculty.translations', 'appliedFacultyMember.translations'])
+            ->whereNull('center_slug')
             ->whereIn('faculty_id', self::facultyIds());
     }
 
@@ -103,9 +104,8 @@ class StaffIntakeRequestResource extends Resource
                 TextColumn::make('reference')->label(__('staff_intake.admin.columns.reference'))->searchable()->copyable(),
                 TextColumn::make('submitter_name')->label(__('staff_intake.admin.columns.name'))->searchable()->wrap(),
                 TextColumn::make('faculty')
-                    ->label(__('staff_intake.admin.columns.faculty'))
-                    ->state(fn (StaffIntakeRequest $record): string => (string) ($record->faculty?->translations->firstWhere('locale', app()->getLocale())?->name
-                        ?? $record->faculty?->translations->first()?->name ?? '')),
+                    ->label(static::unitLabel())
+                    ->state(fn (StaffIntakeRequest $record): string => static::unitName($record)),
                 TextColumn::make('type')->label(__('staff_intake.admin.columns.type'))->formatStateUsing(fn (string $state): string => __('staff_intake.admin.types.'.$state))->badge()
                     ->color(fn (string $state): string => $state === StaffIntakeRequest::TYPE_CREATE ? 'info' : 'gray'),
                 IconColumn::make('possible_duplicate')->label(__('staff_intake.admin.columns.possible_duplicate'))->boolean()
@@ -130,9 +130,7 @@ class StaffIntakeRequestResource extends Resource
                         ->mapWithKeys(fn (string $status): array => [$status => __('staff_intake.admin.request_status.'.$status)])
                         ->all())
                     ->default(StaffIntakeRequest::STATUS_PENDING),
-                SelectFilter::make('faculty_id')
-                    ->label(__('staff_intake.admin.columns.faculty'))
-                    ->options(fn (): array => app(StaffIntakeLinkServiceInterface::class)->facultyOptions((int) auth()->id(), 'staff_intake_requests.view')),
+                static::unitFilter(),
                 SelectFilter::make('type')
                     ->label(__('staff_intake.admin.columns.type'))
                     ->options([
@@ -145,6 +143,24 @@ class StaffIntakeRequestResource extends Resource
             ])
             ->bulkActions([])
             ->defaultSort('created_at', 'desc');
+    }
+
+    public static function unitLabel(): string
+    {
+        return __('staff_intake.admin.columns.faculty');
+    }
+
+    public static function unitName(StaffIntakeRequest $record): string
+    {
+        return (string) ($record->faculty?->translations->firstWhere('locale', app()->getLocale())?->name
+            ?? $record->faculty?->translations->first()?->name ?? '');
+    }
+
+    public static function unitFilter(): SelectFilter
+    {
+        return SelectFilter::make('faculty_id')
+            ->label(static::unitLabel())
+            ->options(fn (): array => app(StaffIntakeLinkServiceInterface::class)->facultyOptions((int) auth()->id(), 'staff_intake_requests.view'));
     }
 
     public static function getPages(): array

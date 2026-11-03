@@ -3,7 +3,7 @@
 @section('content')
     <section class="rounded-2xl bg-white p-8 text-center shadow-sm" role="status">
         <h2 class="mb-4 text-2xl font-bold text-spu-blue">{{ __('staff_intake.public.sent_heading', [], $locale) }}</h2>
-        <p class="mb-6 text-slate-600">{{ __('staff_intake.public.sent_body', [], $locale) }}</p>
+        <p class="mb-6 text-slate-600">{{ __(! empty($isCenter) ? 'staff_intake.center.sent_body' : 'staff_intake.public.sent_body', [], $locale) }}</p>
         @if ($reference)
             <p class="mb-8"><span class="text-sm text-slate-500">{{ __('staff_intake.public.sent_reference', [], $locale) }}:</span>
                 <strong class="font-mono text-lg" dir="ltr">{{ $reference }}</strong></p>

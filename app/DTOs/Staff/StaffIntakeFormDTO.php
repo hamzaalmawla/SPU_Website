@@ -25,5 +25,7 @@ final readonly class StaffIntakeFormDTO
         public ?string $photoUrl,
         public ?string $cvUrl,
         public ?string $relatedFacultyName,
+        // A center's link: no department, and the position is required.
+        public bool $isCenter = false,
     ) {}
 }

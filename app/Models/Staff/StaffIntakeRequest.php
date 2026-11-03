@@ -34,6 +34,7 @@ class StaffIntakeRequest extends Model
         'reference',
         'staff_intake_link_id',
         'faculty_id',
+        'center_slug',
         'type',
         'faculty_member_id',
         'related_faculty_member_id',
@@ -58,6 +59,12 @@ class StaffIntakeRequest extends Model
             'possible_duplicate' => 'boolean',
             'reviewed_at' => 'datetime',
         ];
+    }
+
+    /** A center's link or request (config/centers.php) rather than a faculty's. */
+    public function isForCenter(): bool
+    {
+        return is_string($this->center_slug) && $this->center_slug !== '';
     }
 
     public function link(): BelongsTo

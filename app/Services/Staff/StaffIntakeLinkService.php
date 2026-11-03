@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services\Staff;
 
 use App\Contracts\Auth\AdminAccessServiceInterface;
+use App\Contracts\Center\CenterCatalogServiceInterface;
 use App\Contracts\Shared\AuditServiceInterface;
 use App\Contracts\Staff\StaffIntakeLinkServiceInterface;
 use App\DTOs\Staff\StaffIntakeLinkCreatedDTO;
@@ -24,11 +25,20 @@ final class StaffIntakeLinkService implements StaffIntakeLinkServiceInterface
     public function __construct(
         private readonly AdminAccessServiceInterface $access,
         private readonly AuditServiceInterface $auditService,
+        private readonly CenterCatalogServiceInterface $centers,
     ) {}
 
     public function create(StaffIntakeLinkInputDTO $input, int $actorId): StaffIntakeLinkCreatedDTO
     {
-        if (! array_key_exists($input->facultyId, $this->facultyOptions($actorId, 'staff_intake_links.create'))) {
+        $centerSlug = $input->centerSlug !== null && trim($input->centerSlug) !== '' ? trim($input->centerSlug) : null;
+        if ($centerSlug !== null) {
+            if (! $this->canUseCenters($actorId, 'create')) {
+                throw new AuthorizationException('You may not make center staff links.');
+            }
+            if (! $this->centers->isCenter($centerSlug)) {
+                throw ValidationException::withMessages(['center_slug' => __('staff_intake.admin.errors.center')]);
+            }
+        } elseif ($input->facultyId === null || ! array_key_exists($input->facultyId, $this->facultyOptions($actorId, 'staff_intake_links.create'))) {
             throw new AuthorizationException('You may only make links for your own faculties.');
         }
 
@@ -43,7 +53,8 @@ final class StaffIntakeLinkService implements StaffIntakeLinkServiceInterface
         $token = self::newToken();
         $label = $input->label !== null && trim($input->label) !== '' ? trim($input->label) : null;
         $link = StaffIntakeLink::query()->create([
-            'faculty_id' => $input->facultyId,
+            'faculty_id' => $centerSlug === null ? $input->facultyId : null,
+            'center_slug' => $centerSlug,
             'token_hash' => hash('sha256', $token),
             'token_encrypted' => Crypt::encryptString($token),
             'label' => $label !== null ? mb_substr($label, 0, 255) : null,
@@ -53,7 +64,8 @@ final class StaffIntakeLinkService implements StaffIntakeLinkServiceInterface
         ]);
 
         $this->auditService->log('staff_intake_link.created', $actorId, StaffIntakeLink::class, (int) $link->getKey(), [
-            'faculty_id' => $input->facultyId,
+            'faculty_id' => $centerSlug === null ? $input->facultyId : null,
+            'center_slug' => $centerSlug,
             'expires_at' => $input->expiresAt?->format(DATE_ATOM),
             'max_submissions' => $input->maxSubmissions,
         ]);
@@ -131,9 +143,23 @@ final class StaffIntakeLinkService implements StaffIntakeLinkServiceInterface
 
     public function canManage(int $linkId, int $actorId): bool
     {
-        $facultyId = StaffIntakeLink::query()->whereKey($linkId)->value('faculty_id');
+        $link = StaffIntakeLink::query()->whereKey($linkId)->first(['id', 'faculty_id', 'center_slug']);
+        if (! $link instanceof StaffIntakeLink) {
+            return false;
+        }
 
-        return $facultyId !== null && array_key_exists((int) $facultyId, $this->facultyOptions($actorId, 'staff_intake_links.update'));
+        if ($link->isForCenter()) {
+            return $this->canUseCenters($actorId, 'update');
+        }
+
+        return $link->faculty_id !== null && array_key_exists((int) $link->faculty_id, $this->facultyOptions($actorId, 'staff_intake_links.update'));
+    }
+
+    public function canUseCenters(int $actorId, string $action = 'view'): bool
+    {
+        $user = User::query()->find($actorId);
+
+        return $user instanceof User && $this->access->can($user, 'center_staff_intake.'.$action);
     }
 
     private function manageable(int $linkId, int $actorId): StaffIntakeLink
@@ -148,22 +174,24 @@ final class StaffIntakeLinkService implements StaffIntakeLinkServiceInterface
     private function created(StaffIntakeLink $link, string $token): StaffIntakeLinkCreatedDTO
     {
         return new StaffIntakeLinkCreatedDTO(
-            link: self::toDto($link),
+            link: self::toDto($link, $this->centers),
             urlAr: route('public.staff-intake.show', ['locale' => 'ar', 'token' => $token]),
             urlEn: route('public.staff-intake.show', ['locale' => 'en', 'token' => $token]),
         );
     }
 
-    public static function toDto(StaffIntakeLink $link): StaffIntakeLinkDTO
+    public static function toDto(StaffIntakeLink $link, CenterCatalogServiceInterface $centers): StaffIntakeLinkDTO
     {
-        $faculty = $link->faculty()->with('translations')->first();
-        $name = static fn (string $locale): string => $faculty instanceof Faculty
-            ? (string) ($faculty->translations->firstWhere('locale', $locale)?->name ?? $faculty->slug)
-            : '';
+        $faculty = $link->isForCenter() ? null : $link->faculty()->with('translations')->first();
+        $name = static fn (string $locale): string => match (true) {
+            $link->isForCenter() => (string) ($centers->centerName((string) $link->center_slug, $locale) ?? $link->center_slug),
+            $faculty instanceof Faculty => (string) ($faculty->translations->firstWhere('locale', $locale)?->name ?? $faculty->slug),
+            default => '',
+        };
 
         return new StaffIntakeLinkDTO(
             id: (int) $link->getKey(),
-            facultyId: (int) $link->faculty_id,
+            facultyId: $link->faculty_id !== null ? (int) $link->faculty_id : null,
             facultyNameAr: $name('ar'),
             facultyNameEn: $name('en'),
             label: $link->label,
@@ -173,6 +201,7 @@ final class StaffIntakeLinkService implements StaffIntakeLinkServiceInterface
             submissionsCount: (int) $link->submissions_count,
             active: $link->isActive(),
             createdBy: $link->created_by !== null ? (int) $link->created_by : null,
+            centerSlug: $link->isForCenter() ? (string) $link->center_slug : null,
         );
     }
 

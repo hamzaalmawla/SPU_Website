@@ -58,6 +58,17 @@ class StaffIntakeLinkResource extends Resource
         return self::facultyIds() !== [];
     }
 
+    /** Heading of the column naming the link's faculty (its center, for center links). */
+    public static function unitLabel(): string
+    {
+        return __('staff_intake.admin.columns.faculty');
+    }
+
+    public static function unitName(StaffIntakeLink $record): string
+    {
+        return self::facultyName($record);
+    }
+
     public static function canCreate(): bool
     {
         return false;
@@ -77,6 +88,7 @@ class StaffIntakeLinkResource extends Resource
     {
         return parent::getEloquentQuery()
             ->with(['faculty.translations', 'creator'])
+            ->whereNull('center_slug')
             ->whereIn('faculty_id', self::facultyIds());
     }
 
@@ -88,7 +100,7 @@ class StaffIntakeLinkResource extends Resource
     public static function infolist(Infolist $infolist): Infolist
     {
         return $infolist->schema([
-            TextEntry::make('faculty')->label(__('staff_intake.admin.columns.faculty'))->state(fn (StaffIntakeLink $record): string => self::facultyName($record)),
+            TextEntry::make('faculty')->label(static::unitLabel())->state(fn (StaffIntakeLink $record): string => static::unitName($record)),
             TextEntry::make('label')->label(__('staff_intake.admin.columns.label'))->placeholder('—'),
             TextEntry::make('status')->label(__('staff_intake.admin.columns.status'))->state(fn (StaffIntakeLink $record): string => __('staff_intake.admin.link_status.'.self::status($record)))->badge()->color(fn (StaffIntakeLink $record): string => self::status($record) === 'active' ? 'success' : 'gray'),
             TextEntry::make('submissions')->label(__('staff_intake.admin.columns.submissions'))->state(fn (StaffIntakeLink $record): string => self::submissions($record)),
@@ -101,7 +113,7 @@ class StaffIntakeLinkResource extends Resource
     {
         return $table
             ->columns([
-                TextColumn::make('faculty')->label(__('staff_intake.admin.columns.faculty'))->state(fn (StaffIntakeLink $record): string => self::facultyName($record)),
+                TextColumn::make('faculty')->label(static::unitLabel())->state(fn (StaffIntakeLink $record): string => static::unitName($record)),
                 TextColumn::make('label')->label(__('staff_intake.admin.columns.label'))->placeholder('—')->searchable()->wrap(),
                 TextColumn::make('status')
                     ->label(__('staff_intake.admin.columns.status'))
@@ -117,7 +129,7 @@ class StaffIntakeLinkResource extends Resource
                 Tables\Actions\Action::make('show_link')
                     ->label(__('staff_intake.admin.actions.show_link'))
                     ->icon('heroicon-o-clipboard-document')
-                    ->visible(fn (StaffIntakeLink $record): bool => $record->revoked_at === null && self::canManage($record))
+                    ->visible(fn (StaffIntakeLink $record): bool => $record->revoked_at === null && static::canManage($record))
                     ->action(function (StaffIntakeLink $record): void {
                         $address = app(StaffIntakeLinkServiceInterface::class)->address((int) $record->getKey(), (int) auth()->id());
 
@@ -136,7 +148,7 @@ class StaffIntakeLinkResource extends Resource
                     ->color('warning')
                     ->requiresConfirmation()
                     ->modalDescription(__('staff_intake.admin.actions.rotate_confirm'))
-                    ->visible(fn (StaffIntakeLink $record): bool => $record->revoked_at === null && self::canManage($record))
+                    ->visible(fn (StaffIntakeLink $record): bool => $record->revoked_at === null && static::canManage($record))
                     ->action(function (StaffIntakeLink $record): void {
                         self::notifyLink(
                             app(StaffIntakeLinkServiceInterface::class)->rotate((int) $record->getKey(), (int) auth()->id()),
@@ -149,7 +161,7 @@ class StaffIntakeLinkResource extends Resource
                     ->color('danger')
                     ->requiresConfirmation()
                     ->modalDescription(__('staff_intake.admin.actions.revoke_confirm'))
-                    ->visible(fn (StaffIntakeLink $record): bool => $record->revoked_at === null && self::canManage($record))
+                    ->visible(fn (StaffIntakeLink $record): bool => $record->revoked_at === null && static::canManage($record))
                     ->action(function (StaffIntakeLink $record): void {
                         app(StaffIntakeLinkServiceInterface::class)->revoke((int) $record->getKey(), (int) auth()->id());
                         Notification::make()->title(__('staff_intake.admin.notifications.link_revoked'))->success()->send();
@@ -189,7 +201,7 @@ class StaffIntakeLinkResource extends Resource
         return array_map('intval', array_keys(app(StaffIntakeLinkServiceInterface::class)->facultyOptions((int) auth()->id())));
     }
 
-    private static function canManage(StaffIntakeLink $record): bool
+    protected static function canManage(StaffIntakeLink $record): bool
     {
         return app(StaffIntakeLinkServiceInterface::class)->canManage((int) $record->getKey(), (int) auth()->id());
     }

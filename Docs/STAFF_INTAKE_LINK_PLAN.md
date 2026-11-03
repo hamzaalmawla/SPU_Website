@@ -14,6 +14,12 @@ Status: built on `dev` (2026-10-20), not deployed. Decisions agreed on 2026-10-2
 - **Not built yet**: the retention command (step 4) and a duplicate-report section for pending requests.
 - **Name matching**: `PersonName::tokens()` now folds through `SearchTextNormalizer` (diacritics, ؤ, ئ), and `PersonName::matchRank()` is new. This makes `PeopleMergeService` match slightly more names. Run `people:merge` as a dry run on production data before the next real merge and compare its output with the previous run.
 
+### Center links (2026-11-03)
+
+- A link can belong to a center (`config/centers.php`, e.g. the Requirements Unit) instead of a faculty: `staff_intake_links.center_slug` and `staff_intake_requests.center_slug`, with `faculty_id` null.
+- The public flow is the same. The form has no department, and the position in Arabic and English is required, because the center's staff page shows it. The profile updated or created has no faculty and the center's slug, so approval publishes it to `/centers/<center>/staff`. Picking a profile that belongs to a faculty or another center starts a new profile in this center from it, as a profile in another faculty does on a faculty link; a faculty link likewise treats a center profile as another unit's.
+- Admin: Centers › Center staff links and Center staff requests (same access log and review screen). Access is `center_staff_intake.view/create/update`, given to no default role: super admins only, until a centers editor role is defined.
+
 ### Where the code is
 
 - Public: `routes/web.php` (`public.staff-intake.*`, outside the page cache), `StaffIntakeController`, `StaffIntakeSubmitRequest`, `StaffIntakeHeaders`, views in `resources/views/public/staff-intake/`, script `resources/js/staffIntake.js`.
