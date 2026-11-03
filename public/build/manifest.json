@@ -1,10 +1,7 @@
 {
-  "_studyPlan.bHuxQ3Z6.js": {
-    "file": "js/studyPlan.bHuxQ3Z6.js",
-    "name": "studyPlan",
-    "imports": [
-      "resources/js/app.js"
-    ]
+  "_studyPlanEdges.CIV9VC9E.js": {
+    "file": "js/studyPlanEdges.CIV9VC9E.js",
+    "name": "studyPlanEdges"
   },
   "public/fonts/Hacen Tunisia Bold Regular.ttf": {
     "file": "assets/Hacen Tunisia Bold Regular.B-fzyL4b.ttf",
@@ -42,31 +39,40 @@
     "isEntry": true
   },
   "resources/js/alpine/masterProgram.js": {
-    "file": "js/masterProgram.iJBXc5Tk.js",
+    "file": "js/masterProgram.D3ay3FoQ.js",
     "name": "masterProgram",
     "src": "resources/js/alpine/masterProgram.js",
     "isDynamicEntry": true,
     "imports": [
-      "_studyPlan.bHuxQ3Z6.js"
+      "_studyPlanEdges.CIV9VC9E.js"
+    ]
+  },
+  "resources/js/alpine/studyPlan.js": {
+    "file": "js/studyPlan.CKW3-aRQ.js",
+    "name": "studyPlan",
+    "src": "resources/js/alpine/studyPlan.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "_studyPlanEdges.CIV9VC9E.js"
     ]
   },
   "resources/js/app.js": {
-    "file": "js/app.aa2fUfOt.js",
+    "file": "js/app.Bc1yN2QB.js",
     "name": "app",
     "src": "resources/js/app.js",
     "isEntry": true,
     "dynamicImports": [
-      "_studyPlan.bHuxQ3Z6.js",
+      "resources/js/alpine/studyPlan.js",
       "resources/js/alpine/masterProgram.js"
     ]
   },
   "resources/js/filament/admin.js": {
-    "file": "js/admin.BkNzRoSk.js",
+    "file": "js/admin.D8CzsLVJ.js",
     "name": "admin",
     "src": "resources/js/filament/admin.js",
     "isEntry": true,
     "imports": [
-      "_studyPlan.bHuxQ3Z6.js"
+      "_studyPlanEdges.CIV9VC9E.js"
     ]
   },
   "resources/js/staffIntake.js": {

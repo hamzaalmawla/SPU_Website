@@ -1,4 +1,4 @@
-import { planEdgePaths } from '../alpine/studyPlan.js';
+import { planEdgePaths } from '../utils/studyPlanEdges.js';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
