@@ -15,5 +15,5 @@
 @endpush
 
 @section('content')
-    @include('errors.partials.body', ['error' => $error])
+    @include('errors.partials.body', ['error' => $error, 'shell' => 'full'])
 @endsection
