@@ -125,6 +125,9 @@
         <main id="main-content" tabindex="-1">@yield('content')</main>
 
         @include('public.layout.footer')
+        @unless ($isPreview ?? false)
+            @include('public.layout.chatbot', ['locale' => $locale])
+        @endunless
         @stack('scripts')
     </body>
 </html>

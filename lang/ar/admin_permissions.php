@@ -23,6 +23,7 @@ return [
         'audit_log' => 'سجل التدقيق',
         'campus_life' => 'الحياة الجامعية',
         'centers' => 'المراكز',
+        'chatbot' => 'المساعد الذكي',
         'contact_messages' => 'رسائل التواصل',
         'contact_page' => 'صفحة التواصل',
         'directorates' => 'المديريات',

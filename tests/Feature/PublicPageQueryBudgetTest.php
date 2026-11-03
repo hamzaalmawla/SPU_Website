@@ -39,11 +39,14 @@ final class PublicPageQueryBudgetTest extends TestCase
      *
      * @var array<string, int>
      */
+    // +1 each (2026-11-03): the AI assistant's launcher reads its settings
+    // once on a cold cache (cached for a day after; a warm page adds none,
+    // see ChatbotWidgetTest).
     private const BUDGETS = [
-        '/ar' => 67,
-        '/en' => 67,
-        '/ar/about' => 58,
-        '/ar/news' => 59,
+        '/ar' => 68,
+        '/en' => 68,
+        '/ar/about' => 59,
+        '/ar/news' => 60,
     ];
 
     protected function setUp(): void

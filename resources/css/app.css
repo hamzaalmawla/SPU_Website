@@ -57,6 +57,7 @@
 @import './frontend/events-calendar.css';
 @import './frontend/utilities.css';
 @import './frontend/cards.css';
+@import './frontend/chatbot.css';
 
 body {
     position: relative;

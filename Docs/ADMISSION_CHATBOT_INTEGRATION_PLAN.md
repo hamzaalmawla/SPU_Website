@@ -1,5 +1,7 @@
 # SPU Admission Chatbot Integration Plan
 
+> **Superseded (2026-11-03).** The assistant was built inside Laravel instead of as a separate Python service, because the cPanel host cannot run Qdrant or the Python stack. See `Docs/AI_ASSISTANT.md` for the as-built design, security layers and operations.
+
 ## Decision
 
 Do not copy the existing React application into Laravel or embed it in an iframe. Keep the Python RAG system as a separately hardened private service, and build a native floating chat launcher and panel in the Laravel public layout. Browsers should call a same-origin Laravel endpoint; Laravel should call only the private chatbot gateway.

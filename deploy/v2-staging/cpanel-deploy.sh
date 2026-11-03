@@ -1494,6 +1494,25 @@ fi
 log "Seeding deterministic redirect rules"
 (cd "${APP}" && "${PHP}" artisan db:seed --class=LegacyEntryPointRedirectSeeder --force --no-interaction)
 
+# ── AI assistant: OpenAI key ─────────────────────────────────────────────────
+# The key is never in git, in .env or in this log. An operator uploads it once
+# as a file holding only the key (cPanel File Manager, or
+# Fileman/save_file_content), mode 600:
+#
+#     storage/app/private/chatbot/openai-key.pending
+#
+# chatbot:import-key encrypts it into chatbot_settings with APP_KEY, prints
+# only its last four characters, overwrites and deletes the file, and checks
+# that OpenAI accepts it from this server. A bad key never stops the deploy.
+CHATBOT_KEY_FILE="${APP}/storage/app/private/chatbot/openai-key.pending"
+
+if [[ -f "${CHATBOT_KEY_FILE}" ]]; then
+    log "AI assistant: importing the OpenAI key"
+    (cd "${APP}" && "${PHP}" artisan chatbot:import-key "${CHATBOT_KEY_FILE}" --no-ansi) \
+        || printf '  the key could not be imported; upload it again or enter it in Administration > AI assistant\n'
+    rm -f "${CHATBOT_KEY_FILE}"
+fi
+
 # ── Caches ───────────────────────────────────────────────────────────────────
 # There is no OPcache on this host, so config and route caches are the only
 # compiled state that survives a request. Build them every deploy.
@@ -1610,6 +1629,16 @@ if [[ -f "${PAGE_COVERAGE_APPROVAL}" ]]; then
 
     mv "${PAGE_COVERAGE_APPROVAL}" "${PAGE_COVERAGE_APPROVAL}.consumed-$(date -u +%Y%m%d-%H%M%S)"
 fi
+
+# ── AI assistant: website knowledge ──────────────────────────────────────────
+# Indexes the published pages (About, Admissions, Faculties, Centers, Campus
+# Life, E-Services, Contact; both languages) so the assistant answers from what
+# the site says today. It reads the live site, so it runs after the
+# maintenance window. Only changed pages are embedded again. Does nothing
+# without a saved OpenAI key, and never fails the deploy.
+log "AI assistant: website knowledge"
+(cd "${APP}" && timeout 900 "${PHP}" -d memory_limit=512M artisan chatbot:sync-website --no-ansi) \
+    || printf '  the website sync did not finish; the assistant keeps its existing knowledge\n'
 
 # ── Verify ───────────────────────────────────────────────────────────────────
 # A deploy that reports success while the site is down is worse than one that

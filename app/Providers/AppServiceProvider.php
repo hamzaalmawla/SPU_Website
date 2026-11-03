@@ -15,6 +15,12 @@ use App\Contracts\Career\AlumniDirectoryServiceInterface;
 use App\Contracts\Career\StudentListImportServiceInterface;
 use App\Contracts\Center\CenterCatalogServiceInterface;
 use App\Contracts\Center\CenterPageServiceInterface;
+use App\Contracts\Chatbot\ChatbotKnowledgeServiceInterface;
+use App\Contracts\Chatbot\ChatbotServiceInterface;
+use App\Contracts\Chatbot\ChatbotSettingsServiceInterface;
+use App\Contracts\Chatbot\ChatbotUsageServiceInterface;
+use App\Contracts\Chatbot\ChatbotWebsiteCrawlerInterface;
+use App\Contracts\Chatbot\OpenAiClientInterface;
 use App\Contracts\Cms\AboutEntityCmsServiceInterface;
 use App\Contracts\Cms\CmsPageTextImportServiceInterface;
 use App\Contracts\Cms\CmsTargetRegistryInterface;
@@ -219,6 +225,12 @@ use App\Services\Career\AlumniDirectoryService;
 use App\Services\Career\StudentListImportService;
 use App\Services\Center\CenterCatalogService;
 use App\Services\Center\CenterPageService;
+use App\Services\Chatbot\ChatbotKnowledgeService;
+use App\Services\Chatbot\ChatbotService;
+use App\Services\Chatbot\ChatbotSettingsService;
+use App\Services\Chatbot\ChatbotUsageService;
+use App\Services\Chatbot\ChatbotWebsiteCrawler;
+use App\Services\Chatbot\OpenAiClient;
 use App\Services\Cms\AboutEntityCmsService;
 use App\Services\Cms\CmsPageTextImportService;
 use App\Services\Cms\CmsTargetRegistry;
@@ -430,6 +442,29 @@ class AppServiceProvider extends ServiceProvider
         $this->registerPublicAnalyticsComposer();
         $this->registerMediaDisplayStylesComposer();
         $this->registerErrorPageComposer();
+        $this->registerChatbotWidgetComposer();
+    }
+
+    /**
+     * Supply the assistant's launcher with its settings. Cached by the
+     * chatbot service, so a warm page adds no query. A failure (tables not
+     * migrated yet, cache trouble) hides the widget instead of breaking the page.
+     */
+    private function registerChatbotWidgetComposer(): void
+    {
+        View::composer('public.layout.chatbot', function (ViewContract $view): void {
+            $data = $view->getData();
+            $locale = is_string($data['locale'] ?? null) && $data['locale'] === 'en' ? 'en' : 'ar';
+
+            try {
+                $widget = app(ChatbotServiceInterface::class)->widget($locale);
+            } catch (\Throwable $exception) {
+                report($exception);
+                $widget = null;
+            }
+
+            $view->with('chatbot', $widget !== null && $widget->enabled ? $widget : null);
+        });
     }
 
     /**
@@ -661,6 +696,16 @@ class AppServiceProvider extends ServiceProvider
         // Search runs an indexed scan, so it is cheaper than a form post but
         // far from free on a five-worker server. 30/min per IP is generous for
         // a person refining a query and hostile to a scraper walking the index.
+        // Flood guard for the AI assistant, per IP address and generous (a
+        // campus network shares one address). Fair use per visitor, pauses
+        // and the site-wide cap live in ChatbotService.
+        RateLimiter::for('chatbot', function (Request $request): array {
+            return [
+                Limit::perMinute(max(1, (int) config('chatbot.limits.per_minute', 8)))->by('chatbot|minute|'.$request->ip()),
+                Limit::perDay(max(1, (int) config('chatbot.limits.per_day', 80)))->by('chatbot|day|'.$request->ip()),
+            ];
+        });
+
         RateLimiter::for('public-search', function (Request $request): Limit {
             return Limit::perMinute(30)->by('public-search|'.$request->ip());
         });
@@ -692,6 +737,12 @@ class AppServiceProvider extends ServiceProvider
     {
         return [
             CacheServiceInterface::class => CacheService::class,
+            OpenAiClientInterface::class => OpenAiClient::class,
+            ChatbotWebsiteCrawlerInterface::class => ChatbotWebsiteCrawler::class,
+            ChatbotSettingsServiceInterface::class => ChatbotSettingsService::class,
+            ChatbotUsageServiceInterface::class => ChatbotUsageService::class,
+            ChatbotKnowledgeServiceInterface::class => ChatbotKnowledgeService::class,
+            ChatbotServiceInterface::class => ChatbotService::class,
             AnalyticsServiceInterface::class => AnalyticsService::class,
             AchievementServiceInterface::class => AchievementService::class,
             ErrorPageServiceInterface::class => ErrorPageService::class,
