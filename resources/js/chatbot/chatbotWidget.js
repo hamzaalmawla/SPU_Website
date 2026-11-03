@@ -10,7 +10,13 @@ import { failureKey, historyFor, loadMessages, revealSteps, sanitizeSources, sav
 const REQUEST_TIMEOUT_MS = 60_000;
 const TEASER_DELAY_MS = 4_500;
 const TEASER_VISIBLE_MS = 14_000;
-const MOBILE_QUERY = '(max-width: 640px)';
+// Where the panel is a full-screen sheet (see chatbot.css).
+const MOBILE_QUERY = '(max-width: 640px), (max-height: 560px)';
+
+const ICON_SOURCES = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 5a2 2 0 0 1 2-2h9l5 5v11a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M8 12h8M8 16h5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
+const ICON_LINK = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
+const ICON_DOCUMENT = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6 3h8l4 4v14H6z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>';
+const ICON_COPY = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="8" y="8" width="12" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2" fill="none" stroke="currentColor" stroke-width="2"/></svg>';
 
 export function initChatbot(root = document.querySelector('[data-chatbot]')) {
     if (!root || root.dataset.chatbotReady === '1') {
@@ -44,6 +50,8 @@ class ChatbotWidget {
         this.input = root.querySelector('[data-chatbot-input]');
         this.sendButton = root.querySelector('[data-chatbot-send]');
         this.teaser = root.querySelector('[data-chatbot-teaser]');
+        this.counter = root.querySelector('[data-chatbot-counter]');
+        this.pageDirection = this.locale === 'ar' ? 'rtl' : 'ltr';
         this.title = root.querySelector('#spu-chatbot-title');
 
         this.storage = safeSessionStorage();
@@ -91,7 +99,11 @@ class ChatbotWidget {
                 this.send(this.input.value);
             }
         });
-        this.input.addEventListener('input', () => this.autosize());
+        this.input.addEventListener('input', () => {
+            this.autosize();
+            this.syncDirection();
+            this.syncCounter();
+        });
 
         this.panel.addEventListener('keydown', (event) => {
             if (event.key === 'Escape') {
@@ -186,6 +198,8 @@ class ChatbotWidget {
         this.robot?.setState('happy');
         this.input.value = '';
         this.autosize();
+        this.syncDirection();
+        this.syncCounter();
         this.input.focus({ preventScroll: true });
     }
 
@@ -234,6 +248,8 @@ class ChatbotWidget {
         this.pushMessage({ role: 'user', content: text, status: 'ok', sources: [] });
         this.input.value = '';
         this.autosize();
+        this.syncDirection();
+        this.syncCounter();
         this.setBusy(true);
 
         const typing = this.appendTyping();
@@ -440,49 +456,75 @@ class ChatbotWidget {
         const footer = document.createElement('div');
         footer.className = 'spu-chatbot__meta';
 
-        if (message.sources?.length) {
-            const sources = document.createElement('div');
-            sources.className = 'spu-chatbot__sources';
-            const heading = document.createElement('span');
-            heading.className = 'spu-chatbot__sources-label';
-            heading.textContent = this.text.sources;
-            sources.append(heading);
+        const sources = sanitizeSources(message.sources ?? []);
+        if (sources.length) {
+            const block = document.createElement('div');
+            block.className = 'spu-chatbot__sources';
 
-            for (const source of sanitizeSources(message.sources)) {
+            const label = document.createElement('p');
+            label.className = 'spu-chatbot__sources-label';
+            label.innerHTML = ICON_SOURCES;
+            label.append(document.createTextNode(this.text.sources ?? ''));
+            block.append(label);
+
+            const list = document.createElement('ul');
+            list.className = 'spu-chatbot__source-list';
+            for (const source of sources) {
+                const item = document.createElement('li');
                 const chip = document.createElement(source.url ? 'a' : 'span');
                 chip.className = 'spu-chatbot__source';
+                chip.setAttribute('dir', 'auto');
                 if (source.url) {
                     chip.href = source.url;
+                    chip.innerHTML = ICON_LINK;
+                } else {
+                    chip.innerHTML = ICON_DOCUMENT;
                 }
-                chip.setAttribute('dir', 'auto');
-                chip.textContent = source.pages?.length ? `${source.title} · ${this.text.page} ${source.pages.join('، ')}` : source.title;
-                sources.append(chip);
+
+                const title = document.createElement('span');
+                title.className = 'spu-chatbot__source-title';
+                title.textContent = source.title;
+                chip.title = source.title;
+                chip.append(title);
+
+                if (source.pages?.length) {
+                    const pages = document.createElement('span');
+                    pages.className = 'spu-chatbot__source-pages';
+                    pages.textContent = `${this.text.page} ${source.pages.join('، ')}`;
+                    chip.append(pages);
+                }
+
+                item.append(chip);
+                list.append(item);
             }
-            footer.append(sources);
+            block.append(list);
+            footer.append(block);
         }
 
+        const actions = document.createElement('div');
+        actions.className = 'spu-chatbot__actions';
         const copy = document.createElement('button');
         copy.type = 'button';
         copy.className = 'spu-chatbot__copy';
-        copy.setAttribute('aria-label', this.text.copy);
-        copy.title = this.text.copy;
-        copy.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="8" y="8" width="12" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2" fill="none" stroke="currentColor" stroke-width="2"/></svg>';
+        copy.innerHTML = ICON_COPY;
+        const copyLabel = document.createElement('span');
+        copyLabel.textContent = this.text.copy;
+        copy.append(copyLabel);
         copy.addEventListener('click', async () => {
             try {
                 await navigator.clipboard.writeText(markdownToText(message.content));
                 copy.classList.add('is-copied');
-                copy.setAttribute('aria-label', this.text.copied);
-                copy.title = this.text.copied;
+                copyLabel.textContent = this.text.copied;
                 window.setTimeout(() => {
                     copy.classList.remove('is-copied');
-                    copy.setAttribute('aria-label', this.text.copy);
-                    copy.title = this.text.copy;
+                    copyLabel.textContent = this.text.copy;
                 }, 1600);
             } catch {
                 // Clipboard refused (permissions, insecure context): nothing to undo.
             }
         });
-        footer.append(copy);
+        actions.append(copy);
+        footer.append(actions);
         bubble.append(footer);
     }
 
@@ -506,9 +548,43 @@ class ChatbotWidget {
         this.scrollToEnd(true);
     }
 
+    /**
+     * Grow with the text up to the CSS max-height, then scroll. The border
+     * is added back because scrollHeight leaves it out; without it the field
+     * is always 2px short and shows a scrollbar.
+     */
     autosize() {
-        this.input.style.height = 'auto';
-        this.input.style.height = `${Math.min(this.input.scrollHeight, 132)}px`;
+        const field = this.input;
+        const max = Number.parseFloat(getComputedStyle(field).maxHeight) || 132;
+        field.style.height = 'auto';
+        const needed = field.scrollHeight + (field.offsetHeight - field.clientHeight);
+        field.style.height = `${Math.min(needed, max)}px`;
+        field.classList.toggle('is-scrolling', needed > max);
+    }
+
+    /**
+     * Write right-to-left or left-to-right by the first letter typed, and
+     * fall back to the page's direction while the field is empty.
+     */
+    syncDirection() {
+        const first = this.input.value.match(/[\p{L}]/u)?.[0];
+        let direction = this.pageDirection;
+        if (first) {
+            direction = /[\u0590-\u08FF\uFB1D-\uFDFF\uFE70-\uFEFF]/u.test(first) ? 'rtl' : 'ltr';
+        }
+        if (this.input.dir !== direction) {
+            this.input.dir = direction;
+        }
+    }
+
+    syncCounter() {
+        const length = this.input.value.length;
+        const near = length >= this.maxLength * 0.8;
+        this.counter.hidden = !near;
+        if (near) {
+            this.counter.textContent = `${length} / ${this.maxLength}`;
+            this.counter.classList.toggle('is-near', length >= this.maxLength * 0.95);
+        }
     }
 
     scrollToEnd(smooth) {

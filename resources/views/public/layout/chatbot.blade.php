@@ -109,17 +109,24 @@
 
             <form class="spu-chatbot__composer" data-chatbot-form novalidate>
                 <label class="spu-chatbot__sr" for="spu-chatbot-input">{{ $chatbotText['label'] }}</label>
-                <textarea
-                    id="spu-chatbot-input"
-                    class="spu-chatbot__input"
-                    rows="1"
-                    dir="auto"
-                    maxlength="{{ $chatbot->maxMessageLength }}"
-                    placeholder="{{ $chatbotText['placeholder'] }}"
-                    enterkeyhint="send"
-                    autocomplete="off"
-                    data-chatbot-input
-                ></textarea>
+                <div class="spu-chatbot__field">
+                    {{-- The page's direction, switched by the script to the
+                         direction of the first letter typed (dir="auto" would
+                         start an empty field left-to-right on the Arabic site). --}}
+                    <textarea
+                        id="spu-chatbot-input"
+                        class="spu-chatbot__input"
+                        rows="1"
+                        dir="{{ $chatbot->locale === 'ar' ? 'rtl' : 'ltr' }}"
+                        maxlength="{{ $chatbot->maxMessageLength }}"
+                        placeholder="{{ $chatbotText['placeholder'] }}"
+                        enterkeyhint="send"
+                        autocomplete="off"
+                        spellcheck="true"
+                        data-chatbot-input
+                    ></textarea>
+                    <span class="spu-chatbot__counter" data-chatbot-counter aria-live="polite" hidden></span>
+                </div>
                 <button type="submit" class="spu-chatbot__send" data-chatbot-send aria-label="{{ $chatbotText['send'] }}" title="{{ $chatbotText['send'] }}">
                     <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 12l16-8-6 16-2.5-6.5L4 12z" fill="currentColor"/></svg>
                 </button>
