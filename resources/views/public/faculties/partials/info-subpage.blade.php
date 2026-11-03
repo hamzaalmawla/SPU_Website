@@ -51,34 +51,14 @@
             @php
                 $scheduleDocuments = $documentsOf($schedule['documents'] ?? []);
                 $rows = array_values(array_filter(is_array($schedule['rows'] ?? null) ? $schedule['rows'] : [], static fn (mixed $row): bool => is_array($row)));
-                $columns = array_filter($examColumns, static fn (string $label, string $key): bool => collect($rows)->contains(static fn (array $row): bool => trim((string) ($row[$key] ?? '')) !== ''), ARRAY_FILTER_USE_BOTH);
             @endphp
             <article class="mx-auto {{ $loop->first ? '' : 'mt-10' }} max-w-[1080px] rounded-[8px] border border-slate-100 bg-white p-6 shadow-[0_12px_40px_rgba(9,17,68,0.06)] md:p-8">
                 <h2 class="text-xl font-bold text-spu-blue">{{ $schedule['title'] }}</h2>
                 @if (trim((string) ($schedule['note'] ?? '')) !== '')
                     <x-public.rich-text class="mt-3 text-sm leading-7 text-slate-600" :text="$schedule['note']" />
                 @endif
-                @if ($rows !== [] && $columns !== [])
-                    <div class="mt-6 overflow-x-auto rounded-[6px] border border-slate-100">
-                        <table class="w-full min-w-[560px] text-start text-sm">
-                            <thead class="bg-section text-xs font-bold uppercase tracking-[0.08em] text-spu-blue/70">
-                                <tr>
-                                    @foreach ($columns as $label)
-                                        <th scope="col" class="px-4 py-3 text-start">{{ $label }}</th>
-                                    @endforeach
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-slate-100 text-slate-700">
-                                @foreach ($rows as $row)
-                                    <tr>
-                                        @foreach (array_keys($columns) as $key)
-                                            <td class="px-4 py-3 {{ $key === 'course' ? 'font-bold text-spu-blue' : 'font-semibold' }}" dir="auto">{{ $row[$key] ?? '' }}</td>
-                                        @endforeach
-                                    </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
-                    </div>
+                @if (collect($rows)->contains(static fn (array $row): bool => trim((string) ($row['course'] ?? '')) !== ''))
+                    @include('public.faculties.partials.exam-schedule', ['rows' => $rows, 'scheduleKey' => 'exams-'.$loop->iteration])
                 @endif
                 @if ($scheduleDocuments !== [])
                     <div class="mt-6 flex flex-wrap gap-3">

@@ -289,7 +289,7 @@ gate. Current status is tracked only in
 - New faculty subpages, enabled per faculty through `config/faculty_subpages.php`, each with a CMS editor, draft/publish workflow and AR/EN:
   - `/faculties/dentistry/clinical-cases`: 8 clinical cases with their videos.
   - `/faculties/pharmacy/training`: the pharmacy internship ("Mulazama") regulation and its PDF.
-  - `/faculties/{medicine,artificial-intelligence,petroleum,business-administration}/final-exams`: each semester's PDF, plus an optional schedule table.
+  - `/faculties/{medicine,artificial-intelligence,petroleum,business-administration}/final-exams`: each semester's PDF, plus an optional timetable shown as an interactive day board (year filters, search, table view, exam dialog).
 - Their text is loaded by `cms:import-page-texts` from `page_texts/faculty-pages.json`.
 - `page_texts/faculty-landings.json` replaces the invented one-line vision, mission and objectives tabs with the old text. It covers medicine, dentistry, pharmacy, AI and construction, and adds the AI dean's message.
 - Lab cards no longer show empty image, department or instructor rows.

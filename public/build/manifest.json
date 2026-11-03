@@ -16,7 +16,7 @@
     "src": "public/images/icon-chevron-down-outline.svg"
   },
   "resources/css/app.css": {
-    "file": "assets/app.BvyxiglU.css",
+    "file": "assets/app.CUcQLN0l.css",
     "name": "app",
     "names": [
       "app.css"
@@ -38,6 +38,15 @@
     "src": "resources/css/filament/admin.css",
     "isEntry": true
   },
+  "resources/js/alpine/examSchedule.js": {
+    "file": "js/examSchedule.D9t9PHBl.js",
+    "name": "examSchedule",
+    "src": "resources/js/alpine/examSchedule.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "_studyPlanEdges.1FnRr4zh.js"
+    ]
+  },
   "resources/js/alpine/masterProgram.js": {
     "file": "js/masterProgram.QqgtTu3n.js",
     "name": "masterProgram",
@@ -57,18 +66,19 @@
     ]
   },
   "resources/js/app.js": {
-    "file": "js/app.bW34OSc-.js",
+    "file": "js/app.Cap5rxDN.js",
     "name": "app",
     "src": "resources/js/app.js",
     "isEntry": true,
     "dynamicImports": [
       "resources/js/alpine/studyPlan.js",
       "resources/js/alpine/masterProgram.js",
+      "resources/js/alpine/examSchedule.js",
       "resources/js/chatbot/chatbotWidget.js"
     ]
   },
   "resources/js/chatbot/chatbotWidget.js": {
-    "file": "js/chatbotWidget.BTb5BlQq.js",
+    "file": "js/chatbotWidget.dV9B9uR-.js",
     "name": "chatbotWidget",
     "src": "resources/js/chatbot/chatbotWidget.js",
     "isDynamicEntry": true,

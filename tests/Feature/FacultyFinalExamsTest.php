@@ -74,6 +74,30 @@ final class FacultyFinalExamsTest extends TestCase
         $this->get('/ar/faculties/pharmacy')->assertOk()->assertDontSee('/ar/faculties/pharmacy/final-exams', false);
     }
 
+    public function test_a_timetable_shows_as_a_board_with_year_filters_and_a_table_view(): void
+    {
+        $rows = [
+            ['day' => 'Tuesday', 'date' => '2027-01-12', 'time' => '10:00', 'course' => 'Pathology', 'year' => 'Second year', 'room' => 'B2'],
+            ['day' => 'Sunday', 'date' => '2027-01-10', 'time' => '10:00', 'course' => 'Anatomy', 'year' => 'First year', 'room' => 'A1'],
+        ];
+        $this->publishSchedule('pharmacy', [
+            'ar' => ['title' => 'الفصل الأول', 'documents' => [], 'rows' => $rows],
+            'en' => ['title' => 'First semester', 'documents' => [], 'rows' => $rows],
+        ]);
+
+        $this->get('/en/faculties/pharmacy/final-exams')
+            ->assertOk()
+            ->assertSee('data-exam-schedule', false)
+            ->assertSee('data-exam-year="y1"', false)
+            ->assertSee('data-exam-view="table"', false)
+            ->assertSee('data-exam-dialog', false)
+            ->assertSeeInOrder(['2027-01-10', 'Anatomy', '2027-01-12', 'Pathology']);
+        $this->get('/ar/faculties/pharmacy/final-exams')
+            ->assertOk()
+            ->assertSee('كل السنوات')
+            ->assertSee('Pathology');
+    }
+
     public function test_a_faculty_without_a_final_exams_page_or_card_still_gets_one(): void
     {
         // As on the live site, where only the faculties whose old site had a schedule got the rows.

@@ -69,6 +69,10 @@ function initPlanPages() {
     if (document.querySelector('[data-master-program]')) {
         import('./alpine/masterProgram.js').then(({ initMasterProgramPages }) => initMasterProgramPages());
     }
+
+    if (document.querySelector('[data-exam-schedule]')) {
+        import('./alpine/examSchedule.js').then(({ initExamSchedules }) => initExamSchedules());
+    }
 }
 
 // The AI assistant is its own chunk (and its 3D robot a third, loaded when
