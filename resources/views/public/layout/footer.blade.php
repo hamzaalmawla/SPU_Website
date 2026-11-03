@@ -78,7 +78,7 @@
                         <h3 class="mb-8 text-[18px] font-bold uppercase ltr:tracking-widest text-white/50">{{ $column->title }}</h3>
                         <ul class="flex flex-col gap-4">
                             @foreach ($column->links as $link)
-                                <li><a href="{{ $link->url }}" class="text-[16px] text-white/80 transition-colors hover:text-white">{{ $link->label }}</a></li>
+                                <li><a href="{{ str_replace(['/ar/student-life', '/en/student-life'], ['/ar/campus-life', '/en/campus-life'], (string) $link->url) }}" class="text-[16px] text-white/80 transition-colors hover:text-white">{{ $link->label }}</a></li>
                             @endforeach
                         </ul>
                     </div>

@@ -18,7 +18,7 @@
  */
 @font-face {
     font-family: 'HacenTunisia';
-    src: url("@fonts/Hacen Tunisia Regular.ttf") format('truetype');
+    src: url("@fonts/Hacen Tunisia Regular.woff2") format('woff2');
     font-weight: normal;
     font-style: normal;
     font-display: swap;
@@ -27,15 +27,23 @@
 
 @font-face {
     font-family: 'HacenTunisia';
-    src: url("@fonts/Hacen Tunisia Bold Regular.ttf") format('truetype');
+    src: url("@fonts/Hacen Tunisia Bold Regular.woff2") format('woff2');
     font-weight: bold;
     font-style: normal;
     font-display: swap;
     unicode-range: U+0600-06FF, U+0750-077F, U+08A0-08FF, U+FB50-FDFF, U+FE70-FEFF;
 }
 
+@font-face {
+    font-family: 'HacenTunisia Fallback';
+    src: local('Segoe UI'), local('Tahoma'), local('Arial'), local('DejaVu Sans'), local('Liberation Sans'), local('Noto Sans Arabic');
+    ascent-override: 105.62%;
+    descent-override: 48.83%;
+    line-gap-override: 0%;
+}
+
 :root {
-    --font-hacen: "HacenTunisia", "Segoe UI", "Tahoma", "Arial", sans-serif;
+    --font-hacen: "HacenTunisia", "HacenTunisia Fallback", "Segoe UI", "Tahoma", "Arial", sans-serif;
 }
 
 /**
@@ -46,7 +54,7 @@
  * - Arial: Universal fallback
  */
 @theme {
-    --font-hacen: "HacenTunisia", "Segoe UI", "Tahoma", "Arial", sans-serif;
+    --font-hacen: "HacenTunisia", "HacenTunisia Fallback", "Segoe UI", "Tahoma", "Arial", sans-serif;
 
     --color-spu-blue: #202759;
     --color-spu-red: #6f1616;

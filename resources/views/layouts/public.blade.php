@@ -80,7 +80,13 @@
             @php($viteManifest = json_decode((string) file_get_contents(public_path('build/manifest.json')), true))
             @php($cssEntry = $viteManifest['resources/css/app.css'] ?? null)
             @php($loadedViteCss = [])
-
+            @if ($locale === 'ar')
+                @foreach (['public/fonts/Hacen Tunisia Regular.woff2', 'public/fonts/Hacen Tunisia Bold Regular.woff2'] as $arabicFontKey)
+                    @if (! empty($viteManifest[$arabicFontKey]['file']))
+                        <link rel="preload" as="font" type="font/woff2" href="{{ asset('build/'.$viteManifest[$arabicFontKey]['file']) }}" crossorigin>
+                    @endif
+                @endforeach
+            @endif
             @if (is_array($cssEntry) && ! empty($cssEntry['file']))
                 {{-- The host answers every request slowly (~0.4 s before the first
                      byte, plus a TLS handshake per HTTP/1.1 connection), and the

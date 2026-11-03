@@ -157,6 +157,12 @@ export function createHonorPanel() {
             return this.shouldLoad(index) ? item.imageSrcset || null : null;
         },
 
+        itemSizes(index) {
+            return this.isPrimary(index)
+                ? '(max-width: 640px) calc(100vw - 2.5rem), (max-width: 1024px) calc(100vw - 4rem), 780px'
+                : '(max-width: 640px) calc(100vw - 2.5rem), 240px';
+        },
+
         actionTarget(item) {
             return item.action?.target || null;
         },

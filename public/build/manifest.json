@@ -3,20 +3,20 @@
     "file": "js/studyPlanEdges.1FnRr4zh.js",
     "name": "studyPlanEdges"
   },
-  "public/fonts/Hacen Tunisia Bold Regular.ttf": {
-    "file": "assets/Hacen Tunisia Bold Regular.B-fzyL4b.ttf",
-    "src": "public/fonts/Hacen Tunisia Bold Regular.ttf"
+  "public/fonts/Hacen Tunisia Bold Regular.woff2": {
+    "file": "assets/Hacen Tunisia Bold Regular.-tHYp-N3.woff2",
+    "src": "public/fonts/Hacen Tunisia Bold Regular.woff2"
   },
-  "public/fonts/Hacen Tunisia Regular.ttf": {
-    "file": "assets/Hacen Tunisia Regular.B37CssRb.ttf",
-    "src": "public/fonts/Hacen Tunisia Regular.ttf"
+  "public/fonts/Hacen Tunisia Regular.woff2": {
+    "file": "assets/Hacen Tunisia Regular.W4gm26eG.woff2",
+    "src": "public/fonts/Hacen Tunisia Regular.woff2"
   },
   "public/images/icon-chevron-down-outline.svg": {
     "file": "assets/icon-chevron-down-outline.DpdqcSdb.svg",
     "src": "public/images/icon-chevron-down-outline.svg"
   },
   "resources/css/app.css": {
-    "file": "assets/app.CUcQLN0l.css",
+    "file": "assets/app.D9h7OqC2.css",
     "name": "app",
     "names": [
       "app.css"
@@ -25,8 +25,8 @@
     "isEntry": true,
     "assets": [
       "assets/icon-chevron-down-outline.DpdqcSdb.svg",
-      "assets/Hacen Tunisia Regular.B37CssRb.ttf",
-      "assets/Hacen Tunisia Bold Regular.B-fzyL4b.ttf"
+      "assets/Hacen Tunisia Regular.W4gm26eG.woff2",
+      "assets/Hacen Tunisia Bold Regular.-tHYp-N3.woff2"
     ]
   },
   "resources/css/filament/admin.css": {
@@ -66,7 +66,7 @@
     ]
   },
   "resources/js/app.js": {
-    "file": "js/app.Cap5rxDN.js",
+    "file": "js/app.zS_wmGaM.js",
     "name": "app",
     "src": "resources/js/app.js",
     "isEntry": true,
@@ -78,7 +78,7 @@
     ]
   },
   "resources/js/chatbot/chatbotWidget.js": {
-    "file": "js/chatbotWidget.dV9B9uR-.js",
+    "file": "js/chatbotWidget.CVo6n_P5.js",
     "name": "chatbotWidget",
     "src": "resources/js/chatbot/chatbotWidget.js",
     "isDynamicEntry": true,
