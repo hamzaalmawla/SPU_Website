@@ -1,3 +1,4 @@
+import '../../css/frontend/chatbot-panel.css';
 import { markdownToText, renderMarkdown } from './chatMarkdown.js';
 import { failureKey, historyFor, loadMessages, revealSteps, sanitizeSources, saveMessages } from './chatState.js';
 
@@ -18,14 +19,29 @@ const ICON_LINK = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"
 const ICON_DOCUMENT = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6 3h8l4 4v14H6z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>';
 const ICON_COPY = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="8" y="8" width="12" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2" fill="none" stroke="currentColor" stroke-width="2"/></svg>';
 
-export function initChatbot(root = document.querySelector('[data-chatbot]')) {
-    if (!root || root.dataset.chatbotReady === '1') {
+const instances = new WeakMap();
+
+/**
+ * Start the widget on its root (once), and return it. Called by
+ * bootstrap.js on the visitor's first interaction; `awake` when that
+ * interaction already happened, so the robot and teaser do not wait for
+ * another one.
+ */
+export function initChatbot(root = document.querySelector('[data-chatbot]'), { awake = false } = {}) {
+    if (!root) {
         return null;
     }
-    root.dataset.chatbotReady = '1';
 
-    const widget = new ChatbotWidget(root);
-    widget.start();
+    let widget = instances.get(root);
+    if (!widget) {
+        widget = new ChatbotWidget(root);
+        instances.set(root, widget);
+        widget.start();
+    }
+
+    if (awake) {
+        widget.wake();
+    }
 
     return widget;
 }

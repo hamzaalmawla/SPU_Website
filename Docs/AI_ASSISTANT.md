@@ -73,6 +73,26 @@ with the university before switching it on.
 The widget renders Markdown with DOM APIs only (no `innerHTML` of model text)
 and allows only http(s), mailto, tel and same-site links.
 
+## Page weight and loading
+
+The assistant must never slow a page down:
+
+- The launcher (robot, teaser) is HTML in the layout and styled by
+  `chatbot.css` in the main stylesheet. It shows from the first paint wherever
+  JavaScript runs (`html.js`, set by the inline script in `<head>`), so it
+  never appears late (which would cost Speed Index), and is hidden without
+  JavaScript (it could do nothing).
+- `resources/js/chatbot/bootstrap.js` (in `app.js`, under 1 KB) fetches the
+  widget's script and the panel's styles (`chatbotWidget.js` with
+  `chatbot-panel.css`, ~10 KB gzipped) on the first interaction: a pointer,
+  touch, key or scroll anywhere, or the launcher. A first click opens the
+  panel when they arrive. A visitor already in a conversation gets it back when
+  the browser is idle. A page that is only loaded (a crawler, a speed test)
+  never fetches them.
+- The 3D robot (`robotScene.js`, ~140 KB gzipped) loads only after an
+  interaction with the launcher, and animates only while awake; otherwise the
+  flat SVG robot stays.
+
 ## Admin
 
 `ManageChatbot` (`chatbot.view` to open, `chatbot.update` for every change;

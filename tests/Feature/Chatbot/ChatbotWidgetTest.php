@@ -47,14 +47,19 @@ final class ChatbotWidgetTest extends TestCase
             ->assertSee(__('chatbot.widget.disclaimer', [], 'ar'));
     }
 
-    public function test_the_widget_starts_hidden_and_carries_no_secret(): void
+    public function test_the_launcher_shows_from_the_first_paint_and_carries_no_secret(): void
     {
         $this->liveAssistant();
         Cache::flush();
 
         $html = (string) $this->get('/en')->assertOk()->getContent();
 
-        $this->assertMatchesRegularExpression('/<div\s+class="spu-chatbot"[^>]*\shidden/s', $html);
+        // Shown by CSS wherever html.js is set (before the first paint), so it
+        // never appears late; the widget's script is not in the page at all.
+        $this->assertDoesNotMatchRegularExpression('/<div\s+class="spu-chatbot"[^>]*\shidden[\s>]/s', $html);
+        $this->assertStringContainsString('html:not(.js) .spu-chatbot', (string) file_get_contents(resource_path('css/frontend/chatbot.css')));
+        $this->assertStringNotContainsString('chatbotWidget', $html);
+        $this->assertMatchesRegularExpression('/<section[^>]+data-chatbot-panel[^>]*\shidden/s', $html, 'The panel stays hidden until opened.');
         $this->assertStringNotContainsString('sk-test', $html);
         $this->assertStringNotContainsString('gpt-5', $html);
     }
