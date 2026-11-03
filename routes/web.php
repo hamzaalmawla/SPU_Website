@@ -9,6 +9,7 @@ use App\Http\Controllers\Admin\TwoFactorChallengeController;
 use App\Http\Controllers\Public\AboutController;
 use App\Http\Controllers\Public\AchievementController;
 use App\Http\Controllers\Public\AdmissionsController;
+use App\Http\Controllers\Public\AgentDiscoveryController;
 use App\Http\Controllers\Public\AlumniController;
 use App\Http\Controllers\Public\BrowserLocaleRedirectController;
 use App\Http\Controllers\Public\CampusLifeController;
@@ -40,6 +41,10 @@ Route::get('/sitemaps/sitemap-{section}.xml', [SitemapController::class, 'sectio
     ->where('section', '[a-z]+(?:-[0-9]+)?')
     ->name('sitemap.section');
 Route::get('/robots.txt', [SitemapController::class, 'robots'])->name('robots');
+// For AI agents: a Markdown guide to the site and an Agentic Resource
+// Discovery manifest pointing at it and the sitemap.
+Route::get('/llms.txt', [AgentDiscoveryController::class, 'llms'])->name('agents.llms');
+Route::get('/.well-known/ard.json', [AgentDiscoveryController::class, 'ard'])->name('agents.ard');
 // Public pages inline the rules they need; the full sheet stays for anything
 // that still links it.
 Route::get('/media-display.css', MediaDisplayStylesheetController::class)->middleware('compress')->name('media.display-styles');

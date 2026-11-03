@@ -99,6 +99,8 @@ The imported `AGENTS.MD` is the authoritative project rulebook (scope, architect
 ## AI assistant (chat robot)
 - Floating 3D robot + chat panel on public pages (`public/layout/chatbot.blade.php`, `resources/js/chatbot/*`), answering only from files uploaded under Administration › AI assistant (`ManageChatbot`, permission `chatbot.view|update`). RAG runs in Laravel: OpenAI embeddings + cosine over `chatbot_chunks`, answers from the Responses API with structured output `{category, answer}`. Full notes: `Docs/AI_ASSISTANT.md`.
 - Main model `gpt-5.4-mini` (free daily tier), fallback `gpt-6-luna`. Model ids contain dots: read `config('chatbot.models')[$id]`, never a config dot path.
+- Loading: the launcher is plain HTML/CSS shown from the first paint (`html.js`); `chatbot/bootstrap.js` fetches `chatbotWidget.js` + `chatbot-panel.css` on the first interaction only, so nothing of the assistant is on a page's critical path. Keep panel styles in `chatbot-panel.css`, not the main bundle.
+- `/llms.txt` and `/.well-known/ard.json` (Lighthouse Agentic Browsing) come from `AgentDiscoveryServiceInterface`, built from the published header menus and footer contacts; text in `lang/*/agents.php`. Test: `AgentDiscoveryTest`.
 - Misuse protection is layered (`ChatbotGuard`, moderation, model category, output guard, signed history, fair use per session + IP, escalating pauses); keep `tests/Unit/Chatbot/ChatbotGuardTest.php` (real questions must pass) and `ChatbotFairUseTest` green when touching it.
 
 ## Where to look

@@ -2,10 +2,12 @@
     The AI assistant: a floating 3D robot that opens a chat panel.
 
     Rendered only when the assistant is live (switched on, an OpenAI key
-    saved and at least one knowledge file indexed). It starts `hidden` and
-    resources/js/chatbot/chatbotWidget.js reveals it, so a visitor without
-    JavaScript never sees a button that does nothing. The flat SVG robot shows
-    until the WebGL one has loaded, and instead of it where WebGL is
+    saved and at least one knowledge file indexed). The launcher shows from
+    the first paint wherever JavaScript runs (html.js, see chatbot.css), so
+    it never appears late; without JavaScript it is not shown at all. The
+    widget's script and the panel's styles load on the visitor's first
+    interaction (resources/js/chatbot/bootstrap.js). The flat SVG robot
+    shows until the WebGL one has loaded, and instead of it where WebGL is
     unavailable or the visitor saves data.
 --}}
 @if ($chatbot)
@@ -33,7 +35,6 @@
             'expired' => $chatbotText['expired'],
             'suggestions' => $chatbotText['suggestions'],
         ], JSON_UNESCAPED_UNICODE) }}"
-        hidden
     >
         <div class="spu-chatbot__teaser" data-chatbot-teaser hidden>
             <button type="button" class="spu-chatbot__teaser-text" data-chatbot-teaser-open>{{ $chatbotText['teaser'] }}</button>

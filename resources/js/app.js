@@ -22,6 +22,7 @@ import { initRevealSections }   from './alpine/scrollReveal.js';
 import { createVirtualizedSchedule } from './alpine/virtualizedSchedule.js';
 import { registerHomepageComponents } from './homepage.js';
 import { initPageBehaviours } from './public/pageBehaviours.js';
+import { bootChatbot } from './chatbot/bootstrap.js';
 
 // Alpine components (x-data="name()")
 Alpine.data('mobileNav',       createMobileNav);
@@ -75,12 +76,11 @@ function initPlanPages() {
     }
 }
 
-// The AI assistant is its own chunk (and its 3D robot a third, loaded when
-// the browser is idle), so pages pay for it only after they are interactive.
+// The AI assistant's launcher is plain HTML and CSS; its script (and the 3D
+// robot after it) load on the visitor's first interaction, never as part of
+// loading the page. See resources/js/chatbot/bootstrap.js.
 function initChatbot() {
-    if (document.querySelector('[data-chatbot]')) {
-        import('./chatbot/chatbotWidget.js').then(({ initChatbot: start }) => start());
-    }
+    bootChatbot();
 }
 
 function initAfterAlpineStart() {

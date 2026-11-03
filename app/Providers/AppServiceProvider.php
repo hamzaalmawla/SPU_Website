@@ -151,6 +151,7 @@ use App\Contracts\Research\ResearchPublicationCmsServiceInterface;
 use App\Contracts\Research\ResearchRegisterImportServiceInterface;
 use App\Contracts\Search\SearchIndexServiceInterface;
 use App\Contracts\Search\SiteSearchServiceInterface;
+use App\Contracts\Seo\AgentDiscoveryServiceInterface;
 use App\Contracts\Seo\SeoMetadataServiceInterface;
 use App\Contracts\Seo\SitemapServiceInterface;
 use App\Contracts\Seo\StructuredDataServiceInterface;
@@ -370,6 +371,7 @@ use App\Services\Research\ResearchPublicationCmsService;
 use App\Services\Research\ResearchRegisterImportService;
 use App\Services\Search\SearchIndexService;
 use App\Services\Search\SiteSearchService;
+use App\Services\Seo\AgentDiscoveryService;
 use App\Services\Seo\SeoMetadataService;
 use App\Services\Seo\SitemapService;
 use App\Services\Seo\StructuredDataService;
@@ -739,6 +741,7 @@ class AppServiceProvider extends ServiceProvider
             CacheServiceInterface::class => CacheService::class,
             OpenAiClientInterface::class => OpenAiClient::class,
             ChatbotWebsiteCrawlerInterface::class => ChatbotWebsiteCrawler::class,
+            AgentDiscoveryServiceInterface::class => AgentDiscoveryService::class,
             ChatbotSettingsServiceInterface::class => ChatbotSettingsService::class,
             ChatbotUsageServiceInterface::class => ChatbotUsageService::class,
             ChatbotKnowledgeServiceInterface::class => ChatbotKnowledgeService::class,
