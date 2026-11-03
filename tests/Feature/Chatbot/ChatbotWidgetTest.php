@@ -1,0 +1,73 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Tests\Feature\Chatbot;
+
+use Database\Seeders\DatabaseSeeder;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Cache;
+use Tests\TestCase;
+
+final class ChatbotWidgetTest extends TestCase
+{
+    use ChatbotTestHelpers;
+    use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->seed(DatabaseSeeder::class);
+        $this->setUpChatbot();
+    }
+
+    public function test_the_widget_is_absent_until_the_assistant_is_live(): void
+    {
+        $this->get('/en')->assertOk()->assertDontSee('data-chatbot', false);
+
+        $user = $this->adminUser();
+        $this->saveApiKey($user);
+        $this->get('/en')->assertOk()->assertDontSee('data-chatbot', false);
+
+        $this->addKnowledge($user, 'Guide', 'The admission office is open Sunday to Thursday from nine to three.');
+        Cache::flush();
+
+        $this->get('/en')
+            ->assertOk()
+            ->assertSee('data-chatbot', false)
+            ->assertSee('data-endpoint="/en/assistant/messages"', false)
+            ->assertSee(__('chatbot.defaults.name', [], 'en'))
+            ->assertSee('aria-controls="spu-chatbot-panel"', false);
+
+        $this->get('/ar')
+            ->assertOk()
+            ->assertSee('data-endpoint="/ar/assistant/messages"', false)
+            ->assertSee(__('chatbot.defaults.name', [], 'ar'))
+            ->assertSee(__('chatbot.widget.disclaimer', [], 'ar'));
+    }
+
+    public function test_the_widget_starts_hidden_and_carries_no_secret(): void
+    {
+        $this->liveAssistant();
+        Cache::flush();
+
+        $html = (string) $this->get('/en')->assertOk()->getContent();
+
+        $this->assertMatchesRegularExpression('/<div\s+class="spu-chatbot"[^>]*\shidden/s', $html);
+        $this->assertStringNotContainsString('sk-test', $html);
+        $this->assertStringNotContainsString('gpt-5', $html);
+    }
+
+    public function test_a_warm_page_spends_no_query_on_the_widget(): void
+    {
+        $this->liveAssistant();
+        Cache::flush();
+        $this->get('/en')->assertOk();
+
+        \Illuminate\Support\Facades\DB::enableQueryLog();
+        $this->withHeader('Cache-Control', 'no-cache')->get('/en/about')->assertOk();
+        $queries = collect(\Illuminate\Support\Facades\DB::getQueryLog())->pluck('query')->implode("\n");
+
+        $this->assertStringNotContainsString('chatbot_', $queries);
+    }
+}

@@ -23,6 +23,7 @@ return [
         'audit_log' => 'Audit log',
         'campus_life' => 'Campus life',
         'centers' => 'Centers',
+        'chatbot' => 'AI assistant',
         'contact_messages' => 'Contact messages',
         'contact_page' => 'Contact page',
         'directorates' => 'Directorates',

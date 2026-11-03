@@ -13,6 +13,7 @@ use App\Http\Controllers\Public\AlumniController;
 use App\Http\Controllers\Public\BrowserLocaleRedirectController;
 use App\Http\Controllers\Public\CampusLifeController;
 use App\Http\Controllers\Public\CenterController;
+use App\Http\Controllers\Public\ChatbotController;
 use App\Http\Controllers\Public\DynamicFormSubmissionController;
 use App\Http\Controllers\Public\EServicesController;
 use App\Http\Controllers\Public\FacultyController;
@@ -74,6 +75,13 @@ Route::prefix('{locale}/staff-intake/{token}')
         Route::post('/form', 'submit')->middleware('throttle:public-form')->name('submit');
         Route::get('/sent', 'sent')->name('sent');
     });
+
+// The AI assistant's question endpoint. Outside the page-cache group: it is a
+// POST answered per visitor, with its own per-IP limits (chatbot limiter).
+Route::post('{locale}/assistant/messages', ChatbotController::class)
+    ->where(['locale' => 'ar|en'])
+    ->middleware(['locale', 'throttle:chatbot'])
+    ->name('public.chatbot.messages');
 
 Route::prefix('{locale}')
     ->where(['locale' => 'ar|en'])

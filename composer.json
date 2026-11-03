@@ -13,7 +13,8 @@
         "laravel/framework": "^12.0",
         "laravel/tinker": "^2.10.1",
         "pragmarx/google2fa-laravel": "^3.0",
-        "sentry/sentry-laravel": "^4.25"
+        "sentry/sentry-laravel": "^4.25",
+        "smalot/pdfparser": "^2.12"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",

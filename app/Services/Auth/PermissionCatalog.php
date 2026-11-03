@@ -107,6 +107,8 @@ final class PermissionCatalog implements PermissionCatalogInterface
             'site_settings' => [
                 'menu' => ['view', 'update'],
                 'settings' => ['view', 'update'],
+                // update: knowledge files, settings and the OpenAI key.
+                'chatbot' => ['view', 'update'],
                 'audit_log' => ['view'],
             ],
         ];

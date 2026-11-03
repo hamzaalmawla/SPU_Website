@@ -71,11 +71,20 @@ function initPlanPages() {
     }
 }
 
+// The AI assistant is its own chunk (and its 3D robot a third, loaded when
+// the browser is idle), so pages pay for it only after they are interactive.
+function initChatbot() {
+    if (document.querySelector('[data-chatbot]')) {
+        import('./chatbot/chatbotWidget.js').then(({ initChatbot: start }) => start());
+    }
+}
+
 function initAfterAlpineStart() {
     requestAnimationFrame(() => {
         requestAnimationFrame(() => {
             initRevealSections();
             initPlanPages();
+            initChatbot();
         });
     });
 }

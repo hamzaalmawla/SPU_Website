@@ -1,6 +1,6 @@
 {
-  "_studyPlanEdges.CIV9VC9E.js": {
-    "file": "js/studyPlanEdges.CIV9VC9E.js",
+  "_studyPlanEdges.1FnRr4zh.js": {
+    "file": "js/studyPlanEdges.1FnRr4zh.js",
     "name": "studyPlanEdges"
   },
   "public/fonts/Hacen Tunisia Bold Regular.ttf": {
@@ -16,7 +16,7 @@
     "src": "public/images/icon-chevron-down-outline.svg"
   },
   "resources/css/app.css": {
-    "file": "assets/app.0cqEKS4m.css",
+    "file": "assets/app.CMZ_g4iB.css",
     "name": "app",
     "names": [
       "app.css"
@@ -30,7 +30,7 @@
     ]
   },
   "resources/css/filament/admin.css": {
-    "file": "assets/admin.DG6jGdAh.css",
+    "file": "assets/admin.izdgRzXD.css",
     "name": "admin",
     "names": [
       "admin.css"
@@ -39,44 +39,63 @@
     "isEntry": true
   },
   "resources/js/alpine/masterProgram.js": {
-    "file": "js/masterProgram.D3ay3FoQ.js",
+    "file": "js/masterProgram.QqgtTu3n.js",
     "name": "masterProgram",
     "src": "resources/js/alpine/masterProgram.js",
     "isDynamicEntry": true,
     "imports": [
-      "_studyPlanEdges.CIV9VC9E.js"
+      "_studyPlanEdges.1FnRr4zh.js"
     ]
   },
   "resources/js/alpine/studyPlan.js": {
-    "file": "js/studyPlan.CKW3-aRQ.js",
+    "file": "js/studyPlan.DCs2YyJA.js",
     "name": "studyPlan",
     "src": "resources/js/alpine/studyPlan.js",
     "isDynamicEntry": true,
     "imports": [
-      "_studyPlanEdges.CIV9VC9E.js"
+      "_studyPlanEdges.1FnRr4zh.js"
     ]
   },
   "resources/js/app.js": {
-    "file": "js/app.Bc1yN2QB.js",
+    "file": "js/app.lnBjFpa2.js",
     "name": "app",
     "src": "resources/js/app.js",
     "isEntry": true,
     "dynamicImports": [
       "resources/js/alpine/studyPlan.js",
-      "resources/js/alpine/masterProgram.js"
+      "resources/js/alpine/masterProgram.js",
+      "resources/js/chatbot/chatbotWidget.js"
     ]
   },
+  "resources/js/chatbot/chatbotWidget.js": {
+    "file": "js/chatbotWidget.BPjitBGF.js",
+    "name": "chatbotWidget",
+    "src": "resources/js/chatbot/chatbotWidget.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "resources/js/app.js"
+    ],
+    "dynamicImports": [
+      "resources/js/chatbot/robotScene.js"
+    ]
+  },
+  "resources/js/chatbot/robotScene.js": {
+    "file": "js/robotScene.4kGkjN-N.js",
+    "name": "robotScene",
+    "src": "resources/js/chatbot/robotScene.js",
+    "isDynamicEntry": true
+  },
   "resources/js/filament/admin.js": {
-    "file": "js/admin.D8CzsLVJ.js",
+    "file": "js/admin.4hnq60fq.js",
     "name": "admin",
     "src": "resources/js/filament/admin.js",
     "isEntry": true,
     "imports": [
-      "_studyPlanEdges.CIV9VC9E.js"
+      "_studyPlanEdges.1FnRr4zh.js"
     ]
   },
   "resources/js/staffIntake.js": {
-    "file": "js/staffIntake.CRsEA_09.js",
+    "file": "js/staffIntake.BFYjHpfb.js",
     "name": "staffIntake",
     "src": "resources/js/staffIntake.js",
     "isEntry": true
