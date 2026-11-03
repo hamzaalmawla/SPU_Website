@@ -68,6 +68,10 @@ class MiddlewarePipelineTest extends TestCase
         $this->assertStringContainsString("script-src 'self' 'sha256-", $policy);
         $this->assertDoesNotMatchRegularExpression("/script-src[^;]*'unsafe-inline'/", $policy);
         $this->assertStringNotContainsString("'unsafe-eval'", $policy);
+
+        // Fonts and stylesheets are self-hosted; `https:` there is a wildcard.
+        $this->assertStringContainsString("font-src 'self' data:;", $policy);
+        $this->assertStringContainsString("style-src 'self' 'unsafe-inline';", $policy);
     }
 
     /**

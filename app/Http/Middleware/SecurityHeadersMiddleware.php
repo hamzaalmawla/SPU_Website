@@ -129,6 +129,11 @@ final class SecurityHeadersMiddleware
         // on* attribute; their behaviour lives in resources/js.
         $analytics = $this->analyticsSources();
 
+        // Fonts and stylesheets are all self-hosted, so neither directive
+        // admits other origins; a scanner rightly reads `https:` there as a
+        // wildcard. img-src keeps it because CMS content may embed images
+        // from other sites. style-src keeps 'unsafe-inline' for the style
+        // attributes in templates and stored rich text.
         return implode('; ', [
             "default-src 'self'",
             "base-uri 'self'",
@@ -136,8 +141,8 @@ final class SecurityHeadersMiddleware
             "frame-ancestors 'self'",
             "form-action 'self'",
             "img-src 'self' data: https:",
-            "font-src 'self' data: https:",
-            "style-src 'self' 'unsafe-inline' https:",
+            "font-src 'self' data:",
+            "style-src 'self' 'unsafe-inline'",
             $this->directive('script-src', ["'self'", self::inlineScriptHash(self::JS_CLASS_BOOTSTRAP)], $analytics),
             "frame-src 'self' https://www.google.com https://maps.google.com",
             $this->directive('connect-src', ["'self'"], $analytics),
