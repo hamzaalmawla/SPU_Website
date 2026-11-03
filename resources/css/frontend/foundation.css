@@ -18,7 +18,7 @@
  */
 @font-face {
     font-family: 'HacenTunisia';
-    src: url("@fonts/Hacen Tunisia Regular.woff2") format('woff2');
+    src: url("@fonts/hacen-tunisia-regular.woff2") format('woff2');
     font-weight: normal;
     font-style: normal;
     font-display: swap;
@@ -27,7 +27,7 @@
 
 @font-face {
     font-family: 'HacenTunisia';
-    src: url("@fonts/Hacen Tunisia Bold Regular.woff2") format('woff2');
+    src: url("@fonts/hacen-tunisia-bold.woff2") format('woff2');
     font-weight: bold;
     font-style: normal;
     font-display: swap;

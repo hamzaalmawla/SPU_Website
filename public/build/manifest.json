@@ -3,20 +3,20 @@
     "file": "js/studyPlanEdges.1FnRr4zh.js",
     "name": "studyPlanEdges"
   },
-  "public/fonts/Hacen Tunisia Bold Regular.woff2": {
-    "file": "assets/Hacen Tunisia Bold Regular.-tHYp-N3.woff2",
-    "src": "public/fonts/Hacen Tunisia Bold Regular.woff2"
+  "public/fonts/hacen-tunisia-bold.woff2": {
+    "file": "assets/hacen-tunisia-bold.-tHYp-N3.woff2",
+    "src": "public/fonts/hacen-tunisia-bold.woff2"
   },
-  "public/fonts/Hacen Tunisia Regular.woff2": {
-    "file": "assets/Hacen Tunisia Regular.W4gm26eG.woff2",
-    "src": "public/fonts/Hacen Tunisia Regular.woff2"
+  "public/fonts/hacen-tunisia-regular.woff2": {
+    "file": "assets/hacen-tunisia-regular.W4gm26eG.woff2",
+    "src": "public/fonts/hacen-tunisia-regular.woff2"
   },
   "public/images/icon-chevron-down-outline.svg": {
     "file": "assets/icon-chevron-down-outline.DpdqcSdb.svg",
     "src": "public/images/icon-chevron-down-outline.svg"
   },
   "resources/css/app.css": {
-    "file": "assets/app.D9h7OqC2.css",
+    "file": "assets/app.DQ5rKVhs.css",
     "name": "app",
     "names": [
       "app.css"
@@ -25,8 +25,8 @@
     "isEntry": true,
     "assets": [
       "assets/icon-chevron-down-outline.DpdqcSdb.svg",
-      "assets/Hacen Tunisia Regular.W4gm26eG.woff2",
-      "assets/Hacen Tunisia Bold Regular.-tHYp-N3.woff2"
+      "assets/hacen-tunisia-regular.W4gm26eG.woff2",
+      "assets/hacen-tunisia-bold.-tHYp-N3.woff2"
     ]
   },
   "resources/css/filament/admin.css": {

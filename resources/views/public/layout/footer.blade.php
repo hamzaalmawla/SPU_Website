@@ -94,7 +94,7 @@
                         @foreach ($footerItems as $item)
                             @if ($item->resolvedUrl)
                                 <li>
-                                    <a href="{{ $item->resolvedUrl }}" @if ($item->openInNewTab) target="_blank" rel="noreferrer" @endif class="text-[16px] text-white/80 transition-colors hover:text-white">
+                                    <a href="{{ str_replace(['/ar/student-life', '/en/student-life'], ['/ar/campus-life', '/en/campus-life'], (string) $item->resolvedUrl) }}" @if ($item->openInNewTab) target="_blank" rel="noreferrer" @endif class="text-[16px] text-white/80 transition-colors hover:text-white">
                                         {{ $item->label }}
                                     </a>
                                 </li>

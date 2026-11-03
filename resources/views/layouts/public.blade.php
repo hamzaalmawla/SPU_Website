@@ -81,7 +81,7 @@
             @php($cssEntry = $viteManifest['resources/css/app.css'] ?? null)
             @php($loadedViteCss = [])
             @if ($locale === 'ar')
-                @foreach (['public/fonts/Hacen Tunisia Regular.woff2', 'public/fonts/Hacen Tunisia Bold Regular.woff2'] as $arabicFontKey)
+                @foreach (['public/fonts/hacen-tunisia-regular.woff2', 'public/fonts/hacen-tunisia-bold.woff2'] as $arabicFontKey)
                     @if (! empty($viteManifest[$arabicFontKey]['file']))
                         <link rel="preload" as="font" type="font/woff2" href="{{ asset('build/'.$viteManifest[$arabicFontKey]['file']) }}" crossorigin>
                     @endif
