@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace Tests\Feature\PX05;
 
+use App\Http\Middleware\SecurityHeadersMiddleware;
+use Illuminate\Http\Request;
+use Illuminate\Http\Response as HttpResponse;
+use Symfony\Component\HttpFoundation\Response;
 use Tests\TestCase;
 
 final class EdgeRequestTest extends TestCase
@@ -51,5 +55,33 @@ final class EdgeRequestTest extends TestCase
         $this->assertStringContainsString('Header always set Referrer-Policy "strict-origin-when-cross-origin"', $rules);
         $this->assertStringContainsString('(?:html?|xhtml|xml|svgz?)', $rules);
         $this->assertStringContainsString('(?:php[0-9]?|phtml|phar|cgi', $rules);
+        $this->assertMatchesRegularExpression('/<FilesMatch "[^"]*\|txt\|[^"]*">\s*Header always set X-Content-Type-Options "nosniff"/', $rules);
+    }
+
+    /**
+     * Apache sends HSTS on the responses it answers itself, and the value must
+     * be the one the application sends, or browsers flip between two policies.
+     */
+    public function test_apache_hsts_matches_the_application_default(): void
+    {
+        $rules = file_get_contents(public_path('.htaccess'));
+
+        $this->assertIsString($rules);
+        $this->assertSame(1, preg_match('/Header always set Strict-Transport-Security "([^"]+)" "expr=([^"]+)"/', $rules, $match));
+
+        config([
+            'security.hsts_max_age' => 604800,
+            'security.hsts_include_subdomains' => true,
+            'security.hsts_preload' => false,
+        ]);
+        $this->app->detectEnvironment(static fn (): string => 'production');
+
+        $response = $this->app->make(SecurityHeadersMiddleware::class)->handle(
+            Request::create('https://spu.edu.sy/ar'),
+            static fn (): Response => new HttpResponse('ok'),
+        );
+
+        $this->assertSame($response->headers->get('Strict-Transport-Security'), $match[1]);
+        $this->assertStringContainsString("-z resp('Strict-Transport-Security')", $match[2]);
     }
 }

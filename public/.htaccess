@@ -29,12 +29,23 @@
 <IfModule mod_headers.c>
     # These also cover physical static and internally rewritten legacy files,
     # which do not pass through Laravel's security-header middleware.
-    <FilesMatch "\.(?:css|js|json|xml|jpe?g|png|gif|webp|avif|svg|ico|pdf|mp4|webm|mp3|woff2?|ttf|otf|eot)$">
+    <FilesMatch "\.(?:css|js|json|xml|txt|jpe?g|png|gif|webp|avif|svg|ico|pdf|mp4|webm|mp3|woff2?|ttf|otf|eot)$">
         Header always set X-Content-Type-Options "nosniff"
         Header always set Referrer-Policy "strict-origin-when-cross-origin"
         Header always set X-Frame-Options "SAMEORIGIN"
         Header always set Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
     </FilesMatch>
+
+    # HSTS for everything Apache answers by itself: static files, the
+    # pre-generated sitemaps, robots.txt and the redirects issued by the
+    # rewrite rules below. Laravel sends the header on what it renders
+    # (SecurityHeadersMiddleware), so the resp() test skips those responses
+    # rather than adding a second copy.
+    #
+    # Keep the value identical to the application's (config/security.php and
+    # the HSTS_* values in .env). A browser keeps the policy it saw last, so
+    # two values on one host make it flip between them.
+    Header always set Strict-Transport-Security "max-age=604800; includeSubDomains" "expr=%{HTTPS} == 'on' && -z resp('Strict-Transport-Security')"
 
     # Correct caching for content negotiated on encoding.
     <FilesMatch "\.(?:css|js|svg|json|xml)$">
