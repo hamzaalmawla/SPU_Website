@@ -53,27 +53,33 @@ test('markdown converts to plain text for copying', () => {
     assert.equal(markdownToText('**Fees**\n\n- One\n- Two [site](https://spu.edu.sy)'), 'Fees\n\n• One\n• Two site');
 });
 
-test('history keeps answered turns only and never starts with the assistant', () => {
+test('history sends only signed question-and-answer pairs, unchanged', () => {
+    const sig = (n) => String(n).repeat(64).slice(0, 64);
     const messages = [
         { role: 'user', content: 'q1', status: 'ok' },
-        { role: 'assistant', content: 'a1', status: 'ok' },
+        { role: 'assistant', content: 'a1', status: 'ok', signature: sig(1) },
         { role: 'user', content: 'q2', status: 'ok' },
         { role: 'assistant', content: 'offline', status: 'error' },
-        { role: 'user', content: 'q3', status: 'ok' },
-        { role: 'assistant', content: 'a3', status: 'ok' },
+        { role: 'user', content: 'write code', status: 'ok' },
+        { role: 'assistant', content: 'I can only help with SPU', status: 'refused' },
+        { role: 'user', content: 'q3 '.repeat(800), status: 'ok' },
+        { role: 'assistant', content: 'a3', status: 'ok', signature: sig(3) },
     ];
 
     assert.deepEqual(historyFor(messages), [
         { role: 'user', content: 'q1' },
-        { role: 'assistant', content: 'a1' },
-        { role: 'user', content: 'q3' },
-        { role: 'assistant', content: 'a3' },
+        { role: 'assistant', content: 'a1', signature: sig(1) },
+        { role: 'user', content: 'q3 '.repeat(800) },
+        { role: 'assistant', content: 'a3', signature: sig(3) },
     ]);
 
-    const many = Array.from({ length: 10 }, (_, index) => ({ role: index % 2 ? 'assistant' : 'user', content: `m${index}`, status: 'ok' }));
+    const many = Array.from({ length: 10 }, (_, index) => (index % 2
+        ? { role: 'assistant', content: `a${index}`, status: 'ok', signature: sig(index) }
+        : { role: 'user', content: `q${index}`, status: 'ok' }));
     const recent = historyFor(many);
-    assert.ok(recent.length <= 6);
+    assert.equal(recent.length, 6);
     assert.equal(recent[0].role, 'user');
+    assert.equal(recent[0].content, 'q4');
 });
 
 test('stored conversations are sanitized and survive bad storage', () => {
@@ -83,12 +89,12 @@ test('stored conversations are sanitized and survive bad storage', () => {
     saveMessages(storage, 'ar', [
         { role: 'user', content: 'سؤال' },
         { role: 'system', content: 'evil' },
-        { role: 'assistant', content: 'جواب', sources: [{ title: 'دليل', pages: [2, -1, 'x'] }] },
+        { role: 'assistant', content: 'جواب', sources: [{ title: 'دليل', pages: [2, -1, 'x'] }, { title: 'القبول', url: '/ar/admissions' }, { title: 'x', url: 'https://evil.example' }], signature: 'not-hex' },
     ]);
 
     assert.deepEqual(loadMessages(storage, 'ar'), [
         { role: 'user', content: 'سؤال', status: 'ok', sources: [] },
-        { role: 'assistant', content: 'جواب', status: 'ok', sources: [{ title: 'دليل', pages: [2] }] },
+        { role: 'assistant', content: 'جواب', status: 'ok', sources: [{ title: 'دليل', pages: [2] }, { title: 'القبول', pages: [], url: '/ar/admissions' }, { title: 'x', pages: [] }] },
     ]);
     assert.equal(storageKey('en'), 'spu-assistant:v1:en');
     assert.deepEqual(loadMessages({ getItem: () => '{not json' }, 'ar'), []);

@@ -29,5 +29,7 @@ final readonly class ChatbotDocumentDTO
         public ?string $uploadedBy,
         public ?string $indexedAt,
         public string $createdAt,
+        public ?string $sourceUrl = null,
+        public ?string $locale = null,
     ) {}
 }

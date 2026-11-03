@@ -7,6 +7,7 @@ namespace Tests\Feature\Chatbot;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 final class ChatbotWidgetTest extends TestCase
@@ -64,9 +65,9 @@ final class ChatbotWidgetTest extends TestCase
         Cache::flush();
         $this->get('/en')->assertOk();
 
-        \Illuminate\Support\Facades\DB::enableQueryLog();
+        DB::enableQueryLog();
         $this->withHeader('Cache-Control', 'no-cache')->get('/en/about')->assertOk();
-        $queries = collect(\Illuminate\Support\Facades\DB::getQueryLog())->pluck('query')->implode("\n");
+        $queries = collect(DB::getQueryLog())->pluck('query')->implode("\n");
 
         $this->assertStringNotContainsString('chatbot_', $queries);
     }

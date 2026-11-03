@@ -7,6 +7,7 @@ namespace App\Contracts\Chatbot;
 use App\DTOs\Chatbot\ChatbotDocumentDTO;
 use App\DTOs\Chatbot\ChatbotKnowledgeStatsDTO;
 use App\DTOs\Chatbot\ChatbotRetrievalDTO;
+use App\DTOs\Chatbot\ChatbotWebsiteSyncDTO;
 use Illuminate\Support\Collection;
 
 /**
@@ -68,7 +69,15 @@ interface ChatbotKnowledgeServiceInterface
      * Passages most relevant to a question, best first. Empty when the
      * knowledge base is empty or nothing is relevant enough.
      */
-    public function retrieve(string $query, string $apiKey): ChatbotRetrievalDTO;
+    public function retrieve(string $query, string $apiKey, ?string $locale = null): ChatbotRetrievalDTO;
+
+    /**
+     * Bring the website's published pages into the knowledge base: new pages
+     * are indexed, changed ones re-indexed, unchanged ones left alone, and
+     * pages that disappeared removed (only after a healthy crawl). A page an
+     * editor switched off stays off.
+     */
+    public function syncWebsite(int $actorId): ChatbotWebsiteSyncDTO;
 
     /**
      * Changes whenever the searchable passages change.

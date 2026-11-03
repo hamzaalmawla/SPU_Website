@@ -46,6 +46,21 @@ final class ChatbotUsageService implements ChatbotUsageServiceInterface
         ]);
     }
 
+    public function recordBlocked(): bool
+    {
+        return $this->increment(['blocked' => 1]);
+    }
+
+    public function recordRateLimited(): bool
+    {
+        return $this->increment(['rate_limited' => 1]);
+    }
+
+    public function recordPaused(): bool
+    {
+        return $this->increment(['paused' => 1]);
+    }
+
     public function recordIndexing(int $embeddingTokens): bool
     {
         return $this->increment([
@@ -87,6 +102,9 @@ final class ChatbotUsageService implements ChatbotUsageServiceInterface
             cacheHitsToday: (int) ($todayRow?->answered_from_cache ?? 0),
             withoutSourcesToday: (int) ($todayRow?->without_sources ?? 0),
             failuresToday: (int) ($todayRow?->failures ?? 0),
+            blockedToday: (int) ($todayRow?->blocked ?? 0),
+            rateLimitedToday: (int) ($todayRow?->rate_limited ?? 0),
+            pausedToday: (int) ($todayRow?->paused ?? 0),
             costTodayUsd: round(((int) ($todayRow?->cost_micro_usd ?? 0)) / 1_000_000, 4),
             questions30Days: (int) $rows->sum('questions'),
             cost30DaysUsd: round(((int) $rows->sum('cost_micro_usd')) / 1_000_000, 4),
@@ -130,7 +148,8 @@ final class ChatbotUsageService implements ChatbotUsageServiceInterface
 
     private function costMicroUsd(string $model, int $input, int $cached, int $output): int
     {
-        $prices = (array) config('chatbot.models.'.$model, []);
+        // Model ids contain dots (gpt-5.4-mini): no config dot path.
+        $prices = (array) (((array) config('chatbot.models', []))[$model] ?? []);
         $cached = min(max(0, $cached), max(0, $input));
         $usd = (($input - $cached) * (float) ($prices['input'] ?? 0)
             + $cached * (float) ($prices['cached_input'] ?? ($prices['input'] ?? 0))

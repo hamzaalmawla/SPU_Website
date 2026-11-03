@@ -25,8 +25,13 @@ return new class extends Migration
         Schema::create('chatbot_documents', function (Blueprint $table): void {
             $table->id();
             $table->string('title', 255);
-            // upload | text
+            // upload | text | website
             $table->string('source_type', 16)->default('upload');
+            // Website pages: the page's path (shown to visitors as a link) and
+            // a stable key the sync matches on; the page's language.
+            $table->string('source_url', 512)->nullable();
+            $table->string('source_key', 191)->nullable();
+            $table->string('locale', 5)->nullable();
             $table->string('original_name', 255)->nullable();
             $table->string('storage_path', 512)->nullable();
             $table->string('extension', 16)->nullable();
@@ -46,6 +51,7 @@ return new class extends Migration
             $table->timestamps();
 
             $table->unique('checksum', 'uniq_chatbot_documents_checksum');
+            $table->unique('source_key', 'uniq_chatbot_documents_source_key');
             $table->index(['status', 'is_active'], 'idx_chatbot_documents_status_active');
         });
 
@@ -81,6 +87,11 @@ return new class extends Migration
             $table->unsignedInteger('answered_from_cache')->default(0);
             $table->unsignedInteger('without_sources')->default(0);
             $table->unsignedInteger('failures')->default(0);
+            // Questions refused as off-topic, code, rule-bypass or harmful.
+            $table->unsignedInteger('blocked')->default(0);
+            // Questions stopped by a visitor's fair-use limit, and visitors paused for misuse.
+            $table->unsignedInteger('rate_limited')->default(0);
+            $table->unsignedInteger('paused')->default(0);
             $table->unsignedBigInteger('input_tokens')->default(0);
             $table->unsignedBigInteger('cached_input_tokens')->default(0);
             $table->unsignedBigInteger('output_tokens')->default(0);

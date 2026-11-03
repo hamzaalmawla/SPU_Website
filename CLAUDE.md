@@ -95,6 +95,11 @@ The imported `AGENTS.MD` is the authoritative project rulebook (scope, architect
 - `NewsArticleEventCmsServiceInterface` normalizes, validates and writes the event part of the draft payload; `NewsArticleEventServiceInterface` is the public side (event DTO, registration state and seats, `.ics`, list and calendar entries, related link).
 - Article registrations post through the dynamic form as source `news-articles` with the article ID. The old Events page list (`news.events`) is read alongside until `news:move-calendar-events` moves it.
 
+## AI assistant (chat robot)
+- Floating 3D robot + chat panel on public pages (`public/layout/chatbot.blade.php`, `resources/js/chatbot/*`), answering only from files uploaded under Administration › AI assistant (`ManageChatbot`, permission `chatbot.view|update`). RAG runs in Laravel: OpenAI embeddings + cosine over `chatbot_chunks`, answers from the Responses API with structured output `{category, answer}`. Full notes: `Docs/AI_ASSISTANT.md`.
+- Main model `gpt-5.4-mini` (free daily tier), fallback `gpt-6-luna`. Model ids contain dots: read `config('chatbot.models')[$id]`, never a config dot path.
+- Misuse protection is layered (`ChatbotGuard`, moderation, model category, output guard, signed history, fair use per session + IP, escalating pauses); keep `tests/Unit/Chatbot/ChatbotGuardTest.php` (real questions must pass) and `ChatbotFairUseTest` green when touching it.
+
 ## Where to look
 - `Docs/ARCHITECTURE.md`, `Docs/BACKEND_RULES.md`, `Docs/STYLEGUIDE.md`, `Docs/WORKFLOW.md`: layering and conventions
 - `Docs/FRONTEND_IMPORT_TRACKER.md`, `Docs/FRONTEND_ROUTE_PARITY_MATRIX.md`: parity status per route

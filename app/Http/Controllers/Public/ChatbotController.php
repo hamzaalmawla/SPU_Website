@@ -24,9 +24,10 @@ final class ChatbotController extends Controller
                 'status' => $reply->status,
                 'answer' => $reply->answer,
                 'sources' => array_map(
-                    static fn (ChatbotSourceDTO $source): array => ['title' => $source->title, 'pages' => $source->pages],
+                    static fn (ChatbotSourceDTO $source): array => ['title' => $source->title, 'pages' => $source->pages, 'url' => $source->url],
                     $reply->sources,
                 ),
+                'signature' => $reply->signature,
             ])
             ->header('Cache-Control', 'no-store, private')
             ->header('X-Robots-Tag', 'noindex, nofollow');

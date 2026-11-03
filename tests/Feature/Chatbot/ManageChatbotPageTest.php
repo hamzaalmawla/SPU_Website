@@ -50,6 +50,7 @@ final class ManageChatbotPageTest extends TestCase
             ->callAction('editSettings', data: [
                 'enabled' => true,
                 'model' => 'gpt-4.1-nano',
+                'fallback_model' => 'gpt-6-luna',
                 'api_key' => 'sk-proj-abcdefghijklmnopqrstuvwxyz0123',
                 'remove_api_key' => false,
                 'assistant_name_ar' => 'سبو',
@@ -72,6 +73,7 @@ final class ManageChatbotPageTest extends TestCase
         $this->assertSame('…0123', $settings->get()->apiKeyHint);
         $this->assertSame('gpt-4.1-nano', $settings->get()->model);
         $this->assertSame(500, $settings->get()->dailyQuestionLimit);
+        $this->assertSame('gpt-6-luna', $settings->get()->fallbackModel);
 
         $this->actingAs($admin)->get('/admin/ai-assistant')->assertOk()->assertDontSee('abcdefghijklmnop');
     }

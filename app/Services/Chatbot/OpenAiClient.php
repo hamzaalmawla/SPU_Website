@@ -82,6 +82,15 @@ final class OpenAiClient implements OpenAiClientInterface
             $payload['prompt_cache_key'] = $request->cacheKey;
         }
 
+        if ($request->jsonSchema !== null) {
+            $payload['text'] = ['format' => [
+                'type' => 'json_schema',
+                'name' => 'assistant_reply',
+                'strict' => true,
+                'schema' => $request->jsonSchema,
+            ]];
+        }
+
         $response = $this->send(
             fn (): Response => $this->request($request->apiKey, (int) config('chatbot.openai.timeout', 45))->post('/responses', $payload)
         );
@@ -113,6 +122,29 @@ final class OpenAiClient implements OpenAiClientInterface
             outputTokens: (int) $response->json('usage.output_tokens', 0),
             truncated: $truncated,
         );
+    }
+
+    public function moderate(string $input, string $apiKey): bool
+    {
+        $response = $this->send(
+            fn (): Response => $this->request($apiKey, 10)->post('/moderations', [
+                'model' => (string) config('chatbot.guard.moderation_model', 'omni-moderation-latest'),
+                'input' => $input,
+            ])
+        );
+
+        $results = $response->json('results');
+        if (! is_array($results) || $results === []) {
+            throw new ChatbotProviderException(ChatbotProviderException::INVALID, 'Moderation response had no results.');
+        }
+
+        foreach ($results as $result) {
+            if (is_array($result) && ($result['flagged'] ?? false) === true) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private function request(string $apiKey, int $timeout): PendingRequest

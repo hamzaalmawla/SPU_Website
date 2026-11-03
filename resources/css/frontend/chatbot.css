@@ -521,6 +521,17 @@
     text-overflow: ellipsis;
 }
 
+a.spu-chatbot__source {
+    text-decoration: none;
+    transition: background-color 0.2s ease;
+}
+
+a.spu-chatbot__source:hover,
+a.spu-chatbot__source:focus-visible {
+    background: #dfe5fb;
+    text-decoration: underline;
+}
+
 .spu-chatbot__copy {
     display: grid;
     place-items: center;

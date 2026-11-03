@@ -8,6 +8,9 @@
             @if (($result['status'] ?? 'ok') !== 'ok')
                 <x-filament::badge color="warning">{{ __('admin_chatbot.test.status', ['status' => $result['status'] ?? '']) }}</x-filament::badge>
             @endif
+            @if (! empty($result['reason']))
+                <x-filament::badge color="danger">{{ __('admin_chatbot.test.reason', ['reason' => __('admin_chatbot.test.reasons.'.$result['reason'])]) }}</x-filament::badge>
+            @endif
         </h3>
         <div class="spu-assistant__preview" dir="auto">{{ $result['answer'] ?? '' }}</div>
     </section>

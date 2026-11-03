@@ -13,7 +13,7 @@ namespace App\DTOs\Chatbot;
 final readonly class ChatbotQuestionDTO
 {
     /**
-     * @param  list<array{role: 'user'|'assistant', content: string}>  $history
+     * @param  list<array{role: 'user'|'assistant', content: string, signature?: ?string}>  $history
      */
     public function __construct(
         public string $locale,
@@ -23,5 +23,9 @@ final readonly class ChatbotQuestionDTO
         // An editor trying the assistant in the admin: answers even while it
         // is switched off or has no files, and skips the daily cap.
         public bool $adminTest = false,
+        // A keyed hash of the visitor's address, for the repeat-misuse pause.
+        public ?string $clientKey = null,
+        // A keyed hash of the visitor's browser session, for fair-use limits.
+        public ?string $visitorKey = null,
     ) {}
 }

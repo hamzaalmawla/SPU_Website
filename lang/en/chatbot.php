@@ -14,6 +14,9 @@ return [
         ],
     ],
     'replies' => [
+        'limited' => 'You have asked many questions in a short time. You can ask again in about :minutes minutes.',
+        'refused' => 'I can only help with questions about the Syrian Private University: admission, faculties, fees, student services and campus life. What would you like to know?',
+        'blocked' => 'The assistant cannot take more questions from you right now. Please try again later.',
         'unavailable' => 'The assistant is not available right now.',
         'daily_limit' => 'The assistant has answered as many questions as it can today. Please try again tomorrow.',
         'busy' => 'The assistant is busy right now. Please try again in a minute.',

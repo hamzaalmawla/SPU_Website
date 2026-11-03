@@ -14,7 +14,9 @@ export function storageKey(locale) {
 }
 
 /**
- * A stored message: { role: 'user'|'assistant', content, status?, sources? }.
+ * A stored message: { role: 'user'|'assistant', content, status?, sources?, signature? }.
+ * The signature is the server's proof that it produced an answer to that
+ * question; only signed pairs are accepted back as conversation history.
  * Anything else read back from storage is dropped.
  */
 export function sanitizeMessages(value) {
@@ -29,6 +31,7 @@ export function sanitizeMessages(value) {
             content: message.content.slice(0, 8000),
             status: typeof message.status === 'string' ? message.status : 'ok',
             sources: Array.isArray(message.sources) ? sanitizeSources(message.sources) : [],
+            ...(typeof message.signature === 'string' && /^[a-f0-9]{64}$/u.test(message.signature) ? { signature: message.signature } : {}),
         }))
         .slice(-MAX_STORED_MESSAGES);
 }
@@ -40,32 +43,31 @@ export function sanitizeSources(sources) {
         .map((source) => ({
             title: source.title.slice(0, 255),
             pages: Array.isArray(source.pages) ? source.pages.filter((page) => Number.isInteger(page) && page > 0).slice(0, 6) : [],
+            // Only a page of this site: a path such as /en/admissions.
+            ...(typeof source.url === 'string' && /^\/(ar|en)(\/[a-z0-9\/-]*)?$/u.test(source.url) ? { url: source.url } : {}),
         }));
 }
 
 /**
- * The turns sent with a new question: answered exchanges only (a failed
- * reply is not context), newest last, at most MAX_HISTORY_MESSAGES.
+ * The turns sent with a new question: whole question-and-answer pairs the
+ * server signed, newest last, at most MAX_HISTORY_MESSAGES. Text is sent
+ * unchanged, because the signature covers it exactly.
  */
 export function historyFor(messages) {
-    const turns = [];
-    for (const message of messages) {
-        if (message.role === 'assistant' && message.status !== 'ok') {
-            // Drop the question the failed reply belonged to as well.
-            if (turns.length && turns[turns.length - 1].role === 'user') {
-                turns.pop();
-            }
-            continue;
+    const pairs = [];
+    for (let index = 0; index < messages.length - 1; index++) {
+        const question = messages[index];
+        const answer = messages[index + 1];
+        if (question.role === 'user' && answer.role === 'assistant' && answer.status === 'ok' && answer.signature) {
+            pairs.push([
+                { role: 'user', content: question.content },
+                { role: 'assistant', content: answer.content, signature: answer.signature },
+            ]);
+            index++;
         }
-        turns.push({ role: message.role, content: message.content.slice(0, 1500) });
     }
 
-    const recent = turns.slice(-MAX_HISTORY_MESSAGES);
-    while (recent.length && recent[0].role === 'assistant') {
-        recent.shift();
-    }
-
-    return recent;
+    return pairs.slice(-(MAX_HISTORY_MESSAGES / 2)).flat();
 }
 
 export function loadMessages(storage, locale) {

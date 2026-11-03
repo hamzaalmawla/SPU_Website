@@ -34,6 +34,7 @@
                 <span class="spu-assistant__stat-label">{{ __('admin_chatbot.stats.files') }}</span>
                 <span class="spu-assistant__stat-value">{{ $number($stats->documents) }}</span>
                 <span class="spu-assistant__stat-hint">{{ __('admin_chatbot.stats.files_hint', ['searchable' => $number($stats->searchableDocuments), 'total' => $number($stats->documents)]) }}</span>
+                <span class="spu-assistant__stat-hint">{{ __('admin_chatbot.stats.website_hint', ['pages' => $number($stats->websitePages)]) }}</span>
             </div>
             <div class="spu-assistant__stat">
                 <span class="spu-assistant__stat-label">{{ __('admin_chatbot.stats.passages') }}</span>
@@ -44,6 +45,8 @@
                 <span class="spu-assistant__stat-label">{{ __('admin_chatbot.stats.questions_today') }}</span>
                 <span class="spu-assistant__stat-value">{{ $number($usage->questionsToday) }}</span>
                 <span class="spu-assistant__stat-hint">{{ __('admin_chatbot.stats.questions_hint', ['cached' => $number($usage->cacheHitsToday), 'unanswered' => $number($usage->withoutSourcesToday), 'failures' => $number($usage->failuresToday)]) }}</span>
+                <span class="spu-assistant__stat-hint">{{ __('admin_chatbot.stats.blocked_hint', ['blocked' => $number($usage->blockedToday)]) }}</span>
+                <span class="spu-assistant__stat-hint">{{ __('admin_chatbot.stats.fair_use_hint', ['limited' => $number($usage->rateLimitedToday), 'paused' => $number($usage->pausedToday)]) }}</span>
             </div>
             <div class="spu-assistant__stat">
                 <span class="spu-assistant__stat-label">{{ __('admin_chatbot.stats.cost_today') }}</span>
@@ -98,11 +101,16 @@
                                 <tr wire:key="chatbot-document-{{ $document->id }}" @class(['is-inactive' => ! $document->isActive])>
                                     <td>
                                         <div class="spu-assistant__doc">
-                                            <span class="spu-assistant__doc-type" dir="ltr">{{ strtoupper($document->extension ?? 'txt') }}</span>
+                                            <span class="spu-assistant__doc-type" dir="ltr">{{ $document->sourceType === 'website' ? 'WEB' : strtoupper($document->extension ?? 'txt') }}</span>
                                             <div class="spu-assistant__doc-text">
                                                 <span class="spu-assistant__doc-title" dir="auto">{{ $document->title }}</span>
                                                 <span class="spu-assistant__muted" dir="auto">
-                                                    {{ $document->sourceType === 'text' ? __('admin_chatbot.types.text') : ($document->originalName ?? __('admin_chatbot.types.upload')) }}
+                                                    @if ($document->sourceType === 'website' && $document->sourceUrl)
+                                                        {{ __('admin_chatbot.types.website') }} ·
+                                                        <a href="{{ $document->sourceUrl }}" target="_blank" rel="noopener" class="spu-assistant__link" dir="ltr">{{ $document->sourceUrl }}</a>
+                                                    @else
+                                                        {{ $document->sourceType === 'text' ? __('admin_chatbot.types.text') : ($document->originalName ?? __('admin_chatbot.types.upload')) }}
+                                                    @endif
                                                     @unless ($document->isActive)
                                                         · {{ __('admin_chatbot.actions.disable') }}
                                                     @endunless
@@ -145,6 +153,7 @@
             @endif
         </section>
 
+        <p class="spu-assistant__privacy">{{ __('admin_chatbot.protection') }}</p>
         <p class="spu-assistant__privacy">{{ __('admin_chatbot.privacy') }}</p>
     </div>
 </x-filament-panels::page>

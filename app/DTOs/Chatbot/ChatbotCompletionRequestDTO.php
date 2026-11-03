@@ -17,5 +17,7 @@ final readonly class ChatbotCompletionRequestDTO
         public int $maxOutputTokens,
         public ?string $reasoningEffort = null,
         public ?string $cacheKey = null,
+        /** @var array<string, mixed>|null JSON schema the reply must follow (structured output). */
+        public ?array $jsonSchema = null,
     ) {}
 }

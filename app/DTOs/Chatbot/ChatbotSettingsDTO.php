@@ -29,5 +29,10 @@ final readonly class ChatbotSettingsDTO
         public string $extraInstructions,
         public int $dailyQuestionLimit,
         public ?string $updatedAt = null,
+        // Asked when the main model fails; null for none.
+        public ?string $fallbackModel = null,
+        // Fair use per visitor (browser session); 0 means no limit.
+        public int $visitorHourlyLimit = 20,
+        public int $visitorDailyLimit = 40,
     ) {}
 }

@@ -13,6 +13,7 @@ use App\DTOs\Chatbot\ChatbotPassageDTO;
 use App\DTOs\Chatbot\ChatbotQuestionDTO;
 use App\DTOs\Chatbot\ChatbotSettingsDTO;
 use App\DTOs\Chatbot\ChatbotSourceDTO;
+use App\Support\Chatbot\ExecutionTime;
 use Filament\Actions\Action;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Placeholder;
@@ -21,8 +22,8 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TagsInput;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
-use Filament\Forms\Components\ToggleButtons;
 use Filament\Forms\Components\Toggle;
+use Filament\Forms\Components\ToggleButtons;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Support\Enums\MaxWidth;
@@ -125,7 +126,7 @@ class ManageChatbot extends Page
             'documents' => $this->knowledge->documents(),
             'reasons' => $reasons,
             'canUpdate' => $this->canUpdate(),
-            'modelLabel' => (string) config('chatbot.models.'.$settings->model.'.label', $settings->model),
+            'modelLabel' => (string) (((array) config('chatbot.models', []))[$settings->model]['label'] ?? $settings->model),
         ];
     }
 
@@ -135,6 +136,7 @@ class ManageChatbot extends Page
         return [
             $this->uploadDocumentsAction(),
             $this->addTextAction(),
+            $this->syncWebsiteAction(),
             $this->testAction(),
             $this->settingsAction(),
             $this->reindexStaleAction(),
@@ -181,7 +183,7 @@ class ManageChatbot extends Page
             ])
             ->action(function (array $data): void {
                 $this->authorizeUpdate();
-                @set_time_limit(600);
+                ExecutionTime::atLeast(600);
 
                 $names = is_array($data['names'] ?? null) ? $data['names'] : [];
                 $indexed = 0;
@@ -272,6 +274,7 @@ class ManageChatbot extends Page
                 return [
                     'enabled' => $settings->enabled,
                     'model' => $settings->model,
+                    'fallback_model' => $settings->fallbackModel ?? 'none',
                     'api_key' => null,
                     'remove_api_key' => false,
                     'assistant_name_ar' => $settings->assistantNameAr,
@@ -282,6 +285,8 @@ class ManageChatbot extends Page
                     'suggestions_en' => $settings->suggestionsEn,
                     'extra_instructions' => $settings->extraInstructions,
                     'daily_question_limit' => $settings->dailyQuestionLimit,
+                    'visitor_hourly_limit' => $settings->visitorHourlyLimit,
+                    'visitor_daily_limit' => $settings->visitorDailyLimit,
                 ];
             })
             ->form(fn (): array => $this->settingsSchema())
@@ -301,6 +306,9 @@ class ManageChatbot extends Page
                     suggestionsEn: array_values(array_filter((array) ($data['suggestions_en'] ?? []), 'is_string')),
                     extraInstructions: (string) ($data['extra_instructions'] ?? ''),
                     dailyQuestionLimit: (int) ($data['daily_question_limit'] ?? 0),
+                    fallbackModel: is_string($data['fallback_model'] ?? null) && $data['fallback_model'] !== 'none' ? $data['fallback_model'] : null,
+                    visitorHourlyLimit: (int) ($data['visitor_hourly_limit'] ?? 0),
+                    visitorDailyLimit: (int) ($data['visitor_daily_limit'] ?? 0),
                 );
 
                 try {
@@ -340,6 +348,15 @@ class ManageChatbot extends Page
                     ->options($models)
                     ->native(false)
                     ->required(),
+                Select::make('fallback_model')
+                    ->label(__('admin_chatbot.settings.fallback_model'))
+                    ->helperText(__('admin_chatbot.settings.fallback_model_help'))
+                    ->options(['none' => __('admin_chatbot.settings.fallback_none')] + $models)
+                    ->native(false)
+                    ->required(),
+                Placeholder::make('free_tier_note')
+                    ->hiddenLabel()
+                    ->content(__('admin_chatbot.settings.free_tier_note')),
             ]),
             Section::make(__('admin_chatbot.settings.section_key'))->schema([
                 Placeholder::make('api_key_status')
@@ -376,17 +393,61 @@ class ManageChatbot extends Page
                     ->extraInputAttributes(['dir' => 'auto']),
                 TextInput::make('daily_question_limit')
                     ->label(__('admin_chatbot.settings.daily_limit'))
-                    ->helperText(__('admin_chatbot.settings.daily_limit_help', [
-                        'minute' => (int) config('chatbot.limits.per_minute', 8),
-                        'day' => (int) config('chatbot.limits.per_day', 80),
-                    ]))
+                    ->helperText(__('admin_chatbot.settings.daily_limit_help'))
                     ->numeric()
                     ->integer()
                     ->minValue(0)
                     ->maxValue(1_000_000)
                     ->required(),
             ]),
+            Section::make(__('admin_chatbot.settings.section_fair_use'))
+                ->description(__('admin_chatbot.settings.fair_use_help', [
+                    'minute' => (int) config('chatbot.fair_use.per_minute', 5),
+                    'multiplier' => (int) config('chatbot.fair_use.ip_multiplier', 8),
+                    'strikes' => (int) config('chatbot.guard.strikes', 4),
+                ]))
+                ->columns(2)
+                ->schema([
+                    TextInput::make('visitor_hourly_limit')
+                        ->label(__('admin_chatbot.settings.visitor_hourly_limit'))
+                        ->numeric()->integer()->minValue(0)->maxValue(1000)->required(),
+                    TextInput::make('visitor_daily_limit')
+                        ->label(__('admin_chatbot.settings.visitor_daily_limit'))
+                        ->numeric()->integer()->minValue(0)->maxValue(5000)->required(),
+                ]),
         ];
+    }
+
+    private function syncWebsiteAction(): Action
+    {
+        return Action::make('syncWebsite')
+            ->label(__('admin_chatbot.actions.sync_website'))
+            ->icon('heroicon-o-globe-alt')
+            ->color('gray')
+            ->visible(fn (): bool => $this->canUpdate() && (bool) config('chatbot.website.enabled', true))
+            ->requiresConfirmation()
+            ->modalHeading(__('admin_chatbot.actions.sync_website_heading'))
+            ->modalDescription(__('admin_chatbot.actions.sync_website_description'))
+            ->modalSubmitActionLabel(__('admin_chatbot.actions.sync_website_submit'))
+            ->action(function (): void {
+                $this->authorizeUpdate();
+                $result = $this->knowledge->syncWebsite($this->actorId());
+
+                if (! $result->reachable) {
+                    Notification::make()->title(__('admin_chatbot.notifications.website_unreachable'))->danger()->persistent()->send();
+
+                    return;
+                }
+
+                Notification::make()
+                    ->title(__('admin_chatbot.notifications.website_synced', [
+                        'pages' => $result->pages, 'added' => $result->added, 'updated' => $result->updated,
+                        'unchanged' => $result->unchanged, 'removed' => $result->removed, 'failed' => $result->failed,
+                    ]))
+                    ->color($result->failed > 0 ? 'warning' : 'success')
+                    ->success()
+                    ->send();
+            });
     }
 
     private function testAction(): Action
@@ -433,6 +494,7 @@ class ManageChatbot extends Page
                 $this->testResult = [
                     'question' => $question,
                     'status' => $reply->status,
+                    'reason' => $reply->reason,
                     'answer' => $reply->answer,
                     'sources' => array_map(static fn (ChatbotSourceDTO $source): array => ['title' => $source->title, 'pages' => $source->pages], $reply->sources),
                     'passages' => array_map(static fn (ChatbotPassageDTO $passage): array => [

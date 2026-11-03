@@ -13,5 +13,6 @@ final readonly class ChatbotKnowledgeStatsDTO
         public int $staleDocuments,
         public int $passages,
         public int $characters,
+        public int $websitePages = 0,
     ) {}
 }

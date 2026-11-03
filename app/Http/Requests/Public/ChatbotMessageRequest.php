@@ -27,9 +27,10 @@ final class ChatbotMessageRequest extends FormRequest
         return [
             'message' => ['required', 'string', 'min:1', 'max:'.$maxMessage],
             'history' => ['sometimes', 'array', 'max:20'],
-            'history.*' => ['array:role,content'],
+            'history.*' => ['array:role,content,signature'],
             'history.*.role' => ['required', 'string', 'in:user,assistant'],
-            'history.*.content' => ['required', 'string', 'max:6000'],
+            'history.*.content' => ['required', 'string', 'max:8000'],
+            'history.*.signature' => ['nullable', 'string', 'size:64'],
         ];
     }
 
@@ -40,6 +41,7 @@ final class ChatbotMessageRequest extends FormRequest
             $history[] = [
                 'role' => $turn['role'] === 'assistant' ? 'assistant' : 'user',
                 'content' => (string) $turn['content'],
+                'signature' => is_string($turn['signature'] ?? null) ? $turn['signature'] : null,
             ];
         }
 
@@ -47,6 +49,9 @@ final class ChatbotMessageRequest extends FormRequest
             locale: $locale,
             message: trim((string) $this->validated('message')),
             history: $history,
+            // Keyed, so the stored value cannot be turned back into an address.
+            clientKey: hash_hmac('sha256', (string) $this->ip(), 'chatbot-client|'.(string) config('app.key')),
+            visitorKey: $this->hasSession() ? hash_hmac('sha256', $this->session()->getId(), 'chatbot-visitor|'.(string) config('app.key')) : null,
         );
     }
 }

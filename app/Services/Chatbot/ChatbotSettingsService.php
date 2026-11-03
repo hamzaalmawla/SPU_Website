@@ -27,7 +27,8 @@ final class ChatbotSettingsService implements ChatbotSettingsServiceInterface
 
     private const KEYS = [
         'enabled', 'model', 'api_key', 'assistant_name_ar', 'assistant_name_en', 'welcome_ar', 'welcome_en',
-        'suggestions_ar', 'suggestions_en', 'extra_instructions', 'daily_question_limit',
+        'suggestions_ar', 'suggestions_en', 'extra_instructions', 'daily_question_limit', 'fallback_model',
+        'visitor_hourly_limit', 'visitor_daily_limit',
     ];
 
     public function __construct(
@@ -54,6 +55,9 @@ final class ChatbotSettingsService implements ChatbotSettingsServiceInterface
             extraInstructions: (string) ($values['extra_instructions'] ?? ''),
             dailyQuestionLimit: max(0, (int) ($values['daily_question_limit'] ?? config('chatbot.limits.daily_requests', 3000))),
             updatedAt: $values['_updated_at'] ?? null,
+            fallbackModel: $this->fallbackModel($values),
+            visitorHourlyLimit: max(0, (int) ($values['visitor_hourly_limit'] ?? config('chatbot.fair_use.hourly', 20))),
+            visitorDailyLimit: max(0, (int) ($values['visitor_daily_limit'] ?? config('chatbot.fair_use.daily', 40))),
         );
     }
 
@@ -83,6 +87,10 @@ final class ChatbotSettingsService implements ChatbotSettingsServiceInterface
             throw new InvalidArgumentException('admin_chatbot.errors.unknown_model');
         }
 
+        if ($settings->fallbackModel !== null && ! array_key_exists($settings->fallbackModel, (array) config('chatbot.models', []))) {
+            throw new InvalidArgumentException('admin_chatbot.errors.unknown_model');
+        }
+
         $newApiKey = $newApiKey !== null ? trim($newApiKey) : null;
         if ($newApiKey !== null && $newApiKey !== '' && preg_match('/^[A-Za-z0-9_\-]{20,300}$/', $newApiKey) !== 1) {
             throw new InvalidArgumentException('admin_chatbot.errors.invalid_api_key');
@@ -99,6 +107,10 @@ final class ChatbotSettingsService implements ChatbotSettingsServiceInterface
             'suggestions_en' => json_encode($this->cleanSuggestions($settings->suggestionsEn), JSON_UNESCAPED_UNICODE),
             'extra_instructions' => mb_substr(trim($settings->extraInstructions), 0, 2000),
             'daily_question_limit' => (string) max(0, min(1_000_000, $settings->dailyQuestionLimit)),
+            // "none" is stored explicitly so the config default does not come back.
+            'fallback_model' => $settings->fallbackModel !== null && $settings->fallbackModel !== $settings->model ? $settings->fallbackModel : 'none',
+            'visitor_hourly_limit' => (string) max(0, min(1000, $settings->visitorHourlyLimit)),
+            'visitor_daily_limit' => (string) max(0, min(5000, $settings->visitorDailyLimit)),
         ];
 
         $keyChange = null;
@@ -112,19 +124,25 @@ final class ChatbotSettingsService implements ChatbotSettingsServiceInterface
 
         $before = $this->get();
 
-        DB::transaction(function () use ($values, $actorId): void {
+        // 0: an unattended run (the deploy's key import) with no editor behind it.
+        $actor = $actorId > 0 ? $actorId : null;
+
+        DB::transaction(function () use ($values, $actor): void {
             foreach ($values as $key => $value) {
-                ChatbotSetting::query()->updateOrCreate(['key' => $key], ['value' => $value, 'updated_by' => $actorId]);
+                ChatbotSetting::query()->updateOrCreate(['key' => $key], ['value' => $value, 'updated_by' => $actor]);
             }
         });
 
         $this->cache->forget(self::CACHE_KEY);
         $after = $this->get();
 
-        $this->audit->log('chatbot.settings.updated', $actorId, 'chatbot_settings', null, [
+        $this->audit->log('chatbot.settings.updated', $actor, 'chatbot_settings', null, [
             'enabled' => $after->enabled,
             'model' => $after->model,
+            'fallback_model' => $after->fallbackModel,
             'daily_question_limit' => $after->dailyQuestionLimit,
+            'visitor_hourly_limit' => $after->visitorHourlyLimit,
+            'visitor_daily_limit' => $after->visitorDailyLimit,
             'api_key' => $keyChange ?? 'unchanged',
         ]);
 
@@ -164,6 +182,20 @@ final class ChatbotSettingsService implements ChatbotSettingsServiceInterface
         $models = (array) config('chatbot.models', []);
 
         return is_string($model) && array_key_exists($model, $models) ? $model : (string) config('chatbot.default_model', 'gpt-5-nano');
+    }
+
+    /**
+     * @param  array<string, ?string>  $values
+     */
+    private function fallbackModel(array $values): ?string
+    {
+        $stored = $values['fallback_model'] ?? null;
+        $candidate = $stored ?? (string) config('chatbot.fallback_model', '');
+        $models = (array) config('chatbot.models', []);
+
+        return $candidate !== 'none' && $candidate !== '' && array_key_exists($candidate, $models) && $candidate !== $this->model($values['model'] ?? null)
+            ? $candidate
+            : null;
     }
 
     private function text(?string $value, mixed $default): string

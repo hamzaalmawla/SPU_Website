@@ -26,6 +26,9 @@ class ChatbotDocument extends Model
     protected $fillable = [
         'title',
         'source_type',
+        'source_url',
+        'source_key',
+        'locale',
         'original_name',
         'storage_path',
         'extension',

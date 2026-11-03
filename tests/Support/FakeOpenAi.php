@@ -35,6 +35,28 @@ final class FakeOpenAi
 
     public int $embeddingsStatus = 200;
 
+    /** The category the model claims (structured output). */
+    public string $category = 'university';
+
+    /** Raw model output, bypassing the JSON wrapper (to test malformed output). */
+    public ?string $rawOutput = null;
+
+    public bool $flagged = false;
+
+    /** @var array<string, string> website path => HTML served for it */
+    public array $pages = [];
+
+    /** @var list<string> website paths requested */
+    public array $pageRequests = [];
+
+    /** @var array<string, int> model => HTTP status it fails with */
+    public array $failModels = [];
+
+    public int $moderationStatus = 200;
+
+    /** @var list<array<string, mixed>> */
+    public array $moderationRequests = [];
+
     public static function install(): self
     {
         $fake = new self;
@@ -63,13 +85,29 @@ final class FakeOpenAi
                 ]);
             }
 
+            if (str_ends_with($request->url(), '/moderations')) {
+                $fake->moderationRequests[] = $payload;
+                if ($fake->moderationStatus !== 200) {
+                    return Http::response(['error' => ['message' => 'down']], $fake->moderationStatus);
+                }
+
+                return Http::response(['id' => 'modr-1', 'model' => 'omni-moderation-latest', 'results' => [['flagged' => $fake->flagged, 'categories' => []]]]);
+            }
+
             if (str_ends_with($request->url(), '/responses')) {
                 $fake->responseRequests[] = $payload;
+                if (isset($fake->failModels[$payload['model'] ?? ''])) {
+                    return Http::response(['error' => ['message' => 'over quota', 'code' => 'rate_limit_exceeded']], $fake->failModels[$payload['model']]);
+                }
                 if ($fake->responsesStatus !== 200) {
                     return Http::response($fake->responsesError ?: ['error' => ['message' => 'failure']], $fake->responsesStatus);
                 }
 
-                $text = $fake->answerWith !== null ? ($fake->answerWith)($payload) : 'The admission office is open **Sunday to Thursday**.';
+                $answer = $fake->answerWith !== null ? ($fake->answerWith)($payload) : 'The admission office is open **Sunday to Thursday**.';
+                $structured = ($payload['text']['format']['type'] ?? null) === 'json_schema';
+                $text = $fake->rawOutput ?? ($structured
+                    ? (string) json_encode(['category' => $fake->category, 'answer' => in_array($fake->category, ['university', 'greeting'], true) ? $answer : ''], JSON_UNESCAPED_UNICODE)
+                    : $answer);
 
                 return Http::response([
                     'id' => 'resp_test',
@@ -81,6 +119,15 @@ final class FakeOpenAi
                     ],
                     'usage' => ['input_tokens' => 1200, 'input_tokens_details' => ['cached_tokens' => 200], 'output_tokens' => 150, 'total_tokens' => 1350],
                 ]);
+            }
+
+            $path = (string) parse_url($request->url(), PHP_URL_PATH);
+            if (! str_contains($request->url(), 'api.openai.com')) {
+                $fake->pageRequests[] = $path;
+
+                return isset($fake->pages[$path])
+                    ? Http::response($fake->pages[$path], 200, ['Content-Type' => 'text/html; charset=UTF-8'])
+                    : Http::response('Not found', 404, ['Content-Type' => 'text/html']);
             }
 
             return Http::response(['error' => ['message' => 'unexpected']], 404);

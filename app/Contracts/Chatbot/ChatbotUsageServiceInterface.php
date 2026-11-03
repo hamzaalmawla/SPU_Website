@@ -19,6 +19,18 @@ interface ChatbotUsageServiceInterface
     public function recordFailure(int $embeddingTokens = 0): bool;
 
     /**
+     * A refused question (off-topic, code, rule-bypass or harmful). Costs are
+     * recorded separately when the model was asked before refusing.
+     */
+    public function recordBlocked(): bool;
+
+    /** A question stopped by a visitor's fair-use limit. */
+    public function recordRateLimited(): bool;
+
+    /** A visitor or address paused for repeated misuse. */
+    public function recordPaused(): bool;
+
+    /**
      * Embedding tokens spent indexing documents.
      */
     public function recordIndexing(int $embeddingTokens): bool;

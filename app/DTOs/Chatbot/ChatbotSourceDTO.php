@@ -15,5 +15,7 @@ final readonly class ChatbotSourceDTO
     public function __construct(
         public string $title,
         public array $pages = [],
+        // A page of this website (a path such as /en/admissions), or null.
+        public ?string $url = null,
     ) {}
 }

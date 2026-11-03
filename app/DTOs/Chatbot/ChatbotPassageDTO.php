@@ -17,5 +17,7 @@ final readonly class ChatbotPassageDTO
         public ?string $heading,
         public string $content,
         public float $score,
+        // Website pages: the page's path, linked under the answer.
+        public ?string $url = null,
     ) {}
 }

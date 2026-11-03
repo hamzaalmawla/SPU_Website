@@ -1317,6 +1317,11 @@
     overflow-wrap: anywhere;
 }
 
+.spu-assistant__link {
+    color: #2342b8;
+    text-decoration: underline;
+}
+
 .spu-assistant__note {
     max-width: 280px;
     margin: 0.35rem 0 0;

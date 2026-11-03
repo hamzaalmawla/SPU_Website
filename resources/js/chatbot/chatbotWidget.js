@@ -1,5 +1,5 @@
 import { markdownToText, renderMarkdown } from './chatMarkdown.js';
-import { failureKey, historyFor, loadMessages, revealSteps, saveMessages } from './chatState.js';
+import { failureKey, historyFor, loadMessages, revealSteps, sanitizeSources, saveMessages } from './chatState.js';
 
 /**
  * The public AI assistant: launcher, teaser bubble, chat panel and the 3D
@@ -250,6 +250,7 @@ class ChatbotWidget {
             content: reply.answer,
             status: reply.status,
             sources: reply.status === 'ok' ? reply.sources : [],
+            ...(reply.signature ? { signature: reply.signature } : {}),
         };
         this.messages.push(message);
         saveMessages(this.storage, this.locale, this.messages);
@@ -303,6 +304,7 @@ class ChatbotWidget {
                 status: typeof data.status === 'string' ? data.status : 'error',
                 answer: data.answer,
                 sources: Array.isArray(data.sources) ? data.sources : [],
+                signature: typeof data.signature === 'string' ? data.signature : null,
             };
         } catch {
             return { status: 'error', answer: this.failureText('offline'), sources: [] };
@@ -446,9 +448,12 @@ class ChatbotWidget {
             heading.textContent = this.text.sources;
             sources.append(heading);
 
-            for (const source of message.sources) {
-                const chip = document.createElement('span');
+            for (const source of sanitizeSources(message.sources)) {
+                const chip = document.createElement(source.url ? 'a' : 'span');
                 chip.className = 'spu-chatbot__source';
+                if (source.url) {
+                    chip.href = source.url;
+                }
                 chip.setAttribute('dir', 'auto');
                 chip.textContent = source.pages?.length ? `${source.title} · ${this.text.page} ${source.pages.join('، ')}` : source.title;
                 sources.append(chip);

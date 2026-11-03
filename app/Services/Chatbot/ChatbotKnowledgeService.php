@@ -7,6 +7,7 @@ namespace App\Services\Chatbot;
 use App\Contracts\Chatbot\ChatbotKnowledgeServiceInterface;
 use App\Contracts\Chatbot\ChatbotSettingsServiceInterface;
 use App\Contracts\Chatbot\ChatbotUsageServiceInterface;
+use App\Contracts\Chatbot\ChatbotWebsiteCrawlerInterface;
 use App\Contracts\Chatbot\OpenAiClientInterface;
 use App\Contracts\Shared\AuditServiceInterface;
 use App\Contracts\Shared\CacheServiceInterface;
@@ -14,10 +15,13 @@ use App\DTOs\Chatbot\ChatbotDocumentDTO;
 use App\DTOs\Chatbot\ChatbotKnowledgeStatsDTO;
 use App\DTOs\Chatbot\ChatbotPassageDTO;
 use App\DTOs\Chatbot\ChatbotRetrievalDTO;
+use App\DTOs\Chatbot\ChatbotWebPageDTO;
+use App\DTOs\Chatbot\ChatbotWebsiteSyncDTO;
 use App\Exceptions\ChatbotProviderException;
 use App\Models\Chatbot\ChatbotChunk;
 use App\Models\Chatbot\ChatbotDocument;
 use App\Support\Chatbot\DocumentTextExtractor;
+use App\Support\Chatbot\ExecutionTime;
 use App\Support\Chatbot\KeywordScorer;
 use App\Support\Chatbot\TextChunker;
 use App\Support\Chatbot\VectorMath;
@@ -47,6 +51,7 @@ final class ChatbotKnowledgeService implements ChatbotKnowledgeServiceInterface
         private readonly ChatbotUsageServiceInterface $usage,
         private readonly AuditServiceInterface $audit,
         private readonly CacheServiceInterface $cache,
+        private readonly ChatbotWebsiteCrawlerInterface $crawler,
     ) {}
 
     public function documents(): Collection
@@ -62,7 +67,7 @@ final class ChatbotKnowledgeService implements ChatbotKnowledgeServiceInterface
 
     public function stats(): ChatbotKnowledgeStatsDTO
     {
-        $documents = ChatbotDocument::query()->get(['id', 'status', 'is_active', 'chunk_count', 'character_count', 'embedding_model', 'embedding_dimensions']);
+        $documents = ChatbotDocument::query()->get(['id', 'source_type', 'status', 'is_active', 'chunk_count', 'character_count', 'embedding_model', 'embedding_dimensions']);
 
         return new ChatbotKnowledgeStatsDTO(
             documents: $documents->count(),
@@ -71,6 +76,7 @@ final class ChatbotKnowledgeService implements ChatbotKnowledgeServiceInterface
             staleDocuments: $documents->filter(fn (ChatbotDocument $document): bool => $document->status === ChatbotDocument::STATUS_READY && $this->isStale($document))->count(),
             passages: (int) $documents->where('status', ChatbotDocument::STATUS_READY)->sum('chunk_count'),
             characters: (int) $documents->where('status', ChatbotDocument::STATUS_READY)->sum('character_count'),
+            websitePages: $documents->where('source_type', 'website')->count(),
         );
     }
 
@@ -167,7 +173,7 @@ final class ChatbotKnowledgeService implements ChatbotKnowledgeServiceInterface
 
     public function reindexStale(int $actorId): int
     {
-        @set_time_limit(600);
+        ExecutionTime::atLeast(600);
 
         $rebuilt = 0;
         foreach (ChatbotDocument::query()->orderBy('id')->get() as $document) {
@@ -218,17 +224,9 @@ final class ChatbotKnowledgeService implements ChatbotKnowledgeServiceInterface
     {
         $before = $this->hasSearchable();
         $document = ChatbotDocument::query()->findOrFail($documentId);
-        $path = $document->storage_path;
         $title = $document->title;
 
-        DB::transaction(function () use ($document): void {
-            $document->chunks()->delete();
-            $document->delete();
-        });
-
-        if (is_string($path) && $path !== '') {
-            $this->disk()->delete($path);
-        }
+        $this->deleteDocument($document);
 
         $this->audit->log('chatbot.document.deleted', $actorId, 'chatbot_document', $documentId, ['title' => $title]);
         $this->knowledgeChanged($before);
@@ -252,7 +250,7 @@ final class ChatbotKnowledgeService implements ChatbotKnowledgeServiceInterface
         return $text;
     }
 
-    public function retrieve(string $query, string $apiKey): ChatbotRetrievalDTO
+    public function retrieve(string $query, string $apiKey, ?string $locale = null): ChatbotRetrievalDTO
     {
         $query = trim($query);
         if ($query === '' || ! $this->hasSearchable()) {
@@ -301,7 +299,7 @@ final class ChatbotKnowledgeService implements ChatbotKnowledgeServiceInterface
         $terms = KeywordScorer::terms($query);
 
         $chunks = ChatbotChunk::query()
-            ->with('document:id,title')
+            ->with('document:id,title,source_url,locale')
             ->whereIn('id', array_keys($scores))
             ->get(['id', 'chatbot_document_id', 'page', 'heading', 'content', 'content_normalized']);
 
@@ -316,8 +314,10 @@ final class ChatbotKnowledgeService implements ChatbotKnowledgeServiceInterface
                 continue;
             }
 
+            $sameLanguage = $locale !== null && $chunk->document?->locale === $locale;
+
             $ranked[] = [
-                'score' => $similarity + $keywordWeight * $keywords,
+                'score' => $similarity + $keywordWeight * $keywords + ($sameLanguage ? (float) config('chatbot.retrieval.same_language_boost', 0.03) : 0.0),
                 'passage' => new ChatbotPassageDTO(
                     chunkId: (int) $chunk->id,
                     documentId: (int) $chunk->chatbot_document_id,
@@ -326,6 +326,7 @@ final class ChatbotKnowledgeService implements ChatbotKnowledgeServiceInterface
                     heading: $chunk->heading,
                     content: (string) $chunk->content,
                     score: round(max(0.0, min(1.0, $similarity)), 4),
+                    url: $chunk->document?->source_url,
                 ),
             ];
         }
@@ -341,6 +342,90 @@ final class ChatbotKnowledgeService implements ChatbotKnowledgeServiceInterface
         );
     }
 
+    public function syncWebsite(int $actorId): ChatbotWebsiteSyncDTO
+    {
+        ExecutionTime::atLeast(900);
+
+        if (! (bool) config('chatbot.website.enabled', true)) {
+            return new ChatbotWebsiteSyncDTO(true, 0, 0, 0, 0, 0, 0);
+        }
+
+        $pages = $this->crawler->pages();
+        if ($pages->isEmpty()) {
+            return new ChatbotWebsiteSyncDTO(false, 0, 0, 0, 0, 0, 0);
+        }
+
+        $before = $this->hasSearchable();
+        $existing = ChatbotDocument::query()->where('source_type', 'website')->get()->keyBy('source_key');
+        $added = $updated = $unchanged = $failed = 0;
+        $seen = [];
+
+        foreach ($pages as $page) {
+            /** @var ChatbotWebPageDTO $page */
+            $key = 'website:'.$page->path;
+            $seen[$key] = true;
+            $text = '# '.$page->title."\n\n".$page->text;
+            // Keyed by page, so two pages with the same text never collide.
+            $checksum = hash('sha256', $key."\n".$text);
+            $document = $existing->get($key);
+
+            if ($document instanceof ChatbotDocument && $document->checksum === $checksum && $document->status === ChatbotDocument::STATUS_READY && ! $this->isStale($document)) {
+                if ($document->title !== $page->title) {
+                    $document->update(['title' => mb_substr($page->title, 0, 255)]);
+                }
+                $unchanged++;
+
+                continue;
+            }
+
+            $path = $document?->storage_path ?: $this->documentPath('md');
+            $this->disk()->put((string) $path, $text);
+
+            $attributes = [
+                'title' => mb_substr($page->title, 0, 255),
+                'source_type' => 'website',
+                'source_url' => mb_substr($page->path, 0, 512),
+                'source_key' => $key,
+                'locale' => $page->locale,
+                'storage_path' => $path,
+                'extension' => 'md',
+                'size_bytes' => strlen($text),
+                'checksum' => $checksum,
+            ];
+
+            if ($document instanceof ChatbotDocument) {
+                $document->update($attributes);
+                $updated++;
+            } else {
+                $document = ChatbotDocument::query()->create($attributes + ['status' => ChatbotDocument::STATUS_PENDING, 'uploaded_by' => $actorId > 0 ? $actorId : null]);
+                $added++;
+            }
+
+            if ($this->index($document, false)->status !== ChatbotDocument::STATUS_READY) {
+                $failed++;
+            }
+        }
+
+        // A crawl that found far fewer pages than last time is more likely a
+        // partial outage than a site that shrank: remove nothing then.
+        $removed = 0;
+        if ($pages->count() >= (int) floor($existing->count() * 0.6)) {
+            foreach ($existing as $key => $document) {
+                if (! isset($seen[$key])) {
+                    $this->deleteDocument($document);
+                    $removed++;
+                }
+            }
+        }
+
+        $this->audit->log('chatbot.website.synced', $actorId > 0 ? $actorId : null, 'chatbot_document', null, [
+            'pages' => $pages->count(), 'added' => $added, 'updated' => $updated, 'unchanged' => $unchanged, 'removed' => $removed, 'failed' => $failed,
+        ]);
+        $this->knowledgeChanged($before);
+
+        return new ChatbotWebsiteSyncDTO(true, $pages->count(), $added, $updated, $unchanged, $removed, $failed);
+    }
+
     public function version(): string
     {
         $version = $this->cache->remember(ChatbotCaches::KNOWLEDGE_VERSION, static fn (): string => Str::random(12), 31_536_000);
@@ -348,10 +433,10 @@ final class ChatbotKnowledgeService implements ChatbotKnowledgeServiceInterface
         return is_string($version) ? $version : 'none';
     }
 
-    private function index(ChatbotDocument $document): ChatbotDocumentDTO
+    private function index(ChatbotDocument $document, bool $announce = true): ChatbotDocumentDTO
     {
-        @set_time_limit(300);
-        $before = $this->hasSearchable();
+        ExecutionTime::atLeast(300);
+        $before = $announce ? $this->hasSearchable() : null;
 
         try {
             $apiKey = $this->settings->apiKey();
@@ -425,7 +510,9 @@ final class ChatbotKnowledgeService implements ChatbotKnowledgeServiceInterface
             $this->markFailed($document, 'admin_chatbot.errors.index_failed');
         }
 
-        $this->knowledgeChanged($before);
+        if ($announce) {
+            $this->knowledgeChanged($before);
+        }
 
         return $this->toDto($document->fresh(['uploader:id,name']) ?? $document);
     }
@@ -468,7 +555,9 @@ final class ChatbotKnowledgeService implements ChatbotKnowledgeServiceInterface
      */
     private function queryVector(string $query, string $apiKey): array
     {
-        $key = 'chatbot.query-vector.'.sha1(config('chatbot.embedding.model').'|'.config('chatbot.embedding.dimensions').'|'.mb_strtolower($query));
+        // The provider is part of the key: a vector from another endpoint or
+        // model lives in another space and would match nothing.
+        $key = 'chatbot.query-vector.'.sha1(config('chatbot.openai.base_url').'|'.config('chatbot.embedding.model').'|'.config('chatbot.embedding.dimensions').'|'.mb_strtolower($query));
         $tokens = 0;
         $packed = $this->cache->remember($key, function () use ($query, $apiKey, &$tokens): string {
             $result = $this->openAi->embed([$query], $apiKey);
@@ -478,6 +567,20 @@ final class ChatbotKnowledgeService implements ChatbotKnowledgeServiceInterface
         }, 604_800);
 
         return [VectorMath::unpack((string) base64_decode((string) $packed, true)), $tokens];
+    }
+
+    private function deleteDocument(ChatbotDocument $document): void
+    {
+        $path = $document->storage_path;
+
+        DB::transaction(function () use ($document): void {
+            $document->chunks()->delete();
+            $document->delete();
+        });
+
+        if (is_string($path) && $path !== '') {
+            $this->disk()->delete($path);
+        }
     }
 
     private function markFailed(ChatbotDocument $document, string $errorKey): void
@@ -568,6 +671,8 @@ final class ChatbotKnowledgeService implements ChatbotKnowledgeServiceInterface
             uploadedBy: $document->uploader?->name,
             indexedAt: $document->indexed_at?->toIso8601String(),
             createdAt: (string) $document->created_at?->toIso8601String(),
+            sourceUrl: $document->source_url,
+            locale: $document->locale,
         );
     }
 }

@@ -19,6 +19,7 @@ use App\Contracts\Chatbot\ChatbotKnowledgeServiceInterface;
 use App\Contracts\Chatbot\ChatbotServiceInterface;
 use App\Contracts\Chatbot\ChatbotSettingsServiceInterface;
 use App\Contracts\Chatbot\ChatbotUsageServiceInterface;
+use App\Contracts\Chatbot\ChatbotWebsiteCrawlerInterface;
 use App\Contracts\Chatbot\OpenAiClientInterface;
 use App\Contracts\Cms\AboutEntityCmsServiceInterface;
 use App\Contracts\Cms\CmsPageTextImportServiceInterface;
@@ -213,11 +214,6 @@ use App\Policies\NewsCategoryPolicy;
 use App\Policies\PagePolicy;
 use App\Policies\ResearchPublicationPolicy;
 use App\Policies\UserPolicy;
-use App\Services\Chatbot\ChatbotKnowledgeService;
-use App\Services\Chatbot\ChatbotService;
-use App\Services\Chatbot\ChatbotSettingsService;
-use App\Services\Chatbot\ChatbotUsageService;
-use App\Services\Chatbot\OpenAiClient;
 use App\Services\Achievement\AchievementService;
 use App\Services\Analytics\AnalyticsService;
 use App\Services\Auth\AdminAccessService;
@@ -229,6 +225,12 @@ use App\Services\Career\AlumniDirectoryService;
 use App\Services\Career\StudentListImportService;
 use App\Services\Center\CenterCatalogService;
 use App\Services\Center\CenterPageService;
+use App\Services\Chatbot\ChatbotKnowledgeService;
+use App\Services\Chatbot\ChatbotService;
+use App\Services\Chatbot\ChatbotSettingsService;
+use App\Services\Chatbot\ChatbotUsageService;
+use App\Services\Chatbot\ChatbotWebsiteCrawler;
+use App\Services\Chatbot\OpenAiClient;
 use App\Services\Cms\AboutEntityCmsService;
 use App\Services\Cms\CmsPageTextImportService;
 use App\Services\Cms\CmsTargetRegistry;
@@ -694,8 +696,9 @@ class AppServiceProvider extends ServiceProvider
         // Search runs an indexed scan, so it is cheaper than a form post but
         // far from free on a five-worker server. 30/min per IP is generous for
         // a person refining a query and hostile to a scraper walking the index.
-        // Each assistant question is a paid model call. A visitor asks a few a
-        // minute at most; the daily cap stops one address draining the budget.
+        // Flood guard for the AI assistant, per IP address and generous (a
+        // campus network shares one address). Fair use per visitor, pauses
+        // and the site-wide cap live in ChatbotService.
         RateLimiter::for('chatbot', function (Request $request): array {
             return [
                 Limit::perMinute(max(1, (int) config('chatbot.limits.per_minute', 8)))->by('chatbot|minute|'.$request->ip()),
@@ -735,6 +738,7 @@ class AppServiceProvider extends ServiceProvider
         return [
             CacheServiceInterface::class => CacheService::class,
             OpenAiClientInterface::class => OpenAiClient::class,
+            ChatbotWebsiteCrawlerInterface::class => ChatbotWebsiteCrawler::class,
             ChatbotSettingsServiceInterface::class => ChatbotSettingsService::class,
             ChatbotUsageServiceInterface::class => ChatbotUsageService::class,
             ChatbotKnowledgeServiceInterface::class => ChatbotKnowledgeService::class,
