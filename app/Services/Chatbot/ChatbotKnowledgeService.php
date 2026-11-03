@@ -17,6 +17,7 @@ use App\DTOs\Chatbot\ChatbotPassageDTO;
 use App\DTOs\Chatbot\ChatbotRetrievalDTO;
 use App\DTOs\Chatbot\ChatbotWebPageDTO;
 use App\DTOs\Chatbot\ChatbotWebsiteSyncDTO;
+use App\DTOs\Shared\PaginatedResultDTO;
 use App\Exceptions\ChatbotProviderException;
 use App\Models\Chatbot\ChatbotChunk;
 use App\Models\Chatbot\ChatbotDocument;
@@ -25,6 +26,7 @@ use App\Support\Chatbot\ExecutionTime;
 use App\Support\Chatbot\KeywordScorer;
 use App\Support\Chatbot\TextChunker;
 use App\Support\Chatbot\VectorMath;
+use App\Support\SearchTextNormalizer;
 use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -63,6 +65,61 @@ final class ChatbotKnowledgeService implements ChatbotKnowledgeServiceInterface
             ->get()
             ->map(fn (ChatbotDocument $document): ChatbotDocumentDTO => $this->toDto($document))
             ->values();
+    }
+
+    public function documentsPage(int $page, int $perPage = 10, ?string $search = null, ?string $sourceType = null, ?string $status = null): PaginatedResultDTO
+    {
+        $perPage = max(1, min(100, $perPage));
+        $query = ChatbotDocument::query();
+
+        $search = trim((string) $search);
+        if ($search !== '') {
+            // "!" as the escape character behaves the same on MariaDB and sqlite.
+            $like = '%'.SearchTextNormalizer::escapeLike(mb_substr($search, 0, 100)).'%';
+            $query->where(function ($inner) use ($like): void {
+                $inner->whereRaw("title LIKE ? ESCAPE '!'", [$like])
+                    ->orWhereRaw("original_name LIKE ? ESCAPE '!'", [$like])
+                    ->orWhereRaw("source_url LIKE ? ESCAPE '!'", [$like]);
+            });
+        }
+
+        if (in_array($sourceType, ['upload', 'text', 'website'], true)) {
+            $query->where('source_type', $sourceType);
+        }
+
+        $model = (string) config('chatbot.embedding.model');
+        $dimensions = (int) config('chatbot.embedding.dimensions');
+        match ($status) {
+            'ready' => $query->where('status', ChatbotDocument::STATUS_READY)->where('embedding_model', $model)->where('embedding_dimensions', $dimensions),
+            'failed' => $query->where('status', ChatbotDocument::STATUS_FAILED),
+            'pending' => $query->where('status', ChatbotDocument::STATUS_PENDING),
+            'stale' => $query->where('status', ChatbotDocument::STATUS_READY)->where(function ($inner) use ($model, $dimensions): void {
+                $inner->where('embedding_model', '!=', $model)->orWhereNull('embedding_model')
+                    ->orWhere('embedding_dimensions', '!=', $dimensions)->orWhereNull('embedding_dimensions');
+            }),
+            default => null,
+        };
+
+        $total = (clone $query)->count();
+        $lastPage = max(1, (int) ceil($total / $perPage));
+        $page = max(1, min($page, $lastPage));
+
+        $items = $query->with('uploader:id,name')
+            ->orderByDesc('created_at')
+            ->orderByDesc('id')
+            ->forPage($page, $perPage)
+            ->get()
+            ->map(fn (ChatbotDocument $document): ChatbotDocumentDTO => $this->toDto($document))
+            ->values();
+
+        return new PaginatedResultDTO($items, $total, $page, $perPage, $lastPage);
+    }
+
+    public function document(int $documentId): ?ChatbotDocumentDTO
+    {
+        $document = ChatbotDocument::query()->with('uploader:id,name')->find($documentId);
+
+        return $document instanceof ChatbotDocument ? $this->toDto($document) : null;
     }
 
     public function stats(): ChatbotKnowledgeStatsDTO

@@ -35,6 +35,20 @@ return [
     'usage_chart_empty' => 'لا أسئلة بعد.',
 
     'table' => [
+        'search_label' => 'البحث في ملفات المعرفة',
+        'search_placeholder' => 'ابحث بالعنوان أو اسم الملف أو عنوان الصفحة…',
+        'filter_type' => 'النوع',
+        'all_types' => 'كل الأنواع',
+        'filter_status' => 'الحالة',
+        'all_statuses' => 'كل الحالات',
+        'clear_filters' => 'مسح التصفية',
+        'no_matches' => 'لا يوجد ملف يطابق هذه التصفية.',
+        'showing' => 'عرض :from–:to من :total',
+        'pagination' => 'صفحات ملفات المعرفة',
+        'previous' => 'السابق',
+        'next' => 'التالي',
+        'page_n' => 'الصفحة :page',
+        'per_page' => 'لكل صفحة',
         'document' => 'الوثيقة',
         'status' => 'الحالة',
         'passages' => 'المقاطع',
@@ -47,6 +61,7 @@ return [
         'by' => 'بواسطة :name',
     ],
     'statuses' => [
+        'stale' => 'تحتاج إعادة فهرسة',
         'ready' => 'جاهزة',
         'failed' => 'فشلت',
         'pending' => 'بالانتظار',
