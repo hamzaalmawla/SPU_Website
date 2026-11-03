@@ -16,7 +16,7 @@
     "src": "public/images/icon-chevron-down-outline.svg"
   },
   "resources/css/app.css": {
-    "file": "assets/app.B7GjJZeA.css",
+    "file": "assets/app.yQ4_fGu7.css",
     "name": "app",
     "names": [
       "app.css"
@@ -57,7 +57,7 @@
     ]
   },
   "resources/js/app.js": {
-    "file": "js/app.BauHGbgr.js",
+    "file": "js/app.D-4LinzZ.js",
     "name": "app",
     "src": "resources/js/app.js",
     "isEntry": true,
@@ -68,7 +68,7 @@
     ]
   },
   "resources/js/chatbot/chatbotWidget.js": {
-    "file": "js/chatbotWidget.BvDPYNRJ.js",
+    "file": "js/chatbotWidget.C3U7CkJf.js",
     "name": "chatbotWidget",
     "src": "resources/js/chatbot/chatbotWidget.js",
     "isDynamicEntry": true,
