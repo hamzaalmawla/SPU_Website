@@ -45,9 +45,9 @@
                 <div class="grid gap-4 sm:grid-cols-2">
                     @include('public.staff-intake.field', ['name' => 'name_ar', 'value' => $fields['name_ar'], 'required' => true])
                     @include('public.staff-intake.field', ['name' => 'name_en', 'value' => $fields['name_en'], 'required' => true])
-                    @include('public.staff-intake.field', ['name' => 'title_ar', 'value' => $fields['title_ar']])
-                    @include('public.staff-intake.field', ['name' => 'title_en', 'value' => $fields['title_en']])
-                    {{-- A center's staff page shows each person's position, so a center link asks for it. --}}
+                    @include('public.staff-intake.field', ['name' => 'title_ar', 'value' => $fields['title_ar'], 'required' => $form->isCenter])
+                    @include('public.staff-intake.field', ['name' => 'title_en', 'value' => $fields['title_en'], 'required' => $form->isCenter])
+                    {{-- A center link also requires the academic title, position, email and phone (StaffIntakeService::CENTER_REQUIRED). --}}
                     @include('public.staff-intake.field', ['name' => 'position_ar', 'value' => $fields['position_ar'], 'required' => $form->isCenter, 'hint' => $form->isCenter ? __('staff_intake.center.position_hint', [], $locale) : null])
                     @include('public.staff-intake.field', ['name' => 'position_en', 'value' => $fields['position_en'], 'required' => $form->isCenter])
                 </div>
@@ -80,8 +80,8 @@
                     </div>
                     @endunless
                     @include('public.staff-intake.field', ['name' => 'office_location', 'value' => $fields['office_location']])
-                    @include('public.staff-intake.field', ['name' => 'email', 'value' => $fields['email'], 'type' => 'email', 'dir' => 'ltr', 'autocomplete' => 'email'])
-                    @include('public.staff-intake.field', ['name' => 'phone', 'value' => $fields['phone'], 'type' => 'tel', 'dir' => 'ltr', 'max' => 30, 'autocomplete' => 'tel'])
+                    @include('public.staff-intake.field', ['name' => 'email', 'value' => $fields['email'], 'type' => 'email', 'dir' => 'ltr', 'autocomplete' => 'email', 'required' => $form->isCenter])
+                    @include('public.staff-intake.field', ['name' => 'phone', 'value' => $fields['phone'], 'type' => 'tel', 'dir' => 'ltr', 'max' => 30, 'autocomplete' => 'tel', 'required' => $form->isCenter])
                 </div>
             </fieldset>
 

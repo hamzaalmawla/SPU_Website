@@ -91,10 +91,11 @@ final class CenterStaffIntakeTest extends TestCase
         $form = $this->get($url)->assertOk()->assertDontSee('name="department_id"', false);
         $ref = $this->formRef($form->getContent());
 
-        // The staff page shows the position, so it is required.
+        // A center link requires the title, position, email and phone too; the rest stays optional.
         $this->from('/en/staff-intake/'.$token.'/form')
-            ->post('/en/staff-intake/'.$token.'/form', $this->formData($ref, ['name_ar' => 'مايا يونت', 'name_en' => 'Maya Unit']))
-            ->assertSessionHasErrors(['position_ar', 'position_en']);
+            ->post('/en/staff-intake/'.$token.'/form', ['email' => '', 'phone' => '', 'title_ar' => '', 'title_en' => ''] + $this->formData($ref, ['name_ar' => 'مايا يونت', 'name_en' => 'Maya Unit', 'email' => '', 'phone' => '', 'title_ar' => '', 'title_en' => '']))
+            ->assertSessionHasErrors(['title_ar', 'title_en', 'position_ar', 'position_en', 'email', 'phone'])
+            ->assertSessionDoesntHaveErrors(['office_location', 'linkedin', 'orcid', 'specializations_ar']);
 
         $this->post('/en/staff-intake/'.$token.'/form', $this->formData($ref, [
             'name_ar' => 'مايا يونت',
@@ -261,6 +262,9 @@ final class CenterStaffIntakeTest extends TestCase
         return [
             'ref' => $ref,
             'email' => 'person@spu.edu.sy',
+            'phone' => '+963 11 123 4567',
+            'title_ar' => 'د.',
+            'title_en' => 'Dr.',
             'bio_ar' => 'نبذة.',
             'bio_en' => 'About.',
             'photo' => UploadedFile::fake()->image('photo.jpg', 400, 400),

@@ -92,7 +92,7 @@ return [
             'not_sent' => 'The form could not be sent.',
             'photo_required' => 'Please add your photo.',
             'cv_required' => 'Please add your CV as a PDF.',
-            'position_required' => 'Enter your position in the center, in Arabic and English.',
+            'required' => 'Please fill in :field.',
         ],
     ],
 

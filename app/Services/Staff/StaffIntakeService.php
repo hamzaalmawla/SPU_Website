@@ -53,6 +53,9 @@ final class StaffIntakeService implements StaffIntakeServiceInterface
     /** How long a form opened from a reference may still be sent. */
     private const REF_LIFETIME_SECONDS = 86400;
 
+    /** Fields a center link requires on top of those every link requires. */
+    public const CENTER_REQUIRED = ['title_ar', 'title_en', 'position_ar', 'position_en', 'email', 'phone'];
+
     public function __construct(
         private readonly CenterCatalogServiceInterface $centers,
     ) {}
@@ -179,7 +182,7 @@ final class StaffIntakeService implements StaffIntakeServiceInterface
 
         $isUpdate = $claimed instanceof FacultyMember && $this->joinsLinkFaculty($claimed, $link);
         if ($link->isForCenter()) {
-            $this->requireCenterPosition($submission);
+            $this->requireCenterFields($submission);
             // A center has no departments: whatever was sent is dropped.
             $submission = $this->withFields($submission, ['department_id' => null] + $submission->fields);
         }
@@ -659,14 +662,18 @@ final class StaffIntakeService implements StaffIntakeServiceInterface
             : null;
     }
 
-    /** A center's staff page shows each person's position, so it is required in both languages. */
-    private function requireCenterPosition(StaffIntakeSubmissionDTO $submission): void
+    /**
+     * What a center's staff must fill in besides the name, biography, photo
+     * and CV every link asks for: the academic title and the position (both
+     * languages), and an email and a phone. Everything else is optional.
+     */
+    private function requireCenterFields(StaffIntakeSubmissionDTO $submission): void
     {
         $errors = [];
-        foreach (['position_ar', 'position_en'] as $key) {
+        foreach (self::CENTER_REQUIRED as $key) {
             $value = $submission->fields[$key] ?? null;
             if (! is_string($value) || trim(strip_tags($value)) === '') {
-                $errors[$key] = __('staff_intake.public.errors.position_required', [], $submission->locale);
+                $errors[$key] = __('staff_intake.public.errors.required', ['field' => __('staff_intake.fields.'.$key, [], $submission->locale)], $submission->locale);
             }
         }
 
