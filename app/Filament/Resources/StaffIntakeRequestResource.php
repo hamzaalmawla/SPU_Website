@@ -86,10 +86,13 @@ class StaffIntakeRequestResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        return parent::getEloquentQuery()
-            ->with(['faculty.translations', 'appliedFacultyMember.translations'])
-            ->whereNull('center_slug')
-            ->whereIn('faculty_id', self::facultyIds());
+        return static::scopeQuery(parent::getEloquentQuery()->with(['faculty.translations', 'appliedFacultyMember.translations']));
+    }
+
+    /** The requests this screen lists: faculty requests of the user's faculties. */
+    protected static function scopeQuery(Builder $query): Builder
+    {
+        return $query->whereNull('center_slug')->whereIn('faculty_id', self::facultyIds());
     }
 
     public static function form(Form $form): Form

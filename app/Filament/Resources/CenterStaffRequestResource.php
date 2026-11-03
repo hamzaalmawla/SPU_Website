@@ -55,11 +55,9 @@ class CenterStaffRequestResource extends StaffIntakeRequestResource
         return app(StaffIntakeLinkServiceInterface::class)->canUseCenters((int) auth()->id());
     }
 
-    public static function getEloquentQuery(): Builder
+    protected static function scopeQuery(Builder $query): Builder
     {
-        return StaffIntakeRequest::query()
-            ->with(['appliedFacultyMember.translations'])
-            ->whereNotNull('center_slug');
+        return $query->whereNotNull('center_slug');
     }
 
     public static function unitLabel(): string

@@ -86,10 +86,13 @@ class StaffIntakeLinkResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        return parent::getEloquentQuery()
-            ->with(['faculty.translations', 'creator'])
-            ->whereNull('center_slug')
-            ->whereIn('faculty_id', self::facultyIds());
+        return static::scopeQuery(parent::getEloquentQuery()->with(['faculty.translations', 'creator']));
+    }
+
+    /** The links this screen lists: faculty links of the user's faculties. */
+    protected static function scopeQuery(Builder $query): Builder
+    {
+        return $query->whereNull('center_slug')->whereIn('faculty_id', self::facultyIds());
     }
 
     public static function form(Form $form): Form

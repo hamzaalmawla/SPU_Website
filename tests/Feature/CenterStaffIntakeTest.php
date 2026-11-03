@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Contracts\Center\CenterCatalogServiceInterface;
 use App\Contracts\Staff\StaffIntakeLinkServiceInterface;
 use App\Contracts\Staff\StaffIntakeReviewServiceInterface;
 use App\DTOs\Staff\StaffIntakeLinkCreatedDTO;
@@ -166,7 +167,7 @@ final class CenterStaffIntakeTest extends TestCase
             'name_en' => 'Hadi Faculty',
             'position_ar' => 'مدرّس',
             'position_en' => 'Lecturer',
-        ]))->assertRedirect();
+        ]))->assertRedirect('/en/staff-intake/'.$token.'/sent');
 
         $request = StaffIntakeRequest::query()->sole();
         $this->assertSame(StaffIntakeRequest::TYPE_CREATE, $request->type);
@@ -187,7 +188,9 @@ final class CenterStaffIntakeTest extends TestCase
         $this->post('/en/staff-intake/'.$facultyToken.'/form', $this->formData($this->formRef($this->get($url)->getContent()), [
             'name_ar' => 'نور سنتر',
             'name_en' => 'Nour Center',
-        ]))->assertRedirect();
+            'email' => 'nour@spu.edu.sy',
+            'phone' => '+963 944 000 111',
+        ]))->assertRedirect('/en/staff-intake/'.$facultyToken.'/sent');
         $facultyRequest = StaffIntakeRequest::query()->latest('id')->firstOrFail();
         $this->assertSame(StaffIntakeRequest::TYPE_CREATE, $facultyRequest->type);
         $this->assertSame((int) $centerMember->getKey(), (int) $facultyRequest->related_faculty_member_id);
@@ -216,14 +219,14 @@ final class CenterStaffIntakeTest extends TestCase
             'name_en' => 'Omar Unit',
             'position_ar' => 'منسق',
             'position_en' => 'Coordinator',
-        ]))->assertRedirect();
+        ]))->assertRedirect('/en/staff-intake/'.$token.'/sent');
         $request = StaffIntakeRequest::query()->sole();
 
         Livewire::test(ListStaffIntakeRequests::class)->assertCanNotSeeTableRecords([$request]);
         Livewire::test(ListCenterStaffRequests::class)->assertCanSeeTableRecords([$request]);
 
         $this->get(CenterStaffRequestResource::getUrl('view', ['record' => $request]))->assertOk()
-            ->assertSee('Requirements Unit')
+            ->assertSee((string) app(CenterCatalogServiceInterface::class)->centerName(self::CENTER, 'ar'))
             ->assertSee('Coordinator');
 
         Livewire::test(ViewCenterStaffRequest::class, ['record' => $request->getKey()])
