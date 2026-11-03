@@ -128,12 +128,24 @@
     height: calc(100% - 12px);
     filter: drop-shadow(0 8px 14px rgba(32, 39, 89, 0.28));
     transition: opacity 0.4s ease;
+    animation: none;
+}
+
+.spu-chatbot.is-awake .spu-chatbot__robot-flat,
+.spu-chatbot__launcher:hover .spu-chatbot__robot-flat,
+.spu-chatbot__launcher:focus-visible .spu-chatbot__robot-flat {
     animation: spu-chat-float 3.6s ease-in-out infinite;
 }
 
 .spu-chatbot__flat-eye {
     transform-box: fill-box;
     transform-origin: center;
+    animation: none;
+}
+
+.spu-chatbot.is-awake .spu-chatbot__flat-eye,
+.spu-chatbot__launcher:hover .spu-chatbot__flat-eye,
+.spu-chatbot__launcher:focus-visible .spu-chatbot__flat-eye {
     animation: spu-chat-blink 5s infinite;
 }
 
@@ -164,8 +176,14 @@
     margin-inline-start: -29px;
     border-radius: 50%;
     background: rgba(127, 230, 255, 0.35);
-    animation: spu-chat-pulse 2.8s ease-out infinite;
+    animation: none;
     pointer-events: none;
+}
+
+.spu-chatbot.is-awake .spu-chatbot__pulse,
+.spu-chatbot__launcher:hover .spu-chatbot__pulse,
+.spu-chatbot__launcher:focus-visible .spu-chatbot__pulse {
+    animation: spu-chat-pulse 2.8s ease-out infinite;
 }
 
 /* ── Teaser bubble ───────────────────────────────────────────────────── */

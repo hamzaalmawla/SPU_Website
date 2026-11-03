@@ -67,8 +67,7 @@ class ChatbotWidget {
         this.root.hidden = false;
         this.renderLog();
         this.bind();
-        this.scheduleRobot();
-        this.scheduleTeaser();
+        this.awaitFirstInteraction();
 
         if (this.storage?.getItem(`${storageKeyPrefix(this.locale)}:open`) === '1') {
             this.open({ focus: false });
@@ -78,10 +77,17 @@ class ChatbotWidget {
     bind() {
         this.launcher.addEventListener('click', () => this.open());
         this.launcher.addEventListener('pointerenter', () => {
-            this.loadRobot();
-            this.robot?.wave();
+            this.wake();
+            this.loadRobot().then((robot) => robot?.wave());
         });
-        this.launcher.addEventListener('focus', () => this.loadRobot(), { once: true });
+        this.launcher.addEventListener('focus', () => {
+            this.wake();
+            this.loadRobot();
+        }, { once: true });
+        this.launcher.addEventListener('touchstart', () => {
+            this.wake();
+            this.loadRobot();
+        }, { once: true, passive: true });
 
         this.root.querySelector('[data-chatbot-close]').addEventListener('click', () => this.close());
         this.root.querySelector('[data-chatbot-reset]').addEventListener('click', () => this.reset());
@@ -595,14 +601,26 @@ class ChatbotWidget {
 
     /* ── 3D robot ──────────────────────────────────────────────────────── */
 
-    scheduleRobot() {
-        const saveData = navigator.connection?.saveData === true;
-        if (saveData || !supportsWebGL()) {
+    awaitFirstInteraction() {
+        const onInteract = () => {
+            for (const type of ['pointerdown', 'keydown', 'touchstart', 'scroll']) {
+                window.removeEventListener(type, onInteract);
+            }
+            this.wake();
+        };
+
+        for (const type of ['pointerdown', 'keydown', 'touchstart', 'scroll']) {
+            window.addEventListener(type, onInteract, { once: true, passive: true });
+        }
+    }
+
+    wake() {
+        if (this.awake) {
             return;
         }
-
-        const idle = window.requestIdleCallback ?? ((callback) => window.setTimeout(callback, 1200));
-        idle(() => this.loadRobot(), { timeout: 3500 });
+        this.awake = true;
+        this.root.classList.add('is-awake');
+        this.scheduleTeaser();
     }
 
     loadRobot() {

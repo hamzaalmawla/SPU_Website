@@ -1,4 +1,13 @@
-@php($images = $section->payload->content['images'] ?? [])
+@php
+    $images = $section->payload->content['images'] ?? [];
+    $firstHeroImage = $images[0] ?? null;
+    $firstHeroSrcset = is_string($firstHeroImage) ? \App\Support\MediaUrlResolver::legacySrcset($firstHeroImage) : null;
+@endphp
+@if (is_string($firstHeroImage) && $firstHeroImage !== '')
+    @push('head')
+        <link rel="preload" as="image" href="{{ $firstHeroImage }}" @if ($firstHeroSrcset) imagesrcset="{{ $firstHeroSrcset }}" imagesizes="(max-width: 640px) 640px, 100vw" @endif fetchpriority="high">
+    @endpush
+@endif
 
 <section x-data="heroSlider()"
          data-images="{{ json_encode($images, JSON_THROW_ON_ERROR) }}"
@@ -21,7 +30,7 @@
              x-transition:leave="transition ease-in duration-1000"
              x-transition:leave-start="opacity-100"
              x-transition:leave-end="opacity-0"
-             class="absolute inset-0 w-full h-full overflow-hidden transition-all duration-[1000ms] [transition-timing-function:cubic-bezier(0.25,1,0.5,1)]"
+             class="absolute inset-0 w-full h-full overflow-hidden transition-[opacity,transform] duration-[1000ms] [transition-timing-function:cubic-bezier(0.25,1,0.5,1)]"
              role="group"
              aria-roledescription="{{ __('public.slide') }}"
              :aria-label="slideLabel({{ $loop->index }})"
@@ -36,7 +45,7 @@
                  a 3:2 photo needs about 1.5x the hero's height. 100vw would pick
                  a phone-width file and blur it. --}}
             @php($slideSrcset = \App\Support\MediaUrlResolver::legacySrcset($img))
-            <img src="{{ $img }}" @if ($slideSrcset) srcset="{{ $slideSrcset }}" sizes="max(100vw, calc(1.5 * clamp(46rem, 100svh, 58rem)))" @endif alt="{{ $loop->first ? $section->payload->title : ($section->payload->slideAlts[$loop->index] ?? $section->payload->title.' '.($loop->index + 1)) }}" class="h-full w-full object-cover" data-hero-slide @if ($loop->first) fetchpriority="high" @else loading="lazy" fetchpriority="low" decoding="async" @endif width="1920" height="800">
+            <img src="{{ $img }}" @if ($slideSrcset) srcset="{{ $slideSrcset }}" sizes="(max-width: 640px) 640px, 100vw" @endif alt="{{ $loop->first ? $section->payload->title : ($section->payload->slideAlts[$loop->index] ?? $section->payload->title.' '.($loop->index + 1)) }}" class="h-full w-full object-cover" data-hero-slide @if ($loop->first) fetchpriority="high" @else loading="lazy" fetchpriority="low" decoding="async" @endif width="1920" height="800">
         </div>
     @endforeach
 

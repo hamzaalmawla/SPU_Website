@@ -10,17 +10,14 @@ import {
     MathUtils,
     Mesh,
     MeshBasicMaterial,
-    MeshPhysicalMaterial,
     MeshStandardMaterial,
     PerspectiveCamera,
-    PMREMGenerator,
     Scene,
     SphereGeometry,
     SRGBColorSpace,
     TorusGeometry,
     WebGLRenderer,
 } from 'three';
-import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
 
 /**
@@ -59,24 +56,21 @@ export function createRobot({ reducedMotion = false } = {}) {
     canvas.setAttribute('aria-hidden', 'true');
 
     const scene = new Scene();
-    const pmrem = new PMREMGenerator(renderer);
-    const environment = new RoomEnvironment();
-    scene.environment = pmrem.fromScene(environment, 0.04).texture;
-    environment.dispose?.();
-    pmrem.dispose();
 
     const camera = new PerspectiveCamera(26, 1, 0.1, 50);
     camera.position.set(0, 0.42, 6.4);
     camera.lookAt(0, 0.32, 0);
 
-    scene.add(new HemisphereLight(0xffffff, 0xb9c3ea, 0.9));
-    const key = new DirectionalLight(0xffffff, 2.1);
+    scene.add(new HemisphereLight(0xffffff, 0xb9c3ea, 1.35));
+    const key = new DirectionalLight(0xffffff, 2.3);
     key.position.set(3, 4, 5);
     scene.add(key);
+    const fill = new DirectionalLight(0xdce6ff, 0.9);
+    fill.position.set(-2.5, -1.5, 4);
+    scene.add(fill);
     const rim = new DirectionalLight(0x8fb6ff, 1.5);
     rim.position.set(-4, 2.5, -3);
     scene.add(rim);
-
     const parts = buildRobot();
     scene.add(parts.root);
 
@@ -95,6 +89,7 @@ export function createRobot({ reducedMotion = false } = {}) {
     let frame = 0;
     let lastFrameTime = 0;
     const start = performance.now();
+    let activeUntil = start + 4_000;
     const glow = STATE_GLOW.idle.clone();
 
     const resizeObserver = new ResizeObserver(() => resize());
@@ -121,8 +116,17 @@ export function createRobot({ reducedMotion = false } = {}) {
         render(performance.now());
     }
 
+    function wake(durationMs = 3_500) {
+        activeUntil = Math.max(activeUntil, performance.now() + durationMs);
+        schedule();
+    }
+
+    function isAnimatedNow(now = performance.now()) {
+        return state === 'thinking' || state === 'talking' || now < activeUntil;
+    }
+
     function schedule() {
-        const shouldRun = !reducedMotion && visible && !document.hidden && container !== null;
+        const shouldRun = !reducedMotion && visible && !document.hidden && container !== null && isAnimatedNow();
         if (shouldRun && !running) {
             running = true;
             frame = requestAnimationFrame(loop);
@@ -134,6 +138,12 @@ export function createRobot({ reducedMotion = false } = {}) {
 
     function loop(now) {
         if (!running) {
+            return;
+        }
+        if (!isAnimatedNow(now)) {
+            running = false;
+            render(now);
+
             return;
         }
         frame = requestAnimationFrame(loop);
@@ -230,7 +240,7 @@ export function createRobot({ reducedMotion = false } = {}) {
             resizeObserver.observe(container);
             intersection.observe(container);
             resize();
-            schedule();
+            wake(4_000);
         },
         setState(next) {
             if (!STATE_GLOW[next] || next === state) {
@@ -242,10 +252,13 @@ export function createRobot({ reducedMotion = false } = {}) {
                 // Let the colors settle, then draw the still frame.
                 glow.copy(STATE_GLOW[next]);
                 render(performance.now());
+            } else {
+                wake(4_000);
             }
         },
         wave() {
             waveUntil = (performance.now() - start) / 1000 + 1.4;
+            wake(2_500);
         },
         lookAt(clientX, clientY) {
             if (!container || reducedMotion) {
@@ -259,6 +272,7 @@ export function createRobot({ reducedMotion = false } = {}) {
                 y: MathUtils.clamp((clientY - cy) / (window.innerHeight / 2), -1, 1),
             };
             headTarget = { y: pointer.x * 0.55, x: pointer.y * 0.32 };
+            wake(2_000);
         },
         dispose() {
             running = false;
@@ -272,8 +286,8 @@ export function createRobot({ reducedMotion = false } = {}) {
 }
 
 function buildRobot() {
-    const shell = new MeshPhysicalMaterial({ color: 0xf6f8fd, roughness: 0.3, metalness: 0.05, clearcoat: 1, clearcoatRoughness: 0.18 });
-    const visor = new MeshPhysicalMaterial({ color: 0x121a44, roughness: 0.12, metalness: 0.35, clearcoat: 1, clearcoatRoughness: 0.05 });
+    const shell = new MeshStandardMaterial({ color: 0xf6f8fd, roughness: 0.22, metalness: 0.08 });
+    const visor = new MeshStandardMaterial({ color: 0x121a44, roughness: 0.14, metalness: 0.38 });
     const navy = new MeshStandardMaterial({ color: BRAND_NAVY, roughness: 0.4, metalness: 0.35 });
     const gold = new MeshStandardMaterial({ color: BRAND_GOLD, roughness: 0.28, metalness: 0.75 });
     const eyeMaterial = () => new MeshStandardMaterial({ color: EYE, emissive: EYE, emissiveIntensity: 1.9, roughness: 0.2 });

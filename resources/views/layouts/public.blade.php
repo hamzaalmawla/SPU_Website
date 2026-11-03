@@ -46,6 +46,7 @@
         <link rel="icon" href="{{ asset('favicon.ico') }}" sizes="any">
         <link rel="apple-touch-icon" href="{{ asset('apple-touch-icon.png') }}">
         <link rel="manifest" href="{{ asset('site.webmanifest') }}">
+        @stack('head')
         {{-- Per-image object-fit / focal-point overrides for this page's images.
              Inline, so they apply at the first paint without a blocking request;
              otherwise a framed photo shows centred and then jumps. --}}
@@ -114,7 +115,6 @@
             @endforeach
         @endif
         @stack('styles')
-        @stack('head')
         @include('public.layout.analytics')
     </head>
     <body class="min-h-screen antialiased font-hacen">

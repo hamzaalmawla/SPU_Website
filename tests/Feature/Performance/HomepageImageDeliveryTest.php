@@ -149,4 +149,18 @@ final class HomepageImageDeliveryTest extends TestCase
             );
         }
     }
+
+    public function test_the_lcp_hero_image_is_preloaded_in_head_before_the_inline_stylesheet(): void
+    {
+        foreach (['ar', 'en'] as $locale) {
+            $html = (string) $this->get('/'.$locale)->assertOk()->getContent();
+
+            $preloadPos = strpos($html, '<link rel="preload" as="image"');
+            $stylePos = strpos($html, '<style id="public-stylesheet">');
+
+            $this->assertNotFalse($preloadPos, "Locale {$locale} must preload its first hero slide in <head>.");
+            $this->assertNotFalse($stylePos);
+            $this->assertLessThan($stylePos, $preloadPos, 'The LCP image preload must precede the inline stylesheet.');
+        }
+    }
 }

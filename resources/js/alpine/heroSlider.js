@@ -55,8 +55,8 @@ export function createHeroSlider() {
             this.stopAuto();
             if (!this.pageLoaded || this.reducedMotion || this.images.length <= 1 || this.hasActiveInteraction()) return;
 
-            this._timer = setInterval(() => this.next(), 5000);
-            this._preloadTimer = setTimeout(() => this.preloadSlide(this.currentIndex + 1), 4000);
+            this._timer = setInterval(() => this.next(), 9000);
+            this._preloadTimer = setTimeout(() => this.preloadSlide(this.currentIndex + 1), 8000);
         },
 
         stopAuto() {
@@ -85,7 +85,7 @@ export function createHeroSlider() {
 
             if (this._timer) {
                 if (this._preloadTimer) clearTimeout(this._preloadTimer);
-                this._preloadTimer = setTimeout(() => this.preloadSlide(this.currentIndex + 1), 4000);
+                this._preloadTimer = setTimeout(() => this.preloadSlide(this.currentIndex + 1), 8000);
             }
         },
 

@@ -36,7 +36,7 @@ export function createHonorPanel() {
         startAuto() {
             this.stopAuto();
             if (!this.reducedMotion && this.items.length > 1 && !this.hasActiveInteraction()) {
-                this._timer = setInterval(() => this.next(), 6000);
+                this._timer = setInterval(() => this.next(), 9000);
             }
         },
 
@@ -97,11 +97,11 @@ export function createHonorPanel() {
             }
 
             if (position === 1) {
-                return 'w-0 lg:w-[32%] h-[48%] z-20 start-0 lg:start-[68%] top-0 opacity-0 lg:opacity-100 scale-95 brightness-90';
+                return 'w-0 lg:w-[32%] h-[48%] z-20 start-0 lg:start-[68%] top-0 opacity-0 lg:opacity-100 scale-95';
             }
 
             if (position === 2) {
-                return 'w-0 lg:w-[32%] h-[48%] z-10 start-0 lg:start-[68%] top-[52%] opacity-0 lg:opacity-100 scale-90 brightness-75';
+                return 'w-0 lg:w-[32%] h-[48%] z-10 start-0 lg:start-[68%] top-[52%] opacity-0 lg:opacity-100 scale-90';
             }
 
             return 'w-0 h-0 opacity-0';

@@ -24,6 +24,7 @@ final class LegacyImageDerivativeService implements LegacyImageDerivativeService
 {
     private const IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp'];
 
+    private const MANIFEST_VERSION = 2;
     public function __construct(
         private readonly ImageConversionServiceInterface $imageConversionService,
         private readonly HomepageSectionServiceInterface $homepageSectionService,
@@ -57,6 +58,7 @@ final class LegacyImageDerivativeService implements LegacyImageDerivativeService
 
     public function generate(array $sourcePaths, bool $force = false): LegacyImageDerivativeReportDTO
     {
+        $force = $force || $this->manifestNeedsUpgrade();
         $manifest = $this->readManifest();
         $disk = Storage::disk('public');
         $directory = MediaUrlResolver::DERIVATIVE_DIRECTORY;
@@ -348,6 +350,20 @@ final class LegacyImageDerivativeService implements LegacyImageDerivativeService
         return $pruned;
     }
 
+    private function manifestNeedsUpgrade(): bool
+    {
+        $disk = Storage::disk('public');
+        $path = MediaUrlResolver::DERIVATIVE_DIRECTORY.'/manifest.json';
+
+        if (! $disk->exists($path)) {
+            return false;
+        }
+
+        $decoded = json_decode((string) $disk->get($path), true);
+
+        return ! is_array($decoded) || (int) ($decoded['version'] ?? 0) !== self::MANIFEST_VERSION;
+    }
+
     /**
      * @return array<string, array<string, mixed>>
      */
@@ -375,7 +391,7 @@ final class LegacyImageDerivativeService implements LegacyImageDerivativeService
         Storage::disk('public')->put(
             MediaUrlResolver::DERIVATIVE_DIRECTORY.'/manifest.json',
             (string) json_encode(
-                ['version' => 1, 'images' => $images],
+                ['version' => self::MANIFEST_VERSION, 'images' => $images],
                 JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES,
             ),
         );

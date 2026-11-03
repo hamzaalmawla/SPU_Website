@@ -246,6 +246,10 @@ pat = re.compile(r'^[ \t]*(?:#[^\n]*\n[ \t]*)*RewriteCond\s+%\{HTTP_HOST\}[^\n]*
 if pat.search(out):
     out = pat.sub('', out); removed.append('staging host guard (404 for non-v2 hosts)')
 
+pat = re.compile(r'^[ \t]*(?:#[^\n]*\n[ \t]*)*RewriteCond\s+%\{HTTP_USER_AGENT\}[^\n]*\n[ \t]*RewriteRule\s+\^robots\\\.txt\$\s+app\.php[^\n]*\n',
+                 re.IGNORECASE | re.MULTILINE)
+if pat.search(out):
+    out = pat.sub('', out); removed.append('staging audit robots.txt rewrite')
 # The forced-HTTPS origin, which points at the staging host and must point at
 # the canonical one. Rewritten rather than removed: without it the site has no
 # HTTPS redirect at all.

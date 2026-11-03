@@ -16,7 +16,7 @@
     "src": "public/images/icon-chevron-down-outline.svg"
   },
   "resources/css/app.css": {
-    "file": "assets/app.yQ4_fGu7.css",
+    "file": "assets/app.BvyxiglU.css",
     "name": "app",
     "names": [
       "app.css"
@@ -30,7 +30,7 @@
     ]
   },
   "resources/css/filament/admin.css": {
-    "file": "assets/admin.CkOC3KAD.css",
+    "file": "assets/admin.BgZUj5NI.css",
     "name": "admin",
     "names": [
       "admin.css"
@@ -57,7 +57,7 @@
     ]
   },
   "resources/js/app.js": {
-    "file": "js/app.D-4LinzZ.js",
+    "file": "js/app.bW34OSc-.js",
     "name": "app",
     "src": "resources/js/app.js",
     "isEntry": true,
@@ -68,7 +68,7 @@
     ]
   },
   "resources/js/chatbot/chatbotWidget.js": {
-    "file": "js/chatbotWidget.C3U7CkJf.js",
+    "file": "js/chatbotWidget.BTb5BlQq.js",
     "name": "chatbotWidget",
     "src": "resources/js/chatbot/chatbotWidget.js",
     "isDynamicEntry": true,
@@ -80,7 +80,7 @@
     ]
   },
   "resources/js/chatbot/robotScene.js": {
-    "file": "js/robotScene.4kGkjN-N.js",
+    "file": "js/robotScene.DKxxcsEY.js",
     "name": "robotScene",
     "src": "resources/js/chatbot/robotScene.js",
     "isDynamicEntry": true

@@ -3,7 +3,7 @@
 return [
     'webp' => [
         'driver' => env('MEDIA_WEBP_DRIVER', 'auto'),
-        'quality' => (int) env('MEDIA_WEBP_QUALITY', 75),
+        'quality' => (int) env('MEDIA_WEBP_QUALITY', 60),
     ],
 
     /*
@@ -26,7 +26,7 @@ return [
         // Rendered widths across the curated surfaces, smallest first. The
         // widest variant becomes the default `src`. 240 covers the 110px
         // faculty icons at 2x, which otherwise download a 400px original.
-        'widths' => [240, 480, 960, 1440],
+        'widths' => [240, 480, 660, 960, 1440],
 
         // Only paths under these directories are considered. `storage/media`
         // is the CMS upload library on the public disk: uploads are stored at

@@ -96,10 +96,23 @@ async function bootAlpine() {
 
     // Evaluating this bundle and starting Alpine ran as one task long enough to
     // block input; yielding once lets the browser handle anything pending
-    // in between.
+    // in between, and deferring below-the-fold homepage sections keeps each
+    // section's DOM walk under the 50 ms long-task budget.
+    const deferredSections = Array.from(document.querySelectorAll('[data-homepage] > :nth-child(n+3)'));
+    for (const section of deferredSections) {
+        section._x_ignore = true;
+    }
+
     await new Promise((resolve) => setTimeout(resolve, 0));
 
     Alpine.start();
+
+    for (const section of deferredSections) {
+        await new Promise((resolve) => setTimeout(resolve, 0));
+        delete section._x_ignore;
+        Alpine.initTree(section);
+    }
+
     initAfterAlpineStart();
 }
 

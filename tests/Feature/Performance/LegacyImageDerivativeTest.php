@@ -277,4 +277,23 @@ final class LegacyImageDerivativeTest extends TestCase
         $this->assertSame('/'.$this->sourcePath, MediaUrlResolver::resolveLegacy($this->sourcePath));
         $this->assertNull(MediaUrlResolver::legacySrcset($this->sourcePath));
     }
+
+    public function test_an_older_manifest_version_forces_a_one_time_reencode(): void
+    {
+        $this->writeFixture();
+        $service = app(LegacyImageDerivativeServiceInterface::class);
+        $service->generate([$this->sourcePath]);
+
+        $manifestPath = MediaUrlResolver::DERIVATIVE_DIRECTORY.'/manifest.json';
+        $decoded = json_decode((string) Storage::disk('public')->get($manifestPath), true);
+        $decoded['version'] = 1;
+        Storage::disk('public')->put($manifestPath, (string) json_encode($decoded));
+
+        $upgraded = $service->generate([$this->sourcePath]);
+        $afterUpgrade = $service->generate([$this->sourcePath]);
+
+        $this->assertSame(1, $upgraded->generatedCount);
+        $this->assertSame(0, $afterUpgrade->generatedCount);
+        $this->assertSame(1, $afterUpgrade->reusedCount);
+    }
 }
