@@ -31,6 +31,7 @@ use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
 use InvalidArgumentException;
+use Livewire\Attributes\Url;
 
 /**
  * Administration › AI assistant: the knowledge files the public assistant
@@ -51,6 +52,24 @@ class ManageChatbot extends Page
 
     /** @var array<string, mixed>|null */
     public ?array $testResult = null;
+
+    /** Documents list: page, size, search and filters, kept in the address. */
+    #[Url(as: 'page', except: 1)]
+    public int $documentsPage = 1;
+
+    #[Url(as: 'per', except: 10)]
+    public int $documentsPerPage = 10;
+
+    #[Url(as: 'q', except: '')]
+    public string $documentSearch = '';
+
+    #[Url(as: 'type', except: '')]
+    public string $documentType = '';
+
+    #[Url(as: 'status', except: '')]
+    public string $documentStatus = '';
+
+    private const PAGE_SIZES = [10, 25, 50];
 
     private ChatbotKnowledgeServiceInterface $knowledge;
 
@@ -123,7 +142,15 @@ class ManageChatbot extends Page
             'settings' => $settings,
             'stats' => $stats,
             'usage' => $this->usage->summary(),
-            'documents' => $this->knowledge->documents(),
+            'documents' => $this->knowledge->documentsPage(
+                $this->documentsPage,
+                $this->perPage(),
+                $this->documentSearch,
+                $this->documentType !== '' ? $this->documentType : null,
+                $this->documentStatus !== '' ? $this->documentStatus : null,
+            ),
+            'pageSizes' => self::PAGE_SIZES,
+            'filtering' => trim($this->documentSearch) !== '' || $this->documentType !== '' || $this->documentStatus !== '',
             'reasons' => $reasons,
             'canUpdate' => $this->canUpdate(),
             'modelLabel' => (string) (((array) config('chatbot.models', []))[$settings->model]['label'] ?? $settings->model),
@@ -639,7 +666,50 @@ class ManageChatbot extends Page
 
     private function document(int $id): ?ChatbotDocumentDTO
     {
-        return $this->knowledge->documents()->first(fn (ChatbotDocumentDTO $document): bool => $document->id === $id);
+        return $this->knowledge->document($id);
+    }
+
+    /* ── Documents list paging and filters ─────────────────────────────── */
+
+    public function goToDocumentsPage(int $page): void
+    {
+        $this->documentsPage = max(1, $page);
+    }
+
+    public function updatedDocumentSearch(): void
+    {
+        $this->documentsPage = 1;
+    }
+
+    public function updatedDocumentType(): void
+    {
+        $this->documentType = in_array($this->documentType, ['upload', 'text', 'website'], true) ? $this->documentType : '';
+        $this->documentsPage = 1;
+    }
+
+    public function updatedDocumentStatus(): void
+    {
+        $this->documentStatus = in_array($this->documentStatus, ['ready', 'failed', 'pending', 'stale'], true) ? $this->documentStatus : '';
+        $this->documentsPage = 1;
+    }
+
+    public function updatedDocumentsPerPage(): void
+    {
+        $this->documentsPerPage = $this->perPage();
+        $this->documentsPage = 1;
+    }
+
+    public function clearDocumentFilters(): void
+    {
+        $this->documentSearch = '';
+        $this->documentType = '';
+        $this->documentStatus = '';
+        $this->documentsPage = 1;
+    }
+
+    private function perPage(): int
+    {
+        return in_array($this->documentsPerPage, self::PAGE_SIZES, true) ? $this->documentsPerPage : self::PAGE_SIZES[0];
     }
 
     private function canUpdate(): bool

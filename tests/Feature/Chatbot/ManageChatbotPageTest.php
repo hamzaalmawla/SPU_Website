@@ -128,4 +128,63 @@ final class ManageChatbotPageTest extends TestCase
 
         $this->assertSame('ready', app(ChatbotKnowledgeServiceInterface::class)->documents()->first()?->status);
     }
+
+    public function test_the_documents_list_is_paged_searchable_and_filterable(): void
+    {
+        $admin = $this->adminUser();
+        $this->saveApiKey($admin);
+        foreach (range(1, 23) as $index) {
+            $this->addKnowledge($admin, sprintf('Guide %02d', $index), "Section {$index}: the admission office answers question number {$index} every weekday.");
+        }
+        $this->addKnowledge($admin, 'Fees 100%_discount notice', 'Students who rank first get a one hundred percent discount on fees.');
+
+        $service = app(ChatbotKnowledgeServiceInterface::class);
+        $first = $service->documentsPage(1, 10);
+        $this->assertSame(24, $first->total);
+        $this->assertSame(3, $first->lastPage);
+        $this->assertCount(10, $first->items);
+        $this->assertSame('Fees 100%_discount notice', $first->items->first()->title, 'Newest first.');
+        $this->assertCount(4, $service->documentsPage(3, 10)->items);
+        $this->assertSame(3, $service->documentsPage(99, 10)->currentPage, 'A page past the end shows the last page.');
+
+        // LIKE metacharacters match literally.
+        $this->assertSame(1, $service->documentsPage(1, 10, '100%_')->total);
+        $this->assertSame(0, $service->documentsPage(1, 10, '100%x')->total);
+        $this->assertSame(10, $service->documentsPage(1, 10, 'guide 1')->total, 'Guide 10 to 19, case-insensitive.');
+        $this->assertSame(4, $service->documentsPage(1, 10, 'guide 2')->total);
+        $this->assertSame(24, $service->documentsPage(1, 10, null, 'text')->total);
+        $this->assertSame(0, $service->documentsPage(1, 10, null, 'website')->total);
+        $this->assertSame(24, $service->documentsPage(1, 10, null, null, 'ready')->total);
+        $this->assertSame(0, $service->documentsPage(1, 10, null, null, 'failed')->total);
+
+        $page = Livewire::actingAs($admin)->test(ManageChatbot::class)
+            ->assertSee(__('admin_chatbot.table.showing', ['from' => 1, 'to' => 10, 'total' => 24]))
+            ->assertSee('Fees 100%_discount notice')
+            ->assertDontSee('Guide 01')
+            ->assertSeeHtml('aria-current="page"');
+
+        $page->call('goToDocumentsPage', 3)
+            ->assertSee(__('admin_chatbot.table.showing', ['from' => 21, 'to' => 24, 'total' => 24]))
+            ->assertSee('Guide 01')
+            ->assertDontSee('Fees 100%_discount notice');
+
+        $page->set('documentSearch', 'Guide 07')
+            ->assertSet('documentsPage', 1)
+            ->assertSee('Guide 07')
+            ->assertDontSee('Guide 08')
+            ->assertSee(__('admin_chatbot.table.showing', ['from' => 1, 'to' => 1, 'total' => 1]));
+
+        $page->set('documentSearch', 'nothing like this')
+            ->assertSee(__('admin_chatbot.table.no_matches'))
+            ->call('clearDocumentFilters')
+            ->assertSet('documentSearch', '')
+            ->assertSee(__('admin_chatbot.table.showing', ['from' => 1, 'to' => 10, 'total' => 24]));
+
+        $page->set('documentsPerPage', 25)
+            ->assertSee(__('admin_chatbot.table.showing', ['from' => 1, 'to' => 24, 'total' => 24]))
+            ->set('documentsPerPage', 7)
+            ->assertSet('documentsPerPage', 10)
+            ->set('documentType', 'bogus')
+            ->assertSet('documentType', '');
+    }
 }

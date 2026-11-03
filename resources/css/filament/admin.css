@@ -1246,6 +1246,286 @@
     white-space: nowrap;
 }
 
+.spu-assistant__toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.85rem 1rem;
+    border-bottom: 1px solid var(--spu-line);
+}
+
+.spu-assistant__search {
+    position: relative;
+    display: flex;
+    flex: 1 1 18rem;
+    min-width: 0;
+}
+
+.spu-assistant__search-icon {
+    position: absolute;
+    inset-block-start: 50%;
+    inset-inline-start: 0.7rem;
+    width: 1.1rem;
+    height: 1.1rem;
+    color: var(--spu-muted);
+    transform: translateY(-50%);
+    pointer-events: none;
+}
+
+.spu-assistant__search input,
+.spu-assistant__filter select,
+.spu-assistant__per-page select {
+    height: 2.4rem;
+    border: 1px solid var(--spu-line);
+    border-radius: 10px;
+    background-color: var(--spu-surface);
+    color: var(--spu-ink);
+    font: inherit;
+    font-size: 0.875rem;
+}
+
+.spu-assistant__search input {
+    width: 100%;
+    padding-block: 0;
+    padding-inline: 2.3rem 0.8rem;
+}
+
+.spu-assistant__filter select,
+.spu-assistant__per-page select {
+    padding-block: 0;
+    padding-inline: 0.75rem 2rem;
+}
+
+.spu-assistant__search input:focus,
+.spu-assistant__filter select:focus,
+.spu-assistant__per-page select:focus {
+    border-color: var(--spu-navy);
+    outline: none;
+    box-shadow: 0 0 0 3px rgb(32 39 89 / 14%);
+}
+
+.spu-assistant__clear {
+    height: 2.4rem;
+    padding: 0 0.8rem;
+    border: 0;
+    border-radius: 10px;
+    background: transparent;
+    color: var(--spu-navy);
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    cursor: pointer;
+}
+
+.spu-assistant__loading {
+    display: inline-flex;
+    align-items: center;
+}
+
+.spu-assistant__loading-icon {
+    width: 1.2rem;
+    height: 1.2rem;
+    color: var(--spu-navy);
+}
+
+.spu-assistant__pager {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem 1rem;
+    padding: 0.85rem 1rem;
+    border-top: 1px solid var(--spu-line);
+}
+
+.spu-assistant__pager-summary {
+    margin: 0;
+    color: var(--spu-muted);
+    font-size: 0.82rem;
+}
+
+.spu-assistant__pages {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.3rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.spu-assistant__page {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.3rem;
+    min-width: 2.25rem;
+    height: 2.25rem;
+    padding: 0 0.6rem;
+    border: 1px solid var(--spu-line);
+    border-radius: 10px;
+    background: var(--spu-surface);
+    color: var(--spu-ink);
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.spu-assistant__page:hover:not(:disabled):not(.is-current) {
+    border-color: #c6cbe0;
+    background: var(--spu-surface-muted);
+}
+
+.spu-assistant__page:focus-visible {
+    outline: 2px solid var(--spu-navy);
+    outline-offset: 2px;
+}
+
+.spu-assistant__page.is-current {
+    border-color: var(--spu-navy);
+    background: var(--spu-navy);
+    color: #fff;
+    cursor: default;
+}
+
+.spu-assistant__page:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.spu-assistant__page-chevron {
+    width: 1rem;
+    height: 1rem;
+}
+
+[dir="rtl"] .spu-assistant__page-chevron {
+    transform: scaleX(-1);
+}
+
+.spu-assistant__page-gap {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.5rem;
+    color: var(--spu-muted);
+}
+
+.spu-assistant__per-page {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--spu-muted);
+    font-size: 0.82rem;
+}
+
+@media (max-width: 640px) {
+    .spu-assistant__page--step span {
+        display: none;
+    }
+
+    .spu-assistant__pager {
+        justify-content: center;
+    }
+}
+
+/* Badges and short values never wrap letter by letter in a narrow column. */
+.spu-assistant__table .fi-badge,
+.spu-assistant__table .spu-assistant__num {
+    white-space: nowrap;
+}
+
+/* Phones and small tablets: each document is a stacked card with labelled
+   fields instead of a table that scrolls sideways. */
+@media (max-width: 767px) {
+    .spu-assistant__table thead {
+        display: none;
+    }
+
+    .spu-assistant__table,
+    .spu-assistant__table tbody,
+    .spu-assistant__table tr,
+    .spu-assistant__table td {
+        display: block;
+        width: 100%;
+    }
+
+    .spu-assistant__table tr {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.35rem 1rem;
+        padding: 0.9rem 1rem;
+        border-bottom: 1px solid var(--spu-line);
+    }
+
+    .spu-assistant__table tr:last-child {
+        border-bottom: 0;
+    }
+
+    .spu-assistant__table td {
+        padding: 0;
+        border: 0;
+        text-align: start;
+        white-space: normal;
+    }
+
+    .spu-assistant__table td.spu-assistant__cell-doc,
+    .spu-assistant__table td[data-label]:last-child {
+        grid-column: 1 / -1;
+    }
+
+    .spu-assistant__table td[data-label]:not(:last-child)::before {
+        content: attr(data-label);
+        display: block;
+        margin-bottom: 0.1rem;
+        color: var(--spu-muted);
+        font-size: 0.7rem;
+        font-weight: 700;
+    }
+
+    .spu-assistant__doc {
+        min-width: 0;
+    }
+
+    .spu-assistant__num {
+        text-align: start;
+    }
+
+    .spu-assistant__row-actions {
+        justify-content: flex-start;
+        flex-wrap: wrap;
+        margin-top: 0.25rem;
+        padding-top: 0.5rem;
+        border-top: 1px dashed var(--spu-line);
+    }
+
+    .spu-assistant__toolbar {
+        padding: 0.75rem;
+    }
+
+    .spu-assistant__filter,
+    .spu-assistant__filter select {
+        flex: 1 1 8rem;
+        width: 100%;
+    }
+}
+
+.dark .spu-assistant__search input,
+.dark .spu-assistant__filter select,
+.dark .spu-assistant__per-page select,
+.dark .spu-assistant__page {
+    border-color: rgb(255 255 255 / 12%);
+    background-color: rgb(255 255 255 / 5%);
+    color: #fff;
+}
+
+.dark .spu-assistant__page.is-current {
+    background: #fff;
+    color: var(--spu-navy);
+}
+
 .spu-assistant__table-wrap {
     overflow-x: auto;
 }

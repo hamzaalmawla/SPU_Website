@@ -35,6 +35,20 @@ return [
     'usage_chart_empty' => 'No questions yet.',
 
     'table' => [
+        'search_label' => 'Search the knowledge files',
+        'search_placeholder' => 'Search by title, file name or page address…',
+        'filter_type' => 'Type',
+        'all_types' => 'All types',
+        'filter_status' => 'Status',
+        'all_statuses' => 'All statuses',
+        'clear_filters' => 'Clear filters',
+        'no_matches' => 'No file matches these filters.',
+        'showing' => 'Showing :from–:to of :total',
+        'pagination' => 'Pages of the knowledge files',
+        'previous' => 'Previous',
+        'next' => 'Next',
+        'page_n' => 'Page :page',
+        'per_page' => 'Per page',
         'document' => 'Document',
         'status' => 'Status',
         'passages' => 'Passages',
@@ -47,6 +61,7 @@ return [
         'by' => 'by :name',
     ],
     'statuses' => [
+        'stale' => 'Needs re-index',
         'ready' => 'Ready',
         'failed' => 'Failed',
         'pending' => 'Waiting',

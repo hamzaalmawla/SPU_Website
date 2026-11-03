@@ -8,6 +8,7 @@ use App\DTOs\Chatbot\ChatbotDocumentDTO;
 use App\DTOs\Chatbot\ChatbotKnowledgeStatsDTO;
 use App\DTOs\Chatbot\ChatbotRetrievalDTO;
 use App\DTOs\Chatbot\ChatbotWebsiteSyncDTO;
+use App\DTOs\Shared\PaginatedResultDTO;
 use Illuminate\Support\Collection;
 
 /**
@@ -23,6 +24,18 @@ interface ChatbotKnowledgeServiceInterface
      * @return Collection<int, ChatbotDocumentDTO> newest first
      */
     public function documents(): Collection;
+
+    /**
+     * One page of the documents list, newest first.
+     *
+     * @param  string|null  $search  matches the title, file name or page address
+     * @param  string|null  $sourceType  upload | text | website
+     * @param  string|null  $status  ready | failed | pending | stale (needs re-indexing)
+     * @return PaginatedResultDTO items are ChatbotDocumentDTO
+     */
+    public function documentsPage(int $page, int $perPage = 10, ?string $search = null, ?string $sourceType = null, ?string $status = null): PaginatedResultDTO;
+
+    public function document(int $documentId): ?ChatbotDocumentDTO;
 
     public function stats(): ChatbotKnowledgeStatsDTO;
 
