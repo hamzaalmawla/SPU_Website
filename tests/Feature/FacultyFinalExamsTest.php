@@ -164,6 +164,51 @@ final class FacultyFinalExamsTest extends TestCase
     }
 
     /** @return iterable<string, array{string}> */
+    public function test_editor_pastes_exam_rows_from_a_spreadsheet_and_the_page_keeps_the_pdf_button(): void
+    {
+        $this->actingAs(User::query()->where('role_slug', 'super_admin')->firstOrFail(), 'web');
+        $target = 'facilities.dentistry.final-exams';
+
+        $component = Livewire::test(ManageDentistryFaculty::class)
+            ->set('data.target_key', $target)
+            ->call('loadTarget', $target);
+
+        foreach (['ar' => 'الفصل الأول', 'en' => 'First semester'] as $locale => $title) {
+            $component
+                ->set("data.{$locale}_content.summary", $title)
+                ->set("data.{$locale}_content.payload.schedules", ['s1' => [
+                    'title' => $title,
+                    'note' => '',
+                    'documents' => [['label' => '', 'url' => "/storage/media/exams-{$locale}.pdf", 'urlMediaId' => null]],
+                    'rows' => [],
+                ]])
+                ->assertSee(__('admin.faculty_workspace.editor.fields.paste_exam_rows'))
+                ->callFormComponentAction("{$locale}_content.payload.schedules.s1.rows", 'pasteExamRows', [
+                    'pasted' => "التاريخ\tالساعة\tالمقرر\tالسنة\tالقاعة\n14/6/2026\t09:00 - 11:00\tتشريح\tالسنة الأولى\tA1\n15/6/2026\t10:00\tعلم الأمراض\tالسنة الثانية\tB2",
+                ])
+                ->assertHasNoFormComponentActionErrors();
+
+            $rows = array_values($component->get("data.{$locale}_content.payload.schedules.s1.rows"));
+            $this->assertCount(2, $rows);
+            $this->assertSame('2026-06-14', $rows[0]['date']);
+            $this->assertSame('تشريح', $rows[0]['course']);
+        }
+
+        $component->call('save')->assertHasNoErrors()->call('publish')->assertHasNoErrors();
+        Cache::flush();
+
+        $this->get('/ar/faculties/dentistry/final-exams')
+            ->assertOk()
+            ->assertSee('data-exam-schedule', false)
+            ->assertSee('تحميل البرنامج (PDF)')
+            ->assertSee('/storage/media/exams-ar.pdf', false)
+            // The weekday comes from the picked date.
+            ->assertSee('الأحد')
+            ->assertSee('14/06/2026')
+            ->assertSeeInOrder(['تشريح', 'علم الأمراض']);
+        $this->get('/en/faculties/dentistry/final-exams')->assertOk()->assertSee('Download the schedule (PDF)')->assertSee('Sunday');
+    }
+
     public static function facultyProvider(): iterable
     {
         foreach (['medicine', 'dentistry', 'pharmacy', 'artificial-intelligence', 'building-construction-engineering', 'petroleum', 'business-administration'] as $slug) {

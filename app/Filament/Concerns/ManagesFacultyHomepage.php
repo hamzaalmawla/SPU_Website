@@ -23,9 +23,13 @@ use App\Filament\Resources\FacultyMemberResource;
 use App\Filament\Support\MediaPicker;
 use App\Filament\Support\ResearchPublicationPicker;
 use App\Models\User\User;
+use App\Support\ExamScheduleBoard;
+use App\Support\ExamScheduleRows;
 use App\Support\FacultyLogoSubtitle;
 use Filament\Actions\Action;
+use Filament\Forms\Components\Actions\Action as FormAction;
 use Filament\Forms\Components\Component;
+use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\KeyValue;
@@ -40,6 +44,7 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Forms\Form;
 use Filament\Forms\Get;
+use Filament\Forms\Set;
 use Filament\Notifications\Notification;
 use Filament\Support\Exceptions\Halt;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -963,21 +968,7 @@ trait ManagesFacultyHomepage
                             ->defaultItems(1)
                             ->reorderable()
                             ->columnSpanFull(),
-                        Repeater::make('rows')
-                            ->label(__('admin.faculty_workspace.editor.fields.exam_rows'))
-                            ->schema([
-                                TextInput::make('day')->label(__('admin.faculty_workspace.editor.fields.exam_day'))->maxLength(60),
-                                TextInput::make('date')->label(__('admin.faculty_workspace.editor.fields.date'))->maxLength(60),
-                                TextInput::make('time')->label(__('admin.faculty_workspace.editor.fields.exam_time'))->maxLength(60),
-                                TextInput::make('course')->label(__('admin.faculty_workspace.editor.fields.exam_course'))->required()->maxLength(255),
-                                TextInput::make('year')->label(__('admin.faculty_workspace.editor.fields.exam_year'))->maxLength(120),
-                                TextInput::make('room')->label(__('admin.faculty_workspace.editor.fields.exam_room'))->maxLength(120),
-                            ])
-                            ->columns(3)
-                            ->defaultItems(0)
-                            ->reorderable()
-                            ->collapsible()
-                            ->columnSpanFull(),
+                        $this->examRowsField(substr($prefix, 0, 2)),
                     ])
                     ->defaultItems(0)
                     ->reorderable()
@@ -986,6 +977,88 @@ trait ManagesFacultyHomepage
             ]),
             ...$this->optionalSeoFields($prefix),
         ];
+    }
+
+    /**
+     * A final exam timetable, one row per exam: a date picked from a calendar (the public
+     * board shows its weekday when the day is left empty), the time, course, year and hall.
+     * Rows copied from a spreadsheet can be pasted in at once.
+     */
+    private function examRowsField(string $locale): Repeater
+    {
+        $field = static fn (string $key): string => __('admin.faculty_workspace.editor.fields.'.$key);
+        $years = $locale === 'ar'
+            ? ['السنة الأولى', 'السنة الثانية', 'السنة الثالثة', 'السنة الرابعة', 'السنة الخامسة', 'السنة السادسة']
+            : ['First Year', 'Second Year', 'Third Year', 'Fourth Year', 'Fifth Year', 'Sixth Year'];
+
+        return Repeater::make('rows')
+            ->label($field('exam_rows'))
+            ->helperText(__('admin.faculty_workspace.editor.help.exam_rows'))
+            ->schema([
+                DatePicker::make('date')
+                    ->label($field('date'))
+                    ->native(false)
+                    ->displayFormat('d/m/Y')
+                    ->format('Y-m-d')
+                    ->closeOnDateSelection()
+                    // A date typed before the picker existed: read it, or keep its text as the day.
+                    ->afterStateHydrated(function (DatePicker $component, mixed $state, Get $get, Set $set): void {
+                        $text = is_string($state) ? trim($state) : '';
+                        $iso = ExamScheduleBoard::isoDate($text);
+
+                        if ($text !== '' && $iso === '') {
+                            $set('day', trim(trim((string) $get('day')).' '.$text));
+                        }
+
+                        $component->state($iso !== '' ? $iso : null);
+                    }),
+                TextInput::make('day')->label($field('exam_day'))->maxLength(60)->placeholder($field('exam_day_auto')),
+                TextInput::make('time')->label($field('exam_time'))->maxLength(60)->placeholder('09:00 - 11:00'),
+                TextInput::make('course')->label($field('exam_course'))->required()->maxLength(255)->columnSpan(2),
+                TextInput::make('year')->label($field('exam_year'))->maxLength(120)->datalist($years),
+                TextInput::make('room')->label($field('exam_room'))->maxLength(120),
+            ])
+            ->columns(3)
+            ->defaultItems(0)
+            ->reorderable()
+            ->cloneable()
+            ->collapsible()
+            ->itemLabel(fn (array $state): ?string => trim(implode(' · ', array_filter([
+                ($iso = ExamScheduleBoard::isoDate((string) ($state['date'] ?? ''))) !== '' ? ExamScheduleBoard::displayDate($iso) : null,
+                trim((string) ($state['time'] ?? '')),
+                trim((string) ($state['course'] ?? '')),
+            ]))) ?: null)
+            ->addActionLabel($field('add_exam'))
+            ->hintAction(
+                FormAction::make('pasteExamRows')
+                    ->label($field('paste_exam_rows'))
+                    ->icon('heroicon-o-clipboard-document-list')
+                    ->modalHeading($field('paste_exam_rows'))
+                    ->modalDescription(__('admin.faculty_workspace.editor.help.paste_exam_rows'))
+                    ->modalSubmitActionLabel($field('add_pasted_rows'))
+                    ->form([
+                        Textarea::make('pasted')->label($field('pasted_rows'))->rows(10)->required(),
+                    ])
+                    ->action(function (array $data, Repeater $component): void {
+                        $rows = ExamScheduleRows::fromPastedText((string) ($data['pasted'] ?? ''));
+
+                        if ($rows === []) {
+                            Notification::make()->warning()->title(__('admin.faculty_workspace.editor.help.paste_exam_rows_empty'))->send();
+
+                            return;
+                        }
+
+                        $state = is_array($component->getState()) ? $component->getState() : [];
+
+                        foreach ($rows as $row) {
+                            $state[(string) Str::uuid()] = $row;
+                        }
+
+                        $component->state($state);
+                        Notification::make()->success()->title(trans_choice('admin.faculty_workspace.editor.help.paste_exam_rows_added', count($rows), ['count' => count($rows)]))->send();
+                    }),
+            )
+            ->columnSpanFull();
     }
 
     /** @return array<int, Section> */

@@ -27,7 +27,7 @@ final class ExamScheduleBoard
      *     total: int
      * }
      */
-    public static function build(array $rows, string $idPrefix = 'exam'): array
+    public static function build(array $rows, string $idPrefix = 'exam', ?string $locale = null): array
     {
         $days = [];
         $years = [];
@@ -46,6 +46,13 @@ final class ExamScheduleBoard
             $day = self::text($row['day'] ?? null);
             $date = self::text($row['date'] ?? null);
             $iso = self::isoDate($date);
+
+            // A date picked in the admin is stored as Y-m-d: show it as day/month/year,
+            // with the weekday when the editor left the day empty.
+            if ($locale !== null && $iso !== '') {
+                $day = $day !== '' ? $day : self::weekday($iso, $locale);
+                $date = preg_match('/^\d{4}-\d{2}-\d{2}$/', $date) === 1 ? self::displayDate($iso) : $date;
+            }
             $dayKey = $iso !== '' ? $iso : SearchTextNormalizer::normalize($day.' '.$date);
 
             $year = self::text($row['year'] ?? null);
@@ -116,6 +123,30 @@ final class ExamScheduleBoard
         unset($group);
 
         return ['days' => $days, 'years' => array_values($years), 'total' => $total];
+    }
+
+    /** The weekday of a `Y-m-d` date, in Arabic or English. */
+    public static function weekday(string $iso, string $locale): string
+    {
+        $date = \DateTimeImmutable::createFromFormat('!Y-m-d', $iso);
+
+        if (! $date instanceof \DateTimeImmutable) {
+            return '';
+        }
+
+        $index = (int) $date->format('w');
+
+        return $locale === 'ar'
+            ? ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'][$index]
+            : $date->format('l');
+    }
+
+    /** A `Y-m-d` date as day/month/year. */
+    public static function displayDate(string $iso): string
+    {
+        $date = \DateTimeImmutable::createFromFormat('!Y-m-d', $iso);
+
+        return $date instanceof \DateTimeImmutable ? $date->format('d/m/Y') : $iso;
     }
 
     /** A written date as `Y-m-d`, or '' when it can't be read. Accepts Arabic-Indic digits. */

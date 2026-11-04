@@ -1,6 +1,6 @@
 {{-- One final exam timetable as an interactive board (a column per exam day, like the study plan), with year filters, search, a table view and an exam dialog. Expects $rows, $scheduleKey, $accent, $isAr, $examColumns. --}}
 @php
-    $board = \App\Support\ExamScheduleBoard::build($rows, $scheduleKey);
+    $board = \App\Support\ExamScheduleBoard::build($rows, $scheduleKey, $isAr ? 'ar' : 'en');
     $yearsByKey = collect($board['years'])->keyBy('key')->all();
     $et = $isAr
         ? [
