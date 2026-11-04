@@ -17,6 +17,7 @@ use App\DTOs\Seo\SitemapEntryDTO;
 use App\DTOs\Seo\SitemapWriteReportDTO;
 use App\Enums\PublicationStatus;
 use App\Models\Achievement\Achievement;
+use App\Models\Career\Alumni;
 use App\Models\Cms\CmsTargetContent;
 use App\Models\Content\Directorate;
 use App\Models\Faculty\Faculty;
@@ -220,10 +221,14 @@ final class SitemapService implements SitemapServiceInterface
             'url' => $baseUrl.'/'.$locale.'/alumni',
         ])->all();
 
+        // The directory changes when an alumni record does; now() would change the
+        // sitemap on every regeneration.
+        $lastmod = $this->w3c(Alumni::query()->max('updated_at'));
+
         foreach (['ar', 'en'] as $locale) {
             $entries->push(new SitemapEntryDTO(
                 loc: $baseUrl.'/'.$locale.'/alumni',
-                lastmod: $this->w3c(now()),
+                lastmod: $lastmod,
                 changefreq: null,
                 priority: null,
                 alternates: $alternates,
@@ -333,10 +338,14 @@ final class SitemapService implements SitemapServiceInterface
             array_push($paths, '/centers/'.$centerSlug, '/centers/'.$centerSlug.'/staff', '/centers/'.$centerSlug.'/required-courses', '/centers/'.$centerSlug.'/elective-courses');
         }
 
+        // Until a center page is published the pages show the content shipped in
+        // database/seeders/Data/centers, so that file's date is their last change.
+        // Falling back to now() would change the sitemap on every regeneration.
         $updatedAt = CmsTargetContent::query()
             ->where('target_key', 'like', 'centers.%')
             ->where('status', PublicationStatus::Published->value)
-            ->max('updated_at');
+            ->max('updated_at')
+            ?? $this->centersDefaultContentDate();
 
         foreach ($paths as $path) {
             $alternates = [
@@ -354,6 +363,14 @@ final class SitemapService implements SitemapServiceInterface
                 ));
             }
         }
+    }
+
+    private function centersDefaultContentDate(): ?CarbonImmutable
+    {
+        $file = database_path('seeders/Data/centers/centers.json');
+        $modified = is_file($file) ? filemtime($file) : false;
+
+        return $modified !== false ? CarbonImmutable::createFromTimestamp($modified) : null;
     }
 
     /** @param Collection<int, SitemapEntryDTO> $entries */
