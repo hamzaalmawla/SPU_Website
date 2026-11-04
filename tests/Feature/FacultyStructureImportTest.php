@@ -94,8 +94,8 @@ final class FacultyStructureImportTest extends TestCase
         $ai = $facilities->getSubpage('artificial-intelligence', 'departments', 'en');
         self::assertNotNull($ai);
         self::assertSame('ai-basic-sciences', $ai->items[0]['slug']);
-        // Basic Sciences teaches no program, so it is a section.
-        self::assertSame('section', $ai->items[0]['type']);
+        // Basic Sciences teaches no program, so it lists none.
+        self::assertSame([], $ai->items[0]['programs']);
         self::assertNull($ai->items[0]['studyPlanDepartmentId']);
         self::assertNull($ai->items[0]['studyPlanUrl']);
         self::assertSame('ai', collect($ai->items)->firstWhere('slug', 'ai-data-science')['studyPlanDepartmentId']);

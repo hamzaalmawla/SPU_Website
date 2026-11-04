@@ -53,6 +53,8 @@ final class FacultyNavigationCardsTest extends TestCase
         $expected = [
             ['title' => 'Overview', 'href' => '/en/faculties/medicine/overview'],
             ['title' => 'Departments', 'href' => '/en/faculties/medicine/departments'],
+            // The programs page exists in code and follows the departments card.
+            ['title' => 'Academic Programs', 'href' => '/en/faculties/medicine/programs'],
             ['title' => 'Study Plan', 'href' => '/en/faculties/medicine/study-plan'],
             ['title' => 'Laboratories', 'href' => '/en/faculties/medicine/labs'],
             ['title' => 'Projects', 'href' => '/en/faculties/medicine/projects'],
@@ -65,8 +67,8 @@ final class FacultyNavigationCardsTest extends TestCase
 
         $this->assertSame($expected, $this->highlights('medicine', 'en'));
         $this->assertSame($expected, $this->pathways('medicine', 'en'));
-        $this->assertCount(10, $this->highlights('medicine', 'ar'));
-        $this->assertCount(10, $this->pathways('medicine', 'ar'));
+        $this->assertCount(11, $this->highlights('medicine', 'ar'));
+        $this->assertCount(11, $this->pathways('medicine', 'ar'));
     }
 
     public function test_admin_sort_order_controls_the_public_order_on_both_pages(): void
@@ -103,7 +105,7 @@ final class FacultyNavigationCardsTest extends TestCase
             $highlights = $this->highlights('medicine', $locale);
 
             $this->assertSame($highlights, $this->pathways('medicine', $locale));
-            $this->assertCount(7, $highlights);
+            $this->assertCount(8, $highlights);
 
             foreach (['labs', 'alumni', 'projects'] as $hidden) {
                 $this->assertNotContains("/{$locale}/faculties/medicine/{$hidden}", array_column($highlights, 'href'));
@@ -143,7 +145,7 @@ final class FacultyNavigationCardsTest extends TestCase
 
         $hrefs = array_column($this->highlights('medicine', 'en'), 'href');
 
-        $this->assertCount(10, $hrefs);
+        $this->assertCount(11, $hrefs);
         $this->assertNotContains('/en/faculties/medicine/careers', $hrefs);
         $this->assertSame($hrefs, array_column($this->pathways('medicine', 'en'), 'href'));
     }
@@ -154,7 +156,7 @@ final class FacultyNavigationCardsTest extends TestCase
         FacultySubpageCard::query()->where('faculty_slug', 'pharmacy')->delete();
         Cache::flush();
 
-        $medicine = ['overview', 'departments', 'study-plan', 'labs', 'projects', 'research', 'alumni', 'valedictorians', 'members', 'council'];
+        $medicine = ['overview', 'departments', 'programs', 'study-plan', 'labs', 'projects', 'research', 'alumni', 'valedictorians', 'members', 'council'];
 
         $this->assertSame(
             array_map(fn (string $slug): string => "/en/faculties/medicine/{$slug}", $medicine),

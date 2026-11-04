@@ -517,7 +517,7 @@ final class FacilitiesWorkflowTest extends TestCase
             ->assertSee('href="/en/faculties/medicine/study-plan?department=medicine-plan"', false);
     }
 
-    public function test_departments_reject_draft_only_study_plan_ids(): void
+    public function test_programs_reject_draft_only_study_plan_ids(): void
     {
         $facilities = app(FacultyPageServiceInterface::class);
         $workflow = app(CmsWorkflowServiceInterface::class);
@@ -529,13 +529,15 @@ final class FacilitiesWorkflowTest extends TestCase
         }
 
         $workflow->saveDraft('facilities.medicine.study_plan', $studyPlanPayload, (int) $author->id);
-        $departmentsPayload = $facilities->getEditablePayload('facilities.medicine.departments');
+        $programsPayload = $facilities->getEditablePayload('facilities.medicine.programs');
 
         foreach (['ar', 'en'] as $locale) {
-            $departmentsPayload['translations'][$locale]['items'][0]['studyPlanDepartmentId'] = 'future-only-plan';
+            $programsPayload['translations'][$locale]['programs'] = [
+                ['id' => 'medicine-bachelor', 'level' => 'bachelor', 'title' => 'Medicine '.$locale, 'departmentSlug' => null, 'studyPlanProgramId' => 'future-only-plan'],
+            ];
         }
 
-        $readiness = $workflow->readiness('facilities.medicine.departments', $departmentsPayload);
+        $readiness = $workflow->readiness('facilities.medicine.programs', $programsPayload);
 
         $this->assertFalse($readiness->isReady);
         $this->assertArrayHasKey('ar', $readiness->errors);
