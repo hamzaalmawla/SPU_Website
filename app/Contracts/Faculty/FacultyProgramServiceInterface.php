@@ -11,10 +11,11 @@ namespace App\Contracts\Faculty;
  * department, has the study plan.
  *
  * Per locale the content holds `programs[] = {id, level, title, summary, duration,
- * departmentSlug, studyPlanProgramId}`; `id`, `level`, `departmentSlug` and
- * `studyPlanProgramId` are the same in both languages. `departmentSlug` is an item of
+ * departmentSlug, studyPlanProgramId, managerMemberId}`; `id`, `level`, `departmentSlug`,
+ * `studyPlanProgramId` and `managerMemberId` are the same in both languages. `departmentSlug` is an item of
  * the departments page, `studyPlanProgramId` a program of the faculty's study plan
- * (`plan.departments[].id`). A master's program links to the faculty's master's
+ * (`plan.departments[].id`), `managerMemberId` the program director (مدير البرنامج), a
+ * profile id of the faculty's own staff. A master's program links to the faculty's master's
  * program page when it has one.
  *
  * Until a version is published, the page lists each study plan program as a bachelor
@@ -38,7 +39,7 @@ interface FacultyProgramServiceInterface
     /**
      * The programs to show, in order: `$content` (a preview), else the published page, else the
      * default. Each is `{id, level, levelLabel, title, summary, duration, department: {slug, title,
-     * url}|null, studyPlanUrl, pageUrl, url}`.
+     * url}|null, studyPlanUrl, pageUrl, url, managerMemberId}`.
      *
      * @param  list<array<string, mixed>>  $departments
      * @param  array<string, mixed>|null  $content
@@ -51,8 +52,9 @@ interface FacultyProgramServiceInterface
 
     /**
      * Publish rules: every program has an id, a level and a title; a department is one of the
-     * faculty's departments and a study plan program one of its study plan's; the id, level,
-     * department and study plan program are the same in Arabic and English.
+     * faculty's departments and a study plan program one of its study plan's; a director is one
+     * of the faculty's teaching staff; the id, level, department, study plan program and director
+     * are the same in Arabic and English.
      *
      * @param  array<string, mixed>  $payload
      * @return array<string, array<int, string>>

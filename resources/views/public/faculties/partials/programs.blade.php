@@ -1,4 +1,4 @@
-{{-- A faculty's academic programs, grouped by level (bachelor's, master's, ...). Each shows its department and its study plan or page. --}}
+{{-- A faculty's academic programs, grouped by level (bachelor's, master's, ...). Each shows its department, its director and its study plan or page. --}}
 @php
     $levels = is_array($page->detail['levels'] ?? null) ? $page->detail['levels'] : [];
     $programs = collect($page->items);
@@ -34,6 +34,19 @@
                                         <span class="font-bold text-slate-500">{{ $isAr ? 'القسم:' : 'Department:' }}</span>
                                         <a href="{{ $program['department']['url'] }}" class="font-semibold text-spu-blue hover:underline" dir="auto">{{ $program['department']['title'] }}</a>
                                     </p>
+                                @endif
+                                @if (is_array($program['manager'] ?? null))
+                                    @php($manager = $program['manager'])
+                                    <a href="{{ $manager['url'] }}" class="mt-4 inline-flex items-center gap-3 self-start rounded-[6px] border border-slate-100 px-3 py-2 transition hover:border-spu-blue hover:bg-spu-blue/5">
+                                        @if ($manager['image'])<img src="{{ $manager['image'] }}" alt="" class="h-10 w-10 rounded-full object-cover" loading="lazy">@else<img src="/images/icon-user-graduate-outline.svg" alt="" class="h-5 w-5" aria-hidden="true">@endif
+                                        <span class="text-start">
+                                            <span class="block text-[11px] text-slate-500">{{ $manager['role'] }}</span>
+                                            <span class="block text-sm font-bold text-spu-blue" dir="auto">{{ $manager['name'] }}</span>
+                                            @if (($manager['academicRank'] ?? '') !== '')
+                                                <span class="block text-[11px] text-slate-500"><span class="font-bold">{{ $isAr ? 'الرتبة الأكاديمية:' : 'Academic rank:' }}</span> <span dir="auto">{{ $manager['academicRank'] }}</span></span>
+                                            @endif
+                                        </span>
+                                    </a>
                                 @endif
                                 @if (($program['summary'] ?? '') !== '')
                                     <x-public.rich-text class="mt-3 text-sm leading-7 text-slate-600" :text="$program['summary']" />

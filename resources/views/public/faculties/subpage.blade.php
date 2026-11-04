@@ -250,6 +250,9 @@
                                                 <li class="flex flex-wrap items-center gap-3 rounded-[6px] border border-slate-100 px-3 py-2">
                                                     <span class="rounded-full bg-section px-3 py-1 text-[11px] font-bold text-spu-blue/70">{{ $program['levelLabel'] }}</span>
                                                     <a href="{{ $program['url'] }}" class="text-sm font-bold text-spu-blue hover:underline" dir="auto">{{ $program['title'] }}</a>
+                                                    @if (is_array($program['manager'] ?? null))
+                                                        <span class="text-xs text-slate-500"><span class="font-bold">{{ $program['manager']['role'] }}:</span> <a href="{{ $program['manager']['url'] }}" class="font-semibold text-spu-blue hover:underline" dir="auto">{{ $program['manager']['name'] }}</a></span>
+                                                    @endif
                                                     @if (! empty($program['studyPlanUrl']))
                                                         <a href="{{ $program['studyPlanUrl'] }}" class="ms-auto inline-flex h-9 items-center justify-center rounded-[6px] px-4 text-xs font-bold text-white transition-all hover:-translate-y-0.5" style="background-color: {{ $accent }}">{{ $isAr ? 'الخطة الدراسية' : 'Study Plan' }}</a>
                                                     @elseif (! empty($program['pageUrl']))

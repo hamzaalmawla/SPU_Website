@@ -1611,7 +1611,7 @@ trait ManagesFacultyHomepage
 
     /**
      * The programs page editor: one row per program for both languages (level, names,
-     * department, study plan, duration and summary).
+     * department, study plan, director, duration and summary).
      */
     private function programFields(): Section
     {
@@ -1643,6 +1643,11 @@ trait ManagesFacultyHomepage
                             ->searchable()
                             ->placeholder($field('no_study_plan'))
                             ->helperText(__('admin.faculty_workspace.editor.help.program_study_plan')),
+                        Select::make('managerMemberId')
+                            ->label($field('program_manager'))
+                            ->options(fn (): array => $this->facultyStaffOptions())
+                            ->searchable()
+                            ->helperText(__('admin.faculty_workspace.editor.help.program_manager')),
                         TextInput::make('durationAr')->label($field('program_duration_ar'))->maxLength(120),
                         TextInput::make('durationEn')->label($field('program_duration_en'))->maxLength(120),
                         Textarea::make('summaryAr')->label($field('program_summary_ar'))->rows(3),
@@ -1684,6 +1689,7 @@ trait ManagesFacultyHomepage
                 'level' => is_string($program['level'] ?? null) ? $program['level'] : 'bachelor',
                 'departmentSlug' => is_string($program['departmentSlug'] ?? null) && $program['departmentSlug'] !== '' ? $program['departmentSlug'] : null,
                 'studyPlanProgramId' => is_string($program['studyPlanProgramId'] ?? null) && $program['studyPlanProgramId'] !== '' ? $program['studyPlanProgramId'] : null,
+                'managerMemberId' => is_numeric($program['managerMemberId'] ?? null) && (int) $program['managerMemberId'] > 0 ? (int) $program['managerMemberId'] : null,
                 'titleAr' => (string) ($program['title'] ?? ''),
                 'titleEn' => (string) ($english['title'] ?? ''),
                 'durationAr' => (string) ($program['duration'] ?? ''),
@@ -1713,6 +1719,7 @@ trait ManagesFacultyHomepage
                 'level' => is_string($row['level'] ?? null) ? $row['level'] : 'bachelor',
                 'departmentSlug' => is_string($row['departmentSlug'] ?? null) && $row['departmentSlug'] !== '' ? $row['departmentSlug'] : null,
                 'studyPlanProgramId' => is_string($row['studyPlanProgramId'] ?? null) && $row['studyPlanProgramId'] !== '' ? $row['studyPlanProgramId'] : null,
+                'managerMemberId' => is_numeric($row['managerMemberId'] ?? null) && (int) $row['managerMemberId'] > 0 ? (int) $row['managerMemberId'] : null,
             ];
             $ar[] = [...$shared, 'title' => trim((string) ($row['titleAr'] ?? '')), 'duration' => trim((string) ($row['durationAr'] ?? '')), 'summary' => trim((string) ($row['summaryAr'] ?? ''))];
             $en[] = [...$shared, 'title' => trim((string) ($row['titleEn'] ?? '')), 'duration' => trim((string) ($row['durationEn'] ?? '')), 'summary' => trim((string) ($row['summaryEn'] ?? ''))];

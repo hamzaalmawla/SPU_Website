@@ -378,13 +378,13 @@ final class FacultyPageService implements FacultyPageServiceInterface
             $items = $this->studyPlanLinkService->enrichDepartmentItems($this->publicSlug($faculty), $locale, $items);
             // A department is an administrative unit: it lists the programs it offers (each with
             // its study plan) and its council (the head and the members).
-            $programs = $this->programService->programs($this->publicSlug($faculty), $locale, $items, $this->isAvailableSubpage($faculty, 'master-program'));
+            $programs = $this->withProgramManagers($this->programService->programs($this->publicSlug($faculty), $locale, $items, $this->isAvailableSubpage($faculty, 'master-program')), $locale);
             $items = $this->withDepartmentCouncils($this->withDepartmentPrograms($items, $programs), $locale);
             $detail = ['programsCount' => count($programs), 'programsUrl' => $this->isAvailableSubpage($faculty, 'programs') ? $this->url($locale, '/faculties/'.$this->publicSlug($faculty).'/programs') : null];
         }
 
         if ($subpageSlug === 'programs') {
-            $items = $this->programService->programs($this->publicSlug($faculty), $locale, $this->departmentsForPrograms($faculty, $locale), $this->isAvailableSubpage($faculty, 'master-program'), $cmsContent);
+            $items = $this->withProgramManagers($this->programService->programs($this->publicSlug($faculty), $locale, $this->departmentsForPrograms($faculty, $locale), $this->isAvailableSubpage($faculty, 'master-program'), $cmsContent), $locale);
             $detail = ['levels' => $this->programLevels($items, $locale)];
         }
 
@@ -1473,6 +1473,29 @@ final class FacultyPageService implements FacultyPageServiceInterface
                 'councilMembers' => $members,
             ];
         }, $items);
+    }
+
+    /**
+     * Adds to each program its director's public card (`manager`, with the role "مدير البرنامج"
+     * / "Program Director"), or null when none is picked or the profile is hidden.
+     *
+     * @param  list<array<string, mixed>>  $programs
+     * @return list<array<string, mixed>>
+     */
+    private function withProgramManagers(array $programs, string $locale): array
+    {
+        $ids = array_values(array_unique(array_filter(array_map(
+            static fn (array $program): int => is_int($program['managerMemberId'] ?? null) ? $program['managerMemberId'] : 0,
+            $programs,
+        ))));
+        $cards = $this->publicMemberCards($locale, $ids);
+        $role = $locale === 'ar' ? 'مدير البرنامج' : 'Program Director';
+
+        return array_map(static function (array $program) use ($cards, $role): array {
+            $id = is_int($program['managerMemberId'] ?? null) ? $program['managerMemberId'] : 0;
+
+            return [...$program, 'manager' => isset($cards[$id]) ? [...$cards[$id], 'role' => $role] : null];
+        }, $programs);
     }
 
     /**

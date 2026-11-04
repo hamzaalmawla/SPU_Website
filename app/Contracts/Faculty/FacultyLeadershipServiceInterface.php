@@ -43,15 +43,16 @@ interface FacultyLeadershipServiceInterface
 
     /**
      * Every position each of the faculty's staff holds, by profile id: their positions on the
-     * published council page, the departments they head and the department councils they sit
-     * on. Profiles show these beside the academic rank.
+     * published council page, the departments they head, the department councils they sit
+     * on and the programs they direct (the published programs page). Profiles show these
+     * beside the academic rank.
      *
      * @return array<int, list<string>>
      */
     public function memberPositions(string $facultySlug, string $locale): array;
 
     /**
-     * The positions one profile holds on its own faculty's council and departments pages.
+     * The positions one profile holds on its own faculty's council, departments and programs pages.
      *
      * @return list<string>
      */

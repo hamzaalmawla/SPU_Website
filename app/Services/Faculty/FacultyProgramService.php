@@ -11,6 +11,7 @@ use App\Enums\PublicationStatus;
 use App\Models\Cms\CmsTargetContent;
 use App\Models\Faculty\Department;
 use App\Models\Faculty\Faculty;
+use App\Models\Person\FacultyMember;
 
 final class FacultyProgramService implements FacultyProgramServiceInterface
 {
@@ -66,6 +67,7 @@ final class FacultyProgramService implements FacultyProgramServiceInterface
                 'duration' => '',
                 'departmentSlug' => $departmentByPlanProgram[$id] ?? null,
                 'studyPlanProgramId' => (string) $id,
+                'managerMemberId' => null,
             ];
         }
 
@@ -79,6 +81,7 @@ final class FacultyProgramService implements FacultyProgramServiceInterface
                 'duration' => '',
                 'departmentSlug' => is_string($masterPlanProgram) ? ($departmentByPlanProgram[$masterPlanProgram] ?? null) : null,
                 'studyPlanProgramId' => null,
+                'managerMemberId' => null,
             ];
         }
 
@@ -129,6 +132,7 @@ final class FacultyProgramService implements FacultyProgramServiceInterface
                 'studyPlanUrl' => $planProgram !== '' && isset($planPrograms[$planProgram]) ? $base.'/study-plan?department='.rawurlencode($planProgram) : null,
                 'pageUrl' => $level === 'master' && $hasMasterProgramPage ? $base.'/master-program' : null,
                 'url' => $base.'/programs#'.$id,
+                'managerMemberId' => $this->memberId($program['managerMemberId'] ?? null),
             ];
         }
 
@@ -152,6 +156,7 @@ final class FacultyProgramService implements FacultyProgramServiceInterface
 
         $planPrograms = $this->studyPlanLinkService->programNames($facultySlug, 'en');
         $departments = $this->departmentSlugs($facultySlug);
+        $staffIds = $this->staffIds($facultySlug, $payload);
         $errors = [];
         $shared = [];
 
@@ -165,6 +170,7 @@ final class FacultyProgramService implements FacultyProgramServiceInterface
                 $level = $program['level'] ?? null;
                 $departmentSlug = trim((string) ($program['departmentSlug'] ?? ''));
                 $planProgram = trim((string) ($program['studyPlanProgramId'] ?? ''));
+                $managerId = $this->memberId($program['managerMemberId'] ?? null);
 
                 if ($id === '' || isset($ids[$id])) {
                     $errors[$locale][] = 'Every program needs its own id.';
@@ -188,14 +194,18 @@ final class FacultyProgramService implements FacultyProgramServiceInterface
                     $errors[$locale][] = 'A program\'s study plan must be a program of the faculty\'s published study plan.';
                 }
 
-                $rows[] = [$id, $level, $departmentSlug, $planProgram];
+                if ($managerId !== null && ! isset($staffIds[$managerId])) {
+                    $errors[$locale][] = 'A program director must be one of this faculty\'s teaching staff.';
+                }
+
+                $rows[] = [$id, $level, $departmentSlug, $planProgram, $managerId];
             }
 
             $shared[$locale] = $rows;
         }
 
         if ($shared['ar'] !== $shared['en']) {
-            $errors['translations'][] = 'Programs must have the same level, department and study plan in Arabic and English.';
+            $errors['translations'][] = 'Programs must have the same level, department, study plan and director in Arabic and English.';
         }
 
         return array_map(static fn (array $messages): array => array_values(array_unique($messages)), $errors);
@@ -238,6 +248,43 @@ final class FacultyProgramService implements FacultyProgramServiceInterface
         }
 
         return $slugs;
+    }
+
+    /**
+     * The program directors named in the payload who are this faculty's own staff, by profile id.
+     *
+     * @param  array<string, mixed>  $payload
+     * @return array<int, true>
+     */
+    private function staffIds(string $facultySlug, array $payload): array
+    {
+        $ids = [];
+
+        foreach (['ar', 'en'] as $locale) {
+            foreach ($this->listOfArrays($payload['translations'][$locale]['programs'] ?? []) as $program) {
+                $id = $this->memberId($program['managerMemberId'] ?? null);
+
+                if ($id !== null) {
+                    $ids[$id] = $id;
+                }
+            }
+        }
+
+        $facultyId = $ids !== [] ? Faculty::query()->where('public_slug', $facultySlug)->value('id') : null;
+
+        if (! is_numeric($facultyId)) {
+            return [];
+        }
+
+        return array_fill_keys(
+            FacultyMember::query()->whereKey(array_values($ids))->where('faculty_id', (int) $facultyId)->pluck('id')->map(fn (mixed $id): int => (int) $id)->all(),
+            true,
+        );
+    }
+
+    private function memberId(mixed $value): ?int
+    {
+        return is_numeric($value) && (int) $value > 0 ? (int) $value : null;
     }
 
     /** @return array<string, mixed>|null */

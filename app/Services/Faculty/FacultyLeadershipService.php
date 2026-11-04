@@ -156,6 +156,11 @@ final class FacultyLeadershipService implements FacultyLeadershipServiceInterfac
             $held[$member['memberId']][] = $member['role'];
         }
 
+        // A program director directs that program (the published programs page).
+        foreach ($this->programDirectors($faculty, $locale) as $director) {
+            $held[$director['memberId']][] = $director['role'];
+        }
+
         return array_map(static fn (array $names): array => array_values(array_unique($names)), $held);
     }
 
@@ -452,6 +457,36 @@ final class FacultyLeadershipService implements FacultyLeadershipServiceInterfac
         }
 
         return $members;
+    }
+
+    /**
+     * The director of each program on the published programs page, with the role a profile
+     * shows: "مدير برنامج …" / "Program Director, …".
+     *
+     * @return list<array{memberId: int, role: string}>
+     */
+    private function programDirectors(Faculty $faculty, string $locale): array
+    {
+        $content = $this->publishedLocaleContent('facilities.'.$faculty->public_slug.'.programs', $locale) ?? [];
+        $directors = [];
+
+        foreach ($this->listOfArrays($content['programs'] ?? []) as $program) {
+            $memberId = $this->memberId($program['managerMemberId'] ?? null);
+            $title = trim((string) ($program['title'] ?? ''));
+
+            if ($memberId === null || $title === '') {
+                continue;
+            }
+
+            $directors[] = [
+                'memberId' => $memberId,
+                'role' => $locale === 'ar'
+                    ? 'مدير '.(str_starts_with($title, 'برنامج') ? $title : 'برنامج '.$title)
+                    : 'Program Director, '.$title,
+            ];
+        }
+
+        return $directors;
     }
 
     /**
