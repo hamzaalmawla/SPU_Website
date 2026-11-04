@@ -94,6 +94,7 @@ The imported `AGENTS.MD` is the authoritative project rulebook (scope, architect
 - Each semester faculties send council decisions (.docx) listing graduates and top students. Editors import them from the faculty's Alumni / Honor List admin page ("Import from decision"): upload, review, confirm, and the rows are live. Plan and as-built notes: `Docs/STUDENT_LIST_IMPORT_PLAN.md`.
 - `StudentListImportServiceInterface` does all reading and writing; the parsing is in `app/Support/StudentLists/`. Students are matched on university ID (`student_identifier`), so a re-import updates. Every import is a `student_list_imports` row that can be undone, newest first.
 - Access is publish on that faculty page (`canManageTarget(..., 'publish')`), not a separate permission.
+- Public order: newest academic year and semester first. The honor list then ranks students by GPA, highest first, with no GPA last (`FacultyPageService::gpaOrder`; a typed GPA such as "92.5 %" or Arabic digits is read as a number), then by study year and rank. Graduates keep the decision order.
 - Real decision files name real students: never commit them. Tests build look-alike files with `tests/Support/DecisionDocxFactory.php`.
 
 ## Events, announcements and news

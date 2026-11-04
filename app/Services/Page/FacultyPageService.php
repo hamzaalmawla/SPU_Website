@@ -2263,12 +2263,44 @@ final class FacultyPageService implements FacultyPageServiceInterface
 
             return ($rightYear <=> $leftYear)
                 ?: ($this->semesterOrder($right) <=> $this->semesterOrder($left))
+                // The honor list ranks each semester's students by GPA, highest first.
+                ?: ($subpageSlug === 'valedictorians' ? $this->gpaOrder($left, $right) : 0)
                 ?: $this->decisionOrder($left, $right)
                 ?: ((int) ($right['id'] ?? 0) <=> (int) ($left['id'] ?? 0))
                 ?: strnatcasecmp((string) ($left['title'] ?? ''), (string) ($right['title'] ?? ''));
         });
 
         return $items;
+    }
+
+    /**
+     * Higher GPA first; a student with no GPA after those with one. The GPA
+     * may be a number or text an editor typed ("3.85", "92.5 %").
+     *
+     * @param  array<string, mixed>  $left
+     * @param  array<string, mixed>  $right
+     */
+    private function gpaOrder(array $left, array $right): int
+    {
+        $leftGpa = $this->gpaValue($left['gpa'] ?? null);
+        $rightGpa = $this->gpaValue($right['gpa'] ?? null);
+
+        return ($leftGpa === null) <=> ($rightGpa === null) ?: (($rightGpa ?? 0.0) <=> ($leftGpa ?? 0.0));
+    }
+
+    private function gpaValue(mixed $gpa): ?float
+    {
+        if (is_int($gpa) || is_float($gpa)) {
+            return (float) $gpa;
+        }
+
+        if (! is_string($gpa)) {
+            return null;
+        }
+
+        $gpa = strtr($gpa, ['٠' => '0', '١' => '1', '٢' => '2', '٣' => '3', '٤' => '4', '٥' => '5', '٦' => '6', '٧' => '7', '٨' => '8', '٩' => '9', '٫' => '.', ',' => '.']);
+
+        return preg_match('/\d+(?:\.\d+)?/', $gpa, $match) === 1 ? (float) $match[0] : null;
     }
 
     /** @param array<string, mixed> $item */
