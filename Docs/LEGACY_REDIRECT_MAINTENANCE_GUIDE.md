@@ -611,6 +611,14 @@ large internal change from the DNS move, so the two cannot fail together, and it
 can be scheduled when staff can be told the new URL. This is a decision for the
 university, not a code change to make silently.
 
+**Update 2026-11-04 — done.** The panel moved to the secret `ADMIN_PATH`
+(`c6e581c3`), and the 2026-11-03 log replay found 1,383 requests for bare
+`/admin/` alone, all 404. `ContinuityService::isLegacyBusinessRoot()` now
+resolves `/admin` and `/admin/`, bare or with a router query, as
+`/admin/index.php` whenever the panel is not at `/admin`; `public/.htaccess`
+lists `admin` with the other subsite roots so `/admin/` is not slash-stripped
+first. With `ADMIN_PATH=admin` (local default) the panel keeps the root.
+
 ### 13.6 Left as honest 404s — open decisions for SPU
 
 | URL | Why it stays a 404 |
@@ -678,7 +686,7 @@ spelling. When the query carries a legacy router key (`page`, `dir`, `service`,
 `cat_id`, `lang`, `ex`) the directory is tried as `{dir}/index.php` first; if that
 names nothing, the directory's previous handling (subsite-home exact rules,
 locale negotiation) still applies, so no URL lost a destination. `/admin` is
-excluded — the CMS owns it (§13.5).
+included only while the CMS panel is elsewhere (`ADMIN_PATH`, §13.5).
 
 ### 14.4 Other rules added
 

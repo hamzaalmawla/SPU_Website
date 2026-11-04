@@ -140,6 +140,43 @@ final class LegacySeoContinuityAuditTest extends TestCase
             ->assertRedirect('/ar/campus-life/dental');
     }
 
+    /**
+     * /admin/ was the old Business Administration subsite. With the CMS panel
+     * on ADMIN_PATH its root and router queries land on the faculty in one hop,
+     * like every other subsite root (2026-11-03 replay: /admin/ alone had
+     * 1,383 requests and was a 404).
+     */
+    public function test_the_old_business_subsite_root_resolves_once_the_panel_has_moved(): void
+    {
+        $this->seed(LegacyEntryPointRedirectSeeder::class);
+        config(['admin.path' => 'replay-private-panel']);
+
+        foreach (['/admin', '/admin/'] as $root) {
+            $this->get($root)
+                ->assertStatus(301)
+                ->assertRedirect('/ar/faculties/business-administration');
+        }
+
+        $this->get('/admin/?lang=2')
+            ->assertStatus(301)
+            ->assertRedirect('/en/faculties/business-administration');
+
+        $this->get('/admin?page=list&ex=2&dir=items&lang=2&service=73')
+            ->assertStatus(301)
+            ->assertRedirect('/en/faculties/business-administration');
+    }
+
+    /** While the panel itself is at /admin, the bare root stays the panel's. */
+    public function test_the_admin_root_stays_with_the_panel_when_the_panel_is_there(): void
+    {
+        $this->seed(LegacyEntryPointRedirectSeeder::class);
+        config(['admin.path' => 'admin']);
+
+        $location = (string) $this->get('/admin')->headers->get('Location');
+
+        $this->assertStringNotContainsString('business-administration', $location);
+    }
+
     /** A directory with tracking parameters alone is not a legacy router URL. */
     public function test_a_directory_with_only_tracking_parameters_keeps_normal_handling(): void
     {

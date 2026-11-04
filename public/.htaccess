@@ -227,8 +227,9 @@
     # The old subsite roots were real directories, linked and indexed as /med/
     # and /med/?lang=2&page=… . Stripping the slash first cost every one of
     # those a second hop before the continuity redirect; the application
-    # treats /med/ and /med alike, so let it answer them in one.
-    RewriteRule ^(?:med|dent|pharm|info|petrol|research|hospital|dent_clinic|alumni|clubs|members)/$ app.php [L]
+    # treats /med/ and /med alike, so let it answer them in one. admin/ is the
+    # old Business Administration subsite; the CMS panel is on ADMIN_PATH.
+    RewriteRule ^(?:med|dent|pharm|info|petrol|admin|research|hospital|dent_clinic|alumni|clubs|members)/$ app.php [L]
 
     # Redirect Trailing Slashes If Not A Folder...
     RewriteCond %{REQUEST_FILENAME} !-d

@@ -19,6 +19,7 @@ use App\Models\Legacy\LegacyExactRedirect;
 use App\Models\Legacy\LegacyFileInventory;
 use App\Models\Legacy\LegacyPatternRule;
 use App\Models\Page\UnresolvedLegacyRequest;
+use App\Support\AdminPath;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 
@@ -114,11 +115,16 @@ final class ContinuityService implements ContinuityServiceInterface
      * directory, so they reached the homepage or a 404 instead of the record.
      *
      * Only a legacy router query is rewritten - a bare directory, or one
-     * carrying tracking parameters alone, keeps its normal handling. /admin is
-     * absent because the Filament panel owns it (maintenance guide §13.5).
+     * carrying tracking parameters alone, keeps its normal handling. The one
+     * exception is the old Business Administration subsite at /admin/, see
+     * isLegacyBusinessRoot().
      */
     private function legacyDirectoryIndex(string $path, ?string $queryString): string
     {
+        if ($this->isLegacyBusinessRoot($path)) {
+            return '/admin/index.php';
+        }
+
         if ($queryString === null || trim($queryString) === '') {
             return $path;
         }
@@ -134,6 +140,19 @@ final class ContinuityService implements ContinuityServiceInterface
         }
 
         return rtrim($path, '/').'/index.php';
+    }
+
+    /**
+     * /admin/ was the old Business Administration subsite, and its root was
+     * left out while the CMS panel lived at /admin (maintenance guide §13.5).
+     * With the panel on ADMIN_PATH, /admin and /admin/ - bare or with a router
+     * query - are ordinary legacy traffic: the old site's logs hold over a
+     * thousand requests for the bare root alone. They resolve as
+     * /admin/index.php, which carries the reviewed home rule and query rules.
+     */
+    private function isLegacyBusinessRoot(string $path): bool
+    {
+        return preg_match('#^/admin/?$#', $path) === 1 && AdminPath::url() !== '/admin';
     }
 
     /**
