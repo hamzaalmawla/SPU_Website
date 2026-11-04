@@ -55,6 +55,7 @@ class ListCenterStaffLinks extends ListRecords
                         ->helperText(__('staff_intake.admin.form.max_hint'))
                         ->numeric()
                         ->minValue(1),
+                    StaffIntakeLinkResource::requiredFieldsInput(true),
                 ])
                 ->action(function (array $data) use ($links): void {
                     $created = $links->create(new StaffIntakeLinkInputDTO(
@@ -62,6 +63,7 @@ class ListCenterStaffLinks extends ListRecords
                         label: is_string($data['label'] ?? null) ? $data['label'] : null,
                         expiresAt: filled($data['expires_at'] ?? null) ? new \DateTimeImmutable((string) $data['expires_at']) : null,
                         maxSubmissions: filled($data['max_submissions'] ?? null) ? (int) $data['max_submissions'] : null,
+                        requiredFields: array_values(array_filter(is_array($data['required_fields'] ?? null) ? $data['required_fields'] : [], 'is_string')),
                         centerSlug: (string) $data['center_slug'],
                     ), (int) auth()->id());
 

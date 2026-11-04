@@ -21,6 +21,7 @@ class StaffIntakeLink extends Model
         'expires_at',
         'revoked_at',
         'max_submissions',
+        'required_fields',
         'submissions_count',
         'created_by',
     ];
@@ -33,6 +34,7 @@ class StaffIntakeLink extends Model
             'expires_at' => 'datetime',
             'revoked_at' => 'datetime',
             'max_submissions' => 'integer',
+            'required_fields' => 'array',
             'submissions_count' => 'integer',
         ];
     }

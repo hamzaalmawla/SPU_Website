@@ -53,9 +53,6 @@ final class StaffIntakeService implements StaffIntakeServiceInterface
     /** How long a form opened from a reference may still be sent. */
     private const REF_LIFETIME_SECONDS = 86400;
 
-    /** Fields a center link requires on top of those every link requires. */
-    public const CENTER_REQUIRED = ['title_ar', 'title_en', 'position_ar', 'position_en', 'email', 'phone'];
-
     public function __construct(
         private readonly CenterCatalogServiceInterface $centers,
     ) {}
@@ -138,6 +135,7 @@ final class StaffIntakeService implements StaffIntakeServiceInterface
                 cvUrl: $sameFaculty || $member->cv_media_id !== null ? $this->cvUrl($member) : null,
                 relatedFacultyName: $sameFaculty ? null : $this->memberUnitName($member, $locale),
                 isCenter: $link->isForCenter(),
+                requiredFields: StaffIntakeFields::required($link->required_fields, $link->isForCenter()),
             );
         }
 
@@ -160,6 +158,7 @@ final class StaffIntakeService implements StaffIntakeServiceInterface
             cvUrl: null,
             relatedFacultyName: null,
             isCenter: $link->isForCenter(),
+            requiredFields: StaffIntakeFields::required($link->required_fields, $link->isForCenter()),
         );
     }
 
@@ -181,12 +180,13 @@ final class StaffIntakeService implements StaffIntakeServiceInterface
         }
 
         $isUpdate = $claimed instanceof FacultyMember && $this->joinsLinkFaculty($claimed, $link);
+        $required = StaffIntakeFields::required($link->required_fields, $link->isForCenter());
         if ($link->isForCenter()) {
-            $this->requireCenterFields($submission);
             // A center has no departments: whatever was sent is dropped.
             $submission = $this->withFields($submission, ['department_id' => null] + $submission->fields);
         }
-        $this->requireFiles($submission, $claimed, $isUpdate);
+        $this->requireLinkFields($submission, $required);
+        $this->requireFiles($submission, $claimed, $isUpdate, $required);
         $fields = $this->cleanFields(
             $submission->fields,
             (int) $link->faculty_id,
@@ -486,20 +486,22 @@ final class StaffIntakeService implements StaffIntakeServiceInterface
     }
 
     /**
-     * A photo and a CV are required. A profile being updated keeps the ones it
-     * has; a new profile started from one in another faculty reuses its media
-     * library files. Anything else must send them.
+     * The photo and the CV, when the link requires them. A profile being
+     * updated keeps the ones it has; a new profile started from one in another
+     * faculty reuses its media library files. Anything else must send them.
+     *
+     * @param  list<string>  $required
      */
-    private function requireFiles(StaffIntakeSubmissionDTO $submission, ?FacultyMember $claimed, bool $isUpdate): void
+    private function requireFiles(StaffIntakeSubmissionDTO $submission, ?FacultyMember $claimed, bool $isUpdate, array $required): void
     {
         $hasPhoto = $claimed instanceof FacultyMember && ($isUpdate ? $this->photoUrl($claimed) !== null : $claimed->photo_media_id !== null);
         $hasCv = $claimed instanceof FacultyMember && ($isUpdate ? $this->cvUrl($claimed) !== null : $claimed->cv_media_id !== null);
 
         $errors = [];
-        if (! $submission->photo instanceof UploadedFile && ! $hasPhoto) {
+        if (in_array('photo', $required, true) && ! $submission->photo instanceof UploadedFile && ! $hasPhoto) {
             $errors['photo'] = __('staff_intake.public.errors.photo_required', [], $submission->locale);
         }
-        if (! $submission->cv instanceof UploadedFile && ! $hasCv) {
+        if (in_array('cv', $required, true) && ! $submission->cv instanceof UploadedFile && ! $hasCv) {
             $errors['cv'] = __('staff_intake.public.errors.cv_required', [], $submission->locale);
         }
 
@@ -663,16 +665,20 @@ final class StaffIntakeService implements StaffIntakeServiceInterface
     }
 
     /**
-     * What a center's staff must fill in besides the name, biography, photo
-     * and CV every link asks for: the academic title and the position (both
-     * languages), and an email and a phone. Everything else is optional.
+     * The text fields the link requires (picked when it was made; both names
+     * are checked by the form request). The photo and CV are requireFiles'.
+     *
+     * @param  list<string>  $required
      */
-    private function requireCenterFields(StaffIntakeSubmissionDTO $submission): void
+    private function requireLinkFields(StaffIntakeSubmissionDTO $submission, array $required): void
     {
         $errors = [];
-        foreach (self::CENTER_REQUIRED as $key) {
+        foreach (array_diff($required, ['photo', 'cv']) as $key) {
             $value = $submission->fields[$key] ?? null;
-            if (! is_string($value) || trim(strip_tags($value)) === '') {
+            $filled = is_array($value)
+                ? StaffIntakeFields::list($value) !== []
+                : (is_string($value) || is_int($value)) && trim(strip_tags((string) $value)) !== '';
+            if (! $filled) {
                 $errors[$key] = __('staff_intake.public.errors.required', ['field' => __('staff_intake.fields.'.$key, [], $submission->locale)], $submission->locale);
             }
         }

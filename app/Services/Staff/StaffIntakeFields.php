@@ -31,6 +31,56 @@ final class StaffIntakeFields
     public const EDUCATION = ['degree_ar', 'degree_en', 'institution_ar', 'institution_en', 'field_ar', 'field_en', 'year_start', 'year_end'];
 
     /**
+     * Fields a link may make required, in form order. Both names are always
+     * required and are not listed; the department exists only on faculty links.
+     */
+    public const REQUIRABLE = [
+        'title_ar', 'title_en', 'position_ar', 'position_en', 'bio_ar', 'bio_en',
+        'specializations_ar', 'specializations_en', 'department_id', 'office_location', 'email', 'phone',
+        'linkedin', 'orcid', 'scopus', 'researchgate', 'scholar', 'twitter', 'photo', 'cv',
+    ];
+
+    /** Required on a faculty link unless the link picks its own. */
+    public const FACULTY_DEFAULT_REQUIRED = ['bio_ar', 'bio_en', 'photo', 'cv'];
+
+    /**
+     * Required on a center link unless the link picks its own: a center's staff
+     * page shows the title and position. The phone is optional (2026-11-04).
+     */
+    public const CENTER_DEFAULT_REQUIRED = ['title_ar', 'title_en', 'position_ar', 'position_en', 'bio_ar', 'bio_en', 'email', 'photo', 'cv'];
+
+    /**
+     * The fields a link of this kind may make required.
+     *
+     * @return list<string>
+     */
+    public static function requirable(bool $isCenter): array
+    {
+        return array_values(array_filter(self::REQUIRABLE, static fn (string $key): bool => ! $isCenter || $key !== 'department_id'));
+    }
+
+    /** @return list<string> */
+    public static function defaultRequired(bool $isCenter): array
+    {
+        return $isCenter ? self::CENTER_DEFAULT_REQUIRED : self::FACULTY_DEFAULT_REQUIRED;
+    }
+
+    /**
+     * A link's required fields: the ones it stored, kept to those its kind
+     * may require and in form order, or the defaults when it stored none.
+     *
+     * @return list<string>
+     */
+    public static function required(mixed $stored, bool $isCenter): array
+    {
+        if (! is_array($stored)) {
+            return self::defaultRequired($isCenter);
+        }
+
+        return array_values(array_intersect(self::requirable($isCenter), array_filter($stored, 'is_string')));
+    }
+
+    /**
      * What a teacher types as a profile link, made into the address it means:
      * "orcid.org/…" or "www.…" gets https://, a bare ORCID iD its orcid.org
      * address and an @handle its x.com address. Anything else is returned as

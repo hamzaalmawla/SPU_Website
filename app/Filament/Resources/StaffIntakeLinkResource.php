@@ -9,6 +9,8 @@ use App\DTOs\Staff\StaffIntakeLinkCreatedDTO;
 use App\Filament\Resources\StaffIntakeLinkResource\Pages;
 use App\Filament\Resources\StaffIntakeLinkResource\RelationManagers\AccessLogsRelationManager;
 use App\Models\Staff\StaffIntakeLink;
+use App\Services\Staff\StaffIntakeFields;
+use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Form;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Infolists\Infolist;
@@ -109,6 +111,11 @@ class StaffIntakeLinkResource extends Resource
             TextEntry::make('submissions')->label(__('staff_intake.admin.columns.submissions'))->state(fn (StaffIntakeLink $record): string => self::submissions($record)),
             TextEntry::make('expires_at')->label(__('staff_intake.admin.columns.expires_at'))->dateTime()->placeholder('—'),
             TextEntry::make('creator.name')->label(__('staff_intake.admin.columns.created_by'))->placeholder('—'),
+            TextEntry::make('required_fields')
+                ->label(__('staff_intake.admin.form.required_fields'))
+                ->state(fn (StaffIntakeLink $record): array => self::requiredFieldLabels(StaffIntakeFields::required($record->required_fields, $record->isForCenter())))
+                ->badge()
+                ->columnSpanFull(),
         ])->columns(3);
     }
 
@@ -185,6 +192,35 @@ class StaffIntakeLinkResource extends Resource
             'index' => Pages\ListStaffIntakeLinks::route('/'),
             'view' => Pages\ViewStaffIntakeLink::route('/{record}'),
         ];
+    }
+
+    /**
+     * The "required fields" checklist of the create-link form. Both names are
+     * always required and are not offered; it starts from the defaults.
+     */
+    public static function requiredFieldsInput(bool $isCenter): CheckboxList
+    {
+        return CheckboxList::make('required_fields')
+            ->label(__('staff_intake.admin.form.required_fields'))
+            ->helperText(__('staff_intake.admin.form.required_fields_hint'))
+            ->options(self::requiredFieldLabels(StaffIntakeFields::requirable($isCenter)))
+            ->default(StaffIntakeFields::defaultRequired($isCenter))
+            ->columns(2)
+            ->bulkToggleable();
+    }
+
+    /**
+     * @param  list<string>  $keys
+     * @return array<string, string>
+     */
+    public static function requiredFieldLabels(array $keys): array
+    {
+        $labels = [];
+        foreach ($keys as $key) {
+            $labels[$key] = __('staff_intake.fields.'.$key);
+        }
+
+        return $labels;
     }
 
     /** Shows a new link's addresses once, in a notification that stays until closed. */

@@ -17,8 +17,14 @@ Status: built on `dev` (2026-10-20), not deployed. Decisions agreed on 2026-10-2
 ### Center links (2026-11-03)
 
 - A link can belong to a center (`config/centers.php`, e.g. the Requirements Unit) instead of a faculty: `staff_intake_links.center_slug` and `staff_intake_requests.center_slug`, with `faculty_id` null.
-- The public flow is the same. The form has no department. Required are only: name, academic title, position and biography (Arabic and English), email, phone, photo and CV (agreed 2026-11-03); office, specializations, profile links and education stay optional. The profile updated or created has no faculty and the center's slug, so approval publishes it to `/centers/<center>/staff`. Picking a profile that belongs to a faculty or another center starts a new profile in this center from it, as a profile in another faculty does on a faculty link; a faculty link likewise treats a center profile as another unit's.
+- The public flow is the same. The form has no department. By default required are: name, academic title, position and biography (Arabic and English), email, photo and CV (agreed 2026-11-03; the phone dropped on 2026-11-04); office, specializations, profile links and education stay optional. The profile updated or created has no faculty and the center's slug, so approval publishes it to `/centers/<center>/staff`. Picking a profile that belongs to a faculty or another center starts a new profile in this center from it, as a profile in another faculty does on a faculty link; a faculty link likewise treats a center profile as another unit's.
 - Admin: Centers › Center staff links and Center staff requests (same access log and review screen). Access is `center_staff_intake.view/create/update`, given to no default role: super admins only, until a centers editor role is defined.
+
+### Required fields per link (2026-11-04)
+
+- When making a link (faculty or center), the admin ticks which fields the form requires (`staff_intake_links.required_fields`). Both names are always required; the department is offered only on faculty links. The list starts from the kind's defaults: faculty links the biographies, photo and CV, center links as above. Links made before this keep those defaults.
+- The phone is no longer required by default on any link.
+- The form marks the picked fields as required, and `StaffIntakeService::submit` refuses a form missing one (the photo and CV may still be kept from the profile being updated). The link's view page lists its required fields.
 
 ### Where the code is
 

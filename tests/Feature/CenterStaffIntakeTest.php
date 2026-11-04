@@ -92,11 +92,12 @@ final class CenterStaffIntakeTest extends TestCase
         $form = $this->get($url)->assertOk()->assertDontSee('name="department_id"', false);
         $ref = $this->formRef($form->getContent());
 
-        // A center link requires the title, position, email and phone too; the rest stays optional.
+        // By default a center link requires the title, position and email too;
+        // the phone and the rest stay optional.
         $this->from('/en/staff-intake/'.$token.'/form')
             ->post('/en/staff-intake/'.$token.'/form', ['email' => '', 'phone' => '', 'title_ar' => '', 'title_en' => ''] + $this->formData($ref, ['name_ar' => 'مايا يونت', 'name_en' => 'Maya Unit', 'email' => '', 'phone' => '', 'title_ar' => '', 'title_en' => '']))
-            ->assertSessionHasErrors(['title_ar', 'title_en', 'position_ar', 'position_en', 'email', 'phone'])
-            ->assertSessionDoesntHaveErrors(['office_location', 'linkedin', 'orcid', 'specializations_ar']);
+            ->assertSessionHasErrors(['title_ar', 'title_en', 'position_ar', 'position_en', 'email'])
+            ->assertSessionDoesntHaveErrors(['phone', 'office_location', 'linkedin', 'orcid', 'specializations_ar']);
 
         $this->post('/en/staff-intake/'.$token.'/form', $this->formData($ref, [
             'name_ar' => 'مايا يونت',

@@ -50,6 +50,11 @@ final class StaffIntakeLinkService implements StaffIntakeLinkServiceInterface
             throw ValidationException::withMessages(['max_submissions' => __('staff_intake.admin.errors.cap_too_small')]);
         }
 
+        $isCenter = $centerSlug !== null;
+        $requiredFields = $input->requiredFields !== null
+            ? StaffIntakeFields::required($input->requiredFields, $isCenter)
+            : StaffIntakeFields::defaultRequired($isCenter);
+
         $token = self::newToken();
         $label = $input->label !== null && trim($input->label) !== '' ? trim($input->label) : null;
         $link = StaffIntakeLink::query()->create([
@@ -60,6 +65,7 @@ final class StaffIntakeLinkService implements StaffIntakeLinkServiceInterface
             'label' => $label !== null ? mb_substr($label, 0, 255) : null,
             'expires_at' => $input->expiresAt,
             'max_submissions' => $input->maxSubmissions,
+            'required_fields' => $requiredFields,
             'created_by' => $actorId,
         ]);
 
@@ -68,6 +74,7 @@ final class StaffIntakeLinkService implements StaffIntakeLinkServiceInterface
             'center_slug' => $centerSlug,
             'expires_at' => $input->expiresAt?->format(DATE_ATOM),
             'max_submissions' => $input->maxSubmissions,
+            'required_fields' => $requiredFields,
         ]);
 
         return $this->created($link, $token);
@@ -202,6 +209,7 @@ final class StaffIntakeLinkService implements StaffIntakeLinkServiceInterface
             active: $link->isActive(),
             createdBy: $link->created_by !== null ? (int) $link->created_by : null,
             centerSlug: $link->isForCenter() ? (string) $link->center_slug : null,
+            requiredFields: StaffIntakeFields::required($link->required_fields, $link->isForCenter()),
         );
     }
 

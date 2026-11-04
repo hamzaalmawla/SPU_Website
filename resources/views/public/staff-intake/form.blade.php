@@ -45,21 +45,21 @@
                 <div class="grid gap-4 sm:grid-cols-2">
                     @include('public.staff-intake.field', ['name' => 'name_ar', 'value' => $fields['name_ar'], 'required' => true])
                     @include('public.staff-intake.field', ['name' => 'name_en', 'value' => $fields['name_en'], 'required' => true])
-                    @include('public.staff-intake.field', ['name' => 'title_ar', 'value' => $fields['title_ar'], 'required' => $form->isCenter])
-                    @include('public.staff-intake.field', ['name' => 'title_en', 'value' => $fields['title_en'], 'required' => $form->isCenter])
-                    {{-- A center link also requires the academic title, position, email and phone (StaffIntakeService::CENTER_REQUIRED). --}}
-                    @include('public.staff-intake.field', ['name' => 'position_ar', 'value' => $fields['position_ar'], 'required' => $form->isCenter, 'hint' => $form->isCenter ? __('staff_intake.center.position_hint', [], $locale) : null])
-                    @include('public.staff-intake.field', ['name' => 'position_en', 'value' => $fields['position_en'], 'required' => $form->isCenter])
+                    @include('public.staff-intake.field', ['name' => 'title_ar', 'value' => $fields['title_ar'], 'required' => $form->isRequired('title_ar')])
+                    @include('public.staff-intake.field', ['name' => 'title_en', 'value' => $fields['title_en'], 'required' => $form->isRequired('title_en')])
+                    {{-- Which fields are required is picked per link (StaffIntakeFields::required); both names always are. --}}
+                    @include('public.staff-intake.field', ['name' => 'position_ar', 'value' => $fields['position_ar'], 'required' => $form->isRequired('position_ar'), 'hint' => $form->isCenter ? __('staff_intake.center.position_hint', [], $locale) : null])
+                    @include('public.staff-intake.field', ['name' => 'position_en', 'value' => $fields['position_en'], 'required' => $form->isRequired('position_en')])
                 </div>
             </fieldset>
 
             <fieldset class="space-y-4">
                 <legend class="mb-2 text-lg font-bold text-spu-blue">{{ __('staff_intake.public.section_about', [], $locale) }}</legend>
                 <div class="grid gap-4 sm:grid-cols-2">
-                    @include('public.staff-intake.field', ['name' => 'bio_ar', 'value' => $fields['bio_ar'], 'type' => 'textarea', 'required' => true])
-                    @include('public.staff-intake.field', ['name' => 'bio_en', 'value' => $fields['bio_en'], 'type' => 'textarea', 'required' => true])
-                    @include('public.staff-intake.field', ['name' => 'specializations_ar', 'value' => implode('، ', $fields['specializations_ar']), 'max' => 1000, 'hint' => __('staff_intake.public.specializations_hint', [], $locale)])
-                    @include('public.staff-intake.field', ['name' => 'specializations_en', 'value' => implode(', ', $fields['specializations_en']), 'max' => 1000, 'hint' => __('staff_intake.public.specializations_hint', [], $locale)])
+                    @include('public.staff-intake.field', ['name' => 'bio_ar', 'value' => $fields['bio_ar'], 'type' => 'textarea', 'required' => $form->isRequired('bio_ar')])
+                    @include('public.staff-intake.field', ['name' => 'bio_en', 'value' => $fields['bio_en'], 'type' => 'textarea', 'required' => $form->isRequired('bio_en')])
+                    @include('public.staff-intake.field', ['name' => 'specializations_ar', 'value' => implode('، ', $fields['specializations_ar']), 'max' => 1000, 'required' => $form->isRequired('specializations_ar'), 'hint' => __('staff_intake.public.specializations_hint', [], $locale)])
+                    @include('public.staff-intake.field', ['name' => 'specializations_en', 'value' => implode(', ', $fields['specializations_en']), 'max' => 1000, 'required' => $form->isRequired('specializations_en'), 'hint' => __('staff_intake.public.specializations_hint', [], $locale)])
                 </div>
             </fieldset>
 
@@ -68,8 +68,9 @@
                 <div class="grid gap-4 sm:grid-cols-2">
                     @unless ($form->isCenter)
                     <div class="space-y-1">
-                        <label for="si-department-id" class="block text-sm font-bold text-slate-700">{{ __('staff_intake.fields.department_id', [], $locale) }}</label>
+                        <label for="si-department-id" class="block text-sm font-bold text-slate-700">{{ __('staff_intake.fields.department_id', [], $locale) }}@if ($form->isRequired('department_id'))<span class="text-spu-red" aria-hidden="true"> *</span>@endif</label>
                         <select id="si-department-id" name="department_id" class="w-full rounded-lg border border-slate-300 px-3 py-2 outline-none focus:border-spu-blue focus:ring-4 focus:ring-spu-blue/10"
+                            @if ($form->isRequired('department_id')) required aria-required="true" @endif
                             aria-invalid="{{ $errors->has('department_id') ? 'true' : 'false' }}">
                             <option value="">{{ __('staff_intake.public.no_department', [], $locale) }}</option>
                             @foreach ($form->departments as $departmentId => $departmentName)
@@ -79,9 +80,9 @@
                         @error('department_id')<p class="text-xs font-bold text-spu-red" role="alert">{{ $message }}</p>@enderror
                     </div>
                     @endunless
-                    @include('public.staff-intake.field', ['name' => 'office_location', 'value' => $fields['office_location']])
-                    @include('public.staff-intake.field', ['name' => 'email', 'value' => $fields['email'], 'type' => 'email', 'dir' => 'ltr', 'autocomplete' => 'email', 'required' => $form->isCenter])
-                    @include('public.staff-intake.field', ['name' => 'phone', 'value' => $fields['phone'], 'type' => 'tel', 'dir' => 'ltr', 'max' => 30, 'autocomplete' => 'tel', 'required' => $form->isCenter])
+                    @include('public.staff-intake.field', ['name' => 'office_location', 'value' => $fields['office_location'], 'required' => $form->isRequired('office_location')])
+                    @include('public.staff-intake.field', ['name' => 'email', 'value' => $fields['email'], 'type' => 'email', 'dir' => 'ltr', 'autocomplete' => 'email', 'required' => $form->isRequired('email')])
+                    @include('public.staff-intake.field', ['name' => 'phone', 'value' => $fields['phone'], 'type' => 'tel', 'dir' => 'ltr', 'max' => 30, 'autocomplete' => 'tel', 'required' => $form->isRequired('phone')])
                 </div>
             </fieldset>
 
@@ -90,7 +91,7 @@
                 <div class="grid gap-4 sm:grid-cols-2">
                     {{-- Plain text, not type="url": the browser refused "orcid.org/…" or an old link without https:// with a bubble phones barely show. The server completes and checks them. --}}
                     @foreach (['linkedin', 'orcid', 'scopus', 'researchgate', 'scholar', 'twitter'] as $linkField)
-                        @include('public.staff-intake.field', ['name' => $linkField, 'value' => $fields[$linkField], 'dir' => 'ltr', 'inputmode' => 'url'])
+                        @include('public.staff-intake.field', ['name' => $linkField, 'value' => $fields[$linkField], 'dir' => 'ltr', 'inputmode' => 'url', 'required' => $form->isRequired($linkField)])
                     @endforeach
                 </div>
             </fieldset>
@@ -114,20 +115,20 @@
                 <legend class="mb-2 text-lg font-bold text-spu-blue">{{ __('staff_intake.public.section_files', [], $locale) }}</legend>
                 <div class="grid gap-6 sm:grid-cols-2">
                     <div class="space-y-2">
-                        <label for="si-photo" class="block text-sm font-bold text-slate-700">{{ __('staff_intake.fields.photo', [], $locale) }}<span class="text-spu-red" aria-hidden="true"> *</span></label>
+                        <label for="si-photo" class="block text-sm font-bold text-slate-700">{{ __('staff_intake.fields.photo', [], $locale) }}@if ($form->isRequired('photo'))<span class="text-spu-red" aria-hidden="true"> *</span>@endif</label>
                         @if ($form->photoUrl)
                             <img src="{{ $form->photoUrl }}" alt="{{ __('staff_intake.public.current_photo', [], $locale) }}" class="h-24 w-24 rounded-full object-cover">
                         @endif
-                        <input id="si-photo" name="photo" type="file" accept="image/jpeg,image/png,image/webp" aria-describedby="si-photo-hint" class="block w-full text-sm" @if (! $form->photoUrl) required aria-required="true" @endif>
+                        <input id="si-photo" name="photo" type="file" accept="image/jpeg,image/png,image/webp" aria-describedby="si-photo-hint" class="block w-full text-sm" @if ($form->isRequired('photo') && ! $form->photoUrl) required aria-required="true" @endif>
                         <p id="si-photo-hint" class="text-xs text-slate-500">{{ __('staff_intake.public.photo_hint', [], $locale) }}</p>
                         @error('photo')<p class="text-xs font-bold text-spu-red" role="alert">{{ $message }}</p>@enderror
                     </div>
                     <div class="space-y-2">
-                        <label for="si-cv" class="block text-sm font-bold text-slate-700">{{ __('staff_intake.fields.cv', [], $locale) }}<span class="text-spu-red" aria-hidden="true"> *</span></label>
+                        <label for="si-cv" class="block text-sm font-bold text-slate-700">{{ __('staff_intake.fields.cv', [], $locale) }}@if ($form->isRequired('cv'))<span class="text-spu-red" aria-hidden="true"> *</span>@endif</label>
                         @if ($form->cvUrl)
                             <a href="{{ $form->cvUrl }}" target="_blank" rel="noopener noreferrer" class="block text-sm font-bold text-spu-blue underline">{{ __('staff_intake.public.current_cv', [], $locale) }}</a>
                         @endif
-                        <input id="si-cv" name="cv" type="file" accept="application/pdf" aria-describedby="si-cv-hint" class="block w-full text-sm" @if (! $form->cvUrl) required aria-required="true" @endif>
+                        <input id="si-cv" name="cv" type="file" accept="application/pdf" aria-describedby="si-cv-hint" class="block w-full text-sm" @if ($form->isRequired('cv') && ! $form->cvUrl) required aria-required="true" @endif>
                         <p id="si-cv-hint" class="text-xs text-slate-500">{{ __('staff_intake.public.cv_hint', [], $locale) }}</p>
                         @error('cv')<p class="text-xs font-bold text-spu-red" role="alert">{{ $message }}</p>@enderror
                     </div>

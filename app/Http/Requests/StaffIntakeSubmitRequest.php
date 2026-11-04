@@ -79,8 +79,9 @@ final class StaffIntakeSubmitRequest extends FormRequest
         foreach (['ar', 'en'] as $locale) {
             $rules['title_'.$locale] = ['nullable', 'string', 'max:255'];
             $rules['position_'.$locale] = ['nullable', 'string', 'max:255'];
-            // A profile without a biography looks empty, and publishing needs one.
-            $rules['bio_'.$locale] = ['required', 'string', 'max:5000'];
+            // Required when the link requires it (by default it does: a profile
+            // without a biography looks empty); StaffIntakeService checks that.
+            $rules['bio_'.$locale] = ['nullable', 'string', 'max:5000'];
             $rules['specializations_'.$locale] = ['nullable', 'string', 'max:1000'];
             $rules['educations.*.degree_'.$locale] = ['nullable', 'string', 'max:255'];
             $rules['educations.*.institution_'.$locale] = ['nullable', 'string', 'max:255'];

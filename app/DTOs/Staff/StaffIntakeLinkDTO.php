@@ -20,5 +20,7 @@ final readonly class StaffIntakeLinkDTO
         public bool $active,
         public ?int $createdBy,
         public ?string $centerSlug = null,
+        /** @var list<string> Fields the form makes required besides both names. */
+        public array $requiredFields = [],
     ) {}
 }

@@ -569,6 +569,50 @@ trailer << /Root 1 0 R >>
         $this->get(StaffIntakeRequestResource::getUrl('index'))->assertForbidden();
     }
 
+    public function test_a_link_requires_only_the_fields_picked_when_it_was_made(): void
+    {
+        // Default for a faculty link: the biographies, photo and CV; never the phone.
+        $default = $this->link();
+        $this->assertSame(['bio_ar', 'bio_en', 'photo', 'cv'], $default->link->requiredFields);
+
+        $this->actingAs($this->facultyEditor, 'web');
+        Livewire::test(ListStaffIntakeLinks::class)
+            ->callAction('create_link', [
+                'faculty_id' => (int) $this->dentistry->getKey(),
+                'label' => 'Phone group',
+                'required_fields' => ['phone', 'position_ar'],
+            ])
+            ->assertHasNoActionErrors();
+        $link = StaffIntakeLink::query()->where('label', 'Phone group')->sole();
+        $this->assertSame(['position_ar', 'phone'], $link->required_fields);
+
+        // The service keeps only fields a link may require, in form order: no
+        // unknown keys, no names (always required), no department on a center link.
+        $center = app(StaffIntakeLinkServiceInterface::class)->create(
+            new StaffIntakeLinkInputDTO(null, null, null, null, 'requirements-unit', ['phone', 'not_a_field', 'name_ar', 'department_id', 'cv']),
+            (int) $this->user('super_admin')->getKey(),
+        );
+        $this->assertSame(['phone', 'cv'], $center->link->requiredFields);
+
+        $token = $this->token(app(StaffIntakeLinkServiceInterface::class)->rotate((int) $link->getKey(), (int) $this->facultyEditor->getKey()));
+        $form = $this->get('/en/staff-intake/'.$token.'/form?name=Lina+Picked')->assertOk()->getContent();
+        $this->assertIsString($form);
+        $this->assertMatchesRegularExpression('/name="phone"[^>]*required/', $form);
+        $this->assertDoesNotMatchRegularExpression('/name="bio_ar"[^>]*required/', $form);
+        $this->assertDoesNotMatchRegularExpression('/id="si-photo"[^>]*required/', $form);
+        $ref = $this->formRef($form);
+
+        $data = ['ref' => $ref, 'name_ar' => 'لينا بيكد', 'name_en' => 'Lina Picked', 'position_ar' => 'مدرّسة'];
+        $this->post('/en/staff-intake/'.$token.'/form', $data)
+            ->assertSessionHasErrors(['phone'])
+            ->assertSessionDoesntHaveErrors(['bio_ar', 'bio_en', 'photo', 'cv', 'email']);
+        $this->assertSame(0, StaffIntakeRequest::query()->count());
+
+        $this->post('/en/staff-intake/'.$token.'/form', [...$data, 'phone' => '+963 944 000 222'])
+            ->assertRedirect('/en/staff-intake/'.$token.'/sent');
+        $this->assertSame(1, StaffIntakeRequest::query()->count());
+    }
+
     private function link(?int $maxSubmissions = null): StaffIntakeLinkCreatedDTO
     {
         return app(StaffIntakeLinkServiceInterface::class)->create(

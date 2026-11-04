@@ -25,7 +25,14 @@ final readonly class StaffIntakeFormDTO
         public ?string $photoUrl,
         public ?string $cvUrl,
         public ?string $relatedFacultyName,
-        // A center's link: no department, and the position is required.
+        // A center's link: no department.
         public bool $isCenter = false,
+        /** @var list<string> Fields the link makes required besides both names. */
+        public array $requiredFields = [],
     ) {}
+
+    public function isRequired(string $field): bool
+    {
+        return in_array($field, $this->requiredFields, true);
+    }
 }
