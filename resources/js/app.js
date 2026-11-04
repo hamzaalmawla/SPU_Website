@@ -23,6 +23,7 @@ import { createVirtualizedSchedule } from './alpine/virtualizedSchedule.js';
 import { registerHomepageComponents } from './homepage.js';
 import { initPageBehaviours } from './public/pageBehaviours.js';
 import { bootChatbot } from './chatbot/bootstrap.js';
+import { reportPageView } from './public/siteStats.js';
 
 // Alpine components (x-data="name()")
 Alpine.data('mobileNav',       createMobileNav);
@@ -97,6 +98,8 @@ async function bootAlpine() {
     await whenDomReady();
 
     initPageBehaviours();
+    // Sent before Alpine starts, so a visitor who leaves quickly still counts; it is one small async request.
+    reportPageView();
 
     // Evaluating this bundle and starting Alpine ran as one task long enough to
     // block input; yielding once lets the browser handle anything pending

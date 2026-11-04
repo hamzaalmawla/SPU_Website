@@ -10,6 +10,9 @@ Artisan::command('inspire', function () {
 
 Schedule::command('audit:prune')->dailyAt('02:30')->withoutOverlapping();
 
+// Visitor hashes only count a visitor once a day; the dashboard keeps daily totals.
+Schedule::command('site-stats:prune')->dailyAt('02:35')->withoutOverlapping();
+
 // Abandoned admin uploads stay in public media-tmp/ until removed.
 Schedule::command('media:prune-temp')->dailyAt('02:45')->withoutOverlapping();
 Schedule::command('content:publish-scheduled')->everyMinute()->withoutOverlapping();

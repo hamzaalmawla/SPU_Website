@@ -21,6 +21,7 @@ return [
         'achievements' => 'Achievements',
         'admissions' => 'Admissions',
         'audit_log' => 'Audit log',
+        'site_stats' => 'Visitor statistics',
         'campus_life' => 'Campus life',
         'centers' => 'Centers',
         'chatbot' => 'AI assistant',

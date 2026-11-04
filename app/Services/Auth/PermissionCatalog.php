@@ -114,6 +114,8 @@ final class PermissionCatalog implements PermissionCatalogInterface
                 // update: knowledge files, settings and the OpenAI key.
                 'chatbot' => ['view', 'update'],
                 'audit_log' => ['view'],
+                // The dashboard's visitor statistics (visitors, pages, searches).
+                'site_stats' => ['view'],
             ],
         ];
     }

@@ -86,9 +86,9 @@ class AdminPanelProvider extends PanelProvider
                 fn (array $scopes): string => view('filament.admin.resource-workspace', ['scopes' => $scopes])->render(),
             )
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\\Filament\\Widgets')
-            ->widgets([
-                Widgets\AccountWidget::class,
-            ])
+            // The dashboard's widgets are discovered from app/Filament/Widgets: visitor
+            // statistics, the work queue and recent publishing (Filament's own
+            // account card is left out; the user menu already has it).
             ->middleware([
                 EncryptCookies::class,
                 AddQueuedCookiesToResponse::class,

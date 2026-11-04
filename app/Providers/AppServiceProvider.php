@@ -32,6 +32,7 @@ use App\Contracts\Content\PeopleUnifyServiceInterface;
 use App\Contracts\Content\PersonIdentityServiceInterface;
 use App\Contracts\Content\PersonServiceInterface;
 use App\Contracts\Content\ProfileAdminServiceInterface;
+use App\Contracts\Dashboard\AdminDashboardServiceInterface;
 use App\Contracts\ErrorPage\ErrorPageRendererInterface;
 use App\Contracts\ErrorPage\ErrorPageServiceInterface;
 use App\Contracts\Faculty\FacultyLeadershipServiceInterface;
@@ -163,6 +164,8 @@ use App\Contracts\Shared\ContinuityServiceInterface;
 use App\Contracts\Shared\PlainTextFormatterInterface;
 use App\Contracts\Shared\PreviewServiceInterface;
 use App\Contracts\Shared\SlugServiceInterface;
+use App\Contracts\SiteStats\SiteStatsRecorderInterface;
+use App\Contracts\SiteStats\SiteStatsReportInterface;
 use App\Contracts\Staff\StaffIntakeLinkServiceInterface;
 use App\Contracts\Staff\StaffIntakeReviewServiceInterface;
 use App\Contracts\Staff\StaffIntakeServiceInterface;
@@ -244,6 +247,7 @@ use App\Services\Content\PeopleUnifyService;
 use App\Services\Content\PersonIdentityService;
 use App\Services\Content\PersonService;
 use App\Services\Content\ProfileAdminService;
+use App\Services\Dashboard\AdminDashboardService;
 use App\Services\ErrorPage\ErrorPageRenderer;
 use App\Services\ErrorPage\ErrorPageService;
 use App\Services\Faculty\FacultyLeadershipService;
@@ -383,6 +387,8 @@ use App\Services\Shared\CacheService;
 use App\Services\Shared\ContinuityService;
 use App\Services\Shared\PlainTextFormatter;
 use App\Services\Shared\SlugService;
+use App\Services\SiteStats\SiteStatsRecorder;
+use App\Services\SiteStats\SiteStatsReportService;
 use App\Services\Staff\StaffIntakeLinkService;
 use App\Services\Staff\StaffIntakeReviewService;
 use App\Services\Staff\StaffIntakeService;
@@ -710,6 +716,11 @@ class AppServiceProvider extends ServiceProvider
             ];
         });
 
+        // One page view per page load; a person reading quickly stays far below it.
+        RateLimiter::for('site-stats', function (Request $request): Limit {
+            return Limit::perMinute(60)->by('site-stats|'.$request->ip());
+        });
+
         RateLimiter::for('public-search', function (Request $request): Limit {
             return Limit::perMinute(30)->by('public-search|'.$request->ip());
         });
@@ -748,6 +759,9 @@ class AppServiceProvider extends ServiceProvider
             ChatbotUsageServiceInterface::class => ChatbotUsageService::class,
             ChatbotKnowledgeServiceInterface::class => ChatbotKnowledgeService::class,
             ChatbotServiceInterface::class => ChatbotService::class,
+            SiteStatsRecorderInterface::class => SiteStatsRecorder::class,
+            SiteStatsReportInterface::class => SiteStatsReportService::class,
+            AdminDashboardServiceInterface::class => AdminDashboardService::class,
             AnalyticsServiceInterface::class => AnalyticsService::class,
             AchievementServiceInterface::class => AchievementService::class,
             ErrorPageServiceInterface::class => ErrorPageService::class,

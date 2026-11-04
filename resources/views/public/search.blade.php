@@ -92,7 +92,8 @@
                 @elseif ($results->queryTooShort)
                     {{ __('public.search_min_length') }}
                 @else
-                    {{ __('public.search_results_count', ['count' => $results->total]) }}
+                    {{-- The visitor statistics read the count (searches that find nothing). --}}
+                    <span data-search-total="{{ $results->total }}">{{ __('public.search_results_count', ['count' => $results->total]) }}</span>
                 @endif
             </p>
 

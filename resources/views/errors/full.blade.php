@@ -10,6 +10,11 @@
 --}}
 @extends('layouts.public')
 
+@push('head')
+    {{-- An error page is not counted as a page view (resources/js/public/siteStats.js). --}}
+    <meta name="spu-stats" content="off">
+@endpush
+
 @push('styles')
     @include('errors.partials.styles')
 @endpush

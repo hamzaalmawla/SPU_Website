@@ -21,6 +21,7 @@ return [
         'achievements' => 'الإنجازات',
         'admissions' => 'القبول',
         'audit_log' => 'سجل التدقيق',
+        'site_stats' => 'إحصاءات الزوار',
         'campus_life' => 'الحياة الجامعية',
         'centers' => 'المراكز',
         'chatbot' => 'المساعد الذكي',

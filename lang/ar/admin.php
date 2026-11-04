@@ -170,6 +170,10 @@ return [
                 'article' => 'مقال إخباري',
             ],
             'entity' => [
+                'person' => 'ملف قيادي',
+                'faculty-member' => 'ملف عضو هيئة تدريسية',
+                'directorate' => 'مديرية',
+                'partnership' => 'شراكة',
                 'news-article' => 'مقال إخباري',
                 'research-publication' => 'منشور بحثي',
             ],

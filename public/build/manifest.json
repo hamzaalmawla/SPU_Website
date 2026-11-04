@@ -30,7 +30,7 @@
     ]
   },
   "resources/css/filament/admin.css": {
-    "file": "assets/admin.BgZUj5NI.css",
+    "file": "assets/admin.LPJPms0L.css",
     "name": "admin",
     "names": [
       "admin.css"
@@ -66,7 +66,7 @@
     ]
   },
   "resources/js/app.js": {
-    "file": "js/app.C0uDjbFK.js",
+    "file": "js/app.BpChRWaB.js",
     "name": "app",
     "src": "resources/js/app.js",
     "isEntry": true,
@@ -78,7 +78,7 @@
     ]
   },
   "resources/js/chatbot/chatbotWidget.js": {
-    "file": "js/chatbotWidget.CuRneXoz.js",
+    "file": "js/chatbotWidget.Bv2AFjwH.js",
     "name": "chatbotWidget",
     "src": "resources/js/chatbot/chatbotWidget.js",
     "isDynamicEntry": true,

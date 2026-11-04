@@ -170,6 +170,10 @@ return [
                 'article' => 'News Article',
             ],
             'entity' => [
+                'person' => 'Leadership profile',
+                'faculty-member' => 'Faculty member profile',
+                'directorate' => 'Directorate',
+                'partnership' => 'Partnership',
                 'news-article' => 'News Article',
                 'research-publication' => 'Research Publication',
             ],
