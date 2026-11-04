@@ -34,7 +34,7 @@
             <div class="fm-toolbar">
                 <div class="fm-toolbar__row">
                     <label class="fm-search">
-                        <span class="sr-only">{{ $isAr ? 'ابحث عن عضو هيئة أكاديمية' : 'Search faculty members' }}</span>
+                        <span class="sr-only">{{ $isAr ? 'ابحث عن عضو هيئة تدريسية' : 'Search faculty members' }}</span>
                         <img src="/images/icon-search-outline.svg" alt="" class="fm-search__icon" aria-hidden="true">
                         <input type="search" x-model="query" placeholder="{{ $isAr ? 'ابحث بالاسم أو المنصب أو القسم' : 'Search by name, position or department' }}" autocomplete="off">
                     </label>
@@ -69,7 +69,7 @@
                 @endif
 
                 <div class="fm-toolbar__status">
-                    <p role="status" x-text="statusText()">{{ $isAr ? count($members).' عضو هيئة أكاديمية' : count($members).' faculty members' }}</p>
+                    <p role="status" x-text="statusText()">{{ $isAr ? count($members).' عضو هيئة تدريسية' : count($members).' faculty members' }}</p>
                     <button type="button" class="fm-reset" x-show="hasFilters()" x-cloak x-on:click="reset">{{ $isAr ? 'مسح التصفية' : 'Clear filters' }}</button>
                 </div>
             </div>
@@ -132,7 +132,7 @@
             </div>
         @else
             <div class="mx-auto max-w-2xl rounded-xl border border-slate-200 bg-slate-50 px-6 py-12 text-center">
-                <p class="font-bold text-slate-700">{{ $isAr ? 'لا يوجد أعضاء هيئة أكاديمية منشورون حالياً.' : 'No published faculty members are available yet.' }}</p>
+                <p class="font-bold text-slate-700">{{ $isAr ? 'لا يوجد أعضاء هيئة تدريسية منشورون حالياً.' : 'No published faculty members are available yet.' }}</p>
             </div>
         @endif
     </div>

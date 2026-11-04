@@ -102,10 +102,10 @@ export function createFacultyMembers() {
             const isArabic = document.documentElement.lang === 'ar';
 
             if (shown === total) {
-                return isArabic ? `${total} عضو هيئة أكاديمية` : `${total} faculty members`;
+                return isArabic ? `${total} عضو هيئة تدريسية` : `${total} faculty members`;
             }
 
-            return isArabic ? `${shown} من ${total} عضو هيئة أكاديمية` : `Showing ${shown} of ${total} faculty members`;
+            return isArabic ? `${shown} من ${total} عضو هيئة تدريسية` : `Showing ${shown} of ${total} faculty members`;
         },
 
         selectGroup(event) {
