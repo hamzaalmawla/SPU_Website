@@ -463,24 +463,35 @@ final class SitemapService implements SitemapServiceInterface
     }
 
     /**
-     * The master's program pages: they exist in code (no page row), for the
-     * faculties config faculty_subpages.restricted lists, unless switched off.
+     * The faculty subpages that exist in code (no page row), unless switched off: the
+     * master's program pages, for the faculties config faculty_subpages.restricted lists,
+     * and every faculty's academic programs page.
      *
      * @param  Collection<int, SitemapEntryDTO>  $entries
      */
     private function appendFacultyMasterProgramEntries(Collection $entries, string $baseUrl): void
     {
+        $pages = [];
+
         foreach ((array) config('faculty_subpages.restricted.master-program', []) as $facultySlug) {
-            $path = '/faculties/'.$facultySlug.'/master-program';
+            $pages[] = [(string) $facultySlug, 'master-program'];
+        }
+
+        foreach (Faculty::query()->enabled()->whereNotNull('public_slug')->orderBy('sort_order')->pluck('public_slug') as $facultySlug) {
+            $pages[] = [(string) $facultySlug, 'programs'];
+        }
+
+        foreach ($pages as [$facultySlug, $subpageSlug]) {
+            $path = '/faculties/'.$facultySlug.'/'.$subpageSlug;
             $locales = collect(['ar', 'en'])
-                ->filter(fn (string $locale): bool => $this->facultyPageService->getSubpage((string) $facultySlug, 'master-program', $locale) !== null)
+                ->filter(fn (string $locale): bool => $this->facultyPageService->getSubpage($facultySlug, $subpageSlug, $locale) !== null)
                 ->values();
             $alternates = $locales->map(fn (string $locale): array => [
                 'locale' => $locale,
                 'url' => $baseUrl.'/'.$locale.$path,
             ])->all();
             $lastmod = $this->w3c(CmsTargetContent::query()
-                ->where('target_key', 'facilities.'.$facultySlug.'.master-program')
+                ->where('target_key', 'facilities.'.$facultySlug.'.'.$subpageSlug)
                 ->where('status', PublicationStatus::Published->value)
                 ->value('updated_at') ?? Faculty::query()->where('public_slug', $facultySlug)->value('updated_at'));
 

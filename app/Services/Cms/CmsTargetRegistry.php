@@ -256,7 +256,7 @@ final class CmsTargetRegistry implements CmsTargetRegistryInterface
     /** @return array<int, string> */
     private function facultySubpageSlugs(string $facultySlug): array
     {
-        $slugs = ['overview', 'departments', 'labs', 'projects', 'alumni', 'valedictorians', 'research', 'members', 'council'];
+        $slugs = ['overview', 'departments', 'programs', 'labs', 'projects', 'alumni', 'valedictorians', 'research', 'members', 'council'];
 
         foreach ((array) config('faculty_subpages.restricted', []) as $subpageSlug => $faculties) {
             if (is_array($faculties) && in_array($facultySlug, $faculties, true)) {

@@ -41,6 +41,7 @@ class ManageArtificialIntelligenceFaculty extends Page implements HasForms
             'facilities.artificial-intelligence' => 'Homepage',
             'facilities.artificial-intelligence.overview' => 'Overview',
             'facilities.artificial-intelligence.departments' => 'Departments',
+            'facilities.artificial-intelligence.programs' => __('admin.cms.targets.facilities.programs'),
             'facilities.artificial-intelligence.study_plan' => 'Study Plan',
             'facilities.artificial-intelligence.labs' => 'Labs',
             'facilities.artificial-intelligence.projects' => 'Projects',

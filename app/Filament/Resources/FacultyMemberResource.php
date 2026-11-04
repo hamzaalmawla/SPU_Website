@@ -200,7 +200,8 @@ class FacultyMemberResource extends Resource
                         Tabs\Tab::make('Arabic')->label(__('admin_resources.faculty_member.arabic'))->schema([
                             TextInput::make('translations.ar.title')->label(__('admin_resources.faculty_member.arabic_title'))->maxLength(255)->placeholder('أ.د، د، م.'),
                             TextInput::make('translations.ar.position')->label(__('admin_resources.faculty_member.arabic_position'))->maxLength(255)
-                                // Leadership positions are picked on the council page and show instead of this.
+                                // The academic rank; positions are picked on the council and departments pages.
+                                ->datalist(['أستاذ', 'أستاذ مساعد', 'مدرس'])
                                 ->helperText(__('admin_resources.faculty_member.typed_position_help')),
                             Textarea::make('translations.ar.bio')->label(__('admin_resources.faculty_member.arabic_biography'))->rows(4)->columnSpanFull(),
                             TagsInput::make('translations.ar.specializations')->label(__('admin_resources.faculty_member.arabic_specializations'))->separator(',')->columnSpanFull(),
@@ -208,7 +209,8 @@ class FacultyMemberResource extends Resource
                         Tabs\Tab::make('English')->label(__('admin_resources.faculty_member.english'))->schema([
                             TextInput::make('translations.en.title')->label(__('admin_resources.faculty_member.english_title'))->maxLength(255)->placeholder(__('admin_resources.faculty_member.prof_dr_eng')),
                             TextInput::make('translations.en.position')->label(__('admin_resources.faculty_member.english_position'))->maxLength(255)
-                                // Leadership positions are picked on the council page and show instead of this.
+                                // The academic rank; positions are picked on the council and departments pages.
+                                ->datalist(['Professor', 'Associate Professor', 'Lecturer'])
                                 ->helperText(__('admin_resources.faculty_member.typed_position_help')),
                             Textarea::make('translations.en.bio')->label(__('admin_resources.faculty_member.english_biography'))->rows(4)->columnSpanFull(),
                             TagsInput::make('translations.en.specializations')->label(__('admin_resources.faculty_member.english_specializations'))->separator(',')->columnSpanFull(),

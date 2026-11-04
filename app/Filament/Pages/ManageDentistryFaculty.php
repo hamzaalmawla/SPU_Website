@@ -41,6 +41,7 @@ class ManageDentistryFaculty extends Page implements HasForms
             'facilities.dentistry' => 'Homepage',
             'facilities.dentistry.overview' => 'Overview',
             'facilities.dentistry.departments' => 'Departments',
+            'facilities.dentistry.programs' => __('admin.cms.targets.facilities.programs'),
             'facilities.dentistry.study_plan' => 'Study Plan',
             'facilities.dentistry.labs' => 'Labs',
             'facilities.dentistry.projects' => 'Projects',

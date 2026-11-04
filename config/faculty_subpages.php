@@ -20,4 +20,19 @@ return [
         'master-program' => ['artificial-intelligence', 'pharmacy', 'petroleum'],
         'final-exams' => ['medicine', 'dentistry', 'pharmacy', 'artificial-intelligence', 'building-construction-engineering', 'petroleum', 'business-administration'],
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | The department of each faculty's master's program
+    |--------------------------------------------------------------------------
+    |
+    | Before a faculty's programs page is published, its master's program is
+    | placed in the department that teaches this study plan program (AI: the
+    | Artificial Intelligence Engineering department). Editors change it on the
+    | programs page.
+    |
+    */
+    'master_program_department' => [
+        'artificial-intelligence' => 'ai',
+    ],
 ];

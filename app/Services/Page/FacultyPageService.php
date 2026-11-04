@@ -9,6 +9,7 @@ use App\Contracts\Cms\CmsWorkflowServiceInterface;
 use App\Contracts\Content\PersonIdentityServiceInterface;
 use App\Contracts\Faculty\FacultyLeadershipServiceInterface;
 use App\Contracts\Faculty\FacultyMasterProgramServiceInterface;
+use App\Contracts\Faculty\FacultyProgramServiceInterface;
 use App\Contracts\Faculty\FacultyStudyPlanLinkServiceInterface;
 use App\Contracts\Faculty\ProjectFieldBlockParserInterface;
 use App\Contracts\Page\AboutPageServiceInterface;
@@ -70,20 +71,20 @@ final class FacultyPageService implements FacultyPageServiceInterface
         'business' => 'business-administration',
     ];
 
-    /** A specialization teaches a study plan program; a section has no study plan. */
-    private const DEPARTMENT_TYPES = ['specialization', 'section'];
-
     /**
      * Subpages every faculty that may use them has even without a page row or card
      * (see hasDefaultSubpage); the master's program is only for the faculties
      * config faculty_subpages.restricted lists with it.
      */
-    private const DEFAULT_SUBPAGES = ['final-exams', 'council', 'master-program'];
+    private const DEFAULT_SUBPAGES = ['programs', 'final-exams', 'council', 'master-program'];
 
     /** Default subpages whose card comes first, not last, while no card of their own places them. */
     private const LEADING_DEFAULT_SUBPAGES = ['master-program'];
 
-    private const SUBPAGE_SLUGS = ['overview', 'departments', 'study-plan', 'study-plan-course', 'labs', 'projects', 'alumni', 'valedictorians', 'training', 'clinical-cases', 'final-exams', 'research', 'members', 'council', 'master-program'];
+    /** Default subpages whose card follows another one (when the faculty shows it), not last. */
+    private const DEFAULT_SUBPAGES_AFTER = ['programs' => 'departments'];
+
+    private const SUBPAGE_SLUGS = ['overview', 'departments', 'study-plan', 'study-plan-course', 'labs', 'projects', 'alumni', 'valedictorians', 'training', 'clinical-cases', 'final-exams', 'research', 'members', 'council', 'master-program', 'programs'];
 
     /** The members page lists the dean first, then the other leaders, the department heads, the council and the rest of the staff. */
     private const MEMBER_TIERS = ['dean', 'leadership', 'head', 'council', 'staff'];
@@ -113,6 +114,7 @@ final class FacultyPageService implements FacultyPageServiceInterface
         private readonly FacultyLeadershipServiceInterface $leadershipService,
         private readonly FacultyMasterProgramServiceInterface $masterProgramService,
         private readonly CenterCatalogServiceInterface $centerCatalog,
+        private readonly FacultyProgramServiceInterface $programService,
     ) {}
 
     public function getHub(string $locale): FacultyHubPageDTO
@@ -371,7 +373,17 @@ final class FacultyPageService implements FacultyPageServiceInterface
         $detail = [];
 
         if ($subpageSlug === 'departments') {
-            $items = $this->withDepartmentHeads($this->studyPlanLinkService->enrichDepartmentItems($this->publicSlug($faculty), $locale, $items), $locale);
+            $items = $this->studyPlanLinkService->enrichDepartmentItems($this->publicSlug($faculty), $locale, $items);
+            // A department is an administrative unit: it lists the programs it offers (each with
+            // its study plan) and its council (the head and the members).
+            $programs = $this->programService->programs($this->publicSlug($faculty), $locale, $items, $this->isAvailableSubpage($faculty, 'master-program'));
+            $items = $this->withDepartmentCouncils($this->withDepartmentPrograms($items, $programs), $locale);
+            $detail = ['programsCount' => count($programs), 'programsUrl' => $this->isAvailableSubpage($faculty, 'programs') ? $this->url($locale, '/faculties/'.$this->publicSlug($faculty).'/programs') : null];
+        }
+
+        if ($subpageSlug === 'programs') {
+            $items = $this->programService->programs($this->publicSlug($faculty), $locale, $this->departmentsForPrograms($faculty, $locale), $this->isAvailableSubpage($faculty, 'master-program'), $cmsContent);
+            $detail = ['levels' => $this->programLevels($items, $locale)];
         }
 
         if ($subpageSlug === 'council') {
@@ -738,6 +750,11 @@ final class FacultyPageService implements FacultyPageServiceInterface
             $content = [...$content, ...($this->masterProgramService->defaultContent($this->publicSlug($faculty), $locale) ?? [])];
         }
 
+        if ($subpageSlug === 'programs') {
+            unset($content['items']);
+            $content = [...$content, ...$this->programService->defaultContent($this->publicSlug($faculty), $locale, $this->departmentsForPrograms($faculty, $locale), $this->isAvailableSubpage($faculty, 'master-program'))];
+        }
+
         if ($subpageSlug === 'research') {
             $facultyName = (string) $this->facultyTranslation($faculty, $locale)->name;
             $content['eyebrow'] = $locale === 'ar' ? 'أبحاث الكلية' : 'Faculty Research';
@@ -1027,9 +1044,10 @@ final class FacultyPageService implements FacultyPageServiceInterface
             'clinical-cases' => $locale === 'ar' ? 'الحالات السريرية' : 'Clinical Cases',
             'final-exams' => $locale === 'ar' ? 'برنامج الامتحان النهائي' : 'Final Exam Schedule',
             'research' => $locale === 'ar' ? 'البحث العلمي' : 'Research',
-            'members' => $locale === 'ar' ? 'أعضاء الهيئة الأكاديمية' : 'Faculty Members',
+            'members' => $locale === 'ar' ? 'أعضاء الهيئة التدريسية' : 'Faculty Members',
             'council' => $locale === 'ar' ? 'مجلس الكلية' : 'Faculty Council',
             'master-program' => $locale === 'ar' ? 'برنامج الماجستير' : "Master's Program",
+            'programs' => $locale === 'ar' ? 'البرامج الأكاديمية' : 'Academic Programs',
         ];
         $pages = $faculty->pages->keyBy('slug');
         $cards = $this->subpageCardService->getVisibleCards($slug);
@@ -1053,9 +1071,14 @@ final class FacultyPageService implements FacultyPageServiceInterface
         $defaultSlugs = array_values(array_filter(self::DEFAULT_SUBPAGES, fn (string $subpageSlug): bool => $this->hasDefaultSubpage($faculty, $subpageSlug)));
 
         foreach ($defaultSlugs as $defaultSlug) {
-            $entries = in_array($defaultSlug, self::LEADING_DEFAULT_SUBPAGES, true)
-                ? $entries->prepend(['slug' => $defaultSlug, 'title' => null])
-                : $entries->push(['slug' => $defaultSlug, 'title' => null]);
+            $after = self::DEFAULT_SUBPAGES_AFTER[$defaultSlug] ?? null;
+            $afterIndex = $after !== null ? $entries->values()->search(fn (array $entry): bool => $entry['slug'] === $after) : false;
+
+            $entries = match (true) {
+                in_array($defaultSlug, self::LEADING_DEFAULT_SUBPAGES, true) => $entries->prepend(['slug' => $defaultSlug, 'title' => null]),
+                is_int($afterIndex) => $entries->values()->take($afterIndex + 1)->push(['slug' => $defaultSlug, 'title' => null])->merge($entries->values()->slice($afterIndex + 1)->values()),
+                default => $entries->push(['slug' => $defaultSlug, 'title' => null]),
+            };
         }
 
         // Only subpages that are enabled and have a public route: a card for
@@ -1182,8 +1205,12 @@ final class FacultyPageService implements FacultyPageServiceInterface
         // photo and address, with the role as the position.
         $identities = $this->identityService->publicIdentities(array_map('intval', $people->modelKeys()), $locale);
 
+        // The positions held on the council and departments pages (dean, vice dean, head,
+        // department council member, ...) are shown apart from the academic rank typed on
+        // the profile (professor, associate professor, ...).
+        $heldPositions = $this->leadershipService->memberPositions($this->publicSlug($faculty), $locale);
         $personItems = $people
-            ->map(function (Person $person) use ($locale, $identities): ?array {
+            ->map(function (Person $person) use ($locale, $identities, $heldPositions): ?array {
                 $identity = $identities[(int) $person->getKey()] ?? null;
                 $slug = $identity !== null ? $identity->slug : (string) $person->slug;
                 if (preg_match('/^[A-Za-z0-9-]+$/', $slug) !== 1) {
@@ -1199,7 +1226,8 @@ final class FacultyPageService implements FacultyPageServiceInterface
                 }
 
                 $apt = $person->appointments->first();
-                $role = $identity?->position ?: $identity?->title ?: $translation->position ?: $translation->title ?: '';
+                $held = $identity !== null ? ($heldPositions[$identity->memberId] ?? []) : [];
+                $role = $translation->position ?: $translation->title ?: '';
                 if ($apt !== null) {
                     $aptTrans = $apt->translations->firstWhere('locale', $locale)
                         ?? $apt->translations->firstWhere('locale', 'ar')
@@ -1222,7 +1250,8 @@ final class FacultyPageService implements FacultyPageServiceInterface
                 return [
                     'slug' => $slug,
                     'name' => $identity !== null ? $identity->name : (string) $translation->name,
-                    'position' => $role,
+                    'positions' => $held !== [] ? $held : array_values(array_filter([$role])),
+                    'academicRank' => $identity !== null && $identity->position !== $role ? (string) $identity->position : '',
                     'department' => $department,
                     'image' => $image,
                     'profileUrl' => $this->url($locale, '/about/profile/'.$slug),
@@ -1233,8 +1262,6 @@ final class FacultyPageService implements FacultyPageServiceInterface
 
         // A profile already listed above as a leader is one card, not two:
         // unique('slug') below keeps the leader's card, with the role.
-        // A position held on the council or departments page replaces one typed on the profile.
-        $heldPositions = $this->leadershipService->memberPositions($this->publicSlug($faculty), $locale);
         $facultyMemberItems = $facultyMembers
             ->map(function (FacultyMember $member) use ($locale, $heldPositions): ?array {
                 $slug = (string) $member->slug;
@@ -1262,7 +1289,8 @@ final class FacultyPageService implements FacultyPageServiceInterface
                 return [
                     'slug' => $slug,
                     'name' => (string) $translation->full_name,
-                    'position' => implode(' · ', $heldPositions[(int) $member->getKey()] ?? []) ?: ($translation->position ?: $translation->title ?: ''),
+                    'positions' => $heldPositions[(int) $member->getKey()] ?? [],
+                    'academicRank' => (string) ($translation->position ?? ''),
                     'department' => $department,
                     'image' => $image,
                     'profileUrl' => $this->url($locale, '/about/profile/'.$slug),
@@ -1279,14 +1307,17 @@ final class FacultyPageService implements FacultyPageServiceInterface
             ->unique('slug')
             ->sortBy('sort_order')
             ->values()
-            ->map(fn (array $item, int $index): array => [...$item, 'rank' => $ranks[$item['slug']] ?? $this->typedPositionRank((string) $item['position'], (string) $item['name'], $hasDean), 'index' => $index])
+            // Before a council page is published, a leadership title typed on the profile still places it.
+            ->map(fn (array $item, int $index): array => [...$item, 'rank' => $ranks[$item['slug']] ?? $this->typedPositionRank(implode(' · ', $item['positions']) ?: $item['academicRank'], (string) $item['name'], $hasDean), 'index' => $index])
             ->sort(fn (array $left, array $right): int => [array_search($left['rank']['tier'], self::MEMBER_TIERS, true), $left['rank']['order'], $left['index']]
                 <=> [array_search($right['rank']['tier'], self::MEMBER_TIERS, true), $right['rank']['order'], $right['index']])
             ->values()
             ->map(fn (array $item): array => [
                 'slug' => $item['slug'],
                 'name' => $item['name'],
-                'position' => $item['position'],
+                'positions' => $item['positions'],
+                'position' => implode(' · ', $item['positions']),
+                'academicRank' => trim($item['academicRank']),
                 'department' => $item['department'],
                 'image' => $item['image'],
                 'profileUrl' => $item['profileUrl'],
@@ -1401,34 +1432,119 @@ final class FacultyPageService implements FacultyPageServiceInterface
     }
 
     /**
-     * Normalizes each department's type and adds its head (name, photo and profile link) from the
-     * public faculty profile. A head who is not public is left out. A department saved before it had
-     * a type is a specialization when it links to a study plan, otherwise a section.
+     * Adds each department's council: its head (name, photo and profile link from the public
+     * faculty profile, with the head's title) and its council members. A profile that is not
+     * public is left out.
      *
      * @param  array<int, array<string, mixed>>  $items
      * @return array<int, array<string, mixed>>
      */
-    private function withDepartmentHeads(array $items, string $locale): array
+    private function withDepartmentCouncils(array $items, string $locale): array
     {
-        $memberIds = collect($items)
-            ->map(static fn (array $item): int => is_numeric($item['headMemberId'] ?? null) ? (int) $item['headMemberId'] : 0)
-            ->filter(static fn (int $id): bool => $id > 0)
-            ->unique()
-            ->values()
-            ->all();
-        $heads = $this->publicMemberCards($locale, $memberIds);
+        $memberIds = [];
 
-        return array_map(static function (array $item) use ($heads): array {
-            $type = (string) ($item['type'] ?? '');
+        foreach ($items as $item) {
+            $memberIds = [...$memberIds, ...$this->departmentMemberIds($item)];
+        }
+
+        $cards = $this->publicMemberCards($locale, array_values(array_unique($memberIds)));
+        $defaultMemberRole = $locale === 'ar' ? 'عضو مجلس القسم' : 'Department Council Member';
+
+        return array_map(function (array $item) use ($cards, $locale, $defaultMemberRole): array {
             $headId = is_numeric($item['headMemberId'] ?? null) ? (int) $item['headMemberId'] : 0;
+            $headTitle = trim((string) ($item['headTitle'] ?? ''));
+            $head = isset($cards[$headId]) ? [...$cards[$headId], 'role' => $headTitle !== '' ? $headTitle : ($locale === 'ar' ? 'رئيس القسم' : 'Head of Department')] : null;
+            $members = [];
+
+            foreach ($this->departmentMemberIds($item, withHead: false) as $memberId) {
+                if (isset($cards[$memberId]) && $memberId !== $headId) {
+                    $members[] = [...$cards[$memberId], 'role' => $defaultMemberRole];
+                }
+            }
+
             unset($item['kind']);
 
             return [
                 ...$item,
-                'type' => in_array($type, self::DEPARTMENT_TYPES, true) ? $type : (empty($item['studyPlanUrl']) ? 'section' : 'specialization'),
-                'head' => $heads[$headId] ?? null,
+                'head' => $head,
+                'councilMembers' => $members,
             ];
         }, $items);
+    }
+
+    /**
+     * The profile ids of a department's head and council members.
+     *
+     * @param  array<string, mixed>  $item
+     * @return list<int>
+     */
+    private function departmentMemberIds(array $item, bool $withHead = true): array
+    {
+        $ids = $withHead && is_numeric($item['headMemberId'] ?? null) ? [(int) $item['headMemberId']] : [];
+
+        foreach (is_array($item['councilMemberIds'] ?? null) ? $item['councilMemberIds'] : [] as $id) {
+            if (is_numeric($id) && (int) $id > 0) {
+                $ids[] = (int) $id;
+            }
+        }
+
+        return array_values(array_unique(array_filter($ids, static fn (int $id): bool => $id > 0)));
+    }
+
+    /**
+     * Adds to each department the programs it offers.
+     *
+     * @param  array<int, array<string, mixed>>  $items
+     * @param  list<array<string, mixed>>  $programs
+     * @return array<int, array<string, mixed>>
+     */
+    private function withDepartmentPrograms(array $items, array $programs): array
+    {
+        return array_map(static function (array $item) use ($programs): array {
+            $slug = (string) ($item['slug'] ?? '');
+
+            return [
+                ...$item,
+                'programs' => array_values(array_filter($programs, static fn (array $program): bool => $slug !== '' && ($program['department']['slug'] ?? null) === $slug)),
+            ];
+        }, $items);
+    }
+
+    /**
+     * The departments the programs page links to: the published departments page, else the
+     * faculty's department records, each with the study plan program it teaches.
+     *
+     * @return list<array<string, mixed>>
+     */
+    private function departmentsForPrograms(Faculty $faculty, string $locale): array
+    {
+        $content = $this->publishedLocalizedPayload($this->targetKeyForSubpage($this->publicSlug($faculty), 'departments'), $locale);
+        $items = is_array($content) && array_key_exists('items', $content)
+            ? $this->arrayList($content['items'] ?? [])
+            : $this->departmentItems($faculty, $locale, $this->pageForFaculty($faculty, 'departments'));
+
+        return array_values($this->studyPlanLinkService->enrichDepartmentItems($this->publicSlug($faculty), $locale, $items));
+    }
+
+    /**
+     * The programs page's groups: one per level that has programs, in level order.
+     *
+     * @param  array<int, array<string, mixed>>  $programs
+     * @return list<array{level: string, label: string, count: int}>
+     */
+    private function programLevels(array $programs, string $locale): array
+    {
+        $levels = [];
+
+        foreach (FacultyProgramServiceInterface::LEVELS as $level) {
+            $count = count(array_filter($programs, static fn (array $program): bool => ($program['level'] ?? null) === $level));
+
+            if ($count > 0) {
+                $levels[] = ['level' => $level, 'label' => $this->programService->levelLabel($level, $locale, plural: true), 'count' => $count];
+            }
+        }
+
+        return $levels;
     }
 
     /** @return array<int, array<string, mixed>> */
@@ -2556,6 +2672,8 @@ final class FacultyPageService implements FacultyPageServiceInterface
                     ? MediaUrlResolver::resolveImage($member->photoMedia->webp_path, $member->photoMedia->path, $member->photoMedia->disk)
                     : MediaUrlResolver::resolveLegacy($member->legacy_photo_path),
                 'url' => $this->url($locale, '/about/profile/'.$member->slug),
+                // The academic rank typed on the profile.
+                'academicRank' => trim((string) ($translation?->position ?? '')),
             ];
         }
 
@@ -2644,9 +2762,10 @@ final class FacultyPageService implements FacultyPageServiceInterface
             'clinical-cases' => $locale === 'ar' ? 'الحالات السريرية' : 'Clinical Cases',
             'final-exams' => $locale === 'ar' ? 'برنامج الامتحان النهائي' : 'Final Exam Schedule',
             'research' => $locale === 'ar' ? 'أحدث الأبحاث' : 'Latest Research',
-            'members' => $locale === 'ar' ? 'أعضاء الهيئة الأكاديمية' : 'Faculty Members',
+            'members' => $locale === 'ar' ? 'أعضاء الهيئة التدريسية' : 'Faculty Members',
             'council' => $locale === 'ar' ? 'مجلس الكلية' : 'Faculty Council',
             'master-program' => $locale === 'ar' ? 'برنامج الماجستير' : "Master's Program",
+            'programs' => $locale === 'ar' ? 'البرامج الأكاديمية' : 'Academic Programs',
         ];
 
         return $titles[$subpageSlug] ?? $subpageSlug;

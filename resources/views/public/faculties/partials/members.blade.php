@@ -25,7 +25,7 @@
         ->all();
     $cardIndex = 0;
     $personIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" aria-hidden="true"><circle cx="12" cy="8" r="4"></circle><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"></path></svg>';
-    $searchText = static fn (array $member): string => implode(' ', array_filter([$member['name'] ?? '', $member['position'] ?? '', $member['department'] ?? '']));
+    $searchText = static fn (array $member): string => implode(' ', array_filter([$member['name'] ?? '', $member['position'] ?? '', $member['academicRank'] ?? '', $member['department'] ?? '']));
 @endphp
 
 <section class="fm-section font-hacen" x-data="facultyMembers">
@@ -102,10 +102,13 @@
                                     @endif
                                 </span>
                                 <span class="fm-card__body">
-                                    @if (! empty($member['position']))
-                                        <span class="fm-card__role">{{ $member['position'] }}</span>
-                                    @endif
+                                    @foreach (($member['positions'] ?? []) as $heldPosition)
+                                        <span class="fm-card__role">{{ $heldPosition }}</span>
+                                    @endforeach
                                     <span class="fm-card__name" dir="auto">{{ $member['name'] ?? '' }}</span>
+                                    @if (($member['academicRank'] ?? '') !== '')
+                                        <span class="fm-card__rank"><span>{{ $isAr ? 'الرتبة الأكاديمية:' : 'Academic rank:' }}</span> <span dir="auto">{{ $member['academicRank'] }}</span></span>
+                                    @endif
                                     @if (! empty($member['department']))
                                         <span class="fm-card__department">
                                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 21h18M5 21V8l7-5 7 5v13M9 21v-6h6v6"/></svg>

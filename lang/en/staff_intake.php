@@ -8,8 +8,8 @@ return [
         'name_en' => 'Full name (English)',
         'title_ar' => 'Academic title (Arabic)',
         'title_en' => 'Academic title (English)',
-        'position_ar' => 'Position (Arabic)',
-        'position_en' => 'Position (English)',
+        'position_ar' => 'Academic rank (Arabic)',
+        'position_en' => 'Academic rank (English)',
         'bio_ar' => 'Biography (Arabic)',
         'bio_en' => 'Biography (English)',
         'specializations_ar' => 'Specializations (Arabic)',
@@ -42,7 +42,7 @@ return [
 
     'public' => [
         'university' => 'Syrian Private University',
-        'page_title' => 'Academic staff details',
+        'page_title' => 'Teaching staff details',
         'intro' => 'This form updates your profile on the university website for :faculty. Start by typing your name.',
         'search_label' => 'Your name, in Arabic or English',
         'search_placeholder' => 'e.g. Ahmad Ali or أحمد علي',

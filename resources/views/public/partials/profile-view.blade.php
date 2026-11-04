@@ -7,6 +7,9 @@
     $facultyName = $profile['facultyName'] ?? null;
     $departmentName = $profile['departmentName'] ?? null;
     $specializationName = $profile['specializationName'] ?? null;
+    $academicRank = trim((string) ($profile['academicRank'] ?? ''));
+    // Positions held (dean, head of department, ...) are one chip each; the academic rank is shown apart.
+    $heldPositions = array_values(array_filter(array_map('trim', explode(' · ', (string) $position))));
     
     // For bio: handle array of paragraphs or string
     $biography = $profile['biography'] ?? [];
@@ -66,10 +69,14 @@
                 </div>
 
                 <div class="col-span-2 my-1 flex flex-wrap items-center gap-1 md:col-auto">
-                    @if ($position !== null && $position !== '')
-                        <span class="inline-flex items-center rounded-full bg-spu-red px-3 py-1 text-xs font-bold uppercase tracking-[0.05em] text-white">{{ $position }}</span>
+                    @foreach ($heldPositions as $heldPosition)
+                        <span class="inline-flex items-center rounded-full bg-spu-red px-3 py-1 text-xs font-bold uppercase tracking-[0.05em] text-white">{{ $heldPosition }}</span>
+                    @endforeach
+                    @if ($academicRank !== '')
+                        @if ($heldPositions !== [])<span class="text-spu-blue/30">•</span>@endif
+                        <span class="text-sm font-semibold text-spu-blue"><span class="text-spu-blue/60">{{ $isAr ? 'الرتبة الأكاديمية:' : 'Academic rank:' }}</span> <span dir="auto">{{ $academicRank }}</span></span>
                     @endif
-                    @if ($title !== null && $title !== '' && $title !== $position)
+                    @if ($title !== null && $title !== '' && $title !== $position && $title !== $academicRank)
                         <span class="text-spu-blue/30">•</span>
                         <span class="text-sm font-semibold text-spu-blue">{{ $title }}</span>
                     @endif
@@ -83,7 +90,7 @@
                     @endif
                     @if ($specializationName !== null && $specializationName !== '')
                         <span class="text-spu-blue/30">•</span>
-                        <span class="text-sm font-semibold text-spu-blue">{{ $isAr ? 'الاختصاص' : 'Specialization' }}: {{ $specializationName }}</span>
+                        <span class="text-sm font-semibold text-spu-blue">{{ $isAr ? 'البرنامج' : 'Program' }}: {{ $specializationName }}</span>
                     @endif
                 </div>
 

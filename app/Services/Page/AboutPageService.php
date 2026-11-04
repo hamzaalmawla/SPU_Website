@@ -1001,9 +1001,9 @@ final class AboutPageService implements AboutPageServiceInterface
     private function staffDirectoryPayload(string $locale): array
     {
         return [
-            'title' => $locale === 'ar' ? 'دليل الهيئة الأكاديمية' : 'Academic Staff Directory',
-            'headline' => $locale === 'ar' ? 'دليل الهيئة الأكاديمية' : 'Academic Staff Directory',
-            'summary' => $locale === 'ar' ? 'دليل أعضاء الهيئة الأكاديمية في الجامعة السورية الخاصة.' : 'Directory of SPU academic staff members.',
+            'title' => $locale === 'ar' ? 'دليل الهيئة التدريسية' : 'Teaching Staff Directory',
+            'headline' => $locale === 'ar' ? 'دليل الهيئة التدريسية' : 'Teaching Staff Directory',
+            'summary' => $locale === 'ar' ? 'دليل أعضاء الهيئة التدريسية في الجامعة السورية الخاصة.' : 'Directory of SPU teaching staff members.',
             'heroImage' => '/images/about-hero-2.webp',
             'sections' => [],
         ];

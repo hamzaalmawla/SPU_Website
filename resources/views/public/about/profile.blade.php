@@ -38,6 +38,7 @@
             'facultyName' => $profile->facultyName,
             'departmentName' => $profile->departmentName,
             'specializationName' => $profile->specializationName,
+            'academicRank' => $profile->academicRank,
             'bio' => $profile->bio,
             'biography' => $profile->bio !== null && $profile->bio !== '' ? [$profile->bio] : [],
             'officeLocation' => $profile->officeLocation,

@@ -103,7 +103,7 @@ final class FacultyPositionMatchService implements FacultyPositionMatchServiceIn
 
                 $name = (string) ($member->translations->firstWhere('locale', 'ar')?->full_name ?? $member->slug);
                 $row = ['faculty' => $slug, 'member' => $name, 'typed' => $typed];
-                $position = $this->match($arabic) ?? $this->match($english);
+                $position = $this->match($slug, $arabic) ?? $this->match($slug, $english);
 
                 if (! $position instanceof FacultyPositionDTO) {
                     $unmatched[] = $row;
@@ -208,7 +208,7 @@ final class FacultyPositionMatchService implements FacultyPositionMatchServiceIn
         return $rows;
     }
 
-    private function match(string $typed): ?FacultyPositionDTO
+    private function match(string $facultySlug, string $typed): ?FacultyPositionDTO
     {
         $typed = $this->fold($typed);
 
@@ -217,7 +217,7 @@ final class FacultyPositionMatchService implements FacultyPositionMatchServiceIn
         }
 
         // An added position matches by its exact name, before any built-in spelling.
-        foreach ($this->positionService->all() as $position) {
+        foreach ($this->positionService->all($facultySlug) as $position) {
             if (! $position->isBuiltIn && in_array($typed, [$this->fold($position->nameAr), $this->fold($position->nameEn)], true)) {
                 return $position;
             }
@@ -228,7 +228,7 @@ final class FacultyPositionMatchService implements FacultyPositionMatchServiceIn
                 $spelling = $this->fold($spelling);
 
                 if ($typed === $spelling || str_starts_with($typed, rtrim($spelling, ',').' ') || str_starts_with($typed, $spelling)) {
-                    return $this->positionService->find($slug);
+                    return $this->positionService->find($facultySlug, $slug);
                 }
             }
         }

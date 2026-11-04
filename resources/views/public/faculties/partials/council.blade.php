@@ -4,13 +4,14 @@
     $leadership = is_array($page->detail['leadership'] ?? null) ? $page->detail['leadership'] : [];
     $heads = is_array($page->detail['heads'] ?? null) ? $page->detail['heads'] : [];
     $members = $page->items;
+    $rankLabel = $isAr ? 'الرتبة الأكاديمية:' : 'Academic rank:';
     $personIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="12" cy="8" r="4"></circle><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"></path></svg>';
 @endphp
 
 @if ($dean === null && $leadership === [] && $members === [] && $heads === [])
     <section class="fc-section bg-white font-hacen">
         <div class="container">
-            <p class="mx-auto max-w-2xl rounded-xl border border-slate-200 bg-slate-50 px-6 py-12 text-center font-bold text-slate-700">{{ $isAr ? 'لم تُنشر قيادة الكلية ومجلسها بعد.' : 'The faculty leadership and council are not published yet.' }}</p>
+            <p class="mx-auto max-w-2xl rounded-xl border border-slate-200 bg-slate-50 px-6 py-12 text-center font-bold text-slate-700">{{ $isAr ? 'لم تُنشر عمادة الكلية ومجلسها بعد.' : 'The faculty deanship and council are not published yet.' }}</p>
         </div>
     </section>
 @endif
@@ -19,7 +20,7 @@
     <section class="fc-section bg-white font-hacen" aria-labelledby="fc-leadership-title">
         <div class="container max-w-[1160px]">
             <header class="fc-heading">
-                <span class="fc-eyebrow">{{ $isAr ? 'قيادة الكلية' : 'Faculty Leadership' }}</span>
+                <span class="fc-eyebrow">{{ $isAr ? 'عمادة الكلية' : 'Faculty Deanship' }}</span>
                 <h2 id="fc-leadership-title" class="fc-title">{{ $faculty['title'] }}</h2>
             </header>
 
@@ -38,6 +39,9 @@
                             <span class="fc-chip fc-chip--gold">{{ $isAr ? 'رئيس مجلس الكلية' : 'Council Chair' }}</span>
                         </div>
                         <h3 class="fc-dean__name" dir="auto">{{ $dean['name'] }}</h3>
+                        @if (($dean['academicRank'] ?? '') !== '')
+                            <p class="fc-rank"><span>{{ $rankLabel }}</span> <span dir="auto">{{ $dean['academicRank'] }}</span></p>
+                        @endif
                         @if (($dean['bio'] ?? '') !== '')
                             <p class="fc-dean__bio" dir="auto">{{ $dean['bio'] }}</p>
                         @endif
@@ -59,6 +63,9 @@
                             <span class="fc-card__text">
                                 <span class="fc-card__name" dir="auto">{{ $person['name'] }}</span>
                                 <span class="fc-card__role">{{ implode(' · ', $person['titles']) }}</span>
+                                @if (($person['academicRank'] ?? '') !== '')
+                                    <span class="fc-rank"><span>{{ $rankLabel }}</span> <span dir="auto">{{ $person['academicRank'] }}</span></span>
+                                @endif
                             </span>
                         </a>
                     @endforeach
@@ -92,6 +99,9 @@
                                             <span class="fc-chip">{{ $role }}</span>
                                         @endforeach
                                     </span>
+                                    @if (($member['academicRank'] ?? '') !== '')
+                                        <span class="fc-rank"><span>{{ $rankLabel }}</span> <span dir="auto">{{ $member['academicRank'] }}</span></span>
+                                    @endif
                                 </span>
                             </a>
                         @endforeach
@@ -106,7 +116,7 @@
                         @foreach ($heads as $head)
                             <a href="{{ $head['url'] }}" class="fc-card fc-head">
                                 <span class="fc-head__department">
-                                    <span class="fc-head__type">{{ $head['type'] === 'specialization' ? ($isAr ? 'اختصاص' : 'Specialization') : ($isAr ? 'قسم' : 'Section') }}</span>
+                                    <span class="fc-head__type">{{ $isAr ? 'قسم' : 'Department' }}</span>
                                     <span class="fc-card__name" dir="auto">{{ $head['department'] }}</span>
                                 </span>
                                 <span class="fc-head__person">
@@ -116,6 +126,9 @@
                                     <span class="fc-card__text">
                                         <span class="fc-card__name text-[0.95rem]" dir="auto">{{ $head['name'] }}</span>
                                         <span class="fc-card__muted">{{ $head['title'] }}</span>
+                                        @if (($head['academicRank'] ?? '') !== '')
+                                            <span class="fc-rank"><span>{{ $rankLabel }}</span> <span dir="auto">{{ $head['academicRank'] }}</span></span>
+                                        @endif
                                     </span>
                                 </span>
                             </a>

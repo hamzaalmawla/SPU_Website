@@ -41,6 +41,7 @@ class ManageMedicineFaculty extends Page implements HasForms
             'facilities.medicine' => 'Homepage',
             'facilities.medicine.overview' => 'Overview',
             'facilities.medicine.departments' => 'Departments',
+            'facilities.medicine.programs' => __('admin.cms.targets.facilities.programs'),
             'facilities.medicine.study_plan' => 'Study Plan',
             'facilities.medicine.labs' => 'Labs',
             'facilities.medicine.projects' => 'Projects',

@@ -1477,6 +1477,7 @@ final class FacilitiesWorkflowTest extends TestCase
             'facilities.'.$facultySlug,
             'facilities.'.$facultySlug.'.overview',
             'facilities.'.$facultySlug.'.departments',
+            'facilities.'.$facultySlug.'.programs',
             'facilities.'.$facultySlug.'.study_plan',
             'facilities.'.$facultySlug.'.labs',
             'facilities.'.$facultySlug.'.projects',

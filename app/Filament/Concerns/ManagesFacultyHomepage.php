@@ -206,12 +206,14 @@ trait ManagesFacultyHomepage
             'student_records' => $studentRecords,
             'selected_research' => $targetKey === $this->defaultTargetKey() ? $this->selectedResearchForForm($payload) : [],
             ...$this->councilStateForForm($targetKey, $payload),
+            ...$this->programStateForForm($targetKey, $payload),
             'ar_content' => $arContent,
             'en_content' => $enContent,
         ]);
 
         if (is_array($this->data)) {
             $this->data['department_study_plan_options'] = $this->departmentStudyPlanOptionsFromTarget($targetKey);
+            $this->data['program_department_options'] = $this->programDepartmentOptionsFromTarget($targetKey);
         }
     }
 
@@ -290,6 +292,8 @@ trait ManagesFacultyHomepage
                     ->visible(fn (): bool => $this->hasFilterableRecords($this->currentTargetKeyForSchema())),
                 $this->councilFields()
                     ->visible(fn (): bool => $this->isCouncilTarget($this->currentTargetKeyForSchema())),
+                $this->programFields()
+                    ->visible(fn (): bool => $this->isProgramsTarget($this->currentTargetKeyForSchema())),
             ])
             ->statePath('data');
     }
@@ -705,6 +709,12 @@ trait ManagesFacultyHomepage
             $enContent = [...$enContent, ...$enCouncil];
         }
 
+        if ($this->isProgramsTarget($targetKey)) {
+            [$arPrograms, $enPrograms] = $this->programContentFromForm($state);
+            $arContent = [...$arContent, ...$arPrograms];
+            $enContent = [...$enContent, ...$enPrograms];
+        }
+
         if ($targetKey === $this->defaultTargetKey()) {
             $selectedResearch = $this->selectedResearchFromForm($state);
             $arContent['selectedResearchSlugs'] = $selectedResearch;
@@ -824,6 +834,8 @@ trait ManagesFacultyHomepage
             'members' => [...$sections, ...$this->membersSubpageFields($prefix)],
             // Positions and members are edited once for both languages, below the language tabs.
             'council' => $sections,
+            // Programs too: their level, department and study plan are the same in both languages.
+            'programs' => $sections,
             'master-program' => [...$sections, ...$this->masterProgramSubpageFields($prefix)],
             default => throw new \InvalidArgumentException('Unsupported faculty subpage target.'),
         };
@@ -1256,13 +1268,10 @@ trait ManagesFacultyHomepage
                     ->schema([
                         Hidden::make('slug')->default(fn (): string => 'department-'.Str::lower(Str::random(8))),
                         TextInput::make('title')->label(__('admin.faculty_workspace.editor.fields.department_name'))->required()->maxLength(180),
-                        Select::make('type')
-                            ->label(__('admin.faculty_workspace.editor.fields.department_type'))
-                            ->options(fn (): array => __('admin.faculty_workspace.editor.department_types'))
-                            ->default('section')
-                            ->selectablePlaceholder(false)
-                            ->live()
-                            ->helperText(__('admin.faculty_workspace.editor.help.department_type')),
+                        // Study plans belong to programs (the programs page). A department's old type and
+                        // study plan link stay stored only to place the programs before that page is published.
+                        Hidden::make('type'),
+                        Hidden::make('studyPlanDepartmentId'),
                         Select::make('headMemberId')
                             ->label(__('admin.faculty_workspace.editor.fields.department_head'))
                             ->options(fn (): array => $this->facultyStaffOptions())
@@ -1279,15 +1288,14 @@ trait ManagesFacultyHomepage
                             ->default(true)
                             ->visible(fn (Get $get): bool => filled($get('headMemberId')))
                             ->helperText(__('admin.faculty_workspace.editor.help.department_head_on_council')),
-                        TextInput::make('code')->label(__('admin.faculty_workspace.editor.fields.department_code'))->maxLength(40),
-                        Select::make('studyPlanDepartmentId')
-                            ->label(__('admin.faculty_workspace.editor.fields.study_plan_link'))
-                            ->options(fn (): array => $this->departmentStudyPlanOptions())
+                        Select::make('councilMemberIds')
+                            ->label(__('admin.faculty_workspace.editor.fields.department_council_members'))
+                            ->options(fn (): array => $this->facultyStaffOptions())
+                            ->multiple()
                             ->searchable()
-                            ->visible(fn (Get $get): bool => $get('type') === 'specialization')
-                            ->required(fn (Get $get): bool => $get('type') === 'specialization')
-                            ->placeholder(__('admin.faculty_workspace.editor.fields.no_study_plan'))
-                            ->helperText(__('admin.faculty_workspace.editor.help.study_plan_link')),
+                            ->helperText(__('admin.faculty_workspace.editor.help.department_council_members'))
+                            ->columnSpanFull(),
+                        TextInput::make('code')->label(__('admin.faculty_workspace.editor.fields.department_code'))->maxLength(40),
                         Textarea::make('summary')->label(__('admin.faculty_workspace.editor.fields.summary'))->rows(3)->columnSpanFull(),
                         Section::make(__('admin.faculty_workspace.editor.sections.advanced'))->collapsed()->schema([
                             TextInput::make('degrees')->label(__('admin.faculty_workspace.editor.fields.degree_track'))->maxLength(160),
@@ -1358,7 +1366,7 @@ trait ManagesFacultyHomepage
                         Hidden::make('id')->default(fn (): string => 'position-'.Str::lower(Str::random(8))),
                         Select::make('positionSlug')
                             ->label(__('admin.faculty_workspace.editor.fields.position'))
-                            ->options(fn (): array => app(FacultyPositionServiceInterface::class)->councilOptions(app()->getLocale() === 'ar' ? 'ar' : 'en'))
+                            ->options(fn (): array => app(FacultyPositionServiceInterface::class)->councilOptions(static::managedFacultyScope(), app()->getLocale() === 'ar' ? 'ar' : 'en'))
                             ->searchable()
                             ->required()
                             ->helperText(__('admin.faculty_workspace.editor.help.position'))
@@ -1414,7 +1422,7 @@ trait ManagesFacultyHomepage
     /** @return array<string, mixed> */
     private function positionFormData(mixed $slug): array
     {
-        $position = is_string($slug) ? app(FacultyPositionServiceInterface::class)->find($slug) : null;
+        $position = is_string($slug) ? app(FacultyPositionServiceInterface::class)->find(static::managedFacultyScope(), $slug) : null;
 
         return $position === null ? [] : [
             'slug' => $position->slug,
@@ -1425,7 +1433,7 @@ trait ManagesFacultyHomepage
     }
 
     /**
-     * Adds a position to the shared list, or renames and places one, and returns its slug.
+     * Adds a position to this faculty's list, or renames and places one, and returns its slug.
      * A refused name keeps the dialog open with the reason.
      *
      * @param  array<string, mixed>  $data
@@ -1455,7 +1463,7 @@ trait ManagesFacultyHomepage
     private function councilRowLabel(array $state): ?string
     {
         $slug = is_string($state['positionSlug'] ?? null) ? $state['positionSlug'] : '';
-        $found = $slug !== '' ? app(FacultyPositionServiceInterface::class)->find($slug) : null;
+        $found = $slug !== '' ? app(FacultyPositionServiceInterface::class)->find(static::managedFacultyScope(), $slug) : null;
         $position = $found === null ? null : (app()->getLocale() === 'ar' ? $found->nameAr : $found->nameEn);
         $memberId = is_numeric($state['memberId'] ?? null) ? (int) $state['memberId'] : 0;
         $name = $memberId > 0 ? ($this->facultyStaffOptions()[$memberId] ?? null) : null;
@@ -1521,6 +1529,123 @@ trait ManagesFacultyHomepage
         ];
 
         return [$content, $content];
+    }
+
+    private function isProgramsTarget(string $targetKey): bool
+    {
+        return $this->subpageSlugFromTarget($targetKey) === 'programs';
+    }
+
+    /**
+     * The programs page editor: one row per program for both languages (level, names,
+     * department, study plan, duration and summary).
+     */
+    private function programFields(): Section
+    {
+        $field = static fn (string $key): string => __('admin.faculty_workspace.editor.fields.'.$key);
+
+        return Section::make(__('admin.faculty_workspace.editor.sections.programs'))
+            ->description(__('admin.faculty_workspace.editor.help.programs'))
+            ->schema([
+                Repeater::make('program_rows')
+                    ->label(__('admin.faculty_workspace.editor.sections.programs'))
+                    ->schema([
+                        Hidden::make('id')->default(fn (): string => 'program-'.Str::lower(Str::random(8))),
+                        Select::make('level')
+                            ->label($field('program_level'))
+                            ->options(fn (): array => __('admin.faculty_workspace.editor.program_levels'))
+                            ->default('bachelor')
+                            ->selectablePlaceholder(false)
+                            ->required(),
+                        Select::make('departmentSlug')
+                            ->label($field('program_department'))
+                            ->options(fn (): array => is_array($this->data['program_department_options'] ?? null) ? $this->data['program_department_options'] : [])
+                            ->searchable()
+                            ->helperText(__('admin.faculty_workspace.editor.help.program_department')),
+                        TextInput::make('titleAr')->label($field('program_name_ar'))->required()->maxLength(255),
+                        TextInput::make('titleEn')->label($field('program_name_en'))->required()->maxLength(255),
+                        Select::make('studyPlanProgramId')
+                            ->label($field('program_study_plan'))
+                            ->options(fn (): array => $this->departmentStudyPlanOptions())
+                            ->searchable()
+                            ->placeholder($field('no_study_plan'))
+                            ->helperText(__('admin.faculty_workspace.editor.help.program_study_plan')),
+                        TextInput::make('durationAr')->label($field('program_duration_ar'))->maxLength(120),
+                        TextInput::make('durationEn')->label($field('program_duration_en'))->maxLength(120),
+                        Textarea::make('summaryAr')->label($field('program_summary_ar'))->rows(3),
+                        Textarea::make('summaryEn')->label($field('program_summary_en'))->rows(3),
+                    ])
+                    ->columns(2)
+                    ->defaultItems(0)
+                    ->reorderable()
+                    ->collapsible()
+                    ->itemLabel(fn (array $state): ?string => trim((string) ($state[app()->getLocale() === 'ar' ? 'titleAr' : 'titleEn'] ?? '')) ?: null)
+                    ->addActionLabel($field('add_program'))
+                    ->columnSpanFull(),
+            ])
+            ->columnSpanFull();
+    }
+
+    /**
+     * The programs editor's rows, from the Arabic and English content (paired by id).
+     *
+     * @param  array<string, mixed>  $payload
+     * @return array<string, mixed>
+     */
+    private function programStateForForm(string $targetKey, array $payload): array
+    {
+        if (! $this->isProgramsTarget($targetKey)) {
+            return ['program_rows' => []];
+        }
+
+        $ar = $this->listOfArrays($payload['translations']['ar']['programs'] ?? []);
+        $en = collect($this->listOfArrays($payload['translations']['en']['programs'] ?? []))->keyBy(fn (array $program): string => (string) ($program['id'] ?? ''));
+        $rows = [];
+
+        foreach ($ar as $program) {
+            $id = trim((string) ($program['id'] ?? ''));
+            $id = $id !== '' ? $id : 'program-'.Str::lower(Str::random(8));
+            $english = $en->get($id, []);
+            $rows[] = [
+                'id' => $id,
+                'level' => is_string($program['level'] ?? null) ? $program['level'] : 'bachelor',
+                'departmentSlug' => is_string($program['departmentSlug'] ?? null) && $program['departmentSlug'] !== '' ? $program['departmentSlug'] : null,
+                'studyPlanProgramId' => is_string($program['studyPlanProgramId'] ?? null) && $program['studyPlanProgramId'] !== '' ? $program['studyPlanProgramId'] : null,
+                'titleAr' => (string) ($program['title'] ?? ''),
+                'titleEn' => (string) ($english['title'] ?? ''),
+                'durationAr' => (string) ($program['duration'] ?? ''),
+                'durationEn' => (string) ($english['duration'] ?? ''),
+                'summaryAr' => (string) ($program['summary'] ?? ''),
+                'summaryEn' => (string) ($english['summary'] ?? ''),
+            ];
+        }
+
+        return ['program_rows' => $rows];
+    }
+
+    /**
+     * The programs editor's rows as the Arabic and English content.
+     *
+     * @param  array<string, mixed>  $state
+     * @return array{0: array<string, mixed>, 1: array<string, mixed>}
+     */
+    private function programContentFromForm(array $state): array
+    {
+        $ar = [];
+        $en = [];
+
+        foreach ($this->listOfArrays($state['program_rows'] ?? []) as $row) {
+            $shared = [
+                'id' => trim((string) ($row['id'] ?? '')),
+                'level' => is_string($row['level'] ?? null) ? $row['level'] : 'bachelor',
+                'departmentSlug' => is_string($row['departmentSlug'] ?? null) && $row['departmentSlug'] !== '' ? $row['departmentSlug'] : null,
+                'studyPlanProgramId' => is_string($row['studyPlanProgramId'] ?? null) && $row['studyPlanProgramId'] !== '' ? $row['studyPlanProgramId'] : null,
+            ];
+            $ar[] = [...$shared, 'title' => trim((string) ($row['titleAr'] ?? '')), 'duration' => trim((string) ($row['durationAr'] ?? '')), 'summary' => trim((string) ($row['summaryAr'] ?? ''))];
+            $en[] = [...$shared, 'title' => trim((string) ($row['titleEn'] ?? '')), 'duration' => trim((string) ($row['durationEn'] ?? '')), 'summary' => trim((string) ($row['summaryEn'] ?? ''))];
+        }
+
+        return [['programs' => $ar], ['programs' => $en]];
     }
 
     /**
@@ -2104,6 +2229,13 @@ trait ManagesFacultyHomepage
             return $content;
         }
 
+        if ($subpageSlug === 'programs') {
+            $content['programs'] = $this->listOfArrays($content['programs'] ?? []);
+            unset($content['items'], $content['stats'], $content['dean']);
+
+            return $content;
+        }
+
         if ($subpageSlug === 'council') {
             $content['positions'] = $this->listOfArrays($content['positions'] ?? []);
             // Extra members became positions; a page saved before keeps none apart.
@@ -2126,6 +2258,10 @@ trait ManagesFacultyHomepage
                 // A department saved before these existed keeps the default title and sits on the council.
                 $item['headTitle'] = $item['headMemberId'] !== null ? trim((string) ($item['headTitle'] ?? '')) : '';
                 $item['headOnCouncil'] = ($item['headOnCouncil'] ?? true) !== false;
+                $item['councilMemberIds'] = array_values(array_unique(array_map('intval', array_filter(
+                    is_array($item['councilMemberIds'] ?? null) ? $item['councilMemberIds'] : [],
+                    static fn (mixed $id): bool => is_numeric($id) && (int) $id > 0,
+                ))));
                 $item['type'] = ($item['type'] ?? null) === 'specialization' ? 'specialization' : 'section';
                 // A section has no study plan.
                 $item['studyPlanDepartmentId'] = $item['type'] === 'specialization' && trim((string) ($item['studyPlanDepartmentId'] ?? '')) !== ''
@@ -2535,11 +2671,44 @@ trait ManagesFacultyHomepage
      */
     private function departmentStudyPlanOptionsFromTarget(string $targetKey): array
     {
-        if ($this->subpageSlugFromTarget($targetKey) !== 'departments') {
+        $subpageSlug = $this->subpageSlugFromTarget($targetKey);
+
+        if (! in_array($subpageSlug, ['departments', 'programs'], true)) {
             return [];
         }
 
-        return $this->studyPlanLinkService->optionsForDepartmentsTarget($targetKey);
+        // The programs page links each program to its study plan.
+        return $this->studyPlanLinkService->optionsForDepartmentsTarget('facilities.'.static::managedFacultyScope().'.departments');
+    }
+
+    /**
+     * The departments a program can belong to: the published departments page (or the
+     * faculty's department records before one is published), by slug.
+     *
+     * @return array<string, string>
+     */
+    private function programDepartmentOptionsFromTarget(string $targetKey): array
+    {
+        if ($this->subpageSlugFromTarget($targetKey) !== 'programs') {
+            return [];
+        }
+
+        $payload = $this->facultyPageService->getEditablePayload('facilities.'.static::managedFacultyScope().'.departments');
+        $locale = app()->getLocale() === 'ar' ? 'ar' : 'en';
+        $options = [];
+
+        foreach ([$locale, $locale === 'ar' ? 'en' : 'ar'] as $contentLocale) {
+            foreach ($this->listOfArrays($payload['translations'][$contentLocale]['items'] ?? []) as $item) {
+                $slug = trim((string) ($item['slug'] ?? ''));
+                $title = trim((string) ($item['title'] ?? ''));
+
+                if ($slug !== '' && $title !== '') {
+                    $options[$slug] ??= $title;
+                }
+            }
+        }
+
+        return $options;
     }
 
     /** @return array<string, string> */

@@ -38,6 +38,7 @@ use App\Contracts\Faculty\FacultyLeadershipServiceInterface;
 use App\Contracts\Faculty\FacultyMasterProgramServiceInterface;
 use App\Contracts\Faculty\FacultyPositionMatchServiceInterface;
 use App\Contracts\Faculty\FacultyPositionServiceInterface;
+use App\Contracts\Faculty\FacultyProgramServiceInterface;
 use App\Contracts\Faculty\FacultyStructureImportServiceInterface;
 use App\Contracts\Faculty\FacultyStudyPlanBoardServiceInterface;
 use App\Contracts\Faculty\FacultyStudyPlanEditorServiceInterface;
@@ -249,6 +250,7 @@ use App\Services\Faculty\FacultyLeadershipService;
 use App\Services\Faculty\FacultyMasterProgramService;
 use App\Services\Faculty\FacultyPositionMatchService;
 use App\Services\Faculty\FacultyPositionService;
+use App\Services\Faculty\FacultyProgramService;
 use App\Services\Faculty\FacultyStructureImportService;
 use App\Services\Faculty\FacultyStudyPlanBoardService;
 use App\Services\Faculty\FacultyStudyPlanEditorService;
@@ -786,6 +788,7 @@ class AppServiceProvider extends ServiceProvider
             FacultyPositionServiceInterface::class => FacultyPositionService::class,
             FacultyPositionMatchServiceInterface::class => FacultyPositionMatchService::class,
             FacultyMasterProgramServiceInterface::class => FacultyMasterProgramService::class,
+            FacultyProgramServiceInterface::class => FacultyProgramService::class,
             ProjectFieldBlockParserInterface::class => ProjectFieldBlockParser::class,
             FacultyPageServiceInterface::class => FacultyPageService::class,
             CenterCatalogServiceInterface::class => CenterCatalogService::class,

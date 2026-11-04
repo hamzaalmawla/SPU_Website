@@ -322,6 +322,18 @@
     line-height: 1.35;
 }
 
+/* The academic rank (Professor, ...), shown apart from the positions held. */
+.fm-card__rank {
+    color: #475569;
+    font-size: 0.78rem;
+    line-height: 1.5;
+}
+
+.fm-card__rank > span:first-child {
+    color: #64748b;
+    font-weight: 700;
+}
+
 .fm-card__department {
     display: flex;
     align-items: flex-start;

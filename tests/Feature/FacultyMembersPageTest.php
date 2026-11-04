@@ -57,7 +57,7 @@ final class FacultyMembersPageTest extends TestCase
 
         $this->get('/ar/faculties/medicine/members')
             ->assertOk()
-            ->assertSee('أعضاء الهيئة الأكاديمية')
+            ->assertSee('أعضاء الهيئة التدريسية')
             ->assertSee('عضو هيئة')
             ->assertSee('مدرس')
             ->assertSee('/ar/about/profile/member-card', false);

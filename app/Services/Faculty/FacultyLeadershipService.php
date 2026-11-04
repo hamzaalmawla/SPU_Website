@@ -22,8 +22,6 @@ use Illuminate\Support\Str;
 
 final class FacultyLeadershipService implements FacultyLeadershipServiceInterface
 {
-    private const DEPARTMENT_TYPES = ['specialization', 'section'];
-
     /** @var array<string, string> */
     private const FACULTY_ALIASES = [
         'ai' => 'artificial-intelligence',
@@ -72,7 +70,7 @@ final class FacultyLeadershipService implements FacultyLeadershipServiceInterfac
         }
 
         $content ??= $this->councilContent($faculty, $locale);
-        $positions = $this->positions($content, $locale);
+        $positions = $this->positions($faculty, $content, $locale);
         $heads = ($content['includeDepartmentHeads'] ?? true) !== false
             ? array_values(array_filter($this->departmentHeads($faculty, $locale), static fn (array $head): bool => $head['onCouncil']))
             : [];
@@ -143,13 +141,18 @@ final class FacultyLeadershipService implements FacultyLeadershipServiceInterfac
         // Only a published council page: until then a profile keeps the position typed on it.
         $published = $this->publishedLocaleContent('facilities.'.$faculty->public_slug.'.council', $locale) ?? [];
 
-        foreach ($this->positions($published, $locale) as $position) {
+        foreach ($this->positions($faculty, $published, $locale) as $position) {
             $held[$position['memberId']][] = $position['name'];
         }
 
         // A head of department heads it whether or not they sit on the council.
         foreach ($this->departmentHeads($faculty, $locale) as $head) {
             $held[$head['memberId']][] = $head['role'];
+        }
+
+        // A department council member sits on that department's council.
+        foreach ($this->departmentCouncilMembers($faculty, $locale) as $member) {
+            $held[$member['memberId']][] = $member['role'];
         }
 
         return array_map(static fn (array $names): array => array_values(array_unique($names)), $held);
@@ -172,7 +175,7 @@ final class FacultyLeadershipService implements FacultyLeadershipServiceInterfac
             return null;
         }
 
-        $dean = collect($this->positions($content, 'ar'))->firstWhere('slug', FacultyPositionServiceInterface::DEAN);
+        $dean = collect($this->positions($faculty, $content, 'ar'))->firstWhere('slug', FacultyPositionServiceInterface::DEAN);
 
         if (! is_array($dean)) {
             return null;
@@ -200,35 +203,32 @@ final class FacultyLeadershipService implements FacultyLeadershipServiceInterfac
 
         $errors = [];
         $shared = [];
-        $staffIds = $this->staffIds($faculty, $this->payloadMemberIds($payload, 'items', 'headMemberId'));
+        $staffIds = $this->staffIds($faculty, [
+            ...$this->payloadMemberIds($payload, 'items', 'headMemberId'),
+            ...$this->payloadCouncilMemberIds($payload),
+        ]);
 
         foreach (['ar', 'en'] as $locale) {
             $mapping = [];
 
             foreach ($this->localeList($payload, $locale, 'items') as $item) {
                 $slug = trim((string) ($item['slug'] ?? ''));
-                $type = $item['type'] ?? null;
-                $studyPlanId = trim((string) ($item['studyPlanDepartmentId'] ?? ''));
                 $headId = $this->memberId($item['headMemberId'] ?? null);
-
-                if ($type !== null && ! in_array($type, self::DEPARTMENT_TYPES, true)) {
-                    $errors[$locale][] = 'A department is either a specialization or a section.';
-                }
-
-                if ($type === 'specialization' && $studyPlanId === '') {
-                    $errors[$locale][] = 'A specialization must link to its study plan program.';
-                }
-
-                if ($type === 'section' && $studyPlanId !== '') {
-                    $errors[$locale][] = 'A section has no study plan.';
-                }
+                $councilIds = $this->councilMemberIds($item);
 
                 if ($headId !== null && ! isset($staffIds[$headId])) {
-                    $errors[$locale][] = 'A department head must be one of this faculty\'s academic staff.';
+                    $errors[$locale][] = 'A department head must be one of this faculty\'s teaching staff.';
+                }
+
+                foreach ($councilIds as $councilId) {
+                    if (! isset($staffIds[$councilId])) {
+                        $errors[$locale][] = 'A department council member must be one of this faculty\'s teaching staff.';
+                    }
                 }
 
                 if ($slug !== '') {
-                    $mapping[$slug] = [$type, $headId, $headId !== null && ($item['headOnCouncil'] ?? true) !== false];
+                    sort($councilIds);
+                    $mapping[$slug] = [$headId, $headId !== null && ($item['headOnCouncil'] ?? true) !== false, $councilIds];
                 }
             }
 
@@ -240,7 +240,7 @@ final class FacultyLeadershipService implements FacultyLeadershipServiceInterfac
         $inBoth = array_intersect_key($shared['ar'], $shared['en']);
 
         if ($inBoth !== array_intersect_key($shared['en'], $shared['ar'])) {
-            $errors['translations'][] = 'Each department must have the same type, head and council seat in Arabic and English.';
+            $errors['translations'][] = 'Each department must have the same head, faculty council seat and department council in Arabic and English.';
         }
 
         return $this->uniqueErrors($errors);
@@ -261,7 +261,6 @@ final class FacultyLeadershipService implements FacultyLeadershipServiceInterfac
         // A hidden profile would drop off the page, and the About › Leadership dean row
         // would fall back to its old copy (the previous dean's name).
         $publicIds = $this->staffIds($faculty, $councilIds, publicOnly: true);
-        $options = $this->positionService->councilOptions('en');
 
         foreach (['ar', 'en'] as $locale) {
             $translation = $this->localeContent($payload, $locale);
@@ -273,14 +272,17 @@ final class FacultyLeadershipService implements FacultyLeadershipServiceInterfac
                 $slug = $this->positionSlug($position);
                 $memberId = $this->memberId($position['memberId'] ?? null);
 
-                if ($slug === null || ! isset($options[$slug])) {
+                // A position of this faculty's list, or a row of the old shared list its page already uses.
+                $known = $slug !== null ? $this->positionService->find((string) $faculty->public_slug, $slug) : null;
+
+                if ($known === null || $known->slug === FacultyPositionServiceInterface::HEAD_OF_DEPARTMENT) {
                     $errors[$locale][] = 'Every position must be picked from the positions list.';
                 }
 
                 if ($memberId === null) {
                     $errors[$locale][] = 'Every position needs a staff member.';
                 } elseif (! isset($staffIds[$memberId])) {
-                    $errors[$locale][] = 'Every position holder must be one of this faculty\'s academic staff.';
+                    $errors[$locale][] = 'Every position holder must be one of this faculty\'s teaching staff.';
                 } elseif (! isset($publicIds[$memberId])) {
                     $errors[$locale][] = 'Every position holder needs a published profile.';
                 }
@@ -321,7 +323,7 @@ final class FacultyLeadershipService implements FacultyLeadershipServiceInterfac
 
         $deanByLocale = [];
         foreach (['ar', 'en'] as $locale) {
-            $deanByLocale[$locale] = collect($this->positions($this->localeContent($payload, $locale), $locale))->firstWhere('slug', FacultyPositionServiceInterface::DEAN);
+            $deanByLocale[$locale] = collect($this->positions($faculty, $this->localeContent($payload, $locale), $locale))->firstWhere('slug', FacultyPositionServiceInterface::DEAN);
         }
 
         $memberId = is_array($deanByLocale['ar']) ? $deanByLocale['ar']['memberId'] : null;
@@ -378,7 +380,7 @@ final class FacultyLeadershipService implements FacultyLeadershipServiceInterfac
             $person->translations()->create([
                 'locale' => $locale,
                 'name' => $name,
-                'role' => $facultyName === '' ? $this->positionName(FacultyPositionServiceInterface::DEAN, $locale) : ($locale === 'ar' ? 'عميد '.$facultyName : 'Dean of the '.$facultyName),
+                'role' => $facultyName === '' ? $this->positionName($faculty, FacultyPositionServiceInterface::DEAN, $locale) : ($locale === 'ar' ? 'عميد '.$facultyName : 'Dean of the '.$facultyName),
             ]);
         }
 
@@ -415,6 +417,81 @@ final class FacultyLeadershipService implements FacultyLeadershipServiceInterfac
     }
 
     /**
+     * The council members of each department on the published departments page (the head is
+     * listed as head), with the role a profile shows: "عضو مجلس قسم …" / "Member, … Department Council".
+     *
+     * @return list<array{memberId: int, department: string, role: string}>
+     */
+    private function departmentCouncilMembers(Faculty $faculty, string $locale): array
+    {
+        $content = $this->publishedLocaleContent('facilities.'.$faculty->public_slug.'.departments', $locale) ?? [];
+        $members = [];
+
+        foreach ($this->listOfArrays($content['items'] ?? []) as $item) {
+            $department = trim((string) ($item['title'] ?? ''));
+            $headId = $this->memberId($item['headMemberId'] ?? null);
+
+            if ($department === '') {
+                continue;
+            }
+
+            foreach ($this->councilMemberIds($item) as $memberId) {
+                if ($memberId === $headId) {
+                    continue;
+                }
+
+                $members[] = [
+                    'memberId' => $memberId,
+                    'department' => $department,
+                    'role' => $locale === 'ar'
+                        ? 'عضو مجلس '.(str_starts_with($department, 'قسم') ? $department : 'قسم '.$department)
+                        : 'Member, '.$department.' Council',
+                ];
+            }
+        }
+
+        return $members;
+    }
+
+    /**
+     * A department's council members (profile ids), in order, each once.
+     *
+     * @param  array<string, mixed>  $item
+     * @return list<int>
+     */
+    private function councilMemberIds(array $item): array
+    {
+        $ids = [];
+
+        foreach (is_array($item['councilMemberIds'] ?? null) ? $item['councilMemberIds'] : [] as $id) {
+            $id = $this->memberId($id);
+
+            if ($id !== null) {
+                $ids[$id] = $id;
+            }
+        }
+
+        return array_values($ids);
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @return list<int>
+     */
+    private function payloadCouncilMemberIds(array $payload): array
+    {
+        $ids = [];
+
+        foreach (['ar', 'en'] as $locale) {
+            foreach ($this->localeList($payload, $locale, 'items') as $item) {
+                $ids = [...$ids, ...$this->councilMemberIds($item)];
+            }
+        }
+
+        return $ids;
+    }
+
+    /**
      * Heads of the published departments page, in page order. `title` is the head's own
      * title or the head of department position's name; `role` adds the department for
      * a profile. `onCouncil` is off for a head the departments page keeps off the council.
@@ -424,7 +501,7 @@ final class FacultyLeadershipService implements FacultyLeadershipServiceInterfac
     private function departmentHeads(Faculty $faculty, string $locale): array
     {
         $content = $this->publishedLocaleContent('facilities.'.$faculty->public_slug.'.departments', $locale) ?? [];
-        $headName = $this->positionName(FacultyPositionServiceInterface::HEAD_OF_DEPARTMENT, $locale);
+        $headName = $this->positionName($faculty, FacultyPositionServiceInterface::HEAD_OF_DEPARTMENT, $locale);
         $heads = [];
 
         foreach ($this->listOfArrays($content['items'] ?? []) as $item) {
@@ -470,7 +547,7 @@ final class FacultyLeadershipService implements FacultyLeadershipServiceInterfac
      * @param  array<string, mixed>  $content
      * @return list<array{id: string, slug: string, memberId: int, name: string, placement: string}>
      */
-    private function positions(array $content, string $locale): array
+    private function positions(Faculty $faculty, array $content, string $locale): array
     {
         $positions = [];
 
@@ -478,7 +555,7 @@ final class FacultyLeadershipService implements FacultyLeadershipServiceInterfac
             $memberId = $this->memberId($position['memberId'] ?? null);
             $slug = $this->positionSlug($position);
             $legacyTitle = isset($position['positionSlug']) ? '' : trim((string) ($position['title'] ?? ''));
-            $catalog = $slug !== null ? $this->positionService->find($slug) : null;
+            $catalog = $slug !== null ? $this->positionService->find((string) $faculty->public_slug, $slug) : null;
 
             if ($memberId === null) {
                 continue;
@@ -538,9 +615,9 @@ final class FacultyLeadershipService implements FacultyLeadershipServiceInterfac
         };
     }
 
-    private function positionName(string $slug, string $locale): string
+    private function positionName(Faculty $faculty, string $slug, string $locale): string
     {
-        $position = $this->positionService->find($slug);
+        $position = $this->positionService->find((string) $faculty->public_slug, $slug);
 
         return $position === null ? $slug : ($locale === 'ar' ? $position->nameAr : $position->nameEn);
     }
@@ -550,7 +627,7 @@ final class FacultyLeadershipService implements FacultyLeadershipServiceInterfac
      * another faculty, is left out.
      *
      * @param  list<int>  $memberIds
-     * @return array<int, array{name: string, image: ?string, url: string, bio: string}>
+     * @return array<int, array{name: string, image: ?string, url: string, academicRank: string, bio: string}>
      */
     private function publicCards(Faculty $faculty, string $locale, array $memberIds): array
     {
@@ -582,6 +659,8 @@ final class FacultyLeadershipService implements FacultyLeadershipServiceInterfac
                     ? MediaUrlResolver::resolveImage($member->photoMedia->webp_path, $member->photoMedia->path, $member->photoMedia->disk)
                     : MediaUrlResolver::resolveLegacy($member->legacy_photo_path),
                 'url' => '/'.$locale.'/about/profile/'.$member->slug,
+                // The academic rank typed on the profile, shown apart from the position.
+                'academicRank' => trim((string) ($translation?->position ?? '')),
                 // The start of the profile's bio, for the dean's card.
                 'bio' => Str::limit(trim((string) preg_replace('/\s+/u', ' ', strip_tags((string) ($translation?->bio ?? '')))), 260),
             ];

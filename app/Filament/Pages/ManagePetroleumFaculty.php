@@ -41,6 +41,7 @@ class ManagePetroleumFaculty extends Page implements HasForms
             'facilities.petroleum' => 'Homepage',
             'facilities.petroleum.overview' => 'Overview',
             'facilities.petroleum.departments' => 'Departments',
+            'facilities.petroleum.programs' => __('admin.cms.targets.facilities.programs'),
             'facilities.petroleum.study_plan' => 'Study Plan',
             'facilities.petroleum.labs' => 'Labs',
             'facilities.petroleum.projects' => 'Projects',

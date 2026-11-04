@@ -143,7 +143,7 @@ Route::prefix('{locale}')
                 Route::get('/{faculty}/{subpage}', 'subpage')
                     ->where([
                         'faculty' => 'medicine|dentistry|pharmacy|artificial-intelligence|building-construction-engineering|petroleum|business-administration',
-                        'subpage' => 'overview|departments|labs|projects|alumni|valedictorians|training|clinical-cases|final-exams|research|members|council|master-program',
+                        'subpage' => 'overview|departments|labs|projects|alumni|valedictorians|training|clinical-cases|final-exams|research|members|council|master-program|programs',
                     ])
                     ->name('subpage');
             });

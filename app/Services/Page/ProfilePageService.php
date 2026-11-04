@@ -381,6 +381,7 @@ final class ProfilePageService implements ProfilePageServiceInterface
             seoImage: $image,
             path: $profile->path,
             specializationName: $profile->specializationName,
+            academicRank: $profile->academicRank,
         );
     }
 
@@ -430,7 +431,8 @@ final class ProfilePageService implements ProfilePageServiceInterface
             slug: (string) $member->slug,
             name: (string) $translation->full_name,
             title: $translation->title,
-            position: $this->memberPosition($member, $locale) ?? $translation->position,
+            // Positions held (council and departments pages) and the academic rank typed on the profile, apart.
+            position: $this->memberPosition($member, $locale),
             category: 'faculty_member',
             facultyName: $facultyName,
             departmentName: $departmentName,
@@ -454,6 +456,7 @@ final class ProfilePageService implements ProfilePageServiceInterface
             specializationName: $member->specialization_id !== null && $member->faculty instanceof Faculty
                 ? ($this->studyPlanLinkService->programNames((string) $member->faculty->public_slug, $locale)[(string) $member->specialization_id] ?? null)
                 : null,
+            academicRank: trim((string) $translation->position) !== '' ? trim((string) $translation->position) : null,
         );
     }
 

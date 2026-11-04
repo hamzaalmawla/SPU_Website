@@ -42,8 +42,8 @@
                         </svg>
                     </div>
                     <div class="staff-dir-nav-text">
-                        <span class="staff-dir-nav-label">{{ $locale === 'ar' ? 'دليل الهيئة الأكاديمية' : 'Academic Staff Directory' }}</span>
-                        <span class="staff-dir-nav-sub">{{ $locale === 'ar' ? 'استعرض جميع أعضاء الهيئة الأكاديمية في الجامعة السورية الخاصة' : 'Browse all SPU academic staff members' }}</span>
+                        <span class="staff-dir-nav-label">{{ $locale === 'ar' ? 'دليل الهيئة التدريسية' : 'Teaching Staff Directory' }}</span>
+                        <span class="staff-dir-nav-sub">{{ $locale === 'ar' ? 'استعرض جميع أعضاء الهيئة التدريسية في الجامعة السورية الخاصة' : 'Browse all SPU teaching staff members' }}</span>
                     </div>
                     <div class="staff-dir-nav-arrow" aria-hidden="true">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="rtl:rotate-180">

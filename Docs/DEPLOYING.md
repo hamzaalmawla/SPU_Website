@@ -594,10 +594,33 @@ actor=auto
 `person-photos.approved.consumed-<time>`. It only adds rows to the legacy library and fills empty titles,
 so it is safe to repeat. See `Docs/LEGACY_IMPORT_RUNBOOK.md`.
 
+### Faculty programs, per-faculty positions and teaching staff wording (2026-11-04)
+
+This release has two migrations:
+
+- `2026_11_04_000001_add_faculty_to_faculty_positions` (schema only): positions belong to one faculty.
+  Rows saved before keep no faculty and keep reading on the council pages that use them; editing one
+  from a faculty gives that faculty its own copy.
+- `2026_11_04_000002_rename_academic_staff_to_teaching_staff` (**data**): replaces the exact words
+  "الهيئة الأكاديمية" / "هيئة أكاديمية" with "الهيئة التدريسية" / "هيئة تدريسية" and "Academic Staff
+  Directory" with "Teaching Staff Directory" in faculty page titles and summaries, faculty card titles,
+  menu labels and the faculty CMS pages (published and drafts). Nothing else changes. The deploy refuses it
+  until it is approved with `data-migrations.approved`:
+
+```
+migration=2026_11_04_000001_add_faculty_to_faculty_positions
+migration=2026_11_04_000002_rename_academic_staff_to_teaching_staff
+```
+
+The new academic programs page of every faculty needs no data: until an editor publishes it, it lists
+the study plan programs and the master's program.
+
 ### Faculty positions typed on profiles (faculty:match-positions)
 
-Faculty positions are picked on each faculty's council page from one shared list (dean, vice dean, head
-of department and the ones editors add). Profiles used to carry a typed position instead, so the council
+Faculty positions are picked on each faculty's council page from the faculty's own positions list (dean,
+vice dean, head of department and the ones editors add for that faculty). The typed text on a profile is
+now its academic rank (أستاذ، أستاذ مساعد، مدرس) and shows beside the positions, so a leadership title
+typed there should be cleared once the council page names it. Profiles used to carry a typed position instead, so the council
 page could not see them. Every deploy log has a "Faculty positions dry run" section: the typed positions
 that match a position in the list and would be added to the faculty's council page, those already there,
 heads of department (left to the departments page), matches it will not add (a second dean) and typed text

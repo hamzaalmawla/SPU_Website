@@ -41,6 +41,7 @@ class ManagePharmacyFaculty extends Page implements HasForms
             'facilities.pharmacy' => 'Homepage',
             'facilities.pharmacy.overview' => 'Overview',
             'facilities.pharmacy.departments' => 'Departments',
+            'facilities.pharmacy.programs' => __('admin.cms.targets.facilities.programs'),
             'facilities.pharmacy.study_plan' => 'Study Plan',
             'facilities.pharmacy.labs' => 'Labs',
             'facilities.pharmacy.projects' => 'Projects',

@@ -23,10 +23,10 @@ use Tests\TestCase;
 
 /**
  * A faculty's departments page lists its academic departments (every faculty,
- * Basic Sciences among them, each with a head from the faculty's own staff). A
- * department is a specialization, which links to its study plan program, or a
- * section, which has no study plan and shows no study plan button. A staff
- * member has a department and, optionally, the study plan program they teach in.
+ * Basic Sciences among them). A department is an administrative unit with a head
+ * and a department council from the faculty's own staff, and lists the programs
+ * it offers; programs, not departments, have the study plans. A staff member has
+ * a department and, optionally, the study plan program they teach in.
  */
 final class FacultyDepartmentsSpecializationsTest extends TestCase
 {
@@ -44,27 +44,29 @@ final class FacultyDepartmentsSpecializationsTest extends TestCase
         $this->admin = User::query()->where('role_slug', 'super_admin')->firstOrFail();
     }
 
-    public function test_departments_without_a_study_plan_show_no_study_plan_button(): void
+    public function test_a_department_lists_its_programs_not_a_study_plan_of_its_own(): void
     {
         $page = app(FacultyPageServiceInterface::class)->getSubpage('medicine', 'departments', 'en');
         $this->assertNotNull($page);
         $this->assertNotSame([], $page->items);
 
         foreach ($page->items as $item) {
-            $this->assertNull($item['studyPlanUrl']);
+            $this->assertArrayHasKey('programs', $item);
         }
 
-        // There is no separate specializations list any more.
+        // There is no separate specializations list any more, and no department type badge.
         $this->get('/en/faculties/artificial-intelligence/departments')
             ->assertOk()
             ->assertDontSee('id="specializations"', false)
-            ->assertDontSee('Taught by:');
+            ->assertDontSee('Taught by:')
+            ->assertSee('Academic Programs');
     }
 
-    public function test_the_editor_sets_a_section_with_a_head_and_a_specialization_with_its_study_plan(): void
+    public function test_a_department_shows_its_head_council_and_programs(): void
     {
         $faculty = Faculty::query()->where('public_slug', 'artificial-intelligence')->firstOrFail();
-        $head = $this->member('basic-sciences-head-test', 'Dr. Yasser Head', 'د. ياسر الرئيس', (int) $faculty->getKey());
+        $head = $this->member('basic-sciences-head-test', 'Dr. Yasser Head', 'د. ياسر الرئيس', (int) $faculty->getKey(), ['أستاذ', 'Professor']);
+        $councilMember = $this->member('ai-council-member-test', 'Dr. Council Member', 'د. عضو المجلس', (int) $faculty->getKey(), ['مدرس', 'Lecturer']);
         $workflow = app(CmsWorkflowServiceInterface::class);
         $payload = app(FacultyPageServiceInterface::class)->getEditablePayload(self::TARGET);
 
@@ -75,14 +77,14 @@ final class FacultyDepartmentsSpecializationsTest extends TestCase
                     'slug' => 'ai-basic-sciences',
                     'title' => $isAr ? 'قسم العلوم الأساسية' : 'Department of Basic Sciences',
                     'summary' => $isAr ? 'يدرّس مقررات السنوات المشتركة.' : 'Teaches the common-years courses.',
-                    'type' => 'section',
                     'headMemberId' => (int) $head->getKey(),
-                    'studyPlanDepartmentId' => null,
+                    'councilMemberIds' => [(int) $councilMember->getKey()],
                 ],
                 [
                     'slug' => 'ai-data-science',
                     'title' => $isAr ? 'قسم هندسة الذكاء الاصطناعي وعلوم البيانات' : 'Department of AI Engineering and Data Science',
                     'summary' => '',
+                    // Saved before programs existed: the link places the bachelor program here.
                     'type' => 'specialization',
                     'studyPlanDepartmentId' => 'ai',
                 ],
@@ -96,32 +98,44 @@ final class FacultyDepartmentsSpecializationsTest extends TestCase
         $this->get('/en/faculties/artificial-intelligence/departments')
             ->assertOk()
             ->assertSee('Department of Basic Sciences')
-            ->assertSee('Section')
-            ->assertSee('Specialization')
+            ->assertSee('Department Council')
             ->assertSee('Head of Department')
             ->assertSee('Dr. Yasser Head')
+            ->assertSee('Department Council Member')
+            ->assertSee('Dr. Council Member')
+            ->assertSee('Academic rank:')
             ->assertSee('/en/about/profile/basic-sciences-head-test', false)
             ->assertSee('href="/en/faculties/artificial-intelligence/study-plan?department=ai"', false);
 
         $page = app(FacultyPageServiceInterface::class)->getSubpage('artificial-intelligence', 'departments', 'en');
         $this->assertNotNull($page);
         $items = collect($page->items)->keyBy('slug');
-        $this->assertSame('section', $items['ai-basic-sciences']['type']);
-        $this->assertSame('specialization', $items['ai-data-science']['type']);
-        // Basic Sciences is a section: it has no study plan, so it shows no study plan button.
-        $this->assertNull($items['ai-basic-sciences']['studyPlanUrl']);
+        // Basic Sciences offers no program; the AI department offers the bachelor and master's programs.
+        $this->assertSame([], $items['ai-basic-sciences']['programs']);
+        $this->assertSame(['bachelor', 'master'], array_column($items['ai-data-science']['programs'], 'level'));
+        $this->assertSame('/en/faculties/artificial-intelligence/study-plan?department=ai', $items['ai-data-science']['programs'][0]['studyPlanUrl']);
+        $this->assertSame('/en/faculties/artificial-intelligence/master-program', $items['ai-data-science']['programs'][1]['pageUrl']);
         $this->assertSame('Dr. Yasser Head', $items['ai-basic-sciences']['head']['name']);
-        $this->assertSame('/en/faculties/artificial-intelligence/study-plan?department=ai', $items['ai-data-science']['studyPlanUrl']);
+        $this->assertSame('Professor', $items['ai-basic-sciences']['head']['academicRank']);
+        $this->assertSame(['Dr. Council Member'], array_column($items['ai-basic-sciences']['councilMembers'], 'name'));
         $this->assertArrayNotHasKey('specializations', $page->detail);
+
+        // The council member's profile shows the seat beside the academic rank.
+        $this->get('/ar/about/profile/ai-council-member-test')
+            ->assertOk()
+            ->assertSee('عضو مجلس قسم العلوم الأساسية')
+            ->assertSee('الرتبة الأكاديمية:')
+            ->assertSee('مدرس');
 
         $this->get('/ar/faculties/artificial-intelligence/departments')
             ->assertOk()
-            ->assertSee('اختصاص')
+            ->assertSee('مجلس القسم')
             ->assertSee('رئيس القسم')
-            ->assertSee('د. ياسر الرئيس');
+            ->assertSee('د. ياسر الرئيس')
+            ->assertSee('عضو مجلس القسم');
     }
 
-    public function test_a_department_follows_the_type_and_head_rules(): void
+    public function test_a_department_follows_the_head_and_council_rules(): void
     {
         $faculty = Faculty::query()->where('public_slug', 'artificial-intelligence')->firstOrFail();
         $other = Faculty::query()->where('public_slug', 'medicine')->firstOrFail();
@@ -137,25 +151,25 @@ final class FacultyDepartmentsSpecializationsTest extends TestCase
             return $payload;
         };
 
-        $this->assertTrue($workflow->readiness(self::TARGET, $withItem(['type' => 'section', 'headMemberId' => (int) $ownStaff->getKey()]))->isReady);
-        $this->assertTrue($workflow->readiness(self::TARGET, $withItem(['type' => 'section']))->isReady, 'The head is optional.');
+        $this->assertTrue($workflow->readiness(self::TARGET, $withItem(['headMemberId' => (int) $ownStaff->getKey(), 'councilMemberIds' => [(int) $ownStaff->getKey()]]))->isReady);
+        $this->assertTrue($workflow->readiness(self::TARGET, $withItem([]))->isReady, 'The head and council are optional.');
 
-        $otherHead = $workflow->readiness(self::TARGET, $withItem(['type' => 'section', 'headMemberId' => (int) $otherStaff->getKey()]));
+        $otherHead = $workflow->readiness(self::TARGET, $withItem(['headMemberId' => (int) $otherStaff->getKey()]));
         $this->assertFalse($otherHead->isReady);
-        $this->assertContains('A department head must be one of this faculty\'s academic staff.', $otherHead->errors['ar']);
+        $this->assertContains('A department head must be one of this faculty\'s teaching staff.', $otherHead->errors['ar']);
 
-        $noPlan = $workflow->readiness(self::TARGET, $withItem(['type' => 'specialization', 'studyPlanDepartmentId' => null]));
-        $this->assertContains('A specialization must link to its study plan program.', $noPlan->errors['en']);
+        $otherMember = $workflow->readiness(self::TARGET, $withItem(['councilMemberIds' => [(int) $otherStaff->getKey()]]));
+        $this->assertContains('A department council member must be one of this faculty\'s teaching staff.', $otherMember->errors['en']);
 
-        $sectionWithPlan = $workflow->readiness(self::TARGET, $withItem(['type' => 'section', 'studyPlanDepartmentId' => 'ai']));
-        $this->assertContains('A section has no study plan.', $sectionWithPlan->errors['ar']);
+        // A study plan link a department kept from before is no longer checked: programs carry study plans.
+        $this->assertTrue($workflow->readiness(self::TARGET, $withItem(['type' => 'specialization', 'studyPlanDepartmentId' => 'removed-program']))->isReady);
 
-        $mismatch = $withItem(['type' => 'section', 'headMemberId' => (int) $ownStaff->getKey()]);
-        $mismatch['translations']['en']['items'][0]['headMemberId'] = null;
+        $mismatch = $withItem(['headMemberId' => (int) $ownStaff->getKey(), 'councilMemberIds' => [(int) $ownStaff->getKey()]]);
+        $mismatch['translations']['en']['items'][0]['councilMemberIds'] = [];
         $this->assertArrayHasKey('translations', $workflow->readiness(self::TARGET, $mismatch)->errors);
     }
 
-    public function test_the_admin_editor_has_the_type_field_and_offers_only_this_facultys_staff_as_head(): void
+    public function test_the_admin_editor_picks_the_head_and_council_from_this_facultys_staff_only(): void
     {
         $faculty = Faculty::query()->where('public_slug', 'artificial-intelligence')->firstOrFail();
         $other = Faculty::query()->where('public_slug', 'medicine')->firstOrFail();
@@ -166,9 +180,9 @@ final class FacultyDepartmentsSpecializationsTest extends TestCase
         $component = Livewire::test(ManageArtificialIntelligenceFaculty::class)
             ->set('data.target_key', self::TARGET)
             ->call('loadTarget', self::TARGET)
-            ->assertSee('النوع')
-            ->assertSee('اختصاص (له خطة دراسية)')
+            ->assertDontSee('اختصاص (له خطة دراسية)')
             ->assertSee('رئيس القسم')
+            ->assertSee('أعضاء مجلس القسم')
             ->assertDontSee('كليات أخرى');
 
         $options = (fn (): array => $this->facultyStaffOptions())->call($component->instance());
@@ -218,10 +232,11 @@ final class FacultyDepartmentsSpecializationsTest extends TestCase
         $this->get('/en/about/profile/staff-with-specialization')
             ->assertOk()
             ->assertSee($departmentName)
-            ->assertSee('Specialization: '.$programName);
+            ->assertSee('Program: '.$programName);
     }
 
-    private function member(string $slug, string $en, string $ar, int $facultyId): FacultyMember
+    /** @param  array{0: string, 1: string}|null  $rank  the academic rank typed on the profile, in Arabic and English */
+    private function member(string $slug, string $en, string $ar, int $facultyId, ?array $rank = null): FacultyMember
     {
         $member = FacultyMember::query()->create([
             'slug' => $slug,
@@ -230,8 +245,8 @@ final class FacultyDepartmentsSpecializationsTest extends TestCase
             'publication_status' => PublicationStatus::Published->value,
             'published_at' => now()->subDay(),
         ]);
-        $member->translations()->create(['locale' => 'en', 'full_name' => $en]);
-        $member->translations()->create(['locale' => 'ar', 'full_name' => $ar]);
+        $member->translations()->create(['locale' => 'en', 'full_name' => $en, 'position' => $rank[1] ?? null]);
+        $member->translations()->create(['locale' => 'ar', 'full_name' => $ar, 'position' => $rank[0] ?? null]);
 
         return $member;
     }

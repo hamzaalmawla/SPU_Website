@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\DTOs\Content;
 
-/** @return array<string, mixed> */
+/** A public profile page. `position` is the positions held (dean, head of department, ...); `academicRank` the rank. */
 final readonly class ProfilePageDTO
 {
     public function __construct(
@@ -40,5 +40,7 @@ final readonly class ProfilePageDTO
         public ?string $seoImage,
         public string $path,
         public ?string $specializationName = null,
+        /** The academic rank typed on the profile (Professor, Associate Professor, ...), shown apart from the positions held. */
+        public ?string $academicRank = null,
     ) {}
 }

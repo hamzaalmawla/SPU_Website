@@ -18,7 +18,7 @@
 
         <section id="staff-directory" class="bg-white font-hacen" aria-labelledby="staff-directory-heading">
             <div class="container mx-auto px-6">
-                <h2 id="staff-directory-heading" class="sr-only">{{ $locale === 'ar' ? 'أعضاء الهيئة الأكاديمية' : 'Academic staff members' }}</h2>
+                <h2 id="staff-directory-heading" class="sr-only">{{ $locale === 'ar' ? 'أعضاء الهيئة التدريسية' : 'Teaching staff members' }}</h2>
                 <form method="GET" action="{{ route('public.about.directorates.staff', ['locale' => $locale]) }}" class="staff-filter-bar">
                     <label for="staff-faculty-filter" class="staff-filter-label">{{ $locale === 'ar' ? 'عرض حسب الكلية' : 'View by Faculty' }}</label>
                     <div class="flex w-full max-w-xl flex-col items-stretch gap-3 sm:flex-row sm:items-end">
@@ -55,13 +55,13 @@
                     </div>
                 @else
                     <div class="mx-auto max-w-2xl rounded-xl border border-slate-200 bg-slate-50 px-6 py-12 text-center">
-                        <p class="font-bold text-slate-700">{{ $locale === 'ar' ? 'لا يوجد أعضاء هيئة أكاديمية مطابقون لهذه التصفية.' : 'No academic staff members match this filter.' }}</p>
+                        <p class="font-bold text-slate-700">{{ $locale === 'ar' ? 'لا يوجد أعضاء هيئة تدريسية مطابقون لهذه التصفية.' : 'No teaching staff members match this filter.' }}</p>
                         <a href="{{ $staffUrl(1) }}" class="mt-5 inline-flex font-black text-spu-blue underline decoration-spu-red/40 underline-offset-4 hover:text-spu-red">{{ $locale === 'ar' ? 'عرض جميع الكليات' : 'View all faculties' }}</a>
                     </div>
                 @endif
 
                 @if ($directory->totalPages > 1)
-                    <nav class="staff-pagination" aria-label="{{ $locale === 'ar' ? 'ترقيم دليل الهيئة الأكاديمية' : 'Staff pagination' }}">
+                    <nav class="staff-pagination" aria-label="{{ $locale === 'ar' ? 'ترقيم دليل الهيئة التدريسية' : 'Staff pagination' }}">
                         @if ($directory->currentPage > 1)
                             <a href="{{ $staffUrl($directory->currentPage - 1, $directory->activeFaculty) }}#staff-directory" class="pag-btn pag-arrow" rel="prev" aria-label="{{ $locale === 'ar' ? 'الصفحة السابقة' : 'Previous page' }}">
                                 <svg class="rtl:rotate-180" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"></polyline></svg>

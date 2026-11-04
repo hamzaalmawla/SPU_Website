@@ -185,7 +185,7 @@ return [
     'strategic_pillars' => 'الأعمدة الاستراتيجية',
     'filter_by_role' => 'تصفية حسب الدور',
     'all_staff_members' => 'جميع أعضاء الهيئة',
-    'staff_pagination' => 'ترقيم دليل الهيئة الأكاديمية',
+    'staff_pagination' => 'ترقيم دليل الهيئة التدريسية',
 
     // Partnerships
     'experience_exchange' => 'تبادل الخبرات',

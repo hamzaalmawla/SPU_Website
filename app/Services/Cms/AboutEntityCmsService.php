@@ -404,7 +404,8 @@ final class AboutEntityCmsService implements AboutEntityCmsServiceInterface
             slug: $slug,
             name: $name,
             title: $this->nullableString($translation['title'] ?? null),
-            position: $this->nullableString($translation['position'] ?? null),
+            // The typed position is the academic rank; positions come from the council and departments pages.
+            position: null,
             category: null,
             facultyName: $this->facultyName($this->nullableInt($payload['faculty_id'] ?? null), $locale)
                 ?? (($center = $this->centerSlug($payload)) !== null ? $this->centerCatalog->centerName($center, $locale) : null),
@@ -427,6 +428,7 @@ final class AboutEntityCmsService implements AboutEntityCmsServiceInterface
             seoImage: $image,
             path: '/'.$locale.'/about/profile/'.$slug,
             specializationName: $this->specializationName($this->nullableInt($payload['faculty_id'] ?? null), $this->nullableString($payload['specialization_id'] ?? null), $locale),
+            academicRank: $this->nullableString($translation['position'] ?? null),
         );
     }
 

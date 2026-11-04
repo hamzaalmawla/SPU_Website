@@ -22,7 +22,7 @@
         $heroTitle = $isLabDetail ? ($selectedLab['title'] ?? '') : ($subpage['title'] ?? '');
         $heroSummary = match ($page->subpageSlug) {
             'labs' => $isLabDetail ? null : (int) ($page->pagination['total_items'] ?? count($page->items)).($isAr ? ' مخابر بحثية وتدريبية' : ' research and training labs'),
-            'members' => count($page->items).($isAr ? ' عضو هيئة أكاديمية' : ' faculty members'),
+            'members' => count($page->items).($isAr ? ' عضو هيئة تدريسية' : ' faculty members'),
             'projects', 'alumni', 'valedictorians' => null,
             default => $subpage['summary'] ?? null,
         };
@@ -199,6 +199,10 @@
             'locale' => $locale,
         ])
     @elseif ($page->subpageSlug === 'departments')
+        @php
+            $programsCount = (int) ($page->detail['programsCount'] ?? 0);
+            $programsUrl = $page->detail['programsUrl'] ?? null;
+        @endphp
         <section class="bg-white py-16 font-hacen lg:py-24">
             <div class="container">
                 <div class="cms-grid-stats cms-grid-stats-cols-3 mx-auto max-w-[1080px] gap-4">
@@ -207,12 +211,18 @@
                         <p class="mt-2 text-xs font-bold uppercase tracking-[0.16em] text-spu-blue/45">{{ $isAr ? 'أقسام' : 'Departments' }}</p>
                     </div>
                     <div class="rounded-[8px] bg-section p-6 text-center">
-                        <p class="text-3xl font-bold" style="color: {{ $accent }}">{{ $faculty['yearsLabel'] }}</p>
-                        <p class="mt-2 text-xs font-bold uppercase tracking-[0.16em] text-spu-blue/45">{{ $isAr ? 'مدة الدراسة' : 'Study Duration' }}</p>
+                        <p class="text-3xl font-bold" style="color: {{ $accent }}" dir="ltr">{{ $programsCount }}</p>
+                        <p class="mt-2 text-xs font-bold uppercase tracking-[0.16em] text-spu-blue/45">
+                            @if ($programsUrl)
+                                <a href="{{ $programsUrl }}" class="underline-offset-4 hover:underline">{{ $isAr ? 'برامج أكاديمية' : 'Academic Programs' }}</a>
+                            @else
+                                {{ $isAr ? 'برامج أكاديمية' : 'Academic Programs' }}
+                            @endif
+                        </p>
                     </div>
                     <div class="rounded-[8px] bg-section p-6 text-center">
-                        <p class="text-3xl font-bold" style="color: {{ $accent }}">{{ $isAr ? 'بكالوريوس' : 'Bachelor' }}</p>
-                        <p class="mt-2 text-xs font-bold uppercase tracking-[0.16em] text-spu-blue/45">{{ $isAr ? 'الدرجة' : 'Degree' }}</p>
+                        <p class="text-3xl font-bold" style="color: {{ $accent }}">{{ $faculty['yearsLabel'] }}</p>
+                        <p class="mt-2 text-xs font-bold uppercase tracking-[0.16em] text-spu-blue/45">{{ $isAr ? 'مدة الدراسة' : 'Study Duration' }}</p>
                     </div>
                 </div>
 
@@ -220,24 +230,54 @@
                     @forelse ($page->items as $item)
                         @php
                             $head = is_array($item['head'] ?? null) ? $item['head'] : null;
-                            $typeLabel = ($item['type'] ?? 'section') === 'specialization'
-                                ? ($isAr ? 'اختصاص' : 'Specialization')
-                                : ($isAr ? 'قسم' : 'Section');
+                            $councilMembers = is_array($item['councilMembers'] ?? null) ? $item['councilMembers'] : [];
+                            $departmentPrograms = is_array($item['programs'] ?? null) ? $item['programs'] : [];
                         @endphp
-                        <article id="{{ $item['slug'] ?? 'department-'.$loop->iteration }}" class="grid gap-5 p-6 md:grid-cols-[80px_1fr_auto] md:items-center md:p-8">
+                        <article id="{{ $item['slug'] ?? 'department-'.$loop->iteration }}" class="grid gap-5 p-6 md:grid-cols-[80px_1fr] md:p-8">
                             <div class="text-[32px] font-bold leading-none text-spu-red/80">{{ $item['code'] ?? str_pad((string) $loop->iteration, 2, '0', STR_PAD_LEFT) }}</div>
                             <div>
-                                <div class="flex flex-wrap items-center gap-3">
-                                    <h2 class="card-title text-xl font-bold text-spu-blue" dir="auto">{{ $item['title'] ?? '' }}</h2>
-                                    <span class="rounded-full bg-section px-3 py-1 text-[11px] font-bold uppercase tracking-[0.12em] text-spu-blue/55">{{ $typeLabel }}</span>
-                                </div>
+                                <h2 class="card-title text-xl font-bold text-spu-blue" dir="auto">{{ $item['title'] ?? '' }}</h2>
                                 <x-public.rich-text class="mt-3 max-w-[720px] text-sm leading-7 text-slate-600" :text="$item['summary'] ?? ''" />
-                                @if ($head)
-                                    <a href="{{ $head['url'] }}" class="mt-4 inline-flex items-center gap-3 rounded-[6px] border border-slate-100 px-3 py-2 transition hover:border-spu-blue hover:bg-spu-blue/5">
-                                        @if ($head['image'])<img src="{{ $head['image'] }}" alt="" class="h-9 w-9 rounded-full object-cover" loading="lazy">@else<img src="/images/icon-user-graduate-outline.svg" alt="" class="h-5 w-5" aria-hidden="true">@endif
-                                        <span class="text-start"><span class="block text-[11px] text-slate-400" dir="auto">{{ trim((string) ($item['headTitle'] ?? '')) !== '' ? $item['headTitle'] : ($isAr ? 'رئيس القسم' : 'Head of Department') }}</span><span class="block text-sm font-bold text-spu-blue">{{ $head['name'] }}</span></span>
-                                    </a>
+
+                                @if ($departmentPrograms !== [])
+                                    <div class="mt-5">
+                                        <h3 class="text-xs font-bold uppercase tracking-[0.14em] text-spu-blue/50">{{ $isAr ? 'البرامج' : 'Programs' }}</h3>
+                                        <ul class="mt-2 grid gap-2">
+                                            @foreach ($departmentPrograms as $program)
+                                                <li class="flex flex-wrap items-center gap-3 rounded-[6px] border border-slate-100 px-3 py-2">
+                                                    <span class="rounded-full bg-section px-3 py-1 text-[11px] font-bold text-spu-blue/70">{{ $program['levelLabel'] }}</span>
+                                                    <a href="{{ $program['url'] }}" class="text-sm font-bold text-spu-blue hover:underline" dir="auto">{{ $program['title'] }}</a>
+                                                    @if (! empty($program['studyPlanUrl']))
+                                                        <a href="{{ $program['studyPlanUrl'] }}" class="ms-auto inline-flex h-9 items-center justify-center rounded-[6px] px-4 text-xs font-bold text-white transition-all hover:-translate-y-0.5" style="background-color: {{ $accent }}">{{ $isAr ? 'الخطة الدراسية' : 'Study Plan' }}</a>
+                                                    @elseif (! empty($program['pageUrl']))
+                                                        <a href="{{ $program['pageUrl'] }}" class="ms-auto inline-flex h-9 items-center justify-center rounded-[6px] px-4 text-xs font-bold text-white transition-all hover:-translate-y-0.5" style="background-color: {{ $accent }}">{{ $isAr ? 'صفحة البرنامج' : 'Program Page' }}</a>
+                                                    @endif
+                                                </li>
+                                            @endforeach
+                                        </ul>
+                                    </div>
                                 @endif
+
+                                @if ($head || $councilMembers !== [])
+                                    <div class="mt-5">
+                                        <h3 class="text-xs font-bold uppercase tracking-[0.14em] text-spu-blue/50">{{ $isAr ? 'مجلس القسم' : 'Department Council' }}</h3>
+                                        <div class="mt-2 flex flex-wrap gap-2">
+                                            @foreach (array_values(array_filter([$head, ...$councilMembers])) as $person)
+                                                <a href="{{ $person['url'] }}" class="inline-flex items-center gap-3 rounded-[6px] border border-slate-100 px-3 py-2 transition hover:border-spu-blue hover:bg-spu-blue/5">
+                                                    @if ($person['image'])<img src="{{ $person['image'] }}" alt="" class="h-9 w-9 rounded-full object-cover" loading="lazy">@else<img src="/images/icon-user-graduate-outline.svg" alt="" class="h-5 w-5" aria-hidden="true">@endif
+                                                    <span class="text-start">
+                                                        <span class="block text-[11px] text-slate-500" dir="auto">{{ $person['role'] }}</span>
+                                                        <span class="block text-sm font-bold text-spu-blue" dir="auto">{{ $person['name'] }}</span>
+                                                        @if (($person['academicRank'] ?? '') !== '')
+                                                            <span class="block text-[11px] text-slate-500"><span class="font-bold">{{ $isAr ? 'الرتبة الأكاديمية:' : 'Academic rank:' }}</span> <span dir="auto">{{ $person['academicRank'] }}</span></span>
+                                                        @endif
+                                                    </span>
+                                                </a>
+                                            @endforeach
+                                        </div>
+                                    </div>
+                                @endif
+
                                 @if (($item['tags'] ?? []) !== [])
                                     <div class="mt-4 flex flex-wrap gap-2">
                                         @foreach ($item['tags'] as $tag)
@@ -246,9 +286,6 @@
                                     </div>
                                 @endif
                             </div>
-                            @if (! empty($item['studyPlanUrl']))
-                                <a href="{{ $item['studyPlanUrl'] }}" class="inline-flex h-11 items-center justify-center rounded-[6px] px-5 text-sm font-bold text-white transition-all hover:-translate-y-0.5" style="background-color: {{ $accent }}">{{ $isAr ? 'الخطة الدراسية' : 'Study Plan' }}</a>
-                            @endif
                         </article>
                     @empty
                         <p class="p-8 text-center text-slate-500">{{ $isAr ? 'لا توجد أقسام منشورة حالياً.' : 'No published departments are available yet.' }}</p>
@@ -256,6 +293,8 @@
                 </div>
             </div>
         </section>
+    @elseif ($page->subpageSlug === 'programs')
+        @include('public.faculties.partials.programs')
     @elseif ($page->subpageSlug === 'labs')
         <section class="bg-white py-16 font-hacen lg:py-24">
             <div class="container">

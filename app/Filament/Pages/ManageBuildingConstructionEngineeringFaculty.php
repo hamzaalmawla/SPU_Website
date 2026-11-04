@@ -41,6 +41,7 @@ class ManageBuildingConstructionEngineeringFaculty extends Page implements HasFo
             'facilities.building-construction-engineering' => 'Homepage',
             'facilities.building-construction-engineering.overview' => 'Overview',
             'facilities.building-construction-engineering.departments' => 'Departments',
+            'facilities.building-construction-engineering.programs' => __('admin.cms.targets.facilities.programs'),
             'facilities.building-construction-engineering.study_plan' => 'Study Plan',
             'facilities.building-construction-engineering.labs' => 'Labs',
             'facilities.building-construction-engineering.projects' => 'Projects',

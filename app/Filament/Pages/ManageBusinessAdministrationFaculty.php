@@ -41,6 +41,7 @@ class ManageBusinessAdministrationFaculty extends Page implements HasForms
             'facilities.business-administration' => 'Homepage',
             'facilities.business-administration.overview' => 'Overview',
             'facilities.business-administration.departments' => 'Departments',
+            'facilities.business-administration.programs' => __('admin.cms.targets.facilities.programs'),
             'facilities.business-administration.study_plan' => 'Study Plan',
             'facilities.business-administration.labs' => 'Labs',
             'facilities.business-administration.projects' => 'Projects',

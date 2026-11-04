@@ -11,6 +11,7 @@ use App\Contracts\Cms\CmsTargetRegistryInterface;
 use App\Contracts\Cms\CmsWorkflowServiceInterface;
 use App\Contracts\Faculty\FacultyLeadershipServiceInterface;
 use App\Contracts\Faculty\FacultyMasterProgramServiceInterface;
+use App\Contracts\Faculty\FacultyProgramServiceInterface;
 use App\Contracts\Faculty\FacultyStudyPlanLinkServiceInterface;
 use App\Contracts\Form\FormDefinitionServiceInterface;
 use App\Contracts\Media\MediaServiceInterface;
@@ -59,6 +60,7 @@ final class CmsWorkflowService implements CmsWorkflowServiceInterface
         private readonly FacultyStudyPlanLinkServiceInterface $studyPlanLinkService,
         private readonly FacultyLeadershipServiceInterface $leadershipService,
         private readonly FacultyMasterProgramServiceInterface $masterProgramService,
+        private readonly FacultyProgramServiceInterface $programService,
         private readonly FormDefinitionServiceInterface $formDefinitions,
         private readonly AdminAccessServiceInterface $access,
         private readonly CenterCatalogServiceInterface $centerCatalog,
@@ -383,19 +385,20 @@ final class CmsWorkflowService implements CmsWorkflowServiceInterface
         }
 
         if (str_ends_with($target->key, '.departments') && str_starts_with($target->key, 'facilities.')) {
+            // Study plans belong to programs now; a department's old link only seeds the programs page.
             foreach ($this->leadershipService->departmentsValidationErrors($target->key, $payload) as $field => $messages) {
                 $errors[$field] = array_values(array_unique([
                     ...($errors[$field] ?? []),
                     ...$messages,
                 ]));
             }
+        }
 
-            foreach ($this->studyPlanLinkService->validationErrors($target->key, $payload) as $field => $messages) {
-                $errors[$field] = array_values(array_unique([
-                    ...($errors[$field] ?? []),
-                    ...$messages,
-                ]));
-            }
+        foreach ($this->programService->validationErrors($target->key, $payload) as $field => $messages) {
+            $errors[$field] = array_values(array_unique([
+                ...($errors[$field] ?? []),
+                ...$messages,
+            ]));
         }
 
         foreach ($this->masterProgramService->validationErrors($target->key, $payload) as $field => $messages) {
@@ -2305,7 +2308,7 @@ final class CmsWorkflowService implements CmsWorkflowServiceInterface
             }
         }
 
-        foreach (['sections', 'blocks', 'items', 'cards', 'body_blocks', 'bodyBlocks', 'positions'] as $key) {
+        foreach (['sections', 'blocks', 'items', 'cards', 'body_blocks', 'bodyBlocks', 'positions', 'programs'] as $key) {
             if (is_array($payload[$key] ?? null) && $payload[$key] !== []) {
                 return true;
             }

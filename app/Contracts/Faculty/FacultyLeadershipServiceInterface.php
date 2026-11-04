@@ -8,13 +8,13 @@ use App\DTOs\Faculty\FacultyCouncilDTO;
 use DateTimeInterface;
 
 /**
- * A faculty's leadership: the dean, vice deans and other positions, the faculty
- * council and the department heads. Everyone is one of the faculty's own academic
+ * A faculty's deanship: the dean, vice deans and other positions, the faculty
+ * council, the department heads and the department councils. Everyone is one of the faculty's own academic
  * staff profiles (`faculty_members`), stored by id.
  *
  * The council page (CMS target `facilities.<faculty>.council`) holds, the same in
  * both locales: `positions[] = {id, positionSlug, memberId}` (a position from the
- * shared list, FacultyPositionServiceInterface) and `includeDepartmentHeads`. A
+ * faculty's own list, FacultyPositionServiceInterface) and `includeDepartmentHeads`. A
  * position's placement puts its holder in the leadership cards or the council
  * list; the department heads come from the published departments page (except a
  * head with `headOnCouncil` off; `headTitle` replaces the position's name). Pages
@@ -43,7 +43,8 @@ interface FacultyLeadershipServiceInterface
 
     /**
      * Every position each of the faculty's staff holds, by profile id: their positions on the
-     * published council page and the departments they head. Profiles show these.
+     * published council page, the departments they head and the department councils they sit
+     * on. Profiles show these beside the academic rank.
      *
      * @return array<int, list<string>>
      */
@@ -63,8 +64,10 @@ interface FacultyLeadershipServiceInterface
     public function managesDean(?string $facultyScopeSlug): bool;
 
     /**
-     * Departments page rules: a head is one of this faculty's staff; a specialization
-     * links to a study plan program and a section has none; type, head and council seat (`headOnCouncil`) match in both languages.
+     * Departments page rules: a head and every department council member (`councilMemberIds`)
+     * is one of this faculty's staff; head, faculty council seat (`headOnCouncil`) and
+     * department council match in both languages. Study plans belong to programs (the
+     * programs page), not to departments.
      *
      * @param  array<string, mixed>  $payload
      * @return array<string, array<int, string>>
