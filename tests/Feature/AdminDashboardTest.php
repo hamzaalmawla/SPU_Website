@@ -7,7 +7,6 @@ namespace Tests\Feature;
 use App\Contracts\Cms\CmsWorkflowServiceInterface;
 use App\Contracts\Page\FacultyPageServiceInterface;
 use App\Contracts\SiteStats\SiteStatsRecorderInterface;
-use App\DTOs\SiteStats\SiteStatsHitDTO;
 use App\Filament\Widgets\NeedsAttention;
 use App\Filament\Widgets\RecentPublishing;
 use App\Filament\Widgets\SiteSearches;
@@ -21,6 +20,7 @@ use Filament\Facades\Filament;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Livewire\Livewire;
+use Tests\Support\SiteStatsCollector;
 use Tests\TestCase;
 
 /**
@@ -45,14 +45,13 @@ final class AdminDashboardTest extends TestCase
 
     public function test_the_dashboard_shows_visitors_pages_sources_and_searches(): void
     {
-        $recorder = app(SiteStatsRecorderInterface::class);
-        $host = (string) parse_url(url('/'), PHP_URL_HOST);
-        $browser = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0 Safari/537.36';
-
+        $directory = SiteStatsCollector::boot();
         foreach (['/en', '/en/about', '/en/search?q=tuition+fees'] as $path) {
-            $recorder->recordPageView(new SiteStatsHitDTO($path, $host, $host, 'https://www.google.com/', '10.1.1.1', $browser, 0));
+            SiteStatsCollector::view($path, ip: '10.1.1.1', referrer: 'https://www.google.com/', results: 0);
         }
-        $recorder->recordChatbotVisitor('10.1.1.1', $browser);
+        $this->artisan('site-stats:collect')->assertSuccessful();
+        app(SiteStatsRecorderInterface::class)->recordChatbotVisitor('10.1.1.1', SiteStatsCollector::BROWSER);
+        SiteStatsCollector::cleanUp($directory);
 
         $this->actingAs($this->admin, 'web');
         $this->get(Filament::getPanel('admin')->getUrl())->assertOk();

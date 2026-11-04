@@ -4,25 +4,27 @@ declare(strict_types=1);
 
 namespace App\Contracts\SiteStats;
 
-use App\DTOs\SiteStats\SiteStatsHitDTO;
-
 /**
  * Records the dashboard's first-party visitor statistics (config/site_stats.php).
- * A visitor is counted once a day by a keyed hash of the day, IP address and
- * user agent; no IP address, user agent or cookie is stored. Recording never
- * fails the visitor's request: an error is reported and the hit dropped.
+ *
+ * Page views are queued by public/stats-hit.php, which does not boot Laravel,
+ * and written here once a minute (`site-stats:collect`). A visitor counts once
+ * a day by `HMAC(day|kind|ip|user agent)` keyed with a random per-day key that
+ * is deleted after two days; no IP address, user agent or cookie is stored.
+ * Recording never fails a visitor's request.
  */
 interface SiteStatsRecorderInterface
 {
     /**
-     * Counts one public page view. Ignored (false) for bots, pages of another
-     * site, paths outside /ar and /en, and staff intake links (their URL is a secret).
+     * Writes the page views queued in every finished minute and deletes those queue files. Bots,
+     * other sites, paths outside /ar and /en and staff intake links (their URL is a secret) are
+     * dropped. Returns the page views recorded.
      */
-    public function recordPageView(SiteStatsHitDTO $hit): bool;
+    public function collectQueued(): int;
 
     /** Counts a visitor who asked the AI assistant a question today (once a day each). */
     public function recordChatbotVisitor(string $ipAddress, string $userAgent): bool;
 
-    /** Deletes visitor hashes and per-page detail older than the retention; returns the rows deleted. */
+    /** Deletes old visitor hashes, day keys and per-page detail; returns the rows deleted. */
     public function prune(): int;
 }

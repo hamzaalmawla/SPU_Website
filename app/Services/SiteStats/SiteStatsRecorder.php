@@ -11,10 +11,11 @@ use Illuminate\Support\Facades\DB;
 use Throwable;
 
 /**
- * Counts page views into daily totals. A visitor is `HMAC(day|kind|ip|user agent)`
- * keyed with the app key: the same browser counts once a day, a new day gives it a
- * new hash, and the hash is deleted after two days. Each increment is a single
- * UPDATE after an insert-or-ignore of its row, so concurrent hits never lose a count.
+ * Writes the page views public/stats-hit.php queued (one file per minute) into
+ * daily totals, once a minute from the scheduler, so a page view costs the web
+ * server no framework boot. A visitor is `HMAC(day|kind|ip|user agent)` keyed with
+ * that day's random key (`salt-<day>`, shared with the collector and deleted after
+ * two days): the same browser counts once a day and cannot be followed across days.
  */
 final class SiteStatsRecorder implements SiteStatsRecorderInterface
 {
@@ -25,67 +26,49 @@ final class SiteStatsRecorder implements SiteStatsRecorderInterface
 
     private const SOCIAL_SITES = ['facebook.com', 'fb.com', 'fb.me', 'messenger.com', 'instagram.com', 't.co', 'twitter.com', 'x.com', 'linkedin.com', 'lnkd.in', 'youtube.com', 'youtu.be', 't.me', 'telegram.org', 'web.telegram.org', 'whatsapp.com', 'wa.me', 'tiktok.com', 'reddit.com', 'snapchat.com', 'pinterest.com', 'threads.net'];
 
-    public function recordPageView(SiteStatsHitDTO $hit): bool
+    public function collectQueued(): int
     {
-        if (! (bool) config('site_stats.enabled', true) || $this->isBot($hit->userAgent)) {
-            return false;
+        $queue = $this->directory().'/queue';
+
+        if (! is_dir($queue)) {
+            return 0;
         }
 
-        if ($hit->siteHost === '' || strcasecmp($hit->originHost, $hit->siteHost) !== 0) {
-            return false;
+        // A minute's file is complete once that minute has passed (a few seconds' margin
+        // for a request that named its file just before the minute turned).
+        $open = $this->now()->subSeconds(5)->format('Ymd-Hi');
+        $files = [];
+
+        foreach (glob($queue.'/*.log') ?: [] as $file) {
+            $claimed = $file.'.'.getmypid().'.collecting';
+
+            if (basename($file, '.log') < $open && @rename($file, $claimed)) {
+                $files[] = $claimed;
+            }
         }
 
-        $path = $this->path($hit->pagePath);
-
-        if ($path === null) {
-            return false;
+        // A run that stopped part-way leaves its claimed files; they are taken again later.
+        foreach (glob($queue.'/*.collecting') ?: [] as $file) {
+            if (! in_array($file, $files, true) && (int) @filemtime($file) < time() - 600) {
+                $files[] = $file;
+            }
         }
 
-        try {
-            $day = $this->today();
-            $now = now();
-            $visitor = $this->visitorHash($day, 'page', $hit->ipAddress, $hit->userAgent);
-            [$source, $referrerHost] = $this->source($hit->referrer, $hit->siteHost);
-            $totals = ['page_views' => 1];
+        $recorded = 0;
 
-            $isNew = DB::table('site_visitor_days')->insertOrIgnore([
-                'day' => $day,
-                'visitor' => $visitor,
-                'page_views' => 1,
-                'last_seen_at' => $now,
-            ]) > 0;
-
-            if ($isNew) {
-                $totals['visitors'] = 1;
-                $totals[$this->device($hit->userAgent).'_visitors'] = 1;
-                $totals[(str_starts_with($path, '/ar') ? 'arabic' : 'english').'_visitors'] = 1;
-                $totals[$source.'_visitors'] = 1;
-            } else {
-                $visitorRow = DB::table('site_visitor_days')->where('day', $day)->where('visitor', $visitor);
-
-                // The second page of the day makes the visitor engaged (they did not leave after one page).
-                if ((clone $visitorRow)->where('page_views', 1)->update(['page_views' => 2, 'last_seen_at' => $now]) > 0) {
-                    $totals['engaged_visitors'] = 1;
-                } else {
-                    $visitorRow->update(['page_views' => DB::raw($this->wrap('page_views').' + 1'), 'last_seen_at' => $now]);
+        foreach ($files as $file) {
+            try {
+                if ((bool) config('site_stats.enabled', true)) {
+                    $recorded += $this->recordHits($this->readQueue($file));
                 }
+
+                @unlink($file);
+            } catch (Throwable $exception) {
+                report($exception);
             }
-
-            $this->incrementDay($day, $totals);
-            $this->increment('site_page_days', ['day' => $day, 'path' => $path], 'views');
-
-            if ($referrerHost !== null) {
-                $this->increment('site_referrer_days', ['day' => $day, 'host' => $referrerHost], 'visits');
-            }
-
-            $this->recordSearch($day, $path, $hit);
-
-            return true;
-        } catch (Throwable $exception) {
-            report($exception);
-
-            return false;
         }
+
+        return $recorded;
     }
 
     public function recordChatbotVisitor(string $ipAddress, string $userAgent): bool
@@ -95,11 +78,17 @@ final class SiteStatsRecorder implements SiteStatsRecorderInterface
         }
 
         try {
-            $day = $this->today();
+            $day = $this->now()->toDateString();
+            $salt = $this->salt($day);
+
+            if ($salt === null) {
+                return false;
+            }
+
             // A visit kind of its own: a page view's row is not touched, so the visitor and engaged counts stay right.
             $isNew = DB::table('site_visitor_days')->insertOrIgnore([
                 'day' => $day,
-                'visitor' => $this->visitorHash($day, 'chat', $ipAddress, $userAgent),
+                'visitor' => hash_hmac('sha256', $day.'|chat|'.$ipAddress.'|'.$userAgent, $salt),
                 'page_views' => 0,
                 'last_seen_at' => now(),
             ]) > 0;
@@ -118,7 +107,7 @@ final class SiteStatsRecorder implements SiteStatsRecorderInterface
 
     public function prune(): int
     {
-        $today = Carbon::parse($this->today());
+        $today = $this->now()->startOfDay();
         $visitorsBefore = $today->copy()->subDays(max(1, (int) config('site_stats.retention.visitor_days', 2)))->toDateString();
         $detailBefore = $today->copy()->subDays(max(31, (int) config('site_stats.retention.detail_days', 180)))->toDateString();
         $deleted = DB::table('site_visitor_days')->where('day', '<', $visitorsBefore)->delete();
@@ -127,30 +116,186 @@ final class SiteStatsRecorder implements SiteStatsRecorderInterface
             $deleted += DB::table($table)->where('day', '<', $detailBefore)->delete();
         }
 
+        // Without yesterday's key no hash of that day can be made again.
+        $yesterday = $today->copy()->subDay()->toDateString();
+        foreach (glob($this->directory().'/salt-*') ?: [] as $file) {
+            if (preg_match('/^salt-(\d{4}-\d{2}-\d{2})$/', basename($file), $matches) === 1 && $matches[1] < $yesterday) {
+                @unlink($file);
+            }
+        }
+
         return $deleted;
     }
 
-    /** A search page's term (first page of results only), with the count it showed. */
-    private function recordSearch(string $day, string $path, SiteStatsHitDTO $hit): void
+    /**
+     * The page views in one queue file. A line that is not one is skipped.
+     *
+     * @return list<SiteStatsHitDTO>
+     */
+    private function readQueue(string $file): array
+    {
+        $handle = @fopen($file, 'rb');
+
+        if ($handle === false) {
+            return [];
+        }
+
+        $hits = [];
+
+        while (($line = fgets($handle)) !== false) {
+            $row = json_decode($line, true);
+            $body = is_array($row) && is_string($row['b'] ?? null) ? json_decode($row['b'], true) : null;
+
+            if (! is_array($row) || ! is_array($body)
+                || ! is_string($row['d'] ?? null) || preg_match('/^\d{4}-\d{2}-\d{2}$/', $row['d']) !== 1
+                || ! is_string($row['v'] ?? null) || preg_match('/^[0-9a-f]{64}$/', $row['v']) !== 1
+                || ! is_int($row['t'] ?? null)) {
+                continue;
+            }
+
+            $hits[] = new SiteStatsHitDTO(
+                day: $row['d'],
+                visitor: $row['v'],
+                time: $row['t'],
+                pagePath: is_string($body['p'] ?? null) ? mb_substr($body['p'], 0, 2048) : '',
+                originHost: is_string($row['o'] ?? null) ? $row['o'] : '',
+                siteHost: is_string($row['h'] ?? null) ? $row['h'] : '',
+                referrer: is_string($body['r'] ?? null) ? mb_substr($body['r'], 0, 2048) : '',
+                userAgent: is_string($row['ua'] ?? null) ? $row['ua'] : '',
+                searchResults: is_numeric($body['n'] ?? null) ? (int) $body['n'] : null,
+            );
+        }
+
+        fclose($handle);
+
+        return $hits;
+    }
+
+    /**
+     * Writes a batch of page views: each visitor once with their page count, and every total
+     * incremented once by its sum.
+     *
+     * @param  list<SiteStatsHitDTO>  $hits
+     */
+    private function recordHits(array $hits): int
+    {
+        usort($hits, static fn (SiteStatsHitDTO $a, SiteStatsHitDTO $b): int => $a->time <=> $b->time);
+        $visitors = [];
+        $days = [];
+        $pages = [];
+        $referrers = [];
+        $searches = [];
+        $recorded = 0;
+
+        foreach ($hits as $hit) {
+            $path = $this->path($hit->pagePath);
+
+            if ($path === null || $this->isBot($hit->userAgent) || $hit->siteHost === '' || strcasecmp($hit->originHost, $hit->siteHost) !== 0) {
+                continue;
+            }
+
+            [$source, $referrerHost] = $this->source($hit->referrer, $hit->siteHost);
+            $key = $hit->day.'|'.$hit->visitor;
+            $visitors[$key] ??= ['day' => $hit->day, 'visitor' => $hit->visitor, 'views' => 0, 'last' => 0, 'first' => $hit, 'path' => $path, 'source' => $source];
+            $visitors[$key]['views']++;
+            $visitors[$key]['last'] = max($visitors[$key]['last'], $hit->time);
+            $days[$hit->day]['page_views'] = ($days[$hit->day]['page_views'] ?? 0) + 1;
+            $pages[$hit->day][$path] = ($pages[$hit->day][$path] ?? 0) + 1;
+
+            if ($referrerHost !== null) {
+                $referrers[$hit->day][$referrerHost] = ($referrers[$hit->day][$referrerHost] ?? 0) + 1;
+            }
+
+            $search = $this->search($path, $hit);
+            if ($search !== null) {
+                $searchKey = $search['locale'].'|'.$search['query'];
+                $searches[$hit->day][$searchKey] = [...$search, 'count' => ($searches[$hit->day][$searchKey]['count'] ?? 0) + 1];
+            }
+
+            $recorded++;
+        }
+
+        if ($recorded === 0) {
+            return 0;
+        }
+
+        DB::transaction(function () use ($visitors, $days, $pages, $referrers, $searches): void {
+            foreach ($visitors as $visitor) {
+                $day = $visitor['day'];
+                $lastSeen = Carbon::createFromTimestamp($visitor['last']);
+                $isNew = DB::table('site_visitor_days')->insertOrIgnore([
+                    'day' => $day,
+                    'visitor' => $visitor['visitor'],
+                    'page_views' => $visitor['views'],
+                    'last_seen_at' => $lastSeen,
+                ]) > 0;
+
+                if ($isNew) {
+                    $first = $visitor['first'];
+                    foreach (['visitors', $this->device($first->userAgent).'_visitors', (str_starts_with($visitor['path'], '/ar') ? 'arabic' : 'english').'_visitors', $visitor['source'].'_visitors'] as $column) {
+                        $days[$day][$column] = ($days[$day][$column] ?? 0) + 1;
+                    }
+                    $before = 0;
+                } else {
+                    $row = DB::table('site_visitor_days')->where('day', $day)->where('visitor', $visitor['visitor']);
+                    $before = (int) (clone $row)->value('page_views');
+                    $row->update(['page_views' => DB::raw($this->wrap('page_views').' + '.(int) $visitor['views']), 'last_seen_at' => $lastSeen]);
+                }
+
+                // The second page of the day makes the visitor engaged (they did not leave after one page).
+                if ($before <= 1 && $before + $visitor['views'] >= 2) {
+                    $days[$day]['engaged_visitors'] = ($days[$day]['engaged_visitors'] ?? 0) + 1;
+                }
+            }
+
+            foreach ($days as $day => $amounts) {
+                $this->incrementDay((string) $day, $amounts);
+            }
+
+            foreach ($pages as $day => $paths) {
+                foreach ($paths as $path => $views) {
+                    $this->increment('site_page_days', ['day' => (string) $day, 'path' => (string) $path], 'views', $views);
+                }
+            }
+
+            foreach ($referrers as $day => $hosts) {
+                foreach ($hosts as $host => $visits) {
+                    $this->increment('site_referrer_days', ['day' => (string) $day, 'host' => (string) $host], 'visits', $visits);
+                }
+            }
+
+            foreach ($searches as $day => $terms) {
+                foreach ($terms as $term) {
+                    $this->increment(
+                        'site_search_days',
+                        ['day' => (string) $day, 'locale' => $term['locale'], 'query' => $term['query']],
+                        'searches',
+                        $term['count'],
+                        ['results' => $term['results']],
+                    );
+                }
+            }
+        }, 3);
+
+        return $recorded;
+    }
+
+    /**
+     * A search page's term (first page of results only), with the count it showed.
+     *
+     * @return array{locale: string, query: string, results: int}|null
+     */
+    private function search(string $path, SiteStatsHitDTO $hit): ?array
     {
         if (preg_match('#^/(ar|en)/search$#', $path, $matches) !== 1) {
-            return;
+            return null;
         }
 
         parse_str((string) parse_url($hit->pagePath, PHP_URL_QUERY), $query);
         $term = is_string($query['q'] ?? null) ? $this->searchTerm($query['q']) : '';
         $page = is_string($query['page'] ?? null) ? (int) $query['page'] : 1;
 
-        if ($term === '' || $page > 1) {
-            return;
-        }
-
-        $this->increment(
-            'site_search_days',
-            ['day' => $day, 'locale' => $matches[1], 'query' => $term],
-            'searches',
-            ['results' => max(0, (int) ($hit->searchResults ?? 0))],
-        );
+        return $term === '' || $page > 1 ? null : ['locale' => $matches[1], 'query' => $term, 'results' => max(0, (int) ($hit->searchResults ?? 0))];
     }
 
     /**
@@ -230,9 +375,35 @@ final class SiteStatsRecorder implements SiteStatsRecorderInterface
         return mb_check_encoding($term, 'UTF-8') ? mb_substr(mb_strtolower($term), 0, 120) : '';
     }
 
-    private function visitorHash(string $day, string $kind, string $ipAddress, string $userAgent): string
+    /**
+     * The day's random key, created atomically by whichever side needs it first. The same
+     * rule as spu_stats_salt() in public/stats-hit.php.
+     */
+    private function salt(string $day): ?string
     {
-        return hash_hmac('sha256', $day.'|'.$kind.'|'.$ipAddress.'|'.$userAgent, (string) config('app.key'));
+        $directory = $this->directory();
+        $path = $directory.'/salt-'.$day;
+        $salt = is_file($path) ? @file_get_contents($path) : false;
+
+        if (is_string($salt) && strlen($salt) === 64) {
+            return $salt;
+        }
+
+        if (! is_dir($directory)) {
+            @mkdir($directory, 0775, true);
+        }
+
+        $temporary = $path.'.'.bin2hex(random_bytes(6));
+
+        if (@file_put_contents($temporary, bin2hex(random_bytes(32))) !== 64) {
+            return null;
+        }
+
+        @link($temporary, $path);
+        @unlink($temporary);
+        $salt = @file_get_contents($path);
+
+        return is_string($salt) && strlen($salt) === 64 ? $salt : null;
     }
 
     /** @param  array<string, int>  $amounts */
@@ -253,10 +424,10 @@ final class SiteStatsRecorder implements SiteStatsRecorderInterface
      * @param  array<string, string>  $keys
      * @param  array<string, int>  $set  columns written as they are (the latest value wins)
      */
-    private function increment(string $table, array $keys, string $column, array $set = []): void
+    private function increment(string $table, array $keys, string $column, int $amount, array $set = []): void
     {
         DB::table($table)->insertOrIgnore([...$keys, $column => 0, ...$set]);
-        DB::table($table)->where($keys)->update([$column => DB::raw($this->wrap($column).' + 1'), ...$set]);
+        DB::table($table)->where($keys)->update([$column => DB::raw($this->wrap($column).' + '.$amount), ...$set]);
     }
 
     private function wrap(string $column): string
@@ -264,8 +435,14 @@ final class SiteStatsRecorder implements SiteStatsRecorderInterface
         return DB::connection()->getQueryGrammar()->wrap($column);
     }
 
-    private function today(): string
+    private function directory(): string
     {
-        return now((string) config('site_stats.timezone', 'Asia/Damascus'))->toDateString();
+        return (string) config('site_stats.directory', storage_path('app/site-stats'));
+    }
+
+    /** Now in the statistics timezone (public/stats-hit.php names days and queue files in it). */
+    private function now(): Carbon
+    {
+        return now('Asia/Damascus');
     }
 }

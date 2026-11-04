@@ -27,17 +27,12 @@ use App\Http\Controllers\Public\PublicContactController;
 use App\Http\Controllers\Public\ResearchController;
 use App\Http\Controllers\Public\SearchController;
 use App\Http\Controllers\Public\SitemapController;
-use App\Http\Controllers\Public\SiteStatsController;
 use App\Http\Controllers\Public\StaffIntakeController;
 use App\Http\Controllers\Public\VirtualTourController;
 use App\Http\Middleware\AdminLocaleMiddleware;
 use App\Support\AdminPath;
-use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
-use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Http\Request;
-use Illuminate\Session\Middleware\StartSession;
 use Illuminate\Support\Facades\Route;
-use Illuminate\View\Middleware\ShareErrorsFromSession;
 
 Route::get('/', BrowserLocaleRedirectController::class)->name('root');
 
@@ -92,14 +87,6 @@ Route::post('{locale}/assistant/messages', ChatbotController::class)
     ->where(['locale' => 'ar|en'])
     ->middleware(['locale', 'throttle:chatbot'])
     ->name('public.chatbot.messages');
-
-// The page view each public page reports after it loads (dashboard visitor
-// statistics, config/site_stats.php). No session, cookie or CSRF token: it
-// carries nothing of the visitor's and always answers 204.
-Route::post('stats/hit', SiteStatsController::class)
-    ->withoutMiddleware([StartSession::class, ShareErrorsFromSession::class, ValidateCsrfToken::class, AddQueuedCookiesToResponse::class])
-    ->middleware('throttle:site-stats')
-    ->name('public.site-stats.hit');
 
 Route::prefix('{locale}')
     ->where(['locale' => 'ar|en'])

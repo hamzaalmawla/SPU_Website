@@ -1,8 +1,9 @@
 // Reports this page view to the site's own visitor statistics (admin
 // dashboard, config/site_stats.php). Nothing is stored in the browser and no
-// cookie is sent; previews and error pages opt out with
-// <meta name="spu-stats" content="off">.
-const ENDPOINT = '/stats/hit';
+// cookie is sent; previews, error pages and a site with statistics switched
+// off (SITE_STATS_ENABLED) opt out with <meta name="spu-stats" content="off">.
+// A plain PHP file, not a Laravel route: no framework boot per page view.
+const ENDPOINT = '/stats-hit.php';
 
 function send() {
     const searchTotal = document.querySelector('[data-search-total]');

@@ -365,6 +365,13 @@ for root_file in "${SOURCE}"/public/{favicon.ico,apple-touch-icon.png,site.webma
 done
 shopt -u nullglob
 
+# The visitor statistics collector: a plain PHP file every public page posts to,
+# so a page view costs no Laravel boot (config/site_stats.php). It finds the
+# application the same way public/app.php does.
+log "Publishing the visitor statistics collector"
+install -m 0644 "${SOURCE}/public/stats-hit.php" "${WEB}/stats-hit.php"
+mkdir -p "${APP}/storage/app/site-stats/queue"
+
 # Raster images the public pages load on every visit and that git owns: the
 # header logo's sized WebP copies and the default hero slides. The SVG step
 # below skips raster files, so these never reached the docroot otherwise (the

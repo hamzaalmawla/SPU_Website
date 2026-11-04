@@ -8,8 +8,8 @@
         <meta name="csrf-token" content="{{ csrf_token() }}">
         <title>{{ $seo->title }}</title>
         <meta name="robots" content="{{ ($isPreview ?? false) ? 'noindex,nofollow,noarchive' : ($seo->robots ?? 'index,follow') }}">
-        @if ($isPreview ?? false)
-            {{-- Previews are not visits (resources/js/public/siteStats.js). --}}
+        @if (($isPreview ?? false) || ! config('site_stats.enabled'))
+            {{-- Previews are not visits, and switched-off statistics send nothing (resources/js/public/siteStats.js). --}}
             <meta name="spu-stats" content="off">
         @endif
         @if ($seo->metaDescription)

@@ -716,11 +716,6 @@ class AppServiceProvider extends ServiceProvider
             ];
         });
 
-        // One page view per page load; a person reading quickly stays far below it.
-        RateLimiter::for('site-stats', function (Request $request): Limit {
-            return Limit::perMinute(60)->by('site-stats|'.$request->ip());
-        });
-
         RateLimiter::for('public-search', function (Request $request): Limit {
             return Limit::perMinute(30)->by('public-search|'.$request->ip());
         });

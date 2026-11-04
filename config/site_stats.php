@@ -8,20 +8,26 @@ declare(strict_types=1);
 |--------------------------------------------------------------------------
 |
 | Each public page sends one small request after it loads (resources/js/
-| siteStats.js). The server counts it without cookies and without storing an
-| IP address: a visitor is a keyed hash of the day, IP address and browser, so
-| the same person counts once a day and cannot be followed from one day to the
-| next. Only daily totals are kept; the per-visitor hashes are deleted after
-| `visitor_days` days. Separate from the optional GA4 provider (config/analytics.php).
+| public/siteStats.js) to public/stats-hit.php, which does not boot Laravel: it
+| appends one line to this minute's queue file. `site-stats:collect` writes the
+| queue into daily totals every minute. No cookie is set and no IP address is
+| stored: a visitor is a hash of the day, IP address and browser keyed with a
+| random per-day key that is deleted after two days, so the same person counts
+| once a day and cannot be followed from one day to the next.
+|
+| "Today" starts at midnight in Asia/Damascus; the collector script names days
+| and queue files in that timezone too, so it is not configurable here.
 |
 */
 
 return [
-    // Turns recording off (the dashboard then shows what was recorded before).
+    // Off: pages stop sending (no request at all) and queued views are discarded.
     'enabled' => (bool) env('SITE_STATS_ENABLED', true),
 
-    // "Today" on the dashboard starts at midnight in this timezone.
-    'timezone' => env('SITE_STATS_TIMEZONE', env('ADMIN_TIMEZONE', 'Asia/Damascus')),
+    'timezone' => 'Asia/Damascus',
+
+    // Queue files and day keys; public/stats-hit.php writes to <app>/storage/app/site-stats.
+    'directory' => storage_path('app/site-stats'),
 
     'retention' => [
         // Visitor hashes are only needed to count a visitor once a day.
