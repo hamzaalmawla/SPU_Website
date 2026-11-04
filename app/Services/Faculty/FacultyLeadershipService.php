@@ -16,6 +16,7 @@ use App\Models\Faculty\Faculty;
 use App\Models\Media\MediaAsset;
 use App\Models\Person\FacultyMember;
 use App\Models\Person\Person;
+use App\Support\AcademicRank;
 use App\Support\MediaUrlResolver;
 use DateTimeInterface;
 use Illuminate\Support\Str;
@@ -660,7 +661,7 @@ final class FacultyLeadershipService implements FacultyLeadershipServiceInterfac
                     : MediaUrlResolver::resolveLegacy($member->legacy_photo_path),
                 'url' => '/'.$locale.'/about/profile/'.$member->slug,
                 // The academic rank typed on the profile, shown apart from the position.
-                'academicRank' => trim((string) ($translation?->position ?? '')),
+                'academicRank' => (string) AcademicRank::ofProfile($member->translations, $locale)['rank'],
                 // The start of the profile's bio, for the dean's card.
                 'bio' => Str::limit(trim((string) preg_replace('/\s+/u', ' ', strip_tags((string) ($translation?->bio ?? '')))), 260),
             ];

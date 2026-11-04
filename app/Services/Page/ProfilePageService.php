@@ -28,6 +28,7 @@ use App\Models\Person\PersonTranslation;
 use App\Models\Research\Researcher;
 use App\Models\Research\ResearchPublication;
 use App\Models\Shared\MigrationLog;
+use App\Support\AcademicRank;
 use App\Support\MediaUrlResolver;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
@@ -432,7 +433,8 @@ final class ProfilePageService implements ProfilePageServiceInterface
             name: (string) $translation->full_name,
             title: $translation->title,
             // Positions held (council and departments pages) and the academic rank typed on the profile, apart.
-            position: $this->memberPosition($member, $locale),
+            // A leadership title typed where the rank goes shows as the position until a page names one.
+            position: $this->memberPosition($member, $locale) ?? AcademicRank::ofProfile($member->translations, $locale)['position'],
             category: 'faculty_member',
             facultyName: $facultyName,
             departmentName: $departmentName,
@@ -456,7 +458,7 @@ final class ProfilePageService implements ProfilePageServiceInterface
             specializationName: $member->specialization_id !== null && $member->faculty instanceof Faculty
                 ? ($this->studyPlanLinkService->programNames((string) $member->faculty->public_slug, $locale)[(string) $member->specialization_id] ?? null)
                 : null,
-            academicRank: trim((string) $translation->position) !== '' ? trim((string) $translation->position) : null,
+            academicRank: AcademicRank::ofProfile($member->translations, $locale)['rank'],
         );
     }
 

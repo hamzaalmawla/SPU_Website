@@ -45,7 +45,12 @@
                             <div class="staff-card-media">@if ($person->image)<img src="{{ $person->image }}" alt="{{ $person->name }}" loading="lazy">@else<div class="flex h-full items-center justify-center bg-slate-100"><img src="/images/icon-user-graduate-outline.svg" alt="" class="h-16 w-16 opacity-30" aria-hidden="true"></div>@endif</div>
                             <div class="staff-card-body">
                                 <h2 class="card-title card-title-center staff-card-name" dir="auto">{{ $person->name }}</h2>
-                                <p class="staff-card-role">{{ $person->role }}</p>
+                                @foreach ($person->positions as $heldPosition)
+                                    <p class="staff-card-role">{{ $heldPosition }}</p>
+                                @endforeach
+                                @if ($person->academicRank)
+                                    <p class="mt-2 text-xs font-semibold text-slate-600"><span class="text-slate-500">{{ $locale === 'ar' ? 'الرتبة الأكاديمية:' : 'Academic rank:' }}</span> <span dir="auto">{{ $person->academicRank }}</span></p>
+                                @endif
                                 @if ($person->facultyName)
                                     <p class="mt-3 text-xs font-bold text-slate-500">{{ $person->facultyName }}</p>
                                 @endif

@@ -33,6 +33,7 @@ use App\Models\Person\PersonAppointment;
 use App\Models\Person\PersonEducation;
 use App\Models\Person\PersonTranslation;
 use App\Models\User\User;
+use App\Support\AcademicRank;
 use App\Support\MediaUrlResolver;
 use DateTimeInterface;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -428,7 +429,7 @@ final class AboutEntityCmsService implements AboutEntityCmsServiceInterface
             seoImage: $image,
             path: '/'.$locale.'/about/profile/'.$slug,
             specializationName: $this->specializationName($this->nullableInt($payload['faculty_id'] ?? null), $this->nullableString($payload['specialization_id'] ?? null), $locale),
-            academicRank: $this->nullableString($translation['position'] ?? null),
+            academicRank: AcademicRank::read($this->nullableString($translation['position'] ?? null), null, $locale)['rank'],
         );
     }
 

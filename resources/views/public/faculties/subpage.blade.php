@@ -169,6 +169,9 @@
                             </div>
                             <div class="mt-8 border-t border-slate-100 pt-5">
                                 <p class="text-[11px] font-bold uppercase tracking-[0.16em] text-spu-blue">{{ $dean['role'] ?? ($isAr ? ($dean['roleAr'] ?? 'عميد الكلية') : ($dean['roleEn'] ?? 'Faculty Dean')) }}</p>
+                                @if ($page->deanProfile?->academicRank)
+                                    <p class="mt-2 text-xs text-slate-600"><span class="font-bold text-slate-500">{{ $isAr ? 'الرتبة الأكاديمية:' : 'Academic rank:' }}</span> <span dir="auto">{{ $page->deanProfile->academicRank }}</span></p>
+                                @endif
                                 @if ($page->deanProfile)
                                     <a href="{{ $page->deanProfile->path }}" class="mt-4 inline-flex items-center gap-2 text-xs font-bold text-spu-blue transition-colors hover:text-spu-red focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-spu-blue">
                                         <span>{{ $isAr ? 'عرض الملف الشخصي' : 'View Profile' }}</span>

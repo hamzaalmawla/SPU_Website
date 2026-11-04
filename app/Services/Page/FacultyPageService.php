@@ -52,6 +52,7 @@ use App\Models\Media\MediaAsset;
 use App\Models\Person\FacultyMember;
 use App\Models\Person\Person;
 use App\Models\Shared\MigrationLog;
+use App\Support\AcademicRank;
 use App\Support\FacultyLogoSubtitle;
 use App\Support\LenientSearch;
 use App\Support\MediaUrlResolver;
@@ -242,6 +243,7 @@ final class FacultyPageService implements FacultyPageServiceInterface
         if (is_array($content['dean'] ?? null) && $content['dean'] !== []) {
             $deanProfile = $this->deanProfileFor($faculty, $locale, $content['dean']);
             $content['dean']['profileUrl'] = $deanProfile?->path;
+            $content['dean']['academicRank'] = $deanProfile?->academicRank;
             // The dean's name and photo are the profile's, so an edit there shows here.
             if ($deanProfile instanceof ProfilePageDTO) {
                 $content['dean']['name'] = $deanProfile->name;
@@ -1251,7 +1253,7 @@ final class FacultyPageService implements FacultyPageServiceInterface
                     'slug' => $slug,
                     'name' => $identity !== null ? $identity->name : (string) $translation->name,
                     'positions' => $held !== [] ? $held : array_values(array_filter([$role])),
-                    'academicRank' => $identity !== null && $identity->position !== $role ? (string) $identity->position : '',
+                    'academicRank' => $identity !== null ? (string) $this->identityRank($identity->memberId, $locale) : '',
                     'department' => $department,
                     'image' => $image,
                     'profileUrl' => $this->url($locale, '/about/profile/'.$slug),
@@ -1289,8 +1291,9 @@ final class FacultyPageService implements FacultyPageServiceInterface
                 return [
                     'slug' => $slug,
                     'name' => (string) $translation->full_name,
-                    'positions' => $heldPositions[(int) $member->getKey()] ?? [],
-                    'academicRank' => (string) ($translation->position ?? ''),
+                    // A leadership title typed where the rank goes shows as a position until a page names one.
+                    'positions' => ($heldPositions[(int) $member->getKey()] ?? []) ?: array_values(array_filter([AcademicRank::ofProfile($member->translations, $locale)['position']])),
+                    'academicRank' => (string) AcademicRank::ofProfile($member->translations, $locale)['rank'],
                     'department' => $department,
                     'image' => $image,
                     'profileUrl' => $this->url($locale, '/about/profile/'.$slug),
@@ -2645,6 +2648,14 @@ final class FacultyPageService implements FacultyPageServiceInterface
         return $teachers;
     }
 
+    /** The academic rank of a leader's faculty profile. */
+    private function identityRank(int $memberId, string $locale): ?string
+    {
+        $member = FacultyMember::query()->with('translations')->find($memberId);
+
+        return $member instanceof FacultyMember ? AcademicRank::ofProfile($member->translations, $locale)['rank'] : null;
+    }
+
     /**
      * Name, photo and profile link of each public faculty profile, keyed by its id.
      *
@@ -2673,7 +2684,7 @@ final class FacultyPageService implements FacultyPageServiceInterface
                     : MediaUrlResolver::resolveLegacy($member->legacy_photo_path),
                 'url' => $this->url($locale, '/about/profile/'.$member->slug),
                 // The academic rank typed on the profile.
-                'academicRank' => trim((string) ($translation?->position ?? '')),
+                'academicRank' => (string) AcademicRank::ofProfile($member->translations, $locale)['rank'],
             ];
         }
 

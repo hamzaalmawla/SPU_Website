@@ -474,6 +474,40 @@ final class FacultyCouncilTest extends TestCase
             ->assertSee('Copy link');
     }
 
+    public function test_every_staff_listing_shows_the_position_and_the_academic_rank_apart(): void
+    {
+        $dean = $this->member('rank-dean', 'Dr. Rank Dean', 'د. عميد الرتبة', position: ['أستاذ', 'Professor']);
+        // A leadership title typed where the rank goes is a position, never a rank.
+        $typedHead = $this->member('rank-typed-head', 'Dr. Typed Head', 'د. رئيس مكتوب', position: ['رئيس قسم الأطفال', 'Head of Pediatrics']);
+        $this->publishCouncil([['positionSlug' => 'dean', 'memberId' => (int) $dean->getKey()]]);
+        Cache::flush();
+
+        $rankLine = 'الرتبة الأكاديمية:';
+
+        // The faculty's members list.
+        $members = collect(app(FacultyPageServiceInterface::class)->getSubpage('medicine', 'members', 'ar')?->items ?? [])->keyBy('slug');
+        $this->assertSame(['عميد الكلية'], $members['rank-dean']['positions']);
+        $this->assertSame('أستاذ', $members['rank-dean']['academicRank']);
+        $this->assertSame(['رئيس قسم الأطفال'], $members['rank-typed-head']['positions']);
+        $this->assertSame('', $members['rank-typed-head']['academicRank']);
+
+        // The university's staff directory.
+        $this->get('/ar/about/directorates/staff?faculty=medicine')
+            ->assertOk()
+            ->assertSee('د. عميد الرتبة')
+            ->assertSee('عميد الكلية')
+            ->assertSee($rankLine)
+            ->assertSee('أستاذ');
+
+        // About › Leadership: publishing the council made the dean's leadership row.
+        $this->get('/ar/about/leadership')->assertOk()->assertSee('د. عميد الرتبة')->assertSee($rankLine);
+
+        // The profile.
+        $profile = app(ProfilePageServiceInterface::class)->getProfile('ar', 'faculty-member', 'rank-typed-head');
+        $this->assertSame('رئيس قسم الأطفال', $profile?->position);
+        $this->assertNull($profile?->academicRank);
+    }
+
     public function test_publishing_the_council_makes_its_dean_the_leadership_dean(): void
     {
         $oldDean = $this->member('previous-dean', 'Dr. Previous Dean', 'د. العميد السابق');

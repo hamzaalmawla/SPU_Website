@@ -7,6 +7,7 @@ namespace App\Services\Page;
 use App\Contracts\Cms\CmsTargetRegistryInterface;
 use App\Contracts\Cms\CmsWorkflowServiceInterface;
 use App\Contracts\Content\PersonIdentityServiceInterface;
+use App\Contracts\Faculty\FacultyLeadershipServiceInterface;
 use App\Contracts\Page\AboutNavigationCardServiceInterface;
 use App\Contracts\Page\AboutPageServiceInterface;
 use App\DTOs\About\AboutContentPageDTO;
@@ -34,6 +35,7 @@ use App\Models\Person\Person;
 use App\Models\Person\PersonAppointment;
 use App\Models\Person\PersonTranslation;
 use App\Models\Shared\MigrationLog;
+use App\Support\AcademicRank;
 use App\Support\MediaUrlResolver;
 use Illuminate\Support\Collection;
 
@@ -48,6 +50,7 @@ final class AboutPageService implements AboutPageServiceInterface
         private readonly CmsTargetRegistryInterface $targetRegistry,
         private readonly AboutNavigationCardServiceInterface $navigationCardService,
         private readonly PersonIdentityServiceInterface $identityService,
+        private readonly FacultyLeadershipServiceInterface $leadershipService,
     ) {}
 
     public function getAboutLanding(string $locale): AboutLandingDTO
@@ -236,8 +239,26 @@ final class AboutPageService implements AboutPageServiceInterface
             ->get();
 
         $identities = $this->identityService->publicIdentities(array_map('intval', $people->modelKeys()), $locale);
+        // Positions held on each faculty's council and departments pages, by profile id.
+        $heldPositions = [];
+        $positionsOf = function (?Faculty $faculty, int $memberId) use (&$heldPositions, $locale): array {
+            $slug = $faculty instanceof Faculty ? (string) $faculty->public_slug : '';
+
+            if ($slug === '') {
+                return [];
+            }
+
+            $heldPositions[$slug] ??= $this->leadershipService->memberPositions($slug, $locale);
+
+            return $heldPositions[$slug][$memberId] ?? [];
+        };
+        $profileRanks = FacultyMember::query()
+            ->with(['translations', 'faculty'])
+            ->whereKey(array_values(array_map(static fn ($identity): int => $identity->memberId, $identities)))
+            ->get()
+            ->keyBy(fn (FacultyMember $member): int => (int) $member->getKey());
         $allItems = $people
-            ->map(function (Person $person) use ($locale, $facultyLabels, $identities): ?StaffDirectoryItemDTO {
+            ->map(function (Person $person) use ($locale, $facultyLabels, $identities, $positionsOf, $profileRanks): ?StaffDirectoryItemDTO {
                 $translation = $this->personTranslation($person, $locale);
                 $identity = $identities[(int) $person->getKey()] ?? null;
                 $apt = $this->primaryDisplayAppointment($person->appointments);
@@ -250,9 +271,16 @@ final class AboutPageService implements AboutPageServiceInterface
                     if ($aptTrans?->role_override) {
                         $role = $aptTrans->role_override;
                     } elseif ($apt->type === 'faculty_member') {
-                        $role = $identity?->position ?: $identity?->title ?: $translation->position ?: $translation->title ?: '';
+                        $role = $translation->position ?: $translation->title ?: '';
                     }
                 }
+
+                $profile = $identity !== null ? $profileRanks->get($identity->memberId) : null;
+                $held = $profile instanceof FacultyMember ? $positionsOf($profile->faculty, (int) $profile->getKey()) : [];
+                $positions = $held !== [] ? $held : array_values(array_filter([trim((string) $role)]));
+                $rank = $profile instanceof FacultyMember ? AcademicRank::ofProfile($profile->translations, $locale) : AcademicRank::read($translation->position ?? null, null, $locale);
+                // A leader's role that is only a rank shows as the rank.
+                $positions = array_values(array_filter($positions, static fn (string $position): bool => AcademicRank::key($position) === null));
 
                 $facultySlug = null;
                 if ($apt?->faculty instanceof Faculty) {
@@ -269,10 +297,12 @@ final class AboutPageService implements AboutPageServiceInterface
                     sourceType: $identity !== null ? 'faculty-member' : 'person',
                     slug: $identity !== null ? $identity->slug : (string) $person->slug,
                     name: $identity !== null ? $identity->name : (string) $translation->name,
-                    role: $role,
+                    role: implode(' · ', $positions),
                     image: $image,
                     facultySlug: $facultySlug,
                     facultyName: $facultySlug !== null ? ($facultyLabels[$facultySlug] ?? null) : null,
+                    positions: $positions,
+                    academicRank: $rank['rank'],
                 );
             })
             ->filter(fn (?StaffDirectoryItemDTO $item): bool => $item !== null)
@@ -286,7 +316,7 @@ final class AboutPageService implements AboutPageServiceInterface
             ->get();
         $legacyMediaByTargetId = $this->legacyMediaByTargetId('faculty_members', $facultyMembers->pluck('id')->all());
         $facultyMemberItems = $facultyMembers
-            ->map(function (FacultyMember $member) use ($locale, $facultyLabels, $legacyMediaByTargetId): ?StaffDirectoryItemDTO {
+            ->map(function (FacultyMember $member) use ($locale, $facultyLabels, $legacyMediaByTargetId, $positionsOf): ?StaffDirectoryItemDTO {
                 $translation = $this->facultyMemberTranslation($member, $locale);
                 if (! $translation instanceof FacultyMemberTranslation) {
                     return null;
@@ -295,6 +325,10 @@ final class AboutPageService implements AboutPageServiceInterface
                 $facultySlug = $member->faculty instanceof Faculty
                     ? (string) ($member->faculty->faculty_scope_slug ?: $member->faculty->public_slug ?: $member->faculty->slug)
                     : null;
+                // Positions held (council, departments) and the academic rank, apart; a leadership
+                // title typed where the rank goes is a position until a page names one.
+                $rank = AcademicRank::ofProfile($member->translations, $locale);
+                $positions = $positionsOf($member->faculty, (int) $member->getKey()) ?: array_values(array_filter([$rank['position']]));
                 $legacyPhoto = $member->legacy_photo_path
                     ?? ($legacyMediaByTargetId[(int) $member->getKey()]['legacy_photo'] ?? null);
                 $image = $member->photoMedia instanceof MediaAsset
@@ -305,10 +339,12 @@ final class AboutPageService implements AboutPageServiceInterface
                     sourceType: 'faculty-member',
                     slug: (string) $member->slug,
                     name: (string) $translation->full_name,
-                    role: (string) ($translation->position ?: $translation->title ?: ''),
+                    role: implode(' · ', $positions),
                     image: $image,
                     facultySlug: $facultySlug,
                     facultyName: $facultySlug !== null ? ($facultyLabels[$facultySlug] ?? null) : null,
+                    positions: $positions,
+                    academicRank: $rank['rank'],
                 );
             })
             ->filter(fn (?StaffDirectoryItemDTO $item): bool => $item !== null)
@@ -524,7 +560,16 @@ final class AboutPageService implements AboutPageServiceInterface
             image: $identity?->image ?? $this->personImage($person),
             email: $identity !== null ? $identity->email : $person->email,
             profileUrl: $identity !== null ? $identity->profileUrl : '/'.$locale.'/about/profile/'.$person->slug,
+            academicRank: $identity !== null ? $this->profileRank($identity->memberId, $locale) : null,
         );
+    }
+
+    /** The academic rank of a leader's faculty profile. */
+    private function profileRank(int $memberId, string $locale): ?string
+    {
+        $member = FacultyMember::query()->with('translations')->find($memberId);
+
+        return $member instanceof FacultyMember ? AcademicRank::ofProfile($member->translations, $locale)['rank'] : null;
     }
 
     /**

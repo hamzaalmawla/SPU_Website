@@ -134,6 +134,9 @@
                                     @endif
                                 </h5>
                                 <p class="text-[16px] font-normal">{{ $dean['role'] ?? ($isAr ? ($dean['roleAr'] ?? __('public.faculty_dean')) : ($dean['roleEn'] ?? __('public.faculty_dean'))) }}</p>
+                                @if (! empty($dean['academicRank']))
+                                    <p class="text-[14px] font-normal opacity-90"><span class="font-bold">{{ $isAr ? 'الرتبة الأكاديمية:' : 'Academic rank:' }}</span> <span dir="auto">{{ $dean['academicRank'] }}</span></p>
+                                @endif
                             </div>
                         </div>
                     </div>

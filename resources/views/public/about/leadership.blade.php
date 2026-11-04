@@ -37,6 +37,9 @@
                         <div class="staff-spotlight-content">
                             <p class="mb-5 text-xs font-black uppercase tracking-[0.15em] text-spu-red">{{ $rector->role }}</p>
                             <h2 class="text-3xl font-black leading-tight text-spu-blue md:text-4xl">{{ $rector->name }}</h2>
+                            @if ($rector->academicRank)
+                                <p class="mt-3 text-sm text-slate-600"><span class="font-bold text-slate-500">{{ $locale === 'ar' ? 'الرتبة الأكاديمية:' : 'Academic rank:' }}</span> <span dir="auto">{{ $rector->academicRank }}</span></p>
+                            @endif
                             <blockquote class="staff-quote mt-8 max-w-xl text-[0.95rem] font-medium leading-[1.8] text-gray-600">
                                  {{ $rector->quote ?: $rectorQuote }}
                             </blockquote>
@@ -58,6 +61,9 @@
                                     <div class="vp-card-body">
                                         <h3 class="card-title card-title-center mb-2 text-lg font-black leading-tight text-spu-blue" dir="auto">{{ $person->name }}</h3>
                                         <p class="text-[0.68rem] font-black uppercase tracking-[0.1em] text-spu-red">{{ $person->role }}</p>
+                                        @if ($person->academicRank)
+                                            <p class="mt-1 text-xs text-slate-600"><span class="font-bold text-slate-500">{{ $locale === 'ar' ? 'الرتبة الأكاديمية:' : 'Academic rank:' }}</span> <span dir="auto">{{ $person->academicRank }}</span></p>
+                                        @endif
                                         @if ($person->bio)
                                             <x-public.rich-text class="mt-6 text-sm leading-7 text-slate-600" :text="$person->bio" />
                                         @endif
@@ -94,6 +100,9 @@
                                     <div class="dean-card-body">
                                         <h3 class="card-title card-title-center mb-2 text-lg font-black leading-tight text-spu-blue" dir="auto">{{ $person->name }}</h3>
                                         <p class="text-[0.68rem] font-black uppercase tracking-[0.1em] text-spu-red">{{ $person->role }}</p>
+                                        @if ($person->academicRank)
+                                            <p class="mt-1 text-xs text-slate-600"><span class="font-bold text-slate-500">{{ $locale === 'ar' ? 'الرتبة الأكاديمية:' : 'Academic rank:' }}</span> <span dir="auto">{{ $person->academicRank }}</span></p>
+                                        @endif
                                     </div>
                                 </a>
                             @endforeach

@@ -18,5 +18,7 @@ final readonly class PersonDTO
         public ?string $image,
         public ?string $email,
         public ?string $profileUrl,
+        /** The academic rank of the leader's faculty profile (أستاذ، أستاذ مساعد، مدرس), shown apart from the role. */
+        public ?string $academicRank = null,
     ) {}
 }
