@@ -9,7 +9,6 @@ use App\DTOs\Staff\StaffIntakeLinkCreatedDTO;
 use App\Filament\Resources\StaffIntakeLinkResource\Pages;
 use App\Filament\Resources\StaffIntakeLinkResource\RelationManagers\AccessLogsRelationManager;
 use App\Models\Staff\StaffIntakeLink;
-use App\Services\Staff\StaffIntakeFields;
 use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Form;
 use Filament\Infolists\Components\TextEntry;
@@ -113,7 +112,7 @@ class StaffIntakeLinkResource extends Resource
             TextEntry::make('creator.name')->label(__('staff_intake.admin.columns.created_by'))->placeholder('—'),
             TextEntry::make('required_fields')
                 ->label(__('staff_intake.admin.form.required_fields'))
-                ->state(fn (StaffIntakeLink $record): array => self::requiredFieldLabels(StaffIntakeFields::required($record->required_fields, $record->isForCenter())))
+                ->state(fn (StaffIntakeLink $record): array => self::requiredFieldLabels(app(StaffIntakeLinkServiceInterface::class)->requiredFields($record->required_fields, $record->isForCenter())))
                 ->badge()
                 ->columnSpanFull(),
         ])->columns(3);
@@ -203,8 +202,8 @@ class StaffIntakeLinkResource extends Resource
         return CheckboxList::make('required_fields')
             ->label(__('staff_intake.admin.form.required_fields'))
             ->helperText(__('staff_intake.admin.form.required_fields_hint'))
-            ->options(self::requiredFieldLabels(StaffIntakeFields::requirable($isCenter)))
-            ->default(StaffIntakeFields::defaultRequired($isCenter))
+            ->options(self::requiredFieldLabels(app(StaffIntakeLinkServiceInterface::class)->requirableFields($isCenter)))
+            ->default(app(StaffIntakeLinkServiceInterface::class)->defaultRequiredFields($isCenter))
             ->columns(2)
             ->bulkToggleable();
     }

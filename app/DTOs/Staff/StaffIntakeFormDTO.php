@@ -30,9 +30,4 @@ final readonly class StaffIntakeFormDTO
         /** @var list<string> Fields the link makes required besides both names. */
         public array $requiredFields = [],
     ) {}
-
-    public function isRequired(string $field): bool
-    {
-        return in_array($field, $this->requiredFields, true);
-    }
 }

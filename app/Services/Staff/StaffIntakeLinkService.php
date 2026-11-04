@@ -218,4 +218,19 @@ final class StaffIntakeLinkService implements StaffIntakeLinkServiceInterface
     {
         return Str::random(40);
     }
+
+    public function requirableFields(bool $isCenter): array
+    {
+        return StaffIntakeFields::requirable($isCenter);
+    }
+
+    public function defaultRequiredFields(bool $isCenter): array
+    {
+        return StaffIntakeFields::defaultRequired($isCenter);
+    }
+
+    public function requiredFields(mixed $stored, bool $isCenter): array
+    {
+        return StaffIntakeFields::required($stored, $isCenter);
+    }
 }

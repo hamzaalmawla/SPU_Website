@@ -576,12 +576,16 @@ trailer << /Root 1 0 R >>
         $this->assertSame(['bio_ar', 'bio_en', 'photo', 'cv'], $default->link->requiredFields);
 
         $this->actingAs($this->facultyEditor, 'web');
+        // The checklist is set whole: callAction() would merge the list into the
+        // ticked defaults index by index.
         Livewire::test(ListStaffIntakeLinks::class)
-            ->callAction('create_link', [
+            ->mountAction('create_link')
+            ->set('mountedActionsData.0.required_fields', ['phone', 'position_ar'])
+            ->setActionData([
                 'faculty_id' => (int) $this->dentistry->getKey(),
                 'label' => 'Phone group',
-                'required_fields' => ['phone', 'position_ar'],
             ])
+            ->callMountedAction()
             ->assertHasNoActionErrors();
         $link = StaffIntakeLink::query()->where('label', 'Phone group')->sole();
         $this->assertSame(['position_ar', 'phone'], $link->required_fields);

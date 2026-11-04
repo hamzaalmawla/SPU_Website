@@ -40,4 +40,25 @@ interface StaffIntakeLinkServiceInterface
 
     /** Whether the actor holds center_staff_intake.<action> (center links and requests). */
     public function canUseCenters(int $actorId, string $action = 'view'): bool;
+
+    /**
+     * The form fields a link of this kind may make required, in form order.
+     *
+     * @return list<string>
+     */
+    public function requirableFields(bool $isCenter): array;
+
+    /**
+     * The fields a new link of this kind requires unless it picks its own.
+     *
+     * @return list<string>
+     */
+    public function defaultRequiredFields(bool $isCenter): array;
+
+    /**
+     * A link's required fields from what it stored (the defaults when it stored none).
+     *
+     * @return list<string>
+     */
+    public function requiredFields(mixed $stored, bool $isCenter): array;
 }
