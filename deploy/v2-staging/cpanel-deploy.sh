@@ -403,9 +403,11 @@ ensure_legacy_mount "${LEGACY_ROOT}/FCKBIH"    "${WEB}/_legacy/FCKBIH"
 ensure_legacy_mount "${LEGACY_ROOT}/downloads" "${WEB}/_legacy/downloads/root"
 
 # ── Live applications kept at their addresses ────────────────────────────────
-# Two separate PHP applications live in the old document root and are in use:
-# /forms (surveys, complaints and their dashboards) and /Medicine (the Faculty
-# of Medicine recruitment portal). Unlike the media above they must execute, so
+# Three separate PHP applications live in the old document root and are in use:
+# /forms (surveys, complaints and their dashboards), /Medicine (the Faculty of
+# Medicine recruitment portal) and /spuh (the University Hospital's job
+# applications, added 21 October and shared on Facebook; about 850 applications
+# by 3 November). Unlike the media above they must execute, so
 # they are mounted at their own paths rather than under _legacy/, where PHP is
 # refused. Once the domain points at this docroot they keep answering exactly
 # where they always did; until then they are also reachable on the v2 host.
@@ -425,6 +427,7 @@ ensure_app_mount() {
 log "Ensuring live application mounts"
 ensure_app_mount "${LEGACY_ROOT}/forms"    "${WEB}/forms"
 ensure_app_mount "${LEGACY_ROOT}/Medicine" "${WEB}/Medicine"
+ensure_app_mount "${LEGACY_ROOT}/spuh"     "${WEB}/spuh"
 
 # nginx strips Accept-Encoding before Apache or PHP ever sees it (measured
 # 2 September; the reasoning is in config/edge.php). That means mod_deflate

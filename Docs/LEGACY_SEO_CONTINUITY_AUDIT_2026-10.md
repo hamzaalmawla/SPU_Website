@@ -158,7 +158,12 @@ guessed redirect would hide the URL from `unresolved_legacy_requests`.
   `DirectoryIndex index.php`; the Laravel docroot's `app.php` would otherwise be
   inherited. The deploy refuses to mount an app without that file.
   `/CMS_SPU_SyrianMonster_17` (the old CMS) is deliberately not mounted, so it
-  retires at cutover.
+  retires at cutover. **Added 2026-11-04:** a third application, **`/spuh`** (the
+  University Hospital's job applications, first requested 21 October and
+  shared on Facebook, ~850 applications by 3 November), is mounted the same
+  way. Its `.htaccess` (written on the server 2026-11-04) also refuses
+  `config.php` and three stale copies. Its CVs in `/spuh/uploads/` are still
+  linked directly from its dashboard, as `/Medicine`'s were before the fix below.
 - **Exposure fixed on the live old site (2026-10-11).** `/Medicine` published every
   applicant's CV with a directory listing, plus its PHP session files, error log
   and schema. Source archives (`/forms_spu.zip`, `/forms-29-8-26.zip`, the old
