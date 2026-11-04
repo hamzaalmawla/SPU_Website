@@ -1112,6 +1112,271 @@
     color: #6f1616;
 }
 
+/* Directorate overview heading, manager card and task groups */
+.dir-overview-head {
+    display: flex;
+    align-items: flex-start;
+    gap: 1.25rem;
+}
+
+.dir-overview-head .dir-section-title {
+    margin-bottom: 1.25rem;
+}
+
+.dir-overview-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 60px;
+    height: 60px;
+    flex-shrink: 0;
+    border: 1px solid rgba(32, 39, 89, 0.1);
+    border-radius: 4px;
+    background: #fff;
+}
+
+.dir-aside {
+    display: grid;
+    align-content: start;
+    gap: 1.5rem;
+}
+
+.dir-manager-card {
+    padding: 2.25rem;
+    border: 1px solid rgba(32, 39, 89, 0.1);
+    border-top: 3px solid #6f1616;
+    background: #fff;
+    box-shadow: 0 18px 40px rgba(32, 39, 89, 0.07);
+}
+
+.dir-manager-role {
+    margin-bottom: 1.25rem;
+    color: #6f1616;
+    font-size: 0.72rem;
+    font-weight: 900;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+}
+
+.dir-manager-head {
+    display: flex;
+    align-items: center;
+    gap: 1.1rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid rgba(32, 39, 89, 0.1);
+}
+
+.dir-manager-photo {
+    width: 84px;
+    height: 84px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    object-fit: cover;
+    object-position: top;
+    border: 3px solid #faf9fb;
+    box-shadow: 0 0 0 1px rgba(32, 39, 89, 0.12);
+}
+
+.dir-manager-initial {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #202759;
+    color: #fff;
+    font-size: 2rem;
+    font-weight: 900;
+}
+
+.dir-manager-name {
+    color: #202759;
+    font-size: 1.2rem;
+    font-weight: 900;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+}
+
+.dir-manager-title {
+    margin-top: 0.2rem;
+    color: #64748b;
+    font-size: 0.9rem;
+    font-weight: 700;
+}
+
+.dir-manager-heading {
+    margin: 1.5rem 0 0.85rem;
+    color: #202759;
+    font-size: 0.95rem;
+    font-weight: 900;
+}
+
+.dir-manager-education {
+    display: grid;
+    gap: 0.85rem;
+}
+
+.dir-manager-education li {
+    padding-inline-start: 0.9rem;
+    border-inline-start: 2px solid rgba(111, 22, 22, 0.35);
+}
+
+.dir-manager-degree {
+    display: block;
+    color: #202759;
+    font-size: 0.92rem;
+    font-weight: 800;
+    line-height: 1.6;
+}
+
+.dir-manager-meta {
+    display: block;
+    margin-top: 0.15rem;
+    color: #64748b;
+    font-size: 0.82rem;
+}
+
+.dir-manager-card .dir-btn-block {
+    margin-top: 1.75rem;
+}
+
+.dir-info-card-compact {
+    position: static;
+    padding: 1.75rem 2.25rem;
+}
+
+.dir-tasks-section {
+    padding: 4.5rem 0;
+    background: #fff;
+}
+
+.dir-tasks-dark {
+    background: #202759;
+}
+
+.dir-tasks-head {
+    max-width: 46rem;
+    margin-bottom: 2.5rem;
+}
+
+.dir-tasks-summary {
+    margin-top: -0.5rem;
+    color: #475569;
+    font-size: 1rem;
+    line-height: 1.9;
+}
+
+.dir-tasks-dark .dir-eyebrow {
+    color: #f3b4b4;
+}
+
+.dir-tasks-dark .dir-section-title {
+    color: #fff;
+}
+
+.dir-tasks-dark .dir-tasks-summary {
+    color: rgba(255, 255, 255, 0.78);
+}
+
+.dir-task-grid {
+    display: grid;
+    gap: 1.25rem;
+}
+
+.dir-task-card {
+    position: relative;
+    padding: 1.75rem;
+    border: 1px solid rgba(32, 39, 89, 0.1);
+    border-inline-start: 3px solid #202759;
+    background: #faf9fb;
+    transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+}
+
+.dir-task-card:hover {
+    border-inline-start-color: #6f1616;
+    transform: translateY(-4px);
+    box-shadow: 0 18px 40px rgba(32, 39, 89, 0.09);
+}
+
+.dir-tasks-dark .dir-task-card {
+    border-color: rgba(255, 255, 255, 0.14);
+    border-inline-start-color: #f3b4b4;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.dir-tasks-dark .dir-task-card:hover {
+    background: rgba(255, 255, 255, 0.09);
+    box-shadow: none;
+}
+
+.dir-task-number {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: rgba(111, 22, 22, 0.08);
+    color: #6f1616;
+    font-size: 0.85rem;
+    font-weight: 900;
+}
+
+.dir-tasks-dark .dir-task-number {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+}
+
+.dir-task-title {
+    margin-top: 1.1rem;
+    color: #202759;
+    font-size: 1.05rem;
+    font-weight: 900;
+    line-height: 1.6;
+}
+
+.dir-tasks-dark .dir-task-title {
+    color: #fff;
+}
+
+.dir-task-body {
+    margin-top: 0.6rem;
+    color: #475569;
+    font-size: 0.92rem;
+    line-height: 1.85;
+}
+
+.dir-tasks-dark .dir-task-body {
+    color: rgba(255, 255, 255, 0.75);
+}
+
+.dir-closing-section {
+    padding: 3.5rem 0 4.5rem;
+    background: #faf9fb;
+}
+
+.dir-closing-section .dir-actions {
+    margin-top: 2rem;
+}
+
+@media (min-width: 768px) {
+    .dir-task-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (min-width: 1100px) {
+    .dir-task-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .dir-task-card,
+    .dir-task-card:hover {
+        transition: none;
+        transform: none;
+    }
+}
+
 @media (min-width: 640px) {
     .dir-link-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));

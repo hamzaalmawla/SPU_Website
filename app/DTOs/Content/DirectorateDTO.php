@@ -7,6 +7,7 @@ namespace App\DTOs\Content;
 /**
  * @param  array<int, string>  $services
  * @param  array<int, array{title: string, url: string}>  $links
+ * @param  array<int, array{title: string, summary: string, items: array<int, array{title: string, body: string}>}>  $taskGroups
  */
 final readonly class DirectorateDTO
 {
@@ -21,5 +22,8 @@ final readonly class DirectorateDTO
         public ?string $icon,
         public ?string $email,
         public ?string $location,
+        public array $taskGroups = [],
+        public ?int $managerMemberId = null,
+        public ?DirectorateManagerDTO $manager = null,
     ) {}
 }

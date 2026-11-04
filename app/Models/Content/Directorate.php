@@ -7,7 +7,9 @@ namespace App\Models\Content;
 use App\Enums\PublicationStatus;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use App\Models\Person\FacultyMember;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -15,11 +17,12 @@ class Directorate extends Model
 {
     use HasFactory, SoftDeletes;
 
-    protected $fillable = ['slug', 'icon', 'email', 'location', 'sort_order', 'is_enabled', 'publication_status', 'published_at'];
+    protected $fillable = ['slug', 'icon', 'email', 'location', 'manager_member_id', 'sort_order', 'is_enabled', 'publication_status', 'published_at'];
 
     protected function casts(): array
     {
         return [
+            'manager_member_id' => 'integer',
             'sort_order' => 'integer',
             'is_enabled' => 'boolean',
             'published_at' => 'datetime',
@@ -30,6 +33,12 @@ class Directorate extends Model
     public function translations(): HasMany
     {
         return $this->hasMany(DirectorateTranslation::class)->orderBy('locale');
+    }
+
+    /** The faculty profile of the directorate's manager. */
+    public function manager(): BelongsTo
+    {
+        return $this->belongsTo(FacultyMember::class, 'manager_member_id');
     }
 
     public function scopeEnabled(Builder $query): Builder

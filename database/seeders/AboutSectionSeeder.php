@@ -232,6 +232,31 @@ class AboutSectionSeeder extends Seeder
             $directorate->translations()->updateOrCreate(['locale' => 'ar'], ['title' => $row[2], 'summary' => $row[4], 'description' => $row[4], 'services_json' => $row[6]]);
             $directorate->translations()->updateOrCreate(['locale' => 'en'], ['title' => $row[3], 'summary' => $row[5], 'description' => $row[5], 'services_json' => $row[7]]);
         }
+
+        $this->seedDirectorateContent('it-services');
+    }
+
+    /** Approved full content for a directorate, from Data/directorates/<slug>.json. */
+    private function seedDirectorateContent(string $slug): void
+    {
+        $directorate = Directorate::query()->where('slug', $slug)->first();
+        $path = database_path('seeders/Data/directorates/'.$slug.'.json');
+        if (! $directorate instanceof Directorate || ! is_file($path)) {
+            return;
+        }
+
+        $content = json_decode((string) file_get_contents($path), true, 512, JSON_THROW_ON_ERROR);
+        foreach (['ar', 'en'] as $locale) {
+            $translation = $content['translations'][$locale];
+            $directorate->translations()->updateOrCreate(['locale' => $locale], [
+                'title' => $translation['title'],
+                'summary' => $translation['summary'],
+                'description' => $translation['description'],
+                'services_json' => $translation['services_json'],
+                'links_json' => $translation['links_json'],
+                'task_groups_json' => $translation['task_groups_json'],
+            ]);
+        }
     }
 
     private function seedPartnerships(): void

@@ -376,8 +376,19 @@ final class AboutWorkflowTest extends TestCase
             $this->assertStringNotContainsString('Main Building', (string) $response->getContent());
         }
 
+        // The IT directorate has its own page now: task groups take the
+        // place of the short services list.
         $this->get('/en/about/directorates/it-services')
-            ->assertRedirect('/en/e-services/it-support');
+            ->assertOk()
+            ->assertSee('Information Systems Development Directorate')
+            ->assertSee('Main tasks of the Information Systems Development Directorate')
+            ->assertSee('Decision support for the university presidency')
+            ->assertDontSee('Key Services');
+        $this->get('/ar/about/directorates/it-services')
+            ->assertOk()
+            ->assertSee('مديرية تطوير نظم المعلومات')
+            ->assertSee('المهام الأساسية للمديرية في الجامعة')
+            ->assertSee('قيادة التحول الذكي وإدراج الذكاء الاصطناعي (AI)');
 
         $this->get('/ar/about/directorates/scientific-research')
             ->assertOk()
@@ -390,6 +401,7 @@ final class AboutWorkflowTest extends TestCase
         $sitemap = (string) $this->get('/sitemaps/sitemap-static.xml')->assertOk()->getContent()
             .(string) $this->get('/sitemaps/sitemap-people.xml')->assertOk()->getContent();
         $this->assertStringContainsString('/en/about/directorates/scientific-research', (string) $sitemap);
+        $this->assertStringContainsString('/en/about/directorates/it-services', (string) $sitemap);
         $this->assertStringContainsString('/ar/about/accreditation', (string) $sitemap);
         $this->assertStringContainsString('/en/about/profile/rector', (string) $sitemap);
     }

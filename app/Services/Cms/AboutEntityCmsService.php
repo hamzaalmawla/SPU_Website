@@ -34,6 +34,7 @@ use App\Models\Person\PersonEducation;
 use App\Models\Person\PersonTranslation;
 use App\Models\User\User;
 use App\Support\AcademicRank;
+use App\Support\DirectorateTaskGroups;
 use App\Support\MediaUrlResolver;
 use DateTimeInterface;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -452,6 +453,8 @@ final class AboutEntityCmsService implements AboutEntityCmsServiceInterface
             icon: $this->nullableString($payload['icon'] ?? null),
             email: $this->nullableString($payload['email'] ?? null),
             location: $this->nullableString($payload['location'] ?? null),
+            taskGroups: DirectorateTaskGroups::normalize($translation['task_groups_json'] ?? null),
+            managerMemberId: $this->nullableInt($payload['manager_member_id'] ?? null),
         );
     }
 
@@ -726,6 +729,7 @@ final class AboutEntityCmsService implements AboutEntityCmsServiceInterface
             'icon' => $this->nullableString($payload['icon'] ?? null),
             'email' => $this->nullableString($payload['email'] ?? null),
             'location' => $this->nullableString($payload['location'] ?? null),
+            'manager_member_id' => $this->nullableInt($payload['manager_member_id'] ?? null),
             'sort_order' => (int) ($payload['sort_order'] ?? 0),
             'is_enabled' => (bool) ($payload['is_enabled'] ?? false),
             'publication_status' => PublicationStatus::Published->value,
@@ -738,6 +742,7 @@ final class AboutEntityCmsService implements AboutEntityCmsServiceInterface
                 'summary' => $this->nullableString($translation['summary'] ?? null),
                 'description' => $this->nullableString($translation['description'] ?? null),
                 'services_json' => $this->listValue($translation['services_json'] ?? null),
+                'task_groups_json' => DirectorateTaskGroups::normalize($translation['task_groups_json'] ?? null),
             ]);
         }
     }
@@ -912,6 +917,7 @@ final class AboutEntityCmsService implements AboutEntityCmsServiceInterface
             'icon' => $directorate->icon,
             'email' => $directorate->email,
             'location' => $directorate->location,
+            'manager_member_id' => $directorate->manager_member_id,
             'sort_order' => (int) $directorate->sort_order,
             'is_enabled' => (bool) $directorate->is_enabled,
             'translations' => $directorate->translations->mapWithKeys(fn (DirectorateTranslation $translation): array => [(string) $translation->locale => [
@@ -920,6 +926,7 @@ final class AboutEntityCmsService implements AboutEntityCmsServiceInterface
                 'summary' => $translation->summary,
                 'description' => $translation->description,
                 'services_json' => $translation->services_json,
+                'task_groups_json' => DirectorateTaskGroups::normalize($translation->task_groups_json),
             ]])->all(),
         ];
     }
@@ -973,6 +980,15 @@ final class AboutEntityCmsService implements AboutEntityCmsServiceInterface
                 foreach (['ar', 'en'] as $locale) {
                     $name = (string) ($names[$locale] ?? $names['ar'] ?? $names['en'] ?? '');
                     $payload['translations'][$locale] = [...($payload['translations'][$locale] ?? ['locale' => $locale]), 'name' => $name];
+                }
+            }
+        }
+
+        if ($type === 'directorate') {
+            $payload['manager_member_id'] = $this->nullableInt($payload['manager_member_id'] ?? null);
+            foreach ($payload['translations'] as $locale => $translation) {
+                if (is_array($translation)) {
+                    $payload['translations'][$locale]['task_groups_json'] = DirectorateTaskGroups::normalize($translation['task_groups_json'] ?? null);
                 }
             }
         }
@@ -1051,6 +1067,12 @@ final class AboutEntityCmsService implements AboutEntityCmsServiceInterface
             $this->validatePersonAppointments($errors, $payload);
             $this->appendMediaErrors($errors, 'photo_media_id', $payload['photo_media_id'] ?? null, 'image/');
             $this->appendMediaErrors($errors, 'cv_media_id', $payload['cv_media_id'] ?? null, 'application/');
+        }
+        if ($type === 'directorate') {
+            $managerId = $this->nullableInt($payload['manager_member_id'] ?? null);
+            if ($managerId !== null && ! FacultyMember::query()->whereKey($managerId)->exists()) {
+                $errors['manager_member_id'][] = 'The selected profile does not exist.';
+            }
         }
         if ($type === 'partnership') {
             if (! in_array($payload['category_key'] ?? null, ['academic', 'research', 'clinical'], true)) {

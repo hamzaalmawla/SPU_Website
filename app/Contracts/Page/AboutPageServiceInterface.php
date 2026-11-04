@@ -50,7 +50,14 @@ interface AboutPageServiceInterface
     /** @return Collection<int, DirectorateDTO> */
     public function getDirectorates(string $locale): Collection;
 
+    /** The public directorate, with its manager read from their public profile. */
     public function getDirectorate(string $slug, string $locale): ?DirectorateDTO;
+
+    /**
+     * The directorate with its manager filled in from the manager's public
+     * faculty profile (none when the profile is missing or not public).
+     */
+    public function withDirectorateManager(DirectorateDTO $directorate, string $locale): DirectorateDTO;
 
     public function getPartnerships(
         string $locale,
