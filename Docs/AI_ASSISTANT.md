@@ -30,12 +30,12 @@ browser ── POST /{locale}/assistant/messages ──▶ ChatbotController (th
 10. retrieval: question and rewrite embedded (text-embedding-3-small, 512
      dims); each passage keeps its better cosine and keyword score; top 6
      above the threshold
- 11. model call (Responses API, store:false, structured output
+11. model call (Responses API, store:false, structured output
      {category, answer}); main model, then the fallback model on failure
- 12. category not university/greeting   ── refuse (site's own message)
- 13. output guard: code, leaked instructions ── refuse; links only to
+12. category not university/greeting   ── refuse (site's own message)
+13. output guard: code, leaked instructions ── refuse; links only to
      university hosts
- 14. answer + source titles + signature of the question/answer pair
+14. answer + source titles + signature of the question/answer pair
 ```
 
 Every refusal shows the same polite message, so probing does not reveal which
