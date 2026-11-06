@@ -21,15 +21,17 @@ final class HomepageInlineStylesheetTest extends TestCase
         Cache::flush();
     }
 
-    public function test_the_homepage_inlines_the_stylesheet_and_prefetches_it_for_the_next_page(): void
+    public function test_the_homepage_inlines_the_stylesheet_and_leaves_its_prefetch_until_after_load(): void
     {
         $file = $this->stylesheetFile();
 
         foreach (['ar', 'en'] as $locale) {
             $html = (string) $this->get('/'.$locale)->assertOk()->getContent();
 
-            $this->assertStringContainsString('<style id="public-stylesheet">', $html);
-            $this->assertStringContainsString('<link rel="prefetch" href="'.asset('build/'.$file).'">', $html);
+            // The file is prefetched by script after the page has loaded
+            // (nextPageStylesheet.js), so <head> carries only its address.
+            $this->assertStringContainsString('<style id="public-stylesheet" data-stylesheet-href="'.asset('build/'.$file).'">', $html);
+            $this->assertStringNotContainsString('<link rel="prefetch" href="'.asset('build/'.$file).'">', $html);
             $this->assertStringNotContainsString('<link rel="stylesheet" href="'.asset('build/'.$file).'">', $html);
         }
     }
