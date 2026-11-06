@@ -43,43 +43,47 @@
         </div>
     </section>
 
-    @php($featured = $data['featuredPublication'] ?? [])
-    <section id="publications" class="bg-white pb-[56px] pt-[65px] font-hacen" dir="{{ $direction }}">
+    @php($latest = $data['latestResearch'] ?? null)
+    @if (is_array($latest))
+    <section id="latest-research" class="bg-white pb-[56px] pt-[65px] font-hacen" dir="{{ $direction }}">
         <div class="container">
-            <h2 class="mb-[38px] text-center text-[32px] font-bold uppercase leading-none tracking-[0.02em] text-spu-blue md:text-[37px]">{{ $featured['sectionTitle'] ?? '' }}</h2>
+            <h2 class="mb-[38px] text-center text-[32px] font-bold uppercase leading-none tracking-[0.02em] text-spu-blue md:text-[37px]">{{ $latest['sectionTitle'] }}</h2>
             <div class="mx-auto flex max-w-[1120px] flex-col overflow-hidden rounded-[5px] border border-[#d9dce7] bg-white shadow-[0_2px_4px_rgba(0,0,0,0.2)] lg:min-h-[400px] lg:flex-row">
                 <div class="flex-1 px-7 py-9 md:px-[54px] md:py-[68px]">
-                    <p class="text-[12px] font-bold uppercase tracking-[0.12em] text-spu-red">{{ $featured['eyebrow'] ?? '' }}</p>
-                    <h3 class="card-title mt-5 text-[20px] font-bold leading-snug text-spu-blue md:text-[22px]" dir="auto">{{ $featured['title'] ?? '' }}</h3>
-                    <x-public.rich-text class="mt-4 max-w-[625px] text-[14px] leading-[1.55] text-[#333742]" :text="$featured['summary'] ?? ''" />
-                    <div class="mt-9 flex flex-wrap items-center gap-8 border-s-2 border-[#c8ccd9] ps-8">
-                        <div class="min-w-[105px]"><p class="text-[9px] font-medium uppercase tracking-[0.12em] text-[#6f7280]">{{ $featured['authorLabel'] ?? '' }}</p><p class="mt-1 text-[11px] font-bold text-spu-blue">{{ $featured['authorName'] ?? '' }}</p></div>
-                        <div class="min-w-[120px]"><p class="text-[9px] font-medium uppercase tracking-[0.12em] text-[#6f7280]">{{ $featured['affiliationLabel'] ?? '' }}</p><p class="mt-1 text-[11px] font-bold text-spu-blue">{{ $featured['affiliation'] ?? '' }}</p></div>
-                        <div class="min-w-[100px]"><p class="text-[9px] font-medium uppercase tracking-[0.12em] text-[#6f7280]">{{ $featured['publishedLabel'] ?? '' }}</p><p class="mt-1 text-[11px] font-bold text-spu-blue">{{ $featured['date'] ?? '' }}</p></div>
-                    </div>
+                    <p class="text-[12px] font-bold uppercase tracking-[0.12em] text-spu-red" dir="auto">{{ $latest['eyebrow'] }}</p>
+                    <h3 class="card-title mt-5 text-[20px] font-bold leading-snug text-spu-blue md:text-[22px]" dir="auto">{{ $latest['title'] }}</h3>
+                    <x-public.rich-text class="mt-4 max-w-[625px] text-[14px] leading-[1.55] text-[#333742]" :text="$latest['summary']" />
+                    @if ($latest['meta'] !== [])
+                        <dl class="mt-9 flex flex-wrap items-start gap-8 border-s-2 border-[#c8ccd9] ps-8">
+                            @foreach ($latest['meta'] as $meta)
+                                <div class="min-w-[100px]"><dt class="text-[9px] font-medium uppercase tracking-[0.12em] text-[#6f7280]">{{ $meta['label'] }}</dt><dd class="mt-1 text-[11px] font-bold text-spu-blue" dir="auto">{{ $meta['value'] }}</dd></div>
+                            @endforeach
+                        </dl>
+                    @endif
                     <div class="mt-6 flex flex-wrap items-center gap-[52px]">
-                        <a href="/{{ $locale }}/research/publications/{{ $featured['slug'] ?? '' }}" class="group inline-flex h-[37px] min-w-[150px] items-center justify-center gap-2 rounded-[6px] bg-spu-blue px-5 text-[11px] font-bold text-white transition hover:bg-[#171d47]">
-                            <span>{{ $featured['viewCta'] ?? '' }}</span>
+                        <a href="{{ $latest['url'] }}" class="group inline-flex h-[37px] min-w-[150px] items-center justify-center gap-2 rounded-[6px] bg-spu-blue px-5 text-[11px] font-bold text-white transition hover:bg-[#171d47]">
+                            <span>{{ $latest['viewCta'] }}</span>
                             <img src="/images/icon-arrow-right-outline.svg" alt="" class="h-3 w-3 transition-transform duration-300 group-hover:translate-x-1 rtl:rotate-180 group-hover:rtl:-translate-x-1" aria-hidden="true">
                         </a>
-                        @if (! empty($featured['doi']))
-                            <a href="https://doi.org/{{ $featured['doi'] }}" target="_blank" rel="noopener" class="inline-flex h-[37px] min-w-[142px] items-center justify-center rounded-[6px] border border-[#202759] px-5 text-[11px] font-bold text-spu-blue transition hover:bg-spu-blue/5">{{ $featured['downloadCta'] ?? '' }}</a>
+                        @if (is_array($latest['secondary']))
+                            <a href="{{ $latest['secondary']['url'] }}" @if ($latest['secondary']['external']) target="_blank" rel="noopener" @endif class="inline-flex h-[37px] min-w-[142px] items-center justify-center rounded-[6px] border border-[#202759] px-5 text-[11px] font-bold text-spu-blue transition hover:bg-spu-blue/5">{{ $latest['secondary']['label'] }}</a>
                         @endif
                     </div>
                 </div>
                 <div class="relative min-h-[355px] w-full shrink-0 border-t-[5px] border-spu-red bg-[#7e86aa] lg:min-h-0 lg:w-[370px]">
-                    <img src="{{ $featured['image'] ?? '/images/uni-main-place.JPG' }}" alt="{{ $featured['title'] ?? '' }}" class="h-[305px] w-full object-cover">
+                    <img src="{{ $latest['image'] }}" alt="" class="h-[305px] w-full object-cover" loading="lazy">
                     <div class="absolute bottom-0 left-0 right-0 h-[76px] bg-[#858caf]"></div>
-                    @if (! empty($featured['doi']))
+                    @if (! empty($latest['doi']))
                         <div class="absolute bottom-0 left-[86px] right-0 rounded-t-[3px] bg-white px-4 py-3 shadow-sm rtl:left-0 rtl:right-[86px]">
-                            <p class="text-[8px] font-medium uppercase tracking-[0.14em] text-[#8a8a9a]">{{ $featured['doiLabel'] ?? '' }}</p>
-                            <p class="mt-1 text-[11px] font-bold text-spu-blue">{{ $featured['doi'] }}</p>
+                            <p class="text-[8px] font-medium uppercase tracking-[0.14em] text-[#8a8a9a]">{{ $latest['doiLabel'] }}</p>
+                            <p class="mt-1 break-all text-[11px] font-bold text-spu-blue" dir="ltr">{{ $latest['doi'] }}</p>
                         </div>
                     @endif
                 </div>
             </div>
         </div>
     </section>
+    @endif
 
     <section id="centers" class="bg-white pb-[106px] pt-[8px] font-hacen" dir="{{ $direction }}">
         <div class="container">

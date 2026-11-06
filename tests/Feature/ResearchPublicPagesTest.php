@@ -39,9 +39,10 @@ final class ResearchPublicPagesTest extends TestCase
             ->assertSee('Research at SPU')
             ->assertSee('Expert Finder')
             ->assertDontSee('Conferences &amp; Seminars', false)
-            ->assertSee('FEATURED PUBLICATION')
+            ->assertDontSee('FEATURED PUBLICATION')
+            ->assertSee('Latest research')
             ->assertSee('Research Gateway')
-            ->assertSee('/en/research/publications/ai-dental-diagnostics', false);
+            ->assertSee('/en/research/publications/renewable-energy-integration-syrian-grid', false);
     }
 
     public function test_publications_and_projects_are_sorted_newest_first_before_pagination(): void
@@ -115,7 +116,8 @@ final class ResearchPublicPagesTest extends TestCase
             ->assertOk()
             ->assertSee('البحث في الجامعة السورية الخاصة')
             ->assertSee('بوابة البحث')
-            ->assertSee('منشور مميز');
+            ->assertDontSee('منشور مميز')
+            ->assertSee('أحدث الأبحاث');
     }
 
     public function test_discovered_research_listing_routes_return_ok(): void
@@ -764,8 +766,10 @@ final class ResearchPublicPagesTest extends TestCase
             ->assertOk()
             ->assertSee('CMS Research Landing')
             ->assertSee('CMS Research Gateway')
-            ->assertSee('CMS FEATURED PUBLICATION')
+            // The stored featured publication is no longer shown: the newest one is.
+            ->assertDontSee('CMS Landing Featured Research')
             ->assertDontSee('10.1234/cms.research.1')
+            ->assertSee('Latest research')
             ->assertDontSee('Research at SPU');
     }
 

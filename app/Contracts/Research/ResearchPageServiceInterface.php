@@ -24,6 +24,9 @@ interface ResearchPageServiceInterface
     /** Number of publications listed on the public publications page. */
     public function publicationCount(string $locale): int;
 
+    /** Number of projects listed on the public research projects page. */
+    public function projectCount(string $locale): int;
+
     public function facultyPublications(string $facultySlug, string $locale): ResearchPageDTO;
 
     /**

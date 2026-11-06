@@ -23,28 +23,15 @@
         {
           "value": "1996–2019",
           "label": "سنوات النشر"
+        },
+        {
+          "counter": "projects",
+          "value": "",
+          "label": "مشاريع البحث"
         }
       ],
-      "featuredPublication": {
-        "sectionTitle": "منشور مختار",
-        "eyebrow": "مجلة Injury · إلزيفير · 2017",
-        "title": "Penetrating abdominal injuries during the Syrian war: Patterns and factors affecting mortality rates",
-        "summary": "دراسة استعادية شملت 324 مريضاً وصلوا إلى مشفى دمشق بإصابات بطنية نافذة، تبحث في اختلاف أنماط الإصابة والعوامل المؤثرة في معدل الوفيات، وفي ما يتطلبه التشخيص واتخاذ القرار في ظروف الأزمات.",
-        "image": "/images/uni-main-place.JPG",
-        "authorLabel": "الباحثون",
-        "authorName": "Shawqi Arafat, Mhd Belal Alsabek, Mousa Ahmad, Iman Hamo, Eskander Munder",
-        "affiliationLabel": "الكلية",
-        "affiliation": "كلية الطب البشري، الجامعة السورية الخاصة",
-        "publishedLabel": "تاريخ النشر",
-        "date": "1 أيار 2017",
-        "viewCta": "اقرأ المنشور",
-        "downloadCta": "تحميل الملف",
-        "slug": "penetrating-abdominal-injuries-during-the-syrian-war-patterns-and-factors-affecting-mortality-rates-256",
-        "doiLabel": "المعرّف الرقمي DOI",
-        "doi": "10.1016/j.injury.2017.02.005",
-        "links": {
-          "local": "/research/publications/penetrating-abdominal-injuries-during-the-syrian-war-patterns-and-factors-affecting-mortality-rates-256/"
-        }
+      "latestResearch": {
+        "sectionTitle": "أحدث الأبحاث"
       },
       "gateway": {
         "sectionTitle": "من أين تبدأ",
@@ -58,17 +45,38 @@
           },
           {
             "number": "02",
-            "title": "الباحثون",
-            "summary": "جميع الباحثين في الجامعة، مع إمكانية البحث بالاسم.",
-            "cta": "تعرّف على الباحثين",
-            "url": "/ar/research/researchers"
+            "title": "مراكز البحث",
+            "summary": "مراكز البحث والمخابر المتخصصة في كليات الجامعة، مع مشاريعها وباحثيها.",
+            "cta": "تعرّف على المراكز",
+            "url": "/ar/research/centers"
           },
           {
             "number": "03",
+            "title": "المؤتمرات والندوات",
+            "summary": "الفعاليات العلمية القادمة والتسجيل فيها، ووقائع المؤتمرات السابقة.",
+            "cta": "اطّلع على المؤتمرات",
+            "url": "/ar/research/conferences"
+          },
+          {
+            "number": "04",
+            "title": "مكتب البحث",
+            "summary": "دعم المنح والمراجعة الأخلاقية والنشر، والتدريب على منهجيات البحث.",
+            "cta": "تعرّف على المكتب",
+            "url": "/ar/research/office"
+          },
+          {
+            "number": "05",
             "title": "الباحث عن الخبراء",
             "summary": "اعثر على المختص المناسب حسب مجال الخبرة.",
             "cta": "ابحث عن خبير",
             "url": "/ar/research/expert-finder"
+          },
+          {
+            "number": "06",
+            "title": "مكتبة البحث",
+            "summary": "قواعد البيانات الأكاديمية والموارد الإلكترونية، وقواعد الاستعارة.",
+            "cta": "تصفح المكتبة",
+            "url": "/ar/research/library"
           }
         ]
       }
@@ -96,28 +104,15 @@
         {
           "value": "1996–2019",
           "label": "Years covered"
+        },
+        {
+          "counter": "projects",
+          "value": "",
+          "label": "Research projects"
         }
       ],
-      "featuredPublication": {
-        "sectionTitle": "Featured publication",
-        "eyebrow": "Injury · Elsevier · 2017",
-        "title": "Penetrating abdominal injuries during the Syrian war: Patterns and factors affecting mortality rates",
-        "summary": "A retrospective study of 324 patients admitted to Damascus Hospital with penetrating abdominal trauma, examining how injury patterns differ, which factors affect mortality, and what diagnosis and decision-making demand in crisis conditions.",
-        "image": "/images/uni-main-place.JPG",
-        "authorLabel": "Authors",
-        "authorName": "Shawqi Arafat, Mhd Belal Alsabek, Mousa Ahmad, Iman Hamo, Eskander Munder",
-        "affiliationLabel": "Faculty",
-        "affiliation": "Faculty of Medicine, Syrian Private University",
-        "publishedLabel": "Published",
-        "date": "1 May 2017",
-        "viewCta": "Read the publication",
-        "downloadCta": "Download PDF",
-        "slug": "penetrating-abdominal-injuries-during-the-syrian-war-patterns-and-factors-affecting-mortality-rates-256",
-        "doiLabel": "DOI",
-        "doi": "10.1016/j.injury.2017.02.005",
-        "links": {
-          "local": "/research/publications/penetrating-abdominal-injuries-during-the-syrian-war-patterns-and-factors-affecting-mortality-rates-256/"
-        }
+      "latestResearch": {
+        "sectionTitle": "Latest research"
       },
       "gateway": {
         "sectionTitle": "Where to start",
@@ -131,17 +126,38 @@
           },
           {
             "number": "02",
-            "title": "Researchers",
-            "summary": "Every researcher at the university, searchable by name.",
-            "cta": "Meet the researchers",
-            "url": "/en/research/researchers"
+            "title": "Research centers",
+            "summary": "Specialized research centers and laboratories across the faculties, with their projects and researchers.",
+            "cta": "Explore the centers",
+            "url": "/en/research/centers"
           },
           {
             "number": "03",
+            "title": "Conferences and seminars",
+            "summary": "Upcoming scientific events and how to register, and the proceedings of past conferences.",
+            "cta": "See the conferences",
+            "url": "/en/research/conferences"
+          },
+          {
+            "number": "04",
+            "title": "Research office",
+            "summary": "Grant support, ethical review, publishing guidance and training in research methods.",
+            "cta": "Visit the office",
+            "url": "/en/research/office"
+          },
+          {
+            "number": "05",
             "title": "Expert Finder",
             "summary": "Find the right specialist by field of expertise.",
             "cta": "Find an expert",
             "url": "/en/research/expert-finder"
+          },
+          {
+            "number": "06",
+            "title": "Research library",
+            "summary": "Academic databases, electronic resources and borrowing rules.",
+            "cta": "Browse the library",
+            "url": "/en/research/library"
           }
         ]
       }

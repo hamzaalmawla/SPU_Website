@@ -86,6 +86,11 @@ final class ResearchPageService implements ResearchPageServiceInterface
         return count($this->publicPublicationItems($locale));
     }
 
+    public function projectCount(string $locale): int
+    {
+        return count($this->publicProjectItems($locale));
+    }
+
     public function repository(string $locale, array $filters = []): ResearchPageDTO
     {
         $publications = $this->publications($locale, $filters);
@@ -2230,26 +2235,150 @@ final class ResearchPageService implements ResearchPageServiceInterface
     /** @param array<string, mixed> $content @return array<string, mixed> */
     private function sanitizeLandingContent(array $content, string $locale): array
     {
-        // A stat flagged as the publications counter is never stored: it always
-        // shows how many publications the publications page lists right now.
+        $publications = $this->publicPublicationItems($locale);
+        $projects = $this->newestProjectItems($this->publicProjectItems($locale));
+
+        // A stat with a counter is never stored: it always shows how many items
+        // the publications or projects page lists right now.
         $stats = $this->arrayList($content['stats'] ?? []);
         foreach ($stats as $index => $stat) {
-            if (($stat['counter'] ?? null) === 'publications') {
-                $stats[$index]['value'] = (string) $this->publicationCount($locale);
+            $count = match ($stat['counter'] ?? null) {
+                'publications' => count($publications),
+                'projects' => count($projects),
+                default => null,
+            };
+            if ($count !== null) {
+                $stats[$index]['value'] = (string) $count;
             }
         }
         $content['stats'] = $stats;
 
-        $featured = is_array($content['featuredPublication'] ?? null) ? $content['featuredPublication'] : [];
-        $doi = trim((string) ($featured['doi'] ?? ''));
-
-        if (! $this->isPublishableDoi($doi)) {
-            $featured['doi'] = null;
-        }
-
-        $content['featuredPublication'] = $featured;
+        $latest = is_array($content['latestResearch'] ?? null) ? $content['latestResearch'] : [];
+        $content['latestResearch'] = $this->latestResearch(
+            $publications[0] ?? null,
+            $projects[0] ?? null,
+            trim((string) ($latest['sectionTitle'] ?? '')),
+            $locale,
+        );
+        // The hand-picked publication the landing used to carry is no longer shown.
+        unset($content['featuredPublication']);
 
         return $content;
+    }
+
+    /**
+     * The newest publication or research project, whichever is more recent
+     * (a project dates from its start year; a tie goes to the publication).
+     *
+     * @param  array<string, mixed>|null  $publication
+     * @param  array<string, mixed>|null  $project
+     * @return array<string, mixed>|null
+     */
+    private function latestResearch(?array $publication, ?array $project, string $sectionTitle, string $locale): ?array
+    {
+        $projectYear = (int) ($project['startYear'] ?? 0);
+        $useProject = $project !== null && trim((string) ($project['slug'] ?? '')) !== ''
+            && ($publication === null || ($projectYear * 10000) + 1231 > $this->publicationSortValue($publication));
+        $label = static fn (string $key, array $replace = []): string => (string) trans('research.latest.'.$key, $replace, $locale);
+        $title = $sectionTitle !== '' ? $sectionTitle : $label('title');
+
+        if ($useProject) {
+            $start = trim((string) ($project['startYear'] ?? ''));
+            $end = trim((string) ($project['endYear'] ?? ''));
+            $status = (string) ($project['status'] ?? '');
+            $statusLabel = in_array($status, ['ongoing', 'completed', 'paused'], true) ? $label('statuses.'.$status) : '';
+
+            return [
+                'sectionTitle' => $title,
+                'kind' => 'project',
+                'eyebrow' => implode(' · ', array_filter([$label('project'), $statusLabel])),
+                'title' => (string) ($project['title'] ?? ''),
+                'summary' => (string) ($project['summary'] ?? ''),
+                'image' => (string) ($project['image'] ?? '') ?: '/images/uni-main-place.JPG',
+                'url' => '/'.$locale.'/research/projects/'.rawurlencode((string) $project['slug']),
+                'viewCta' => $label('view_project'),
+                'meta' => $this->filledMeta([
+                    $label('faculty') => (string) ($project['faculty'] ?? ''),
+                    $label('period') => $end !== '' && $end !== $start ? $start.' – '.$end : ($start !== '' ? $label('since', ['year' => $start]) : ''),
+                ]),
+                'secondary' => null,
+                'doi' => null,
+                'doiLabel' => $label('doi'),
+            ];
+        }
+
+        if ($publication === null || trim((string) ($publication['slug'] ?? '')) === '') {
+            return null;
+        }
+
+        $doi = trim((string) ($publication['doi'] ?? ''));
+        $doi = $this->isPublishableDoi($doi) ? $doi : null;
+        $download = collect($this->arrayList($publication['downloads'] ?? []))
+            ->first(fn (array $file): bool => is_string($file['url'] ?? null) && $file['url'] !== '');
+        $secondary = match (true) {
+            $download !== null => ['label' => $label('download'), 'url' => (string) $download['url'], 'external' => false],
+            $doi !== null => ['label' => $label('view_doi'), 'url' => 'https://doi.org/'.$doi, 'external' => true],
+            default => null,
+        };
+        $year = trim((string) ($publication['year'] ?? ''));
+        $publisher = trim((string) ($publication['publisher'] ?? ''));
+
+        return [
+            'sectionTitle' => $title,
+            'kind' => 'publication',
+            'eyebrow' => implode(' · ', array_filter([
+                $publisher !== '' ? Str::limit($publisher, 70) : $label('publication'),
+                $year,
+            ])),
+            'title' => (string) ($publication['title'] ?? ''),
+            'summary' => Str::limit((string) ($publication['summary'] ?? ''), 420),
+            'image' => (string) ($publication['image'] ?? '') ?: '/images/uni-main-place.JPG',
+            'url' => '/'.$locale.'/research/publications/'.rawurlencode((string) $publication['slug']),
+            'viewCta' => $label('read_publication'),
+            'meta' => $this->filledMeta([
+                $label('authors') => Str::limit((string) ($publication['author'] ?? ''), 160),
+                $label('faculty') => (string) ($publication['faculty'] ?? ''),
+                $label('published') => $this->publicationDateLabel($publication, $locale),
+            ]),
+            'secondary' => $secondary,
+            'doi' => $doi,
+            'doiLabel' => $label('doi'),
+        ];
+    }
+
+    /** @param array<string, string> $meta @return list<array{label: string, value: string}> */
+    private function filledMeta(array $meta): array
+    {
+        $filled = [];
+        foreach ($meta as $label => $value) {
+            if (trim($value) !== '') {
+                $filled[] = ['label' => $label, 'value' => trim($value)];
+            }
+        }
+
+        return $filled;
+    }
+
+    /**
+     * The full date only when the paper has one: legacy papers carry just a
+     * year, stored as 1 January, and show as that year.
+     *
+     * @param  array<string, mixed>  $publication
+     */
+    private function publicationDateLabel(array $publication, string $locale): string
+    {
+        $year = trim((string) ($publication['year'] ?? ''));
+        $date = trim((string) ($publication['publicationDate'] ?? ''));
+
+        if ($date === '' || str_ends_with($date, '-01-01')) {
+            return $year !== '' ? $year : substr($date, 0, 4);
+        }
+
+        try {
+            return CarbonImmutable::parse($date)->locale($locale)->translatedFormat('j F Y');
+        } catch (\Throwable) {
+            return $year;
+        }
     }
 
     /** @param array<string, mixed> $content @return array<string, mixed> */

@@ -442,18 +442,26 @@ class ManageResearch extends Page implements HasForms
                 Repeater::make($prefix.'.stats')
                     ->label($this->fieldLabel('statistics'))
                     ->schema([
-                        Toggle::make('counter')
-                            ->label($this->fieldLabel('publications_counter'))
-                            ->helperText(__('admin.research_workspace.help.publications_counter'))
-                            ->formatStateUsing(fn (mixed $state): bool => $state === 'publications' || $state === true)
-                            ->dehydrateStateUsing(fn (mixed $state): ?string => $state ? 'publications' : null)
+                        Select::make('counter')
+                            ->label($this->fieldLabel('counter'))
+                            ->helperText(__('admin.research_workspace.help.counter'))
+                            ->options([
+                                'publications' => $this->fieldLabel('counter_publications'),
+                                'projects' => $this->fieldLabel('counter_projects'),
+                            ])
+                            // Pages saved before the projects counter stored `true` for publications.
+                            ->formatStateUsing(fn (mixed $state): ?string => $state === true ? 'publications' : (in_array($state, ['publications', 'projects'], true) ? $state : null))
                             ->live()
                             ->columnSpanFull(),
                         TextInput::make('value')
                             ->label($this->fieldLabel('value'))
                             ->required(fn (Get $get): bool => ! $get('counter'))
                             ->disabled(fn (Get $get): bool => (bool) $get('counter'))
-                            ->placeholder(fn (Get $get): ?string => $get('counter') ? (string) $this->researchPageService->publicationCount($locale) : null)
+                            ->placeholder(fn (Get $get): ?string => match ($get('counter')) {
+                                'publications' => (string) $this->researchPageService->publicationCount($locale),
+                                'projects' => (string) $this->researchPageService->projectCount($locale),
+                                default => null,
+                            })
                             ->maxLength(60),
                         TextInput::make('label')->label($this->fieldLabel('label'))->required()->maxLength(140),
                     ])
@@ -463,26 +471,11 @@ class ManageResearch extends Page implements HasForms
                     ->collapsible()
                     ->columnSpanFull(),
             ]),
-            Section::make($this->sectionLabel('featured_publication'))->schema([
-                TextInput::make($prefix.'.featuredPublication.sectionTitle')->label($this->fieldLabel('section_title'))->required()->maxLength(160),
-                TextInput::make($prefix.'.featuredPublication.eyebrow')->label($this->fieldLabel('eyebrow'))->required()->maxLength(160),
-                TextInput::make($prefix.'.featuredPublication.title')->label($this->fieldLabel('title'))->required()->maxLength(240)->columnSpanFull(),
-                Textarea::make($prefix.'.featuredPublication.summary')->label($this->fieldLabel('summary'))->required()->rows(2)->columnSpanFull(),
-                MediaPicker::image($prefix.'.featuredPublication.image', $this->fieldLabel('featured_image'), true),
-                TextInput::make($prefix.'.featuredPublication.authorLabel')->label($this->fieldLabel('author_label'))->required()->maxLength(80),
-                TextInput::make($prefix.'.featuredPublication.authorName')->label($this->fieldLabel('author_name'))->required()->maxLength(160),
-                TextInput::make($prefix.'.featuredPublication.affiliationLabel')->label($this->fieldLabel('affiliation_label'))->required()->maxLength(80),
-                TextInput::make($prefix.'.featuredPublication.affiliation')->label($this->fieldLabel('affiliation'))->required()->maxLength(160),
-                TextInput::make($prefix.'.featuredPublication.publishedLabel')->label($this->fieldLabel('published_label'))->required()->maxLength(80),
-                TextInput::make($prefix.'.featuredPublication.date')->label($this->fieldLabel('date'))->required()->maxLength(120),
-                TextInput::make($prefix.'.featuredPublication.viewCta')->label($this->fieldLabel('view_cta'))->required()->maxLength(120),
-                TextInput::make($prefix.'.featuredPublication.downloadCta')->label($this->fieldLabel('download_cta'))->required()->maxLength(120),
-                Section::make($this->sectionLabel('advanced'))->schema([
-                    TextInput::make($prefix.'.featuredPublication.slug')->label($this->fieldLabel('publication_slug'))->required()->maxLength(160),
-                    TextInput::make($prefix.'.featuredPublication.doiLabel')->label($this->fieldLabel('doi_label'))->required()->maxLength(120),
-                    TextInput::make($prefix.'.featuredPublication.doi')->label($this->fieldLabel('doi'))->maxLength(180),
-                ])->columns(2)->collapsible()->collapsed()->columnSpanFull(),
-            ])->columns(2),
+            Section::make($this->sectionLabel('latest_research'))
+                ->description(__('admin.research_workspace.help.latest_research'))
+                ->schema([
+                    TextInput::make($prefix.'.latestResearch.sectionTitle')->label($this->fieldLabel('section_title'))->maxLength(160)->placeholder(__('research.latest.title', [], $locale)),
+                ]),
             Section::make($this->sectionLabel('research_gateway'))->schema([
                 TextInput::make($prefix.'.gateway.sectionTitle')->label($this->fieldLabel('section_title'))->required()->maxLength(180),
                 Repeater::make($prefix.'.gateway.cards')
@@ -1390,10 +1383,9 @@ class ManageResearch extends Page implements HasForms
     /** @param array<string, mixed> $content @return array<string, mixed> */
     private function normalizeLandingContent(array $content): array
     {
-        $featuredSlug = trim((string) ($content['featuredPublication']['slug'] ?? ''));
         $content['stats'] = array_map(static function (array $stat): array {
-            if (($stat['counter'] ?? null) === 'publications') {
-                // Filled from the live publication count when the page renders.
+            if (in_array($stat['counter'] ?? null, ['publications', 'projects'], true)) {
+                // Filled from the live publication or project count when the page renders.
                 $stat['value'] = '';
             } else {
                 unset($stat['counter']);
@@ -1401,9 +1393,8 @@ class ManageResearch extends Page implements HasForms
 
             return $stat;
         }, $this->listOfArrays($content['stats'] ?? []));
-        if ($featuredSlug !== '') {
-            $content['featuredPublication']['links']['local'] = '/research/publications/'.$featuredSlug.'/';
-        }
+        // The landing now shows the newest publication or project by itself.
+        unset($content['featuredPublication']);
         $content['gateway']['cards'] = $this->listOfArrays($content['gateway']['cards'] ?? []);
 
         return $content;

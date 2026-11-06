@@ -41,13 +41,14 @@ final class PublishResearchLandingMigrationTest extends TestCase
         $enResponse = $this->get('/en/research');
         $enResponse->assertOk();
         $enResponse->assertSee('Research from Damascus, published worldwide');
-        $enResponse->assertSee('Penetrating abdominal injuries during the Syrian war');
-        $enResponse->assertSee('10.1016/j.injury.2017.02.005');
+        // The reviewed copy no longer hand-picks a publication (2026-11-06).
+        $enResponse->assertDontSee('Penetrating abdominal injuries during the Syrian war');
+        $enResponse->assertSee('/en/research/library', false);
 
         $arResponse = $this->get('/ar/research');
         $arResponse->assertOk();
         $arResponse->assertSee('أبحاث من دمشق، منشورة عالمياً');
-        $arResponse->assertSee('Penetrating abdominal injuries during the Syrian war');
+        $arResponse->assertSee('مكتبة البحث');
 
         // Verify audit trail exists
         $auditLog = AuditLog::query()

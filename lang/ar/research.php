@@ -28,6 +28,27 @@ return [
         'supervisor' => 'مشرف',
         'contributor' => 'مساهم',
     ],
+    // The research landing's newest publication or project (picked by date, not by an editor).
+    'latest' => [
+        'title' => 'أحدث الأبحاث',
+        'publication' => 'منشور بحثي',
+        'project' => 'مشروع بحثي',
+        'authors' => 'الباحثون',
+        'faculty' => 'الكلية',
+        'published' => 'تاريخ النشر',
+        'period' => 'المدة',
+        'since' => 'منذ :year',
+        'read_publication' => 'اقرأ المنشور',
+        'view_project' => 'اعرض المشروع',
+        'download' => 'تحميل الملف',
+        'view_doi' => 'اعرض عبر DOI',
+        'doi' => 'المعرّف الرقمي DOI',
+        'statuses' => [
+            'ongoing' => 'جاري',
+            'completed' => 'مكتمل',
+            'paused' => 'معلق',
+        ],
+    ],
     // Researcher directory filters, when the CMS page leaves them empty.
     'directory' => [
         'search_placeholder' => 'ابحث بالاسم أو الاختصاص',
