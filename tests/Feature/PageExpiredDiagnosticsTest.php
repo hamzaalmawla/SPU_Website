@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Http\Middleware\ShortenUploadedFileNames;
 use Illuminate\Session\TokenMismatchException;
 use Illuminate\Support\Facades\Log;
 use Livewire\Features\SupportFileUploads\FileUploadConfiguration;
@@ -41,7 +42,10 @@ class PageExpiredDiagnosticsTest extends TestCase
 
     public function test_uploads_are_not_throttled_below_a_full_media_batch(): void
     {
-        $this->assertSame('throttle:300,1', FileUploadConfiguration::middleware());
+        // The upload route also shortens long file names, so the middleware is a list.
+        $middleware = (array) FileUploadConfiguration::middleware();
+        $this->assertContains('throttle:300,1', $middleware);
+        $this->assertContains(ShortenUploadedFileNames::class, $middleware);
         $this->assertSame(30, FileUploadConfiguration::maxUploadTime());
     }
 }
