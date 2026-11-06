@@ -4,12 +4,11 @@ declare(strict_types=1);
 
 namespace App\Filament\Resources;
 
-use App\Contracts\Content\ProfileAdminServiceInterface;
 use App\Filament\Resources\Concerns\AuthorizesThroughPermissions;
 use App\Filament\Resources\DirectorateResource\Pages;
 use App\Filament\Support\MediaPicker;
 use App\Models\Content\Directorate;
-use Filament\Forms\Components\Placeholder;
+use App\Support\DirectorateManagerFields;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
@@ -18,7 +17,6 @@ use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Forms\Form;
-use Filament\Forms\Get;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Columns\IconColumn;
@@ -26,7 +24,6 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\HtmlString;
 
 class DirectorateResource extends Resource
 {
@@ -90,24 +87,13 @@ class DirectorateResource extends Resource
                 TextInput::make('sort_order')->numeric()->default(0),
                 Toggle::make('is_enabled')->default(true),
             ])->columns(2),
-            // One profile per person: the manager's name, photo, contact and
-            // education come from their faculty profile.
+            // Managers are not teaching staff: their details are typed here.
+            // The name and education are per language, below.
             Section::make(__('admin_resources.directorate.manager_section'))
                 ->description(__('admin_resources.directorate.manager_section_help'))
                 ->schema([
-                    Select::make('manager_member_id')
-                        ->label(__('admin_resources.directorate.manager'))
-                        ->searchable()
-                        ->getSearchResultsUsing(fn (string $search): array => app(ProfileAdminServiceInterface::class)->profileOptions($search, (int) auth()->id()))
-                        ->getOptionLabelUsing(fn (mixed $value): ?string => is_numeric($value)
-                            ? (app(ProfileAdminServiceInterface::class)->profileOptions('', (int) auth()->id(), [(int) $value])[(int) $value] ?? null)
-                            : null)
-                        ->nullable()
-                        ->live()
-                        ->native(false),
-                    Placeholder::make('manager_profile_link')
-                        ->hiddenLabel()
-                        ->content(fn (Get $get): HtmlString => self::managerProfileLink($get('manager_member_id'))),
+                    TextInput::make('manager_email')->label(__('admin_resources.directorate.manager_email'))->email()->maxLength(255),
+                    TextInput::make('manager_phone')->label(__('admin_resources.directorate.manager_phone'))->tel()->maxLength(50),
                 ])->columns(2),
             Repeater::make('translations')->schema([
                 Select::make('locale')->required()->options(['ar' => __('admin_resources.directorate.arabic'), 'en' => __('admin_resources.directorate.english')])->disableOptionsWhenSelectedInSiblingRepeaterItems(),
@@ -118,6 +104,16 @@ class DirectorateResource extends Resource
                     ->label(__('admin_resources.directorate.services'))
                     ->helperText(__('admin_resources.directorate.services_help'))
                     ->columnSpanFull(),
+                TextInput::make('manager_name')
+                    ->label(__('admin_resources.directorate.manager_name'))
+                    ->helperText(__('admin_resources.directorate.manager_name_help'))
+                    ->maxLength(255),
+                Textarea::make('manager_education_json')
+                    ->label(__('admin_resources.directorate.manager_education'))
+                    ->helperText(__('admin_resources.directorate.manager_education_help'))
+                    ->rows(3)
+                    ->formatStateUsing(fn (mixed $state): string => is_array($state) ? implode("\n", array_filter($state, 'is_string')) : (is_string($state) ? $state : ''))
+                    ->dehydrateStateUsing(fn (mixed $state): array => DirectorateManagerFields::education($state)),
                 Repeater::make('task_groups_json')
                     ->label(__('admin_resources.directorate.task_groups'))
                     ->helperText(__('admin_resources.directorate.task_groups_help'))
@@ -144,19 +140,6 @@ class DirectorateResource extends Resource
                     ->columnSpanFull(),
             ])->columns(2)->default([['locale' => 'ar'], ['locale' => 'en']])->minItems(2)->maxItems(2)->columnSpanFull(),
         ]);
-    }
-
-    private static function managerProfileLink(mixed $memberId): HtmlString
-    {
-        $link = static fn (string $url, string $label): string => '<a href="'.e($url).'" target="_blank" rel="noopener" class="text-primary-600 underline">'.e($label).'</a>';
-
-        if (is_numeric($memberId)) {
-            return new HtmlString(e(__('admin_resources.directorate.manager_from_profile')).' '
-                .$link(FacultyMemberResource::getUrl('edit', ['record' => (int) $memberId]), __('admin_resources.person.edit_profile')));
-        }
-
-        return new HtmlString(e(__('admin_resources.directorate.no_manager_help')).' '
-            .$link(FacultyMemberResource::getUrl('create'), __('admin_resources.person.create_profile')));
     }
 
     public static function table(Table $table): Table

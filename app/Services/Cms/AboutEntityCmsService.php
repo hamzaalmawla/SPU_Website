@@ -34,6 +34,7 @@ use App\Models\Person\PersonEducation;
 use App\Models\Person\PersonTranslation;
 use App\Models\User\User;
 use App\Support\AcademicRank;
+use App\Support\DirectorateManagerFields;
 use App\Support\DirectorateTaskGroups;
 use App\Support\MediaUrlResolver;
 use DateTimeInterface;
@@ -454,7 +455,7 @@ final class AboutEntityCmsService implements AboutEntityCmsServiceInterface
             email: $this->nullableString($payload['email'] ?? null),
             location: $this->nullableString($payload['location'] ?? null),
             taskGroups: DirectorateTaskGroups::normalize($translation['task_groups_json'] ?? null),
-            managerMemberId: $this->nullableInt($payload['manager_member_id'] ?? null),
+            manager: DirectorateManagerFields::manager($translation['manager_name'] ?? null, $translation['manager_education_json'] ?? null, $payload['manager_email'] ?? null, $payload['manager_phone'] ?? null),
         );
     }
 
@@ -729,7 +730,8 @@ final class AboutEntityCmsService implements AboutEntityCmsServiceInterface
             'icon' => $this->nullableString($payload['icon'] ?? null),
             'email' => $this->nullableString($payload['email'] ?? null),
             'location' => $this->nullableString($payload['location'] ?? null),
-            'manager_member_id' => $this->nullableInt($payload['manager_member_id'] ?? null),
+            'manager_email' => $this->nullableString($payload['manager_email'] ?? null),
+            'manager_phone' => $this->nullableString($payload['manager_phone'] ?? null),
             'sort_order' => (int) ($payload['sort_order'] ?? 0),
             'is_enabled' => (bool) ($payload['is_enabled'] ?? false),
             'publication_status' => PublicationStatus::Published->value,
@@ -743,6 +745,8 @@ final class AboutEntityCmsService implements AboutEntityCmsServiceInterface
                 'description' => $this->nullableString($translation['description'] ?? null),
                 'services_json' => $this->listValue($translation['services_json'] ?? null),
                 'task_groups_json' => DirectorateTaskGroups::normalize($translation['task_groups_json'] ?? null),
+                'manager_name' => $this->nullableString($translation['manager_name'] ?? null),
+                'manager_education_json' => DirectorateManagerFields::education($translation['manager_education_json'] ?? null),
             ]);
         }
     }
@@ -917,7 +921,8 @@ final class AboutEntityCmsService implements AboutEntityCmsServiceInterface
             'icon' => $directorate->icon,
             'email' => $directorate->email,
             'location' => $directorate->location,
-            'manager_member_id' => $directorate->manager_member_id,
+            'manager_email' => $directorate->manager_email,
+            'manager_phone' => $directorate->manager_phone,
             'sort_order' => (int) $directorate->sort_order,
             'is_enabled' => (bool) $directorate->is_enabled,
             'translations' => $directorate->translations->mapWithKeys(fn (DirectorateTranslation $translation): array => [(string) $translation->locale => [
@@ -927,6 +932,8 @@ final class AboutEntityCmsService implements AboutEntityCmsServiceInterface
                 'description' => $translation->description,
                 'services_json' => $translation->services_json,
                 'task_groups_json' => DirectorateTaskGroups::normalize($translation->task_groups_json),
+                'manager_name' => $translation->manager_name,
+                'manager_education_json' => DirectorateManagerFields::education($translation->manager_education_json),
             ]])->all(),
         ];
     }
@@ -985,10 +992,15 @@ final class AboutEntityCmsService implements AboutEntityCmsServiceInterface
         }
 
         if ($type === 'directorate') {
-            $payload['manager_member_id'] = $this->nullableInt($payload['manager_member_id'] ?? null);
+            unset($payload['manager_member_id']);
+            foreach (['manager_email', 'manager_phone'] as $field) {
+                $payload[$field] = $this->nullableString($payload[$field] ?? null);
+            }
             foreach ($payload['translations'] as $locale => $translation) {
                 if (is_array($translation)) {
                     $payload['translations'][$locale]['task_groups_json'] = DirectorateTaskGroups::normalize($translation['task_groups_json'] ?? null);
+                    $payload['translations'][$locale]['manager_name'] = $this->nullableString($translation['manager_name'] ?? null);
+                    $payload['translations'][$locale]['manager_education_json'] = DirectorateManagerFields::education($translation['manager_education_json'] ?? null);
                 }
             }
         }
@@ -1069,9 +1081,13 @@ final class AboutEntityCmsService implements AboutEntityCmsServiceInterface
             $this->appendMediaErrors($errors, 'cv_media_id', $payload['cv_media_id'] ?? null, 'application/');
         }
         if ($type === 'directorate') {
-            $managerId = $this->nullableInt($payload['manager_member_id'] ?? null);
-            if ($managerId !== null && ! FacultyMember::query()->whereKey($managerId)->exists()) {
-                $errors['manager_member_id'][] = 'The selected profile does not exist.';
+            $managerEmail = $this->nullableString($payload['manager_email'] ?? null);
+            if ($managerEmail !== null && filter_var($managerEmail, FILTER_VALIDATE_EMAIL) === false) {
+                $errors['manager_email'][] = 'A valid email address is required.';
+            }
+            $managerPhone = $this->nullableString($payload['manager_phone'] ?? null);
+            if ($managerPhone !== null && preg_match('/^[0-9+()\-\s\x{0660}-\x{0669}]{3,50}$/u', $managerPhone) !== 1) {
+                $errors['manager_phone'][] = 'A valid phone number is required.';
             }
         }
         if ($type === 'partnership') {

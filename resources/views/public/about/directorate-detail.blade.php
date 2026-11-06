@@ -43,34 +43,24 @@
                             <div class="dir-manager-card reveal reveal-right">
                                 <p class="dir-manager-role">{{ $isArabic ? 'مدير المديرية' : 'Directorate Manager' }}</p>
                                 <div class="dir-manager-head">
-                                    @if ($manager->image)
-                                        <img src="{{ $manager->image }}" alt="{{ $manager->name }}" class="dir-manager-photo" loading="lazy">
-                                    @else
-                                        <span class="dir-manager-photo dir-manager-initial" aria-hidden="true">{{ mb_substr($manager->name, 0, 1) }}</span>
-                                    @endif
+                                    <span class="dir-manager-photo dir-manager-initial" aria-hidden="true">
+                                        <svg class="h-9 w-9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"></circle><path d="M4 21v-1a7 7 0 0 1 14 0v1"></path></svg>
+                                    </span>
                                     <div class="min-w-0">
                                         <h2 class="dir-manager-name" dir="auto">{{ $manager->name }}</h2>
-                                        @if ($manager->title)
-                                            <p class="dir-manager-title" dir="auto">{{ $manager->title }}</p>
-                                        @endif
                                     </div>
                                 </div>
 
-                                @if ($manager->educations !== [])
+                                @if ($manager->education !== [])
                                     <h3 class="dir-manager-heading">{{ $isArabic ? 'المؤهلات العلمية' : 'Education' }}</h3>
                                     <ul class="dir-manager-education">
-                                        @foreach ($manager->educations as $education)
-                                            <li>
-                                                <span class="dir-manager-degree" dir="auto">{{ $education->degree }}@if ($education->fieldOfStudy) <span class="font-semibold">— {{ $education->fieldOfStudy }}</span>@endif</span>
-                                                @if ($education->institution || $education->yearEnd)
-                                                    <span class="dir-manager-meta" dir="auto">{{ collect([$education->institution, $education->yearEnd])->filter()->implode(' · ') }}</span>
-                                                @endif
-                                            </li>
+                                        @foreach ($manager->education as $qualification)
+                                            <li><span class="dir-manager-degree" dir="auto">{{ $qualification }}</span></li>
                                         @endforeach
                                     </ul>
                                 @endif
 
-                                @if ($manager->email || $manager->phone || $manager->officeLocation)
+                                @if ($manager->email || $manager->phone)
                                     <h3 class="dir-manager-heading">{{ $isArabic ? 'التواصل' : 'Contact' }}</h3>
                                     <ul class="dir-info-list">
                                         @if ($manager->email)
@@ -82,19 +72,11 @@
                                         @if ($manager->phone)
                                             <li>
                                                 <span class="dir-info-label">{{ $isArabic ? 'الهاتف' : 'Phone' }}</span>
-                                                <a href="tel:{{ preg_replace('/[^0-9+]/', '', $manager->phone) }}" class="dir-info-value dir-info-link" dir="ltr">{{ $manager->phone }}</a>
-                                            </li>
-                                        @endif
-                                        @if ($manager->officeLocation)
-                                            <li>
-                                                <span class="dir-info-label">{{ $isArabic ? 'المكتب' : 'Office' }}</span>
-                                                <span class="dir-info-value" dir="auto">{{ $manager->officeLocation }}</span>
+                                                <a href="tel:{{ preg_replace('/[^0-9+]/', '', strtr($manager->phone, ['٠' => '0', '١' => '1', '٢' => '2', '٣' => '3', '٤' => '4', '٥' => '5', '٦' => '6', '٧' => '7', '٨' => '8', '٩' => '9'])) }}" class="dir-info-value dir-info-link" dir="ltr">{{ $manager->phone }}</a>
                                             </li>
                                         @endif
                                     </ul>
                                 @endif
-
-                                <a href="{{ $manager->profileUrl }}" class="dir-btn dir-btn-outline dir-btn-block">{{ $isArabic ? 'عرض الملف الشخصي' : 'View profile' }}</a>
                             </div>
                         @endif
 

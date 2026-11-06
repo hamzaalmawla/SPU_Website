@@ -10,7 +10,6 @@ use App\Contracts\Content\PersonIdentityServiceInterface;
 use App\Contracts\Faculty\FacultyLeadershipServiceInterface;
 use App\Contracts\Page\AboutNavigationCardServiceInterface;
 use App\Contracts\Page\AboutPageServiceInterface;
-use App\Contracts\Page\ProfilePageServiceInterface;
 use App\DTOs\About\AboutContentPageDTO;
 use App\DTOs\About\AboutLandingDTO;
 use App\DTOs\About\AboutVisionMissionDTO;
@@ -38,6 +37,7 @@ use App\Models\Person\PersonAppointment;
 use App\Models\Person\PersonTranslation;
 use App\Models\Shared\MigrationLog;
 use App\Support\AcademicRank;
+use App\Support\DirectorateManagerFields;
 use App\Support\DirectorateTaskGroups;
 use App\Support\MediaUrlResolver;
 use Illuminate\Support\Collection;
@@ -54,7 +54,6 @@ final class AboutPageService implements AboutPageServiceInterface
         private readonly AboutNavigationCardServiceInterface $navigationCardService,
         private readonly PersonIdentityServiceInterface $identityService,
         private readonly FacultyLeadershipServiceInterface $leadershipService,
-        private readonly ProfilePageServiceInterface $profilePageService,
     ) {}
 
     public function getAboutLanding(string $locale): AboutLandingDTO
@@ -462,56 +461,7 @@ final class AboutPageService implements AboutPageServiceInterface
             return null;
         }
 
-        return $this->withDirectorateManager($this->mapDirectorate($directorate, $locale), $locale);
-    }
-
-    public function withDirectorateManager(DirectorateDTO $directorate, string $locale): DirectorateDTO
-    {
-        $manager = $directorate->managerMemberId !== null
-            ? $this->directorateManager($directorate->managerMemberId, $locale)
-            : null;
-
-        return new DirectorateDTO(
-            id: $directorate->id,
-            slug: $directorate->slug,
-            title: $directorate->title,
-            summary: $directorate->summary,
-            description: $directorate->description,
-            services: $directorate->services,
-            links: $directorate->links,
-            icon: $directorate->icon,
-            email: $directorate->email,
-            location: $directorate->location,
-            taskGroups: $directorate->taskGroups,
-            managerMemberId: $directorate->managerMemberId,
-            manager: $manager,
-        );
-    }
-
-    private function directorateManager(int $memberId, string $locale): ?DirectorateManagerDTO
-    {
-        $slug = FacultyMember::query()->whereKey($memberId)->value('slug');
-        if (! is_string($slug) || $slug === '') {
-            return null;
-        }
-
-        // The profile page service applies the public rules (enabled,
-        // published, translated), so a hidden profile shows no manager.
-        $profile = $this->profilePageService->getProfile($locale, 'faculty-member', $slug);
-        if ($profile === null) {
-            return null;
-        }
-
-        return new DirectorateManagerDTO(
-            name: $profile->name,
-            title: $profile->title,
-            image: $profile->image,
-            email: $profile->email,
-            phone: $profile->phone,
-            officeLocation: $profile->officeLocation,
-            educations: $profile->educations,
-            profileUrl: $profile->path,
-        );
+        return $this->mapDirectorate($directorate, $locale);
     }
 
     public function getPartnerships(
@@ -685,7 +635,7 @@ final class AboutPageService implements AboutPageServiceInterface
             email: $directorate->email,
             location: $directorate->location,
             taskGroups: DirectorateTaskGroups::normalize($translation->task_groups_json),
-            managerMemberId: $directorate->manager_member_id !== null ? (int) $directorate->manager_member_id : null,
+            manager: $this->directorateManager($directorate, $locale),
         );
     }
 
@@ -1282,6 +1232,22 @@ final class AboutPageService implements AboutPageServiceInterface
             ->unique('target_id')
             ->mapWithKeys(fn (MigrationLog $log): array => [(int) $log->target_id => is_array($log->metadata) ? $log->metadata : []])
             ->all();
+    }
+
+    /** The manager in this language, or in the other one when this one has no name. */
+    private function directorateManager(Directorate $directorate, string $locale): ?DirectorateManagerDTO
+    {
+        foreach ([$locale, $locale === 'ar' ? 'en' : 'ar'] as $candidate) {
+            $translation = $directorate->translations->firstWhere('locale', $candidate);
+            $manager = $translation instanceof DirectorateTranslation
+                ? DirectorateManagerFields::manager($translation->manager_name, $translation->manager_education_json, $directorate->manager_email, $directorate->manager_phone)
+                : null;
+            if ($manager !== null) {
+                return $manager;
+            }
+        }
+
+        return null;
     }
 
     private function directorateTranslation(Directorate $directorate, string $locale): DirectorateTranslation

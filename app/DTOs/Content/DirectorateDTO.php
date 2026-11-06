@@ -23,7 +23,6 @@ final readonly class DirectorateDTO
         public ?string $email,
         public ?string $location,
         public array $taskGroups = [],
-        public ?int $managerMemberId = null,
         public ?DirectorateManagerDTO $manager = null,
     ) {}
 }

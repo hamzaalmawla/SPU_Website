@@ -375,7 +375,6 @@ final class PreviewController extends Controller
         if (str_starts_with($targetKey, 'entity.directorate.')) {
             $directorate = $this->aboutEntityCmsService->buildDirectoratePreview($payload, $locale);
             abort_if($directorate === null, 404);
-            $directorate = $this->aboutPageService->withDirectorateManager($directorate, $locale);
             $path = '/'.$locale.'/about/directorates/'.$directorate->slug;
 
             return view('public.about.directorate-detail', [

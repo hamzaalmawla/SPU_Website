@@ -6,9 +6,7 @@ namespace Tests\Feature;
 
 use App\Contracts\Cms\AboutEntityCmsServiceInterface;
 use App\Contracts\Cms\CmsWorkflowServiceInterface;
-use App\Enums\PublicationStatus;
 use App\Models\Content\Directorate;
-use App\Models\Person\FacultyMember;
 use App\Models\User\User;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -25,11 +23,51 @@ final class DirectorateManagerTest extends TestCase
         $this->seed(DatabaseSeeder::class);
     }
 
-    public function test_published_manager_shows_name_contact_and_education_from_the_profile(): void
+    public function test_the_manager_typed_on_the_directorate_shows_name_contact_and_education(): void
     {
-        $manager = $this->managerProfile(published: true);
-        $this->publishDirectorate(function (array $payload) use ($manager): array {
-            $payload['manager_member_id'] = (int) $manager->getKey();
+        $this->publishDirectorate(function (array $payload): array {
+            $payload['manager_email'] = 'sami.haddad@spu.edu.sy';
+            $payload['manager_phone'] = '+963 11 123 4567';
+            $payload['translations']['en']['manager_name'] = 'Dr. Sami Haddad';
+            // The admin textarea sends one qualification per line.
+            $payload['translations']['en']['manager_education_json'] = "PhD in Computer Science, Damascus University\n\n  MSc in Information Systems  ";
+            $payload['translations']['ar']['manager_name'] = 'د. سامي حداد';
+            $payload['translations']['ar']['manager_education_json'] = ['دكتوراه في علوم الحاسوب، جامعة دمشق'];
+
+            return $payload;
+        });
+
+        $directorate = Directorate::query()->where('slug', 'it-services')->with('translations')->firstOrFail();
+        $this->assertSame(
+            ['PhD in Computer Science, Damascus University', 'MSc in Information Systems'],
+            $directorate->translations->firstWhere('locale', 'en')?->manager_education_json,
+        );
+
+        $this->get('/en/about/directorates/it-services')
+            ->assertOk()
+            ->assertSee('Directorate Manager')
+            ->assertSee('Dr. Sami Haddad')
+            ->assertSee('PhD in Computer Science, Damascus University')
+            ->assertSee('MSc in Information Systems')
+            ->assertSee('mailto:sami.haddad@spu.edu.sy', false)
+            ->assertSee('tel:+963111234567', false)
+            ->assertDontSee('/about/profile/', false);
+
+        $this->get('/ar/about/directorates/it-services')
+            ->assertOk()
+            ->assertSee('مدير المديرية')
+            ->assertSee('د. سامي حداد')
+            ->assertSee('دكتوراه في علوم الحاسوب، جامعة دمشق')
+            ->assertSee('المؤهلات العلمية');
+    }
+
+    public function test_no_manager_shows_until_a_name_is_typed_and_a_missing_language_uses_the_other(): void
+    {
+        $this->get('/en/about/directorates/it-services')->assertOk()->assertDontSee('Directorate Manager');
+
+        $this->publishDirectorate(function (array $payload): array {
+            $payload['manager_email'] = 'manager@spu.edu.sy';
+            $payload['translations']['ar']['manager_name'] = 'د. سامي حداد';
 
             return $payload;
         });
@@ -37,34 +75,20 @@ final class DirectorateManagerTest extends TestCase
         $this->get('/en/about/directorates/it-services')
             ->assertOk()
             ->assertSee('Directorate Manager')
-            ->assertSee('Dr. Sami Haddad')
-            ->assertSee('Ph.D. in Computer Science')
-            ->assertSee('Damascus University')
-            ->assertSee('mailto:sami.haddad@spu.edu.sy', false)
-            ->assertSee('tel:+963111234567', false)
-            ->assertSee('/en/about/profile/sami-haddad', false);
-
-        $this->get('/ar/about/directorates/it-services')
-            ->assertOk()
-            ->assertSee('مدير المديرية')
-            ->assertSee('د. سامي حداد')
-            ->assertSee('دكتوراه في علوم الحاسوب')
-            ->assertSee('المؤهلات العلمية');
+            ->assertSee('د. سامي حداد');
     }
 
-    public function test_an_unpublished_manager_profile_is_not_shown(): void
+    public function test_publishing_rejects_a_bad_manager_email_or_phone(): void
     {
-        $manager = $this->managerProfile(published: false);
-        $this->publishDirectorate(function (array $payload) use ($manager): array {
-            $payload['manager_member_id'] = (int) $manager->getKey();
+        $directorate = Directorate::query()->where('slug', 'it-services')->firstOrFail();
+        $targetKey = 'entity.directorate.'.$directorate->getKey();
+        $payload = app(AboutEntityCmsServiceInterface::class)->getStoredData($targetKey)?->payload ?? [];
+        $payload['manager_email'] = 'not an email';
+        $payload['manager_phone'] = 'call the office';
 
-            return $payload;
-        });
-
-        $this->get('/en/about/directorates/it-services')
-            ->assertOk()
-            ->assertDontSee('Directorate Manager')
-            ->assertDontSee('Dr. Sami Haddad');
+        $errors = app(AboutEntityCmsServiceInterface::class)->publishErrors($targetKey, $payload);
+        $this->assertArrayHasKey('manager_email', $errors);
+        $this->assertArrayHasKey('manager_phone', $errors);
     }
 
     public function test_task_groups_round_trip_through_draft_and_publish(): void
@@ -95,16 +119,6 @@ final class DirectorateManagerTest extends TestCase
             ->assertDontSee('dropped: no title');
     }
 
-    public function test_publishing_rejects_a_missing_manager_profile(): void
-    {
-        $directorate = Directorate::query()->where('slug', 'it-services')->firstOrFail();
-        $targetKey = 'entity.directorate.'.$directorate->getKey();
-        $payload = app(AboutEntityCmsServiceInterface::class)->getStoredData($targetKey)?->payload ?? [];
-        $payload['manager_member_id'] = 999999;
-
-        $this->assertArrayHasKey('manager_member_id', app(AboutEntityCmsServiceInterface::class)->publishErrors($targetKey, $payload));
-    }
-
     /** @param callable(array<string, mixed>): array<string, mixed> $edit */
     private function publishDirectorate(callable $edit): void
     {
@@ -118,26 +132,5 @@ final class DirectorateManagerTest extends TestCase
 
         $workflow->saveDraft($targetKey, $edit($payload), (int) $author->getKey());
         $this->assertTrue($workflow->publish($targetKey, (int) $author->getKey()));
-    }
-
-    private function managerProfile(bool $published): FacultyMember
-    {
-        $member = FacultyMember::query()->create([
-            'slug' => 'sami-haddad',
-            'faculty_id' => null,
-            'email' => 'sami.haddad@spu.edu.sy',
-            'phone' => '+963 11 123 4567',
-            'is_enabled' => true,
-            'publication_status' => $published ? PublicationStatus::Published->value : PublicationStatus::Draft->value,
-            'published_at' => $published ? now()->subDay() : null,
-        ]);
-        $member->translations()->create(['locale' => 'en', 'full_name' => 'Dr. Sami Haddad']);
-        $member->translations()->create(['locale' => 'ar', 'full_name' => 'د. سامي حداد']);
-
-        $education = $member->educations()->create(['sort_order' => 1, 'is_enabled' => true]);
-        $education->translations()->create(['locale' => 'en', 'degree' => 'Ph.D. in Computer Science', 'institution' => 'Damascus University', 'year_end' => 2012]);
-        $education->translations()->create(['locale' => 'ar', 'degree' => 'دكتوراه في علوم الحاسوب', 'institution' => 'جامعة دمشق', 'year_end' => 2012]);
-
-        return $member;
     }
 }

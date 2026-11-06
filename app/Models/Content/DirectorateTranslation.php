@@ -12,7 +12,7 @@ class DirectorateTranslation extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['directorate_id', 'locale', 'title', 'summary', 'description', 'services_json', 'links_json', 'task_groups_json'];
+    protected $fillable = ['directorate_id', 'locale', 'title', 'summary', 'description', 'services_json', 'links_json', 'task_groups_json', 'manager_name', 'manager_education_json'];
 
     protected function casts(): array
     {
@@ -20,6 +20,7 @@ class DirectorateTranslation extends Model
             'services_json' => 'array',
             'links_json' => 'array',
             'task_groups_json' => 'array',
+            'manager_education_json' => 'array',
         ];
     }
 
