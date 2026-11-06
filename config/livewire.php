@@ -1,6 +1,7 @@
 <?php
 
 declare(strict_types=1);
+use App\Http\Middleware\ShortenUploadedFileNames;
 
 // Only the keys this application changes. Livewire merges its own defaults
 // for every other top-level key; `temporary_file_upload` is replaced as a
@@ -17,7 +18,9 @@ return [
         // Livewire's default is throttle:60,1 for every upload request. The media
         // batch page accepts 50 images at once, so one batch plus a retry, or two
         // editors behind the same address, ran into it and uploads failed with 429.
-        'middleware' => 'throttle:300,1',
+        // ShortenUploadedFileNames: a long Arabic file name would make
+        // Livewire's temporary name longer than the file system allows.
+        'middleware' => ['throttle:300,1', ShortenUploadedFileNames::class],
 
         'preview_mimes' => [
             'png', 'gif', 'bmp', 'svg', 'wav', 'mp4',
