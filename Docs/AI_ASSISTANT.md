@@ -169,6 +169,18 @@ two readers off the same file. A page that fails `max_attempts` (3) times is
 left out and the file says so; a rejected key or an empty account fails the
 file with the reason. Reading is counted in Usage (tokens and cost).
 
+**Document cards.** An uploaded file of at least 2,500 characters gets one
+extra passage first, "ملخص الوثيقة ومعلوماتها الأساسية" (`ChatbotDocumentCardWriter`):
+what the document is and its key facts (dates, fees, who it is for, how to
+apply) quoted from its text by the reading model. An announcement's deadline
+otherwise sits in a passage that says "this announcement" and never names
+it, so a question naming the competition found other passages first and the
+model took another document's dates. The card is saved next to the file
+(`<file>.card.json`, keyed by the text's hash) and written again only when
+the text changes; a failure indexes the file without one. Website pages and
+typed text get none. The answer rules also forbid carrying a fact from one
+document over to a procedure another document covers.
+
 ## Operations
 
 - Migrations `2026_11_03_000001_create_chatbot_tables` and

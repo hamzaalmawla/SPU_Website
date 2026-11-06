@@ -15,6 +15,7 @@ use App\Contracts\Career\AlumniDirectoryServiceInterface;
 use App\Contracts\Career\StudentListImportServiceInterface;
 use App\Contracts\Center\CenterCatalogServiceInterface;
 use App\Contracts\Center\CenterPageServiceInterface;
+use App\Contracts\Chatbot\ChatbotDocumentCardWriterInterface;
 use App\Contracts\Chatbot\ChatbotKnowledgeServiceInterface;
 use App\Contracts\Chatbot\ChatbotScanReaderInterface;
 use App\Contracts\Chatbot\ChatbotServiceInterface;
@@ -231,6 +232,7 @@ use App\Services\Career\AlumniDirectoryService;
 use App\Services\Career\StudentListImportService;
 use App\Services\Center\CenterCatalogService;
 use App\Services\Center\CenterPageService;
+use App\Services\Chatbot\ChatbotDocumentCardWriter;
 use App\Services\Chatbot\ChatbotKnowledgeService;
 use App\Services\Chatbot\ChatbotScanReader;
 use App\Services\Chatbot\ChatbotService;
@@ -755,6 +757,7 @@ class AppServiceProvider extends ServiceProvider
             ChatbotSettingsServiceInterface::class => ChatbotSettingsService::class,
             ChatbotUsageServiceInterface::class => ChatbotUsageService::class,
             ChatbotScanReaderInterface::class => ChatbotScanReader::class,
+            ChatbotDocumentCardWriterInterface::class => ChatbotDocumentCardWriter::class,
             ChatbotKnowledgeServiceInterface::class => ChatbotKnowledgeService::class,
             ChatbotServiceInterface::class => ChatbotService::class,
             SiteStatsRecorderInterface::class => SiteStatsRecorder::class,

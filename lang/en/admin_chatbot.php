@@ -72,6 +72,7 @@ return [
         'text' => 'Typed text',
     ],
     'needs_reindex' => 'Indexed with an older setup: re-index to use it.',
+    'card_heading' => 'Document summary and key facts',
     'scan_progress' => 'Reading scanned pages: :read of :total',
 
     'actions' => [

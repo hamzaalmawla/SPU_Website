@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\Chatbot;
 
+use App\Contracts\Chatbot\ChatbotDocumentCardWriterInterface;
 use App\Contracts\Chatbot\ChatbotKnowledgeServiceInterface;
 use App\Contracts\Chatbot\ChatbotScanReaderInterface;
 use App\Contracts\Chatbot\ChatbotSettingsServiceInterface;
@@ -61,6 +62,7 @@ final class ChatbotKnowledgeService implements ChatbotKnowledgeServiceInterface
         private readonly CacheServiceInterface $cache,
         private readonly ChatbotWebsiteCrawlerInterface $crawler,
         private readonly ChatbotScanReaderInterface $scanReader,
+        private readonly ChatbotDocumentCardWriterInterface $cardWriter,
     ) {}
 
     public function documents(): Collection
@@ -611,6 +613,11 @@ final class ChatbotKnowledgeService implements ChatbotKnowledgeServiceInterface
                 throw new InvalidArgumentException($read['scans'] !== [] ? 'admin_chatbot.errors.scan_no_text' : 'admin_chatbot.errors.no_text');
             }
 
+            $card = $this->documentCard($document, $sections, $apiKey);
+            if ($card !== null) {
+                array_unshift($sections, ['page' => null, 'text' => '# '.__('admin_chatbot.card_heading', [], $this->documentLocale($card))."\n".$card]);
+            }
+
             $chunks = TextChunker::chunk(
                 $sections,
                 (int) config('chatbot.knowledge.chunk_characters', 1100),
@@ -794,6 +801,53 @@ final class ChatbotKnowledgeService implements ChatbotKnowledgeServiceInterface
     }
 
     /**
+     * The document card for an uploaded file long enough to need one: reused
+     * from next to the file while the text is unchanged, otherwise written.
+     *
+     * @param  list<array{page: ?int, text: string}>  $sections
+     */
+    private function documentCard(ChatbotDocument $document, array $sections, string $apiKey): ?string
+    {
+        $minimum = (int) config('chatbot.knowledge.card_min_characters', 2500);
+        $path = (string) $document->storage_path;
+        if ($minimum <= 0 || $document->source_type !== 'upload' || $path === '') {
+            return null;
+        }
+
+        $text = implode("\n\n", array_column($sections, 'text'));
+        if (mb_strlen($text) < $minimum) {
+            return null;
+        }
+
+        $cardPath = $path.'.card.json';
+        $hash = hash('sha256', $text);
+        if ($this->disk()->exists($cardPath)) {
+            $saved = json_decode((string) $this->disk()->get($cardPath), true);
+            if (is_array($saved) && ($saved['hash'] ?? null) === $hash && is_string($saved['text'] ?? null) && $saved['text'] !== '') {
+                return $saved['text'];
+            }
+        }
+
+        $card = $this->cardWriter->write((string) $document->title, $text, $apiKey);
+        if ($card === null) {
+            return null;
+        }
+
+        $this->usage->recordModelUse($card->model, $card->inputTokens, $card->outputTokens);
+        $this->disk()->put($cardPath, (string) json_encode(['hash' => $hash, 'model' => $card->model, 'text' => $card->text], JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE));
+
+        return $card->text;
+    }
+
+    /**
+     * The card's heading follows its language.
+     */
+    private function documentLocale(string $text): string
+    {
+        return preg_match('/\p{Arabic}/u', mb_substr($text, 0, 200)) === 1 ? 'ar' : 'en';
+    }
+
+    /**
      * The text read from a document's scanned pages lives next to the file.
      */
     private function scanStatePath(ChatbotDocument $document): ?string
@@ -865,7 +919,7 @@ final class ChatbotKnowledgeService implements ChatbotKnowledgeServiceInterface
         });
 
         if (is_string($path) && $path !== '') {
-            $this->disk()->delete([$path, $path.'.scan.json']);
+            $this->disk()->delete([$path, $path.'.scan.json', $path.'.card.json']);
         }
     }
 
