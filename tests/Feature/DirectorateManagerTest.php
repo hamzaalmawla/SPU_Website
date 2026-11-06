@@ -28,6 +28,7 @@ final class DirectorateManagerTest extends TestCase
         $this->publishDirectorate(function (array $payload): array {
             $payload['manager_email'] = 'sami.haddad@spu.edu.sy';
             $payload['manager_phone'] = '+963 11 123 4567';
+            $payload['manager_photo'] = '/storage/media/managers/sami-haddad.webp';
             $payload['translations']['en']['manager_name'] = 'Dr. Sami Haddad';
             // The admin textarea sends one qualification per line.
             $payload['translations']['en']['manager_education_json'] = "PhD in Computer Science, Damascus University\n\n  MSc in Information Systems  ";
@@ -51,6 +52,7 @@ final class DirectorateManagerTest extends TestCase
             ->assertSee('MSc in Information Systems')
             ->assertSee('mailto:sami.haddad@spu.edu.sy', false)
             ->assertSee('tel:+963111234567', false)
+            ->assertSee('src="/storage/media/managers/sami-haddad.webp" alt="Dr. Sami Haddad"', false)
             ->assertDontSee('/about/profile/', false);
 
         $this->get('/ar/about/directorates/it-services')
@@ -67,6 +69,8 @@ final class DirectorateManagerTest extends TestCase
 
         $this->publishDirectorate(function (array $payload): array {
             $payload['manager_email'] = 'manager@spu.edu.sy';
+            // Only a site path or an http(s) address is kept as the photo.
+            $payload['manager_photo'] = 'javascript:alert(1)';
             $payload['translations']['ar']['manager_name'] = 'د. سامي حداد';
 
             return $payload;
@@ -75,7 +79,9 @@ final class DirectorateManagerTest extends TestCase
         $this->get('/en/about/directorates/it-services')
             ->assertOk()
             ->assertSee('Directorate Manager')
-            ->assertSee('د. سامي حداد');
+            ->assertSee('د. سامي حداد')
+            ->assertDontSee('javascript:alert', false);
+        $this->assertNull(Directorate::query()->where('slug', 'it-services')->value('manager_photo'));
     }
 
     public function test_publishing_rejects_a_bad_manager_email_or_phone(): void

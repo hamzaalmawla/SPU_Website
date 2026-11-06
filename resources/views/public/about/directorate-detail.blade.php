@@ -43,9 +43,13 @@
                             <div class="dir-manager-card reveal reveal-right">
                                 <p class="dir-manager-role">{{ $isArabic ? 'مدير المديرية' : 'Directorate Manager' }}</p>
                                 <div class="dir-manager-head">
-                                    <span class="dir-manager-photo dir-manager-initial" aria-hidden="true">
-                                        <svg class="h-9 w-9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"></circle><path d="M4 21v-1a7 7 0 0 1 14 0v1"></path></svg>
-                                    </span>
+                                    @if ($manager->photo)
+                                        <img src="{{ $manager->photo }}" alt="{{ $manager->name }}" class="dir-manager-photo" loading="lazy" decoding="async">
+                                    @else
+                                        <span class="dir-manager-photo dir-manager-initial" aria-hidden="true">
+                                            <svg class="h-9 w-9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"></circle><path d="M4 21v-1a7 7 0 0 1 14 0v1"></path></svg>
+                                        </span>
+                                    @endif
                                     <div class="min-w-0">
                                         <h2 class="dir-manager-name" dir="auto">{{ $manager->name }}</h2>
                                     </div>

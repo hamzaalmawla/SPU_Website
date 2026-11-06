@@ -94,6 +94,7 @@ class DirectorateResource extends Resource
                 ->schema([
                     TextInput::make('manager_email')->label(__('admin_resources.directorate.manager_email'))->email()->maxLength(255),
                     TextInput::make('manager_phone')->label(__('admin_resources.directorate.manager_phone'))->tel()->maxLength(50),
+                    MediaPicker::image('manager_photo', __('admin_resources.directorate.manager_photo')),
                 ])->columns(2),
             Repeater::make('translations')->schema([
                 Select::make('locale')->required()->options(['ar' => __('admin_resources.directorate.arabic'), 'en' => __('admin_resources.directorate.english')])->disableOptionsWhenSelectedInSiblingRepeaterItems(),

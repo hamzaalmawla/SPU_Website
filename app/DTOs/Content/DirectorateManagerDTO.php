@@ -16,5 +16,6 @@ final readonly class DirectorateManagerDTO
         public array $education,
         public ?string $email,
         public ?string $phone,
+        public ?string $photo = null,
     ) {}
 }

@@ -1240,7 +1240,7 @@ final class AboutPageService implements AboutPageServiceInterface
         foreach ([$locale, $locale === 'ar' ? 'en' : 'ar'] as $candidate) {
             $translation = $directorate->translations->firstWhere('locale', $candidate);
             $manager = $translation instanceof DirectorateTranslation
-                ? DirectorateManagerFields::manager($translation->manager_name, $translation->manager_education_json, $directorate->manager_email, $directorate->manager_phone)
+                ? DirectorateManagerFields::manager($translation->manager_name, $translation->manager_education_json, $directorate->manager_email, $directorate->manager_phone, $directorate->manager_photo)
                 : null;
             if ($manager !== null) {
                 return $manager;

@@ -455,7 +455,7 @@ final class AboutEntityCmsService implements AboutEntityCmsServiceInterface
             email: $this->nullableString($payload['email'] ?? null),
             location: $this->nullableString($payload['location'] ?? null),
             taskGroups: DirectorateTaskGroups::normalize($translation['task_groups_json'] ?? null),
-            manager: DirectorateManagerFields::manager($translation['manager_name'] ?? null, $translation['manager_education_json'] ?? null, $payload['manager_email'] ?? null, $payload['manager_phone'] ?? null),
+            manager: DirectorateManagerFields::manager($translation['manager_name'] ?? null, $translation['manager_education_json'] ?? null, $payload['manager_email'] ?? null, $payload['manager_phone'] ?? null, $payload['manager_photo'] ?? null),
         );
     }
 
@@ -732,6 +732,7 @@ final class AboutEntityCmsService implements AboutEntityCmsServiceInterface
             'location' => $this->nullableString($payload['location'] ?? null),
             'manager_email' => $this->nullableString($payload['manager_email'] ?? null),
             'manager_phone' => $this->nullableString($payload['manager_phone'] ?? null),
+            'manager_photo' => DirectorateManagerFields::photo($payload['manager_photo'] ?? null),
             'sort_order' => (int) ($payload['sort_order'] ?? 0),
             'is_enabled' => (bool) ($payload['is_enabled'] ?? false),
             'publication_status' => PublicationStatus::Published->value,
@@ -923,6 +924,7 @@ final class AboutEntityCmsService implements AboutEntityCmsServiceInterface
             'location' => $directorate->location,
             'manager_email' => $directorate->manager_email,
             'manager_phone' => $directorate->manager_phone,
+            'manager_photo' => $directorate->manager_photo,
             'sort_order' => (int) $directorate->sort_order,
             'is_enabled' => (bool) $directorate->is_enabled,
             'translations' => $directorate->translations->mapWithKeys(fn (DirectorateTranslation $translation): array => [(string) $translation->locale => [
@@ -993,7 +995,7 @@ final class AboutEntityCmsService implements AboutEntityCmsServiceInterface
 
         if ($type === 'directorate') {
             unset($payload['manager_member_id']);
-            foreach (['manager_email', 'manager_phone'] as $field) {
+            foreach (['manager_email', 'manager_phone', 'manager_photo'] as $field) {
                 $payload[$field] = $this->nullableString($payload[$field] ?? null);
             }
             foreach ($payload['translations'] as $locale => $translation) {

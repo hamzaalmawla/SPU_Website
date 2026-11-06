@@ -41,7 +41,7 @@ final class DirectorateManagerFields
     }
 
     /** The manager to show, or null while no name is given. */
-    public static function manager(mixed $name, mixed $education, mixed $email, mixed $phone): ?DirectorateManagerDTO
+    public static function manager(mixed $name, mixed $education, mixed $email, mixed $phone, mixed $photo = null): ?DirectorateManagerDTO
     {
         $name = is_string($name) ? trim($name) : '';
         if ($name === '') {
@@ -53,7 +53,14 @@ final class DirectorateManagerFields
             education: self::education($education),
             email: self::text($email),
             phone: self::text($phone),
+            photo: self::photo($photo),
         );
+    }
+
+    /** A site path or an http(s) address; anything else shows no photo. */
+    public static function photo(mixed $value): ?string
+    {
+        return UrlSanitizer::sanitize(self::text($value), ['http', 'https']);
     }
 
     private static function text(mixed $value): ?string

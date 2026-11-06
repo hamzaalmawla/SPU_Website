@@ -15,7 +15,7 @@ class Directorate extends Model
 {
     use HasFactory, SoftDeletes;
 
-    protected $fillable = ['slug', 'icon', 'email', 'location', 'manager_email', 'manager_phone', 'sort_order', 'is_enabled', 'publication_status', 'published_at'];
+    protected $fillable = ['slug', 'icon', 'email', 'location', 'manager_email', 'manager_phone', 'manager_photo', 'sort_order', 'is_enabled', 'publication_status', 'published_at'];
 
     protected function casts(): array
     {
