@@ -78,7 +78,25 @@ TEXT;
                 $requests['p'.$page] = $this->request($images[$page], $page, $title, $model, $apiKey);
             }
 
-            foreach ($this->openAi->respondMany($requests) as $key => $result) {
+            $results = $this->openAi->respondMany($requests);
+
+            // The reading model refused outright (not available to this key,
+            // or not taking images): those pages go to the main model.
+            $main = $this->settings->get()->model;
+            $retry = [];
+            foreach ($results as $key => $result) {
+                if ($model !== $main && $result instanceof ChatbotProviderException && $result->reason === ChatbotProviderException::INVALID && in_array($result->status, [400, 403, 404], true)) {
+                    $retry[$key] = $this->request($images[(int) substr((string) $key, 1)], (int) substr((string) $key, 1), $title, $main, $apiKey);
+                }
+            }
+            if ($retry !== []) {
+                $model = $main;
+                foreach ($this->openAi->respondMany($retry) as $key => $result) {
+                    $results[$key] = $result;
+                }
+            }
+
+            foreach ($results as $key => $result) {
                 $page = (int) substr((string) $key, 1);
 
                 if ($result instanceof ChatbotProviderException) {
@@ -133,7 +151,7 @@ TEXT;
      * The model to read with: the configured OCR model, or the assistant's
      * own (vision-capable) model.
      */
-    private function model(): string
+    public function model(): string
     {
         $configured = trim((string) config('chatbot.ocr.model', ''));
 

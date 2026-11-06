@@ -58,7 +58,7 @@ final class ChatbotScanTest extends TestCase
         $this->assertSame('input_image', $ocr[0]['input'][0]['content'][1]['type']);
         $this->assertStringStartsWith('data:image/jpeg;base64,', $ocr[0]['input'][0]['content'][1]['image_url']);
         $this->assertFalse($ocr[0]['store']);
-        $this->assertSame('gpt-5.4-mini', $ocr[0]['model']);
+        $this->assertSame('gpt-6.1-terra', $ocr[0]['model']);
 
         $chunks = ChatbotChunk::query()->where('chatbot_document_id', $document->id)->orderBy('position')->get();
         $this->assertSame([1, 2, 3], $chunks->pluck('page')->unique()->values()->all());
@@ -138,6 +138,43 @@ final class ChatbotScanTest extends TestCase
         $this->assertSame('ready', $done?->status);
         $this->assertSame(__('admin_chatbot.errors.scan_pages_unread'), $done?->error);
         $this->assertSame([1], ChatbotChunk::query()->pluck('page')->unique()->values()->all());
+    }
+
+    public function test_when_the_key_cannot_use_the_reading_model_the_main_model_reads_the_pages(): void
+    {
+        $user = $this->adminUser();
+        $this->saveApiKey($user);
+        $this->openAi->failModels = ['gpt-6.1-terra' => 404];
+        Storage::disk('local')->put('chatbot/uploads/scan.pdf', KnowledgeFixtures::scannedPdf(2));
+        $service = app(ChatbotKnowledgeServiceInterface::class);
+
+        $document = $service->addUpload('chatbot/uploads/scan.pdf', 'scan.pdf', null, (int) $user->id);
+
+        $this->assertSame('ready', $document->status, (string) $document->error);
+        $models = array_column(array_filter($this->openAi->responseRequests, static fn (array $request): bool => is_array($request['input'][0]['content'] ?? null)), 'model');
+        $this->assertSame(['gpt-6.1-terra', 'gpt-6.1-terra', 'gpt-5.4-mini', 'gpt-5.4-mini'], array_values($models));
+
+        // Re-indexing does not read the pages again.
+        $calls = count($this->openAi->responseRequests);
+        $service->reindex($document->id, (int) $user->id);
+        $this->assertCount($calls, $this->openAi->responseRequests);
+    }
+
+    public function test_changing_the_reading_model_reads_the_pages_again_on_reindex(): void
+    {
+        config(['chatbot.ocr.model' => '']);
+        $user = $this->adminUser();
+        $this->saveApiKey($user);
+        Storage::disk('local')->put('chatbot/uploads/scan.pdf', KnowledgeFixtures::scannedPdf(1));
+        $service = app(ChatbotKnowledgeServiceInterface::class);
+        $document = $service->addUpload('chatbot/uploads/scan.pdf', 'scan.pdf', null, (int) $user->id);
+        $this->assertSame('ready', $document->status);
+
+        config(['chatbot.ocr.model' => 'gpt-6.1-terra']);
+        $service->reindex($document->id, (int) $user->id);
+
+        $models = array_column(array_filter($this->openAi->responseRequests, static fn (array $request): bool => is_array($request['input'][0]['content'] ?? null)), 'model');
+        $this->assertSame(['gpt-5.4-mini', 'gpt-6.1-terra'], array_values($models));
     }
 
     public function test_a_rejected_key_while_reading_fails_the_file_with_the_reason(): void

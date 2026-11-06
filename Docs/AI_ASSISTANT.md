@@ -145,8 +145,14 @@ and JPEG 2000 are skipped) go to the vision model one page per Responses call,
 `chatbot.ocr.concurrency` (8) at a time, `store: false`, `detail: high`. The
 model writes the page as Markdown with plain Markdown tables; the column
 names are added to each row afterwards in PHP, which halves the output tokens
-(output is most of a page's cost). The model is `CHATBOT_OCR_MODEL`, or the
-assistant's main model (GPT-5.4 mini, in OpenAI's free daily tier).
+(output is most of a page's cost). The model is `CHATBOT_OCR_MODEL`, default
+`gpt-6.1-terra` (OpenAI's visual-reasoning model, $1 / $5 per 1M tokens,
+about one US cent a page). GPT-5.4 mini was tried first on the ministry's
+CamScanner decrees and changed their meaning ("على الأكثر" for "على الأقل",
+"تغيير القيد" dropped), which is not acceptable for admission rules. When the
+key cannot use the reading model (400/403/404), the page is read by the main
+model instead. Saved page text records the reading model asked for; when
+that setting changes, Re-index reads the pages again.
 
 Each page's text is saved next to the file (`<file>.scan.json`) as soon as
 it is read, and reused on re-index, so a page is paid for once. The upload

@@ -60,6 +60,7 @@ return [
         'gpt-5.4-nano' => ['label' => 'GPT-5.4 nano (free daily tier)', 'input' => 0.20, 'cached_input' => 0.02, 'output' => 1.25, 'reasoning' => true, 'free_daily' => true],
         'gpt-5-mini' => ['label' => 'GPT-5 mini (free daily tier)', 'input' => 0.25, 'cached_input' => 0.025, 'output' => 2.00, 'reasoning' => true, 'free_daily' => true],
         'gpt-5-nano' => ['label' => 'GPT-5 nano (free daily tier, cheapest)', 'input' => 0.05, 'cached_input' => 0.005, 'output' => 0.40, 'reasoning' => true, 'free_daily' => true],
+        'gpt-6.1-terra' => ['label' => 'GPT-6.1 Terra (reads scanned pages)', 'input' => 1.00, 'cached_input' => 0.10, 'output' => 5.00, 'reasoning' => true, 'free_daily' => false],
         'gpt-4.1-nano' => ['label' => 'GPT-4.1 nano (free daily tier)', 'input' => 0.10, 'cached_input' => 0.025, 'output' => 0.40, 'reasoning' => false, 'free_daily' => true],
     ],
 
@@ -70,6 +71,7 @@ return [
         'gpt-6-luna' => 'none',
         'gpt-5.4-mini' => 'none',
         'gpt-5.4-nano' => 'none',
+        'gpt-6.1-terra' => 'none',
     ],
 
     /*
@@ -106,8 +108,12 @@ return [
      * text is kept next to the file and reused when the file is re-indexed.
      */
     'ocr' => [
-        // Empty: the assistant's main model (GPT-5.4 mini reads images).
-        'model' => env('CHATBOT_OCR_MODEL', ''),
+        // GPT-6.1 Terra, OpenAI's model for visual reasoning: $1 / $5 per 1M
+        // tokens, about one US cent a page. GPT-5.4 mini misread Arabic scans
+        // in ways that change the meaning ("at most" for "at least"). When
+        // the key cannot use it, pages are read with the main model instead.
+        // Empty: always the main model.
+        'model' => env('CHATBOT_OCR_MODEL', 'gpt-6.1-terra'),
         'concurrency' => (int) env('CHATBOT_OCR_CONCURRENCY', 8),
         'request_seconds' => 40,
         // The admin list's refresh reads one batch; keep it short so the page
