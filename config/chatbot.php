@@ -149,6 +149,14 @@ return [
         'max_chunks_per_document' => 1500,
         'chunk_characters' => 1100,
         'chunk_overlap' => 160,
+        // Uploaded files of at least this many characters get a "document
+        // card" (ChatbotDocumentCardWriter): one extra passage with what the
+        // document is and its key facts, so a deadline is found with the
+        // document's name. Written once (saved next to the file), by the
+        // reading model; about one US cent a document. 0 turns it off.
+        'card_min_characters' => 2500,
+        'card_input_characters' => 120000,
+        'card_model' => env('CHATBOT_CARD_MODEL', ''),
     ],
 
     /*
