@@ -12,6 +12,7 @@ use App\Filament\Resources\NewsArticleResource\Pages;
 use App\Filament\Support\FormPicker;
 use App\Filament\Support\GrantedFacultySelect;
 use App\Filament\Support\MediaPicker;
+use App\Filament\Support\StatusBadge;
 use App\Models\News\NewsArticle;
 use App\Models\News\NewsCategory;
 use App\Models\User\User;
@@ -57,7 +58,7 @@ class NewsArticleResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-newspaper';
 
-    protected static ?int $navigationSort = 2;
+    protected static ?int $navigationSort = 11;
 
     protected static ?string $recordTitleAttribute = 'slug';
 
@@ -83,7 +84,7 @@ class NewsArticleResource extends Resource
 
     public static function getNavigationGroup(): ?string
     {
-        return __('admin.navigation.groups.news');
+        return __('admin.navigation.groups.content');
     }
 
     public static function getNavigationLabel(): string
@@ -292,15 +293,8 @@ class NewsArticleResource extends Resource
                     ->label(__('admin.news_article.table.category'))
                     ->getStateUsing(fn (NewsArticle $record): string => self::editorialTypeLabel($record->category))
                     ->badge(),
-                TextColumn::make('status')
-                    ->label(__('admin.news_article.table.status'))
-                    ->formatStateUsing(fn (string $state): string => __('admin.news_article.statuses.'.$state))
-                    ->badge()->color(fn (string $state): string => match ($state) {
-                        'published' => 'success',
-                        'scheduled' => 'warning',
-                        'archived' => 'gray',
-                        default => 'gray',
-                    }),
+                StatusBadge::publication(TextColumn::make('status')
+                    ->label(__('admin.news_article.table.status'))),
                 IconColumn::make('is_enabled')->label(__('admin.news_article.table.enabled'))->boolean(),
                 IconColumn::make('is_featured')->label(__('admin.news_article.table.featured'))->boolean(),
                 TextColumn::make('scheduled_at')

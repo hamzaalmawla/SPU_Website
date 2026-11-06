@@ -19,13 +19,16 @@
     --spu-navy-deep: #151b43;
     --spu-red: #6f1616;
     --spu-gold: #caa949;
-    --spu-canvas: #f4f5f8;
+    --spu-canvas: #f5f6f9;
     --spu-surface: #ffffff;
-    --spu-surface-muted: #f8f8fa;
-    --spu-ink: #20243a;
-    --spu-muted: #667085;
-    --spu-line: #e1e4ec;
-    --spu-shadow: 0 10px 30px rgb(32 39 89 / 7%);
+    --spu-surface-muted: #f8f9fc;
+    --spu-ink: #1d2238;
+    /* 6.1:1 on white, 5.7:1 on the canvas: safe for help text and labels. */
+    --spu-muted: #5b6278;
+    --spu-line: #e3e6ee;
+    --spu-shadow: 0 1px 2px rgb(32 39 89 / 5%);
+    --spu-focus-ring: #202759;
+    --spu-focus-halo: rgb(202 169 73 / 55%);
 }
 
 [dir="rtl"] .fi-body,
@@ -35,9 +38,87 @@
 
 .fi-body {
     color: var(--spu-ink);
-    background:
-        linear-gradient(135deg, rgb(202 169 73 / 6%), transparent 26rem),
-        var(--spu-canvas);
+    background: var(--spu-canvas);
+}
+
+/* ── Accessibility basics (2026-11 refresh) ───────────────── */
+
+.spu-skip-link {
+    position: fixed;
+    inset-block-start: -5rem;
+    inset-inline-start: 1rem;
+    z-index: 100;
+    padding: 0.7rem 1.1rem;
+    color: #fff;
+    background: var(--spu-navy);
+    border-radius: 0.6rem;
+    font-weight: 700;
+    text-decoration: none;
+}
+
+.spu-skip-link:focus {
+    inset-block-start: 0.75rem;
+}
+
+.spu-skip-target {
+    display: block;
+    height: 0;
+    outline: none;
+}
+
+/* One focus ring everywhere: a navy line (enough contrast on white) with a
+   gold halo for the brand. Inputs show it on their wrapper instead. */
+.fi-body :is(a, button, summary, [role="button"], [role="tab"], [tabindex]:not([tabindex="-1"]), input[type="checkbox"], input[type="radio"]):focus-visible,
+.fi-modal-window :is(a, button, summary, [role="button"], [role="tab"], [tabindex]:not([tabindex="-1"]), input[type="checkbox"], input[type="radio"]):focus-visible {
+    outline: 2px solid var(--spu-focus-ring) !important;
+    outline-offset: 2px !important;
+    box-shadow: 0 0 0 6px var(--spu-focus-halo) !important;
+}
+
+.fi-input-wrp:focus-within,
+.fi-fo-field-wrp .choices.is-focused .choices__inner {
+    border-color: var(--spu-navy) !important;
+    box-shadow: 0 0 0 1px var(--spu-navy), 0 0 0 5px var(--spu-focus-halo) !important;
+}
+
+/* Readable text: form text, labels and table cells at 15px, nothing under 13px. */
+.fi-input,
+.fi-select-input,
+.fi-fo-field-wrp-label,
+.fi-ta-text-item-label,
+.fi-in-text-item-label,
+.fi-dropdown-list-item-label {
+    font-size: 0.9375rem !important;
+}
+
+.fi-fo-field-wrp-helper-text,
+.fi-fo-field-wrp-hint,
+.fi-ta-header-cell-label,
+.fi-ta-text-item-description,
+.fi-badge {
+    font-size: 0.8125rem !important;
+}
+
+.fi-ta-header-cell-label {
+    color: var(--spu-muted);
+    font-weight: 700;
+}
+
+/* Comfortable targets for pointer and touch. */
+.fi-btn {
+    min-height: 2.75rem;
+}
+
+.fi-btn.fi-size-xs,
+.fi-btn.fi-size-sm,
+.fi-ta-actions .fi-btn,
+.fi-ta-actions .fi-link {
+    min-height: 2.25rem;
+}
+
+.fi-fo-field-wrp-error-message {
+    font-size: 0.875rem;
+    font-weight: 600;
 }
 
 .fi-main {
@@ -294,35 +375,52 @@
 }
 
 .fi-sidebar .fi-sidebar-group-label {
-    color: rgb(102 112 133 / 70%) !important;
-    font-size: 0.7rem !important;
+    color: var(--spu-muted) !important;
+    font-size: 0.8125rem !important;
     font-weight: 700 !important;
-    letter-spacing: 0.075em !important;
+    letter-spacing: 0.04em !important;
     text-transform: uppercase !important;
 }
 
 [dir="rtl"] .fi-sidebar .fi-sidebar-group-label {
-    letter-spacing: 0;
-    text-transform: none;
+    letter-spacing: 0 !important;
+    text-transform: none !important;
+}
+
+.fi-sidebar .fi-sidebar-group-button {
+    min-height: 2.5rem;
+}
+
+.fi-sidebar .fi-sidebar-item-label {
+    font-size: 0.9375rem !important;
 }
 
 .fi-sidebar .fi-sidebar-item-button {
-    min-height: 2.55rem !important;
+    min-height: 2.75rem !important;
     border-radius: 0.7rem !important;
-    transition: background-color 150ms ease, transform 150ms ease !important;
+    transition: background-color 150ms ease !important;
 }
 
 .fi-sidebar .fi-sidebar-item-button:hover {
-    background: rgb(32 39 89 / 5%) !important;
+    background: rgb(32 39 89 / 6%) !important;
 }
 
-.fi-sidebar .fi-active .fi-sidebar-item-button {
-    background: rgb(32 39 89 / 7%) !important;
-    box-shadow: inset 3px 0 0 var(--spu-gold) !important;
+/* The open page: solid navy with white text and icon. */
+.fi-sidebar .fi-sidebar-item.fi-active > .fi-sidebar-item-button,
+.fi-sidebar .fi-sidebar-item.fi-active > .fi-sidebar-item-button:hover {
+    background: var(--spu-navy) !important;
+    box-shadow: none !important;
 }
 
-[dir="rtl"] .fi-sidebar .fi-active .fi-sidebar-item-button {
-    box-shadow: inset -3px 0 0 var(--spu-gold);
+.fi-sidebar .fi-sidebar-item.fi-active > .fi-sidebar-item-button .fi-sidebar-item-label,
+.fi-sidebar .fi-sidebar-item.fi-active > .fi-sidebar-item-button .fi-sidebar-item-icon {
+    color: #fff !important;
+}
+
+.fi-sidebar .fi-sidebar-item.fi-active > .fi-sidebar-item-button .fi-badge {
+    color: var(--spu-navy);
+    background: #fff;
+    box-shadow: none;
 }
 
 .fi-header-heading {
@@ -418,7 +516,7 @@
 }
 
 .fi-admin-locale-switcher button {
-    min-height: 2.25rem;
+    min-height: 2.75rem;
     color: var(--spu-navy);
     background: #f2f3f7;
     border: 1px solid #e1e3ea;
@@ -430,18 +528,9 @@
     padding: 1rem 1.15rem;
 }
 
-.spu-workspace::before {
-    position: absolute;
-    inset-block: 0;
-    inset-inline-start: 0;
-    width: 0.25rem;
-    content: "";
-    background: linear-gradient(var(--spu-red), var(--spu-gold));
-}
-
 .spu-workspace__eyebrow {
     color: var(--spu-red);
-    font-size: 0.7rem;
+    font-size: 0.8125rem;
     font-weight: 700;
     letter-spacing: 0.08em;
     text-transform: uppercase;
@@ -456,7 +545,7 @@
     max-width: 52rem;
     margin-top: 0.35rem;
     color: var(--spu-muted);
-    font-size: 0.88rem;
+    font-size: 0.9375rem;
     line-height: 1.65;
 }
 
@@ -477,11 +566,11 @@
 .spu-choice-links a {
     display: inline-flex;
     align-items: center;
-    min-height: 2.25rem;
+    min-height: 2.75rem;
     max-width: 100%;
-    padding: 0.42rem 0.75rem;
+    padding: 0.42rem 0.85rem;
     color: var(--spu-navy);
-    font-size: 0.8rem;
+    font-size: 0.875rem;
     font-weight: 700;
     text-decoration: none;
     overflow-wrap: anywhere;
@@ -503,8 +592,9 @@
 .spu-workspace__link:focus-visible,
 .spu-task-card:focus-visible,
 .spu-choice-links a:focus-visible {
-    outline: 3px solid rgb(202 169 73 / 55%);
-    outline-offset: 3px;
+    outline: 2px solid var(--spu-focus-ring);
+    outline-offset: 2px;
+    box-shadow: 0 0 0 6px var(--spu-focus-halo);
 }
 
 .spu-task-grid {
@@ -512,7 +602,7 @@
     grid-template-columns: minmax(13rem, 0.65fr) minmax(0, 2fr);
     gap: 1rem;
     padding: 1.15rem;
-    background: linear-gradient(135deg, #f0f1f6, #fff 68%);
+    background: var(--spu-surface);
     border: 1px solid var(--spu-line);
     border-radius: 0.9rem;
 }
@@ -534,7 +624,7 @@
 .spu-task-grid__intro>p:last-child {
     margin-top: 0.4rem;
     color: var(--spu-muted);
-    font-size: 0.82rem;
+    font-size: 0.875rem;
     line-height: 1.6;
 }
 
@@ -559,15 +649,14 @@
 
 .spu-task-card:hover,
 .spu-task-card[aria-current="page"] {
-    border-color: rgb(32 39 89 / 34%);
-    box-shadow: 0 7px 18px rgb(32 39 89 / 8%);
-    transform: translateY(-1px);
+    border-color: var(--spu-navy);
+    box-shadow: 0 2px 8px rgb(32 39 89 / 8%);
 }
 
 .spu-task-card__mark {
     flex: 0 0 auto;
     color: var(--spu-red);
-    font-size: 0.7rem;
+    font-size: 0.8125rem;
     font-weight: 700;
 }
 
@@ -578,13 +667,13 @@
 }
 
 .spu-task-card strong {
-    font-size: 0.85rem;
+    font-size: 0.9375rem;
 }
 
 .spu-task-card small {
     margin-top: 0.2rem;
     color: var(--spu-muted);
-    font-size: 0.74rem;
+    font-size: 0.8125rem;
     line-height: 1.45;
 }
 
@@ -669,11 +758,22 @@
     --spu-surface: #161a33 !important;
     --spu-surface-muted: #1c2140 !important;
     --spu-ink: #eef0f6 !important;
-    --spu-muted: #8b90a8 !important;
     --spu-line: #272d4d !important;
-    --spu-shadow: 0 12px 32px rgb(0 0 0 / 28%) !important;
+    --spu-shadow: 0 1px 2px rgb(0 0 0 / 30%) !important;
+    --spu-muted: #a4a9c0 !important;
+    --spu-focus-ring: #caa949 !important;
+    --spu-focus-halo: rgb(202 169 73 / 30%) !important;
     color: var(--spu-ink) !important;
-    background: linear-gradient(135deg, rgb(202 169 73 / 4%), transparent 26rem), var(--spu-canvas) !important;
+    background: var(--spu-canvas) !important;
+}
+
+.dark .fi-sidebar .fi-sidebar-item.fi-active > .fi-sidebar-item-button,
+.dark .fi-sidebar .fi-sidebar-item.fi-active > .fi-sidebar-item-button:hover {
+    background: #34408f !important;
+}
+
+.dark .fi-sidebar .fi-sidebar-item-button:hover {
+    background: rgb(255 255 255 / 6%) !important;
 }
 
 .dark .fi-topbar nav {
@@ -729,8 +829,8 @@
 }
 
 .dark .fi-input-wrp:focus-within {
-    border-color: var(--spu-navy) !important;
-    box-shadow: 0 0 0 3px rgb(32 39 89 / 35%) !important;
+    border-color: var(--spu-gold) !important;
+    box-shadow: 0 0 0 1px var(--spu-gold), 0 0 0 5px rgb(202 169 73 / 25%) !important;
 }
 
 .dark .fi-tabs {
@@ -771,7 +871,7 @@
 }
 
 .dark .spu-task-grid {
-    background: linear-gradient(135deg, #131730, #161a33 68%) !important;
+    background: var(--spu-surface) !important;
     border-color: var(--spu-line) !important;
 }
 
@@ -1849,6 +1949,8 @@
 
 .spu-dash-sublist {
     display: grid;
+    /* Without this the column grows to the longest title and spills out of the card. */
+    grid-template-columns: minmax(0, 1fr);
     gap: 0.35rem;
     margin: 0.6rem 0 0;
     padding: 0;
@@ -1864,7 +1966,7 @@
     display: block;
     overflow: hidden;
     color: var(--spu-ink);
-    font-size: 0.82rem;
+    font-size: 0.875rem;
     font-weight: 600;
     text-overflow: ellipsis;
     white-space: nowrap;

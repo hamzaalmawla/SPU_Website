@@ -19,7 +19,7 @@ class CenterStaffLinkResource extends StaffIntakeLinkResource
 {
     protected static ?string $slug = 'center-staff-links';
 
-    protected static ?int $navigationSort = 20;
+    protected static ?int $navigationSort = 12;
 
     public static function getModelLabel(): string
     {
@@ -38,7 +38,7 @@ class CenterStaffLinkResource extends StaffIntakeLinkResource
 
     public static function getNavigationGroup(): ?string
     {
-        return __('admin.navigation.groups.centers');
+        return __('admin.navigation.groups.inbox');
     }
 
     public static function canAccess(): bool

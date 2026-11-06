@@ -66,14 +66,14 @@ final class AdminResourceLocalizationTest extends TestCase
             ->assertSee('المستخدمون');
     }
 
-    public function test_faculty_subpage_cards_sit_in_the_localized_facilities_group(): void
+    public function test_faculty_subpage_cards_sit_in_the_localized_academic_group(): void
     {
         app()->setLocale('ar');
-        $this->assertSame(__('admin.navigation.groups.facilities'), FacultySubpageCardResource::getNavigationGroup());
+        $this->assertSame(__('admin.navigation.groups.academic'), FacultySubpageCardResource::getNavigationGroup());
         $this->assertSame('تنقل الصفحات الفرعية', FacultySubpageCardResource::getNavigationLabel());
 
         app()->setLocale('en');
-        $this->assertSame('Facilities', FacultySubpageCardResource::getNavigationGroup());
+        $this->assertSame('Academic', FacultySubpageCardResource::getNavigationGroup());
     }
 
     public function test_user_editor_shows_when_an_automatic_lock_lifts(): void

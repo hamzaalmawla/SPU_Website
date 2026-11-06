@@ -32,7 +32,7 @@ class StaffIntakeLinkResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-link';
 
-    protected static ?int $navigationSort = 30;
+    protected static ?int $navigationSort = 11;
 
     public static function getModelLabel(): string
     {
@@ -51,7 +51,7 @@ class StaffIntakeLinkResource extends Resource
 
     public static function getNavigationGroup(): ?string
     {
-        return __('admin.navigation.groups.facilities');
+        return __('admin.navigation.groups.inbox');
     }
 
     public static function canAccess(): bool

@@ -5,6 +5,7 @@ declare(strict_types=1);
 return [
     'panel' => [
         'brand' => 'إدارة الجامعة السورية الخاصة',
+        'skip_to_content' => 'تخطَّ إلى المحتوى',
         'language_switcher' => 'تبديل لغة لوحة التحكم',
         'current_language' => 'العربية',
         'switch_to_ar' => 'العربية',
@@ -196,6 +197,9 @@ return [
     'navigation' => [
         'groups' => [
             'content' => 'المحتوى',
+            'site_sections' => 'أقسام الموقع',
+            'academic' => 'الشؤون الأكاديمية',
+            'inbox' => 'الطلبات والرسائل',
             'news' => 'الأخبار',
             'facilities' => 'الكليات والمرافق',
             'centers' => 'المراكز',
@@ -414,6 +418,9 @@ return [
         'plural_model' => 'المنشورات البحثية',
         'tabs' => [
             'content' => 'المحتوى',
+            'site_sections' => 'أقسام الموقع',
+            'academic' => 'الشؤون الأكاديمية',
+            'inbox' => 'الطلبات والرسائل',
             'details' => 'التفاصيل والملفات',
         ],
         'sections' => [
@@ -531,6 +538,9 @@ return [
         'plural_model' => 'المقالات الإخبارية',
         'tabs' => [
             'content' => 'المحتوى',
+            'site_sections' => 'أقسام الموقع',
+            'academic' => 'الشؤون الأكاديمية',
+            'inbox' => 'الطلبات والرسائل',
             'event' => 'تفاصيل الفعالية',
             'publishing' => 'النشر والظهور',
             'attachments' => 'المرفقات',
@@ -2186,5 +2196,12 @@ return [
             'file_size' => 'الحد الأقصى لحجم ":name" يجب أن يكون بين 1 و10 ميغابايت.',
             'in_use' => 'هذا النموذج مستخدم (:places). عطّله بدلاً من حذفه.',
         ],
+    ],
+    'status_badges' => [
+        'draft' => 'مسودة',
+        'published' => 'منشور',
+        'scheduled' => 'مجدول',
+        'archived' => 'مؤرشف',
+        'superseded' => 'نسخة سابقة',
     ],
 ];

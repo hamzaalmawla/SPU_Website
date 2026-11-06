@@ -7,6 +7,7 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\Concerns\AuthorizesThroughPermissions;
 use App\Filament\Resources\PartnershipResource\Pages;
 use App\Filament\Support\MediaPicker;
+use App\Filament\Support\StatusBadge;
 use App\Models\Content\Partnership;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Repeater;
@@ -32,7 +33,7 @@ class PartnershipResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-link';
 
-    protected static ?int $navigationSort = 2;
+    protected static ?int $navigationSort = 15;
 
     public static function getRecordTitle(?Model $record): string
     {
@@ -62,7 +63,7 @@ class PartnershipResource extends Resource
 
     public static function getNavigationGroup(): ?string
     {
-        return __('admin.navigation.groups.about');
+        return __('admin.navigation.groups.site_sections');
     }
 
     public static function getNavigationLabel(): string
@@ -121,7 +122,7 @@ class PartnershipResource extends Resource
                 ->listWithLineBreaks()
                 ->limit(40),
             IconColumn::make('is_enabled')->boolean(),
-            TextColumn::make('publication_status')->badge()->sortable(),
+            StatusBadge::publication(TextColumn::make('publication_status'))->sortable(),
             TextColumn::make('updated_at')->dateTime()->sortable(),
         ])->actions([Tables\Actions\EditAction::make()])->bulkActions([]);
     }

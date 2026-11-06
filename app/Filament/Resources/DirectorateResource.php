@@ -7,6 +7,7 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\Concerns\AuthorizesThroughPermissions;
 use App\Filament\Resources\DirectorateResource\Pages;
 use App\Filament\Support\MediaPicker;
+use App\Filament\Support\StatusBadge;
 use App\Models\Content\Directorate;
 use App\Support\DirectorateManagerFields;
 use Filament\Forms\Components\Repeater;
@@ -33,7 +34,7 @@ class DirectorateResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-squares-2x2';
 
-    protected static ?int $navigationSort = 4;
+    protected static ?int $navigationSort = 14;
 
     public static function getRecordTitle(?Model $record): string
     {
@@ -63,7 +64,7 @@ class DirectorateResource extends Resource
 
     public static function getNavigationGroup(): ?string
     {
-        return __('admin.navigation.groups.about');
+        return __('admin.navigation.groups.site_sections');
     }
 
     public static function getNavigationLabel(): string
@@ -156,7 +157,7 @@ class DirectorateResource extends Resource
                 ->listWithLineBreaks()
                 ->limit(40),
             IconColumn::make('is_enabled')->boolean(),
-            TextColumn::make('publication_status')->badge()->sortable(),
+            StatusBadge::publication(TextColumn::make('publication_status'))->sortable(),
             TextColumn::make('updated_at')->dateTime()->sortable(),
         ])->actions([Tables\Actions\EditAction::make()])->bulkActions([]);
     }

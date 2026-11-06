@@ -29,7 +29,7 @@ final class LegacyMediaAssetResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-archive-box';
 
-    protected static ?int $navigationSort = 5;
+    protected static ?int $navigationSort = 31;
 
     protected static ?string $recordTitleAttribute = 'filename';
 

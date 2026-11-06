@@ -40,7 +40,7 @@ class PersonResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-user-group';
 
-    protected static ?int $navigationSort = 1;
+    protected static ?int $navigationSort = 13;
 
     public static function getRecordTitle(?Model $record): string
     {
@@ -72,7 +72,7 @@ class PersonResource extends Resource
 
     public static function getNavigationGroup(): ?string
     {
-        return __('admin.navigation.groups.about');
+        return __('admin.navigation.groups.site_sections');
     }
 
     public static function getNavigationLabel(): string

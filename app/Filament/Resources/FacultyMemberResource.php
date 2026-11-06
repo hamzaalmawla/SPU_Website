@@ -12,6 +12,7 @@ use App\Contracts\Faculty\FacultyLeadershipServiceInterface;
 use App\Contracts\Shared\SlugServiceInterface;
 use App\Filament\Resources\FacultyMemberResource\Pages;
 use App\Filament\Support\MediaPicker;
+use App\Filament\Support\StatusBadge;
 use App\Models\Person\FacultyMember;
 use App\Models\User\User;
 use Filament\Forms\Components\Hidden;
@@ -46,7 +47,7 @@ class FacultyMemberResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-academic-cap';
 
-    protected static ?int $navigationSort = 2;
+    protected static ?int $navigationSort = 20;
 
     public static function getRecordTitle(?Model $record): string
     {
@@ -83,7 +84,7 @@ class FacultyMemberResource extends Resource
 
     public static function getNavigationGroup(): ?string
     {
-        return __('admin.navigation.groups.facilities');
+        return __('admin.navigation.groups.academic');
     }
 
     public static function getEloquentQuery(): Builder
@@ -277,7 +278,7 @@ class FacultyMemberResource extends Resource
                 ->placeholder('-'),
             TextColumn::make('faculty.translations.name')->label(__('admin_resources.faculty_member.faculty'))->limit(30),
             IconColumn::make('is_enabled')->boolean(),
-            TextColumn::make('publication_status')->badge()->sortable(),
+            StatusBadge::publication(TextColumn::make('publication_status'))->sortable(),
             TextColumn::make('updated_at')->dateTime()->sortable(),
         ])->filters([
             SelectFilter::make('faculty_id')

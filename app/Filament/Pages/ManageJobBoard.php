@@ -10,7 +10,7 @@ final class ManageJobBoard extends ManageCampusLife
 
     protected static ?string $slug = 'manage-job-board';
 
-    protected static ?int $navigationSort = 2;
+    protected static ?int $navigationSort = 60;
 
     public static function canAccess(): bool
     {
@@ -24,7 +24,7 @@ final class ManageJobBoard extends ManageCampusLife
 
     public static function getNavigationGroup(): ?string
     {
-        return __('admin.navigation.groups.job_board');
+        return __('admin.navigation.groups.site_sections');
     }
 
     public function getTitle(): string

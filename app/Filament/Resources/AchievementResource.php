@@ -6,6 +6,7 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\AchievementResource\Pages;
 use App\Filament\Support\MediaPicker;
+use App\Filament\Support\StatusBadge;
 use App\Models\Achievement\Achievement;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Hidden;
@@ -109,7 +110,7 @@ class AchievementResource extends Resource
     {
         return $table->columns([
             TextColumn::make('title')->label(__('admin.achievement.title'))->getStateUsing(fn (Achievement $record): string => (string) ($record->translations->firstWhere('locale', app()->getLocale())?->title ?? $record->translations->firstWhere('locale', 'ar')?->title ?? '#'.$record->getKey()))->searchable(query: fn (Builder $query, string $search): Builder => $query->whereHas('translations', fn (Builder $q): Builder => $q->where('title', 'like', "%{$search}%"))),
-            TextColumn::make('status')->label(__('admin.achievement.status'))->badge(),
+            StatusBadge::publication(TextColumn::make('status')->label(__('admin.achievement.status'))),
             IconColumn::make('is_public')->label(__('admin.achievement.public'))->boolean(),
             IconColumn::make('pin_to_homepage')->label(__('admin.achievement.pin'))->boolean(),
             TextColumn::make('published_at')->label(__('admin.achievement.published_at'))->dateTime(timezone: (string) config('app.admin_timezone'))->sortable(),

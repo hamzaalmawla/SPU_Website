@@ -26,7 +26,7 @@ class DynamicFormSubmissionResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-inbox-stack';
 
-    protected static ?int $navigationSort = 3;
+    protected static ?int $navigationSort = 2;
 
     public static function canAccess(): bool
     {
@@ -36,8 +36,8 @@ class DynamicFormSubmissionResource extends Resource
     public static function getNavigationGroup(): ?string
     {
         return self::seesOnlyJobApplications()
-            ? __('admin.navigation.groups.job_board')
-            : __('admin.navigation.groups.contact');
+            ? __('admin.navigation.groups.inbox')
+            : __('admin.navigation.groups.inbox');
     }
 
     public static function getNavigationLabel(): string

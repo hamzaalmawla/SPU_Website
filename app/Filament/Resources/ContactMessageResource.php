@@ -26,7 +26,7 @@ class ContactMessageResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-envelope';
 
-    protected static ?int $navigationSort = 2;
+    protected static ?int $navigationSort = 1;
 
     protected static ?string $recordTitleAttribute = 'subject';
 
@@ -47,7 +47,7 @@ class ContactMessageResource extends Resource
 
     public static function getNavigationGroup(): ?string
     {
-        return __('admin.navigation.groups.contact');
+        return __('admin.navigation.groups.inbox');
     }
 
     public static function getNavigationLabel(): string

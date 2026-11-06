@@ -58,16 +58,13 @@ class AdminPanelProvider extends PanelProvider
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\\Filament\\Pages')
             ->navigationGroups([
+                // Five groups (2026-11 refresh). Every screen names one of these in
+                // getNavigationGroup(); the older per-area group labels stay in the
+                // lang files because user scopes still use them as area names.
                 NavigationGroup::make(fn (): string => __('admin.navigation.groups.content')),
-                NavigationGroup::make(fn (): string => __('admin.navigation.groups.news')),
-                NavigationGroup::make(fn (): string => __('admin.navigation.groups.facilities')),
-                NavigationGroup::make(fn (): string => __('admin.navigation.groups.centers')),
-                NavigationGroup::make(fn (): string => __('admin.navigation.groups.about')),
-                NavigationGroup::make(fn (): string => __('admin.navigation.groups.admissions')),
-                NavigationGroup::make(fn (): string => __('admin.navigation.groups.campus_life')),
-                NavigationGroup::make(fn (): string => __('admin.navigation.groups.research')),
-                NavigationGroup::make(fn (): string => __('admin.navigation.groups.contact')),
-                NavigationGroup::make(fn (): string => __('admin.navigation.groups.e_services')),
+                NavigationGroup::make(fn (): string => __('admin.navigation.groups.site_sections')),
+                NavigationGroup::make(fn (): string => __('admin.navigation.groups.academic')),
+                NavigationGroup::make(fn (): string => __('admin.navigation.groups.inbox')),
                 NavigationGroup::make(fn (): string => __('admin.navigation.groups.administration')),
             ])
             ->pages([
@@ -76,6 +73,14 @@ class AdminPanelProvider extends PanelProvider
             ->renderHook(
                 PanelsRenderHook::HEAD_END,
                 fn (): string => view('filament.admin.styles')->render(),
+            )
+            ->renderHook(
+                PanelsRenderHook::BODY_START,
+                fn (): string => view('filament.admin.skip-link')->render(),
+            )
+            ->renderHook(
+                PanelsRenderHook::CONTENT_START,
+                fn (): string => '<span id="spu-main-content" tabindex="-1" class="spu-skip-target"></span>',
             )
             ->renderHook(
                 PanelsRenderHook::TOPBAR_END,

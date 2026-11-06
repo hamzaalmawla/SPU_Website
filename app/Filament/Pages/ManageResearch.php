@@ -51,7 +51,7 @@ class ManageResearch extends Page implements HasForms
 
     protected static ?string $slug = 'manage-research';
 
-    protected static ?int $navigationSort = 1;
+    protected static ?int $navigationSort = 40;
 
     protected static string $view = 'filament.pages.manage-research';
 
@@ -86,7 +86,7 @@ class ManageResearch extends Page implements HasForms
 
     public static function getNavigationGroup(): ?string
     {
-        return __('admin.navigation.groups.research');
+        return __('admin.navigation.groups.academic');
     }
 
     public static function getNavigationLabel(): string
