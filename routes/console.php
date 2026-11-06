@@ -21,6 +21,11 @@ Schedule::command('site-stats:collect')->everyMinute()->withoutOverlapping();
 Schedule::command('media:prune-temp')->dailyAt('02:45')->withoutOverlapping();
 Schedule::command('content:publish-scheduled')->everyMinute()->withoutOverlapping();
 
+// Long scans uploaded to the AI assistant are read a batch of pages at a time
+// (Docs/AI_ASSISTANT.md). Nothing pending: one query. In the background so a
+// reading run never delays the other every-minute tasks.
+Schedule::command('chatbot:continue-indexing')->everyMinute()->withoutOverlapping(10)->runInBackground();
+
 // The sitemap is served from pre-generated files in public/. Publishing marks
 // them stale; this picks that up without the publish request paying for a
 // full regeneration, and skips the work entirely when nothing changed.

@@ -152,9 +152,26 @@ class ManageChatbot extends Page
             'pageSizes' => self::PAGE_SIZES,
             'filtering' => trim($this->documentSearch) !== '' || $this->documentType !== '' || $this->documentStatus !== '',
             'reasons' => $reasons,
+            'scanning' => $this->knowledge->hasPendingScans(),
             'canUpdate' => $this->canUpdate(),
             'modelLabel' => (string) (((array) config('chatbot.models', []))[$settings->model]['label'] ?? $settings->model),
         ];
+    }
+
+    /**
+     * Polled by the documents list while a scan is being read: reads the next
+     * pages (editors only; a viewer's poll just refreshes the list).
+     */
+    public function continueScans(): void
+    {
+        if (! $this->canUpdate()) {
+            return;
+        }
+
+        $finished = $this->knowledge->continuePending((int) config('chatbot.ocr.poll_seconds', 15));
+        if ($finished > 0) {
+            Notification::make()->title(__('admin_chatbot.notifications.scan_finished', ['count' => $finished]))->success()->send();
+        }
     }
 
     /** @return list<Action> */
@@ -203,8 +220,12 @@ class ManageChatbot extends Page
                         'text/csv',
                         'application/csv',
                         'application/vnd.ms-excel',
+                        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                        'image/jpeg',
+                        'image/png',
+                        'image/webp',
                     ])
-                    ->maxSize((int) config('chatbot.knowledge.max_upload_kb', 12288))
+                    ->maxSize((int) config('chatbot.knowledge.max_upload_kb', 16384))
                     ->storeFileNamesIn('names')
                     ->required(),
             ])
@@ -214,6 +235,7 @@ class ManageChatbot extends Page
 
                 $names = is_array($data['names'] ?? null) ? $data['names'] : [];
                 $indexed = 0;
+                $scanning = [];
 
                 foreach ((array) ($data['files'] ?? []) as $path) {
                     if (! is_string($path) || $path === '') {
@@ -231,6 +253,8 @@ class ManageChatbot extends Page
 
                     if ($document->status === 'ready') {
                         $indexed++;
+                    } elseif ($document->status === 'pending' && $document->scanPagesTotal > 0) {
+                        $scanning[] = $document;
                     } else {
                         $this->failure($name, (string) $document->error);
                     }
@@ -238,6 +262,15 @@ class ManageChatbot extends Page
 
                 if ($indexed > 0) {
                     Notification::make()->title(__('admin_chatbot.notifications.uploaded', ['count' => $indexed]))->success()->send();
+                }
+
+                foreach ($scanning as $document) {
+                    Notification::make()
+                        ->title(__('admin_chatbot.notifications.scanning_title', ['name' => $document->title]))
+                        ->body(__('admin_chatbot.notifications.scanning_body', ['read' => $document->scanPagesRead, 'total' => $document->scanPagesTotal]))
+                        ->info()
+                        ->persistent()
+                        ->send();
                 }
             });
     }

@@ -98,9 +98,9 @@ The assistant must never slow a page down:
 `ManageChatbot` (`chatbot.view` to open, `chatbot.update` for every change;
 super admins have both, other roles get it under Administration › Roles).
 
-- Upload PDF, DOCX, TXT, MD, CSV (12 MB, 10 at a time) or add typed text.
-  Indexing runs in the request (no queue worker on this host). Scanned PDFs
-  without a text layer fail with a clear message.
+- Upload PDF (text or scanned), DOCX, XLSX, CSV, TXT, MD, or a photo of a
+  document (JPG, PNG, WebP), up to 16 MB (PHP's `upload_max_filesize` on the
+  host), 10 at a time, or add typed text. See "How files are read" below.
 - Per file: view extracted text, rename, use/stop using, re-index, delete.
   Every change is audited (`chatbot.*` actions) and retires cached answers.
 - Settings: on/off, main and fallback model, OpenAI key (encrypted with
@@ -113,10 +113,59 @@ The widget appears only when the assistant is switched on, a key is saved and
 at least one file is indexed. Those changes flush the public page cache (the
 file store has no tags, so it is a full flush, the same as a footer change).
 
+## How files are read
+
+Everything ends up as Markdown-like text with one idea per line, so a passage
+cut from the middle of a file still makes sense. Table rows always become
+`column: value ; column: value` lines under a single `| header |` line
+(`App\Support\Chatbot\TableRows`), whatever format the table came from.
+
+| Source | Reader | Cost |
+|---|---|---|
+| PDF with a text layer | smalot/pdfparser, then `PdfLayoutText` | free |
+| PDF of scanned pages, photos | `ChatbotScanReader` (OpenAI vision, the saved key) | ~1.5k input + the page's text as output, per page |
+| Word (.docx) | `DocumentTextExtractor::docx` (headings, tables) | free |
+| Excel (.xlsx) | `SpreadsheetText` (every visible sheet, merged cells filled, dates, rounded floats) | free |
+| CSV, TXT, MD | `DocumentTextExtractor` | free |
+
+**Arabic PDFs in visual order.** Excel and Word "Save as PDF" draw Arabic one
+glyph at a time from left to right; in stream order every word comes out
+reversed (`لودجلا` for `الجدول`) and table cells run together. `PdfLayoutText`
+rebuilds each line from glyph positions (right to left on Arabic lines,
+numbers and Latin kept left to right), turns wide gaps into ` | ` cell
+boundaries, and keeps the parser's own text unless the rebuild reads clearly
+better (`arabicOrderScore`: words starting with "ال" or ending with "ة" count
+for, the reverse against). It frees the parser's per-page position cache as
+it goes: a 200-page table reads in under 40 MB.
+
+**Scans.** A PDF page with fewer than 40 letters and an image at least 400 px
+on its short side is a scan (a scanner app's watermark text does not count).
+Its largest images (JPEG as is; Flate samples wrapped as PNG; JBIG2, CCITT
+and JPEG 2000 are skipped) go to the vision model one page per Responses call,
+`chatbot.ocr.concurrency` (8) at a time, `store: false`, `detail: high`. The
+model writes the page as Markdown with plain Markdown tables; the column
+names are added to each row afterwards in PHP, which halves the output tokens
+(output is most of a page's cost). The model is `CHATBOT_OCR_MODEL`, or the
+assistant's main model (GPT-5.4 mini, in OpenAI's free daily tier).
+
+Each page's text is saved next to the file (`<file>.scan.json`) as soon as
+it is read, and reused on re-index, so a page is paid for once. The upload
+request reads for up to `request_seconds` (40); the document then shows
+"Reading scanned pages: n of N" and stays out of answers until every page is
+read. The rest is read by `chatbot:continue-indexing` (scheduled every minute,
+in the background, `command_seconds` 50) and by the admin list's 5-second
+refresh while it is open (`poll_seconds` 15). A per-document cache lock keeps
+two readers off the same file. A page that fails `max_attempts` (3) times is
+left out and the file says so; a rejected key or an empty account fails the
+file with the reason. Reading is counted in Usage (tokens and cost).
+
 ## Operations
 
-- Migration `2026_11_03_000001_create_chatbot_tables` is schema-only (no
-  approval file needed).
+- Migrations `2026_11_03_000001_create_chatbot_tables` and
+  `2026_11_06_000001_add_scan_progress_to_chatbot_documents` are schema-only
+  (no approval file needed).
+- The scheduler cron (`schedule:run` every minute) must be running for long
+  scans to finish without the admin page open.
 - Files live on the `local` disk under `storage/app/private/chatbot/documents`,
   which the deploy never touches. Back them up with `storage/`.
 - Changing `chatbot.embedding.dimensions` or model marks every file "needs
@@ -128,8 +177,8 @@ file store has no tags, so it is a full flush, the same as a footer change).
 ## Code map
 
 - Contracts: `app/Contracts/Chatbot/*` (service, knowledge, settings, usage, OpenAI client)
-- Services: `app/Services/Chatbot/*`
-- Pure helpers: `app/Support/Chatbot/*` (extractor, chunker, vectors, keywords, prompt, guard, signer)
+- Services: `app/Services/Chatbot/*` (`ChatbotScanReader` reads scanned pages)
+- Pure helpers: `app/Support/Chatbot/*` (extractor, PDF layout, spreadsheets, table rows, chunker, vectors, keywords, prompt, guard, signer)
 - Public: `ChatbotController`, `ChatbotMessageRequest`, `resources/views/public/layout/chatbot.blade.php`,
   `resources/js/chatbot/*` (widget, Markdown renderer, state, Three.js robot), `resources/css/frontend/chatbot.css`
 - Admin: `app/Filament/Pages/ManageChatbot.php`, `resources/views/filament/pages/manage-chatbot.blade.php`, `resources/views/filament/chatbot/*`

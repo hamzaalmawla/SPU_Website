@@ -35,6 +35,11 @@ interface ChatbotUsageServiceInterface
      */
     public function recordIndexing(int $embeddingTokens): bool;
 
+    /**
+     * Model tokens spent reading scanned pages of knowledge files.
+     */
+    public function recordTranscription(string $model, int $inputTokens, int $outputTokens): bool;
+
     public function questionsToday(): int;
 
     public function summary(): ChatbotUsageSummaryDTO;

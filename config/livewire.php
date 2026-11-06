@@ -8,7 +8,10 @@ declare(strict_types=1);
 return [
     'temporary_file_upload' => [
         'disk' => null,
-        'rules' => null,
+        // Livewire's default is max:12288 (12 MB). PHP on the host accepts
+        // 16 MB (upload_max_filesize=16M), which the AI assistant's knowledge
+        // files use; every upload field still sets its own, smaller limit.
+        'rules' => ['required', 'file', 'max:16384'],
         'directory' => null,
 
         // Livewire's default is throttle:60,1 for every upload request. The media

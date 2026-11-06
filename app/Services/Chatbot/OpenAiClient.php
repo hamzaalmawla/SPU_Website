@@ -11,6 +11,7 @@ use App\DTOs\Chatbot\ChatbotEmbeddingResultDTO;
 use App\Exceptions\ChatbotProviderException;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\PendingRequest;
+use Illuminate\Http\Client\Pool;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
@@ -63,6 +64,56 @@ final class OpenAiClient implements OpenAiClientInterface
 
     public function respond(ChatbotCompletionRequestDTO $request): ChatbotCompletionDTO
     {
+        $response = $this->send(
+            fn (): Response => $this->request($request->apiKey, $request->timeout ?? (int) config('chatbot.openai.timeout', 45))
+                ->post('/responses', $this->responsePayload($request))
+        );
+
+        return $this->completion($response);
+    }
+
+    public function respondMany(array $requests): array
+    {
+        if ($requests === []) {
+            return [];
+        }
+
+        $keys = array_keys($requests);
+        $responses = Http::pool(function (Pool $pool) use ($requests): array {
+            $pending = [];
+            foreach ($requests as $key => $request) {
+                $pending[] = $this->configure($pool->as((string) $key), $request->apiKey, $request->timeout ?? (int) config('chatbot.openai.timeout', 45))
+                    ->post('/responses', $this->responsePayload($request));
+            }
+
+            return $pending;
+        });
+
+        $results = [];
+        foreach ($keys as $key) {
+            $response = $responses[(string) $key] ?? null;
+
+            try {
+                if (! $response instanceof Response) {
+                    throw new ChatbotProviderException(ChatbotProviderException::UNAVAILABLE, 'OpenAI could not be reached.');
+                }
+                if (! $response->successful()) {
+                    throw $this->failure($response);
+                }
+                $results[$key] = $this->completion($response);
+            } catch (ChatbotProviderException $exception) {
+                $results[$key] = $exception;
+            }
+        }
+
+        return $results;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function responsePayload(ChatbotCompletionRequestDTO $request): array
+    {
         $payload = [
             'model' => $request->model,
             'instructions' => $request->instructions,
@@ -91,10 +142,11 @@ final class OpenAiClient implements OpenAiClientInterface
             ]];
         }
 
-        $response = $this->send(
-            fn (): Response => $this->request($request->apiKey, (int) config('chatbot.openai.timeout', 45))->post('/responses', $payload)
-        );
+        return $payload;
+    }
 
+    private function completion(Response $response): ChatbotCompletionDTO
+    {
         $text = '';
         foreach ((array) $response->json('output', []) as $item) {
             if (! is_array($item) || ($item['type'] ?? null) !== 'message') {
@@ -149,7 +201,12 @@ final class OpenAiClient implements OpenAiClientInterface
 
     private function request(string $apiKey, int $timeout): PendingRequest
     {
-        return Http::baseUrl((string) config('chatbot.openai.base_url'))
+        return $this->configure(Http::withOptions([]), $apiKey, $timeout);
+    }
+
+    private function configure(PendingRequest $request, string $apiKey, int $timeout): PendingRequest
+    {
+        return $request->baseUrl((string) config('chatbot.openai.base_url'))
             ->withToken($apiKey)
             ->acceptJson()
             ->asJson()
@@ -174,11 +231,16 @@ final class OpenAiClient implements OpenAiClientInterface
             return $response;
         }
 
+        throw $this->failure($response);
+    }
+
+    private function failure(Response $response): ChatbotProviderException
+    {
         $status = $response->status();
         $code = (string) $response->json('error.code', '');
         $type = (string) $response->json('error.type', '');
 
-        throw match (true) {
+        return match (true) {
             $status === 401, $status === 403 => new ChatbotProviderException(ChatbotProviderException::AUTH, 'OpenAI rejected the API key.', $status),
             $status === 429 && ($code === 'insufficient_quota' || $type === 'insufficient_quota') => new ChatbotProviderException(ChatbotProviderException::QUOTA, 'The OpenAI account has no credit left.', $status),
             $status === 429 => new ChatbotProviderException(ChatbotProviderException::RATE_LIMITED, 'OpenAI rate limit reached.', $status),

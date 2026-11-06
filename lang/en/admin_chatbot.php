@@ -72,13 +72,14 @@ return [
         'text' => 'Typed text',
     ],
     'needs_reindex' => 'Indexed with an older setup: re-index to use it.',
+    'scan_progress' => 'Reading scanned pages: :read of :total',
 
     'actions' => [
         'upload' => 'Upload files',
         'upload_heading' => 'Add knowledge files',
-        'upload_description' => 'Each file is read and indexed right away (a large PDF can take a minute). Scanned PDFs without a text layer cannot be read.',
+        'upload_description' => 'Each file is read and indexed right away (a large PDF can take a minute). Scanned PDFs and photos of documents are read page by page by the AI model; a long scan carries on in the background and its progress shows in the list.',
         'files' => 'Files',
-        'files_help' => 'PDF, Word (.docx), .txt, .md or .csv, up to 12 MB each, 10 at a time.',
+        'files_help' => 'PDF (with text or scanned), Word (.docx), Excel (.xlsx), .csv, .txt, .md, or a photo of a document (JPG, PNG, WebP), up to 16 MB each, 10 at a time.',
         'upload_submit' => 'Upload and index',
         'sync_website' => 'Sync website pages',
         'sync_website_heading' => 'Learn from the website\'s pages',
@@ -173,6 +174,9 @@ return [
 
     'notifications' => [
         'uploaded' => ':count file(s) indexed.',
+        'scanning_title' => 'Reading the scanned pages of “:name”',
+        'scanning_body' => ':read of :total pages read so far. The rest is read in the background; the file is used as soon as every page is read. You can leave this page.',
+        'scan_finished' => ':count scanned file(s) read and indexed.',
         'upload_failed' => ':name: :reason',
         'website_synced' => ':pages pages read: :added added, :updated updated, :unchanged unchanged, :removed removed, :failed failed.',
         'website_unreachable' => 'The website could not be read from the server. The existing knowledge was kept.',
@@ -193,9 +197,13 @@ return [
 
     'errors' => [
         'unreadable' => 'The file could not be read.',
-        'unsupported_type' => 'This file type is not supported. Use PDF, Word (.docx), .txt, .md or .csv.',
+        'unsupported_type' => 'This file type is not supported. Use PDF, Word (.docx), Excel (.xlsx), .csv, .txt, .md, or a JPG, PNG or WebP image.',
         'no_text' => 'No text was found in the file.',
-        'no_text_pdf' => 'No text was found in this PDF. It is probably a scan: export it with text (OCR) and upload it again.',
+        'no_text_pdf' => 'No text was found in this PDF, and it has no scanned pages to read.',
+        'scan_no_text' => 'No text could be read from the scanned pages. Check that the scan is sharp and upright, then re-index.',
+        'scan_pages_unread' => 'Some scanned pages could not be read and were left out. Re-index to try them again.',
+        'image_unreadable' => 'This image could not be read. Use a JPG, PNG or WebP file.',
+        'xlsx_unreadable' => 'This Excel file could not be read. Save it as .xlsx (Excel Workbook) and try again.',
         'pdf_encrypted' => 'This PDF is password-protected. Upload a copy without protection.',
         'pdf_unreadable' => 'This PDF could not be read. Try saving it again as PDF.',
         'docx_unreadable' => 'This Word file could not be read. Save it as .docx and try again.',

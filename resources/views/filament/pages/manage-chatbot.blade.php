@@ -131,6 +131,11 @@
                 </div>
             @endif
 
+            @if ($scanning)
+                {{-- Keeps reading a scan's pages while this list is open. --}}
+                <div wire:poll.5s="continueScans" hidden></div>
+            @endif
+
             @if ($documents->total === 0 && $filtering)
                 <div class="spu-assistant__empty">
                     <x-filament::icon icon="heroicon-o-magnifying-glass" class="spu-assistant__empty-icon" />
@@ -185,7 +190,10 @@
                                         <x-filament::badge :color="match ($document->status) { 'ready' => $document->needsReindex ? 'warning' : 'success', 'failed' => 'danger', default => 'gray' }">
                                             {{ __('admin_chatbot.statuses.'.$document->status) }}
                                         </x-filament::badge>
-                                        @if ($document->needsReindex && $document->status === 'ready')
+                                        @if ($document->status === 'pending' && $document->scanPagesTotal > 0)
+                                            <p class="spu-assistant__note" role="status">{{ __('admin_chatbot.scan_progress', ['read' => $document->scanPagesRead, 'total' => $document->scanPagesTotal]) }}</p>
+                                            <progress class="spu-assistant__progress" max="{{ $document->scanPagesTotal }}" value="{{ $document->scanPagesRead }}" aria-hidden="true"></progress>
+                                        @elseif ($document->needsReindex && $document->status === 'ready')
                                             <p class="spu-assistant__note">{{ __('admin_chatbot.needs_reindex') }}</p>
                                         @elseif ($document->error)
                                             <p @class(['spu-assistant__note', 'is-error' => $document->status === 'failed'])>{{ $document->error }}</p>

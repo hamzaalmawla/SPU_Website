@@ -69,6 +69,19 @@ final class ChatbotUsageService implements ChatbotUsageServiceInterface
         ]);
     }
 
+    public function recordTranscription(string $model, int $inputTokens, int $outputTokens): bool
+    {
+        if ($inputTokens <= 0 && $outputTokens <= 0) {
+            return true;
+        }
+
+        return $this->increment([
+            'input_tokens' => max(0, $inputTokens),
+            'output_tokens' => max(0, $outputTokens),
+            'cost_micro_usd' => $this->costMicroUsd($model, $inputTokens, 0, $outputTokens),
+        ]);
+    }
+
     public function questionsToday(): int
     {
         return (int) ChatbotUsageDay::query()->where('day', $this->today())->value('questions');

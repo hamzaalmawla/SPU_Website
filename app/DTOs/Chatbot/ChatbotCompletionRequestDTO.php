@@ -7,7 +7,7 @@ namespace App\DTOs\Chatbot;
 final readonly class ChatbotCompletionRequestDTO
 {
     /**
-     * @param  list<array{role: 'user'|'assistant', content: string}>  $messages
+     * @param  list<array{role: 'user'|'assistant', content: string|list<array<string, mixed>>}>  $messages  content may be a list of parts (input_text, input_image)
      */
     public function __construct(
         public string $apiKey,
@@ -19,5 +19,7 @@ final readonly class ChatbotCompletionRequestDTO
         public ?string $cacheKey = null,
         /** @var array<string, mixed>|null JSON schema the reply must follow (structured output). */
         public ?array $jsonSchema = null,
+        /** Seconds to wait for the reply; null uses chatbot.openai.timeout. */
+        public ?int $timeout = null,
     ) {}
 }
