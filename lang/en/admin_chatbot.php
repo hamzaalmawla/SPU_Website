@@ -117,6 +117,7 @@ return [
     ],
 
     'test' => [
+        'searched_as' => 'Searched as:',
         'answer' => 'Answer',
         'sources' => 'Sources',
         'no_sources' => 'No passage was relevant enough; the assistant answered without the files.',

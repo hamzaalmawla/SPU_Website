@@ -69,7 +69,7 @@ final class ChatbotUsageService implements ChatbotUsageServiceInterface
         ]);
     }
 
-    public function recordTranscription(string $model, int $inputTokens, int $outputTokens): bool
+    public function recordModelUse(string $model, int $inputTokens, int $outputTokens): bool
     {
         if ($inputTokens <= 0 && $outputTokens <= 0) {
             return true;

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Support;
 
 use App\Support\Chatbot\KeywordScorer;
+use App\Support\Chatbot\SearchRewrite;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
 
@@ -24,6 +25,14 @@ final class FakeOpenAi
 
     /** @var list<array<string, mixed>> */
     public array $embeddingRequests = [];
+
+    /** @var list<array<string, mixed>> search rewrites (SearchRewrite), kept apart from answers */
+    public array $rewriteRequests = [];
+
+    /** @var (callable(string): string)|null the rewrite for a question; default: none useful */
+    public $rewriteWith = null;
+
+    public int $rewriteStatus = 200;
 
     /** @var (callable(array<string, mixed>): string)|null */
     public $answerWith = null;
@@ -92,6 +101,23 @@ final class FakeOpenAi
                 }
 
                 return Http::response(['id' => 'modr-1', 'model' => 'omni-moderation-latest', 'results' => [['flagged' => $fake->flagged, 'categories' => []]]]);
+            }
+
+            if (str_ends_with($request->url(), '/responses') && ($payload['instructions'] ?? null) === SearchRewrite::INSTRUCTIONS) {
+                $fake->rewriteRequests[] = $payload;
+                if ($fake->rewriteStatus !== 200) {
+                    return Http::response(['error' => ['message' => 'failure']], $fake->rewriteStatus);
+                }
+                $question = (string) ($payload['input'][0]['content'] ?? '');
+                $text = $fake->rewriteWith !== null ? ($fake->rewriteWith)($question) : $question."\n".$question;
+
+                return Http::response([
+                    'id' => 'resp_rewrite',
+                    'object' => 'response',
+                    'status' => 'completed',
+                    'output' => [['type' => 'message', 'id' => 'msg_r', 'role' => 'assistant', 'content' => [['type' => 'output_text', 'text' => $text, 'annotations' => []]]]],
+                    'usage' => ['input_tokens' => 300, 'input_tokens_details' => ['cached_tokens' => 0], 'output_tokens' => 40, 'total_tokens' => 340],
+                ]);
             }
 
             if (str_ends_with($request->url(), '/responses')) {

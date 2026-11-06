@@ -23,6 +23,7 @@ use App\Exceptions\ChatbotProviderException;
 use App\Support\Chatbot\ChatbotGuard;
 use App\Support\Chatbot\ChatbotPrompt;
 use App\Support\Chatbot\ConversationSigner;
+use App\Support\Chatbot\SearchRewrite;
 use App\Support\SearchTextNormalizer;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
@@ -155,7 +156,9 @@ final class ChatbotService implements ChatbotServiceInterface
                 return $this->refuse($question, $locale, 'unsafe');
             }
 
-            $retrieval = $this->knowledge->retrieve($this->retrievalQuery($outgoing, $history), $apiKey, $locale);
+            $searchQuery = $this->retrievalQuery($outgoing, $history);
+            $searchHint = $this->searchHint($searchQuery, $apiKey, $settings->model);
+            $retrieval = $this->knowledge->retrieve($searchQuery, $apiKey, $locale, $searchHint);
             $embeddingTokens = $retrieval->embeddingTokens;
 
             // Layer 3: the model classifies the message before answering
@@ -236,7 +239,57 @@ final class ChatbotService implements ChatbotServiceInterface
             ], (int) config('chatbot.conversation.answer_cache_minutes', 720) * 60);
         }
 
-        return new ChatbotReplyDTO(ChatbotReplyDTO::STATUS_OK, $answer, $sources, false, ConversationSigner::sign($locale, $message, $answer));
+        return new ChatbotReplyDTO(
+            ChatbotReplyDTO::STATUS_OK,
+            $answer,
+            $sources,
+            false,
+            ConversationSigner::sign($locale, $message, $answer),
+            passages: $question->adminTest ? $retrieval->passages : [],
+            searchHint: $question->adminTest ? $searchHint : null,
+        );
+    }
+
+    /**
+     * The question in the documents' wording (SearchRewrite), from a small
+     * model call; cached a week per question. Null when switched off or when
+     * the call fails: retrieval then uses the question alone.
+     */
+    private function searchHint(string $query, string $apiKey, string $mainModel): ?string
+    {
+        if (! (bool) config('chatbot.retrieval.rewrite', true) || mb_strlen($query) < 3) {
+            return null;
+        }
+
+        $model = trim((string) config('chatbot.retrieval.rewrite_model', '')) ?: $mainModel;
+        $key = 'chatbot.search-hint.'.sha1($model.'|'.SearchTextNormalizer::normalize($query));
+        $cached = Cache::get($key);
+        if (is_string($cached)) {
+            return $cached !== '' ? $cached : null;
+        }
+
+        try {
+            $completion = $this->openAi->respond(new ChatbotCompletionRequestDTO(
+                apiKey: $apiKey,
+                model: $model,
+                instructions: SearchRewrite::INSTRUCTIONS,
+                messages: [['role' => 'user', 'content' => $query]],
+                maxOutputTokens: 300,
+                reasoningEffort: $this->reasoningEffort($model),
+                cacheKey: 'spu-assistant-search',
+                timeout: (int) config('chatbot.retrieval.rewrite_timeout', 8),
+            ));
+        } catch (ChatbotProviderException $exception) {
+            Log::notice('Chatbot search rewrite skipped.', ['reason' => $exception->reason, 'status' => $exception->status]);
+
+            return null;
+        }
+
+        $this->usage->recordModelUse($model, $completion->inputTokens, $completion->outputTokens);
+        $hint = SearchRewrite::parse($completion->text, $query);
+        Cache::put($key, $hint ?? '', 604_800);
+
+        return $hint;
     }
 
     /**

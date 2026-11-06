@@ -53,8 +53,9 @@ final class ChatbotEndpointTest extends TestCase
         $this->assertSame(1, $usage->questionsToday);
         // gpt-5.4-mini at standard prices: 1000 uncached input x $0.75 + 200 cached x $0.075
         // + 150 output x $4.50, per million = 1440 millionths of a dollar (an upper
-        // bound: the free daily tier may cover it).
-        $this->assertSame(1440, (int) ChatbotUsageDay::query()->value('cost_micro_usd'));
+        // bound: the free daily tier may cover it), plus the search rewrite:
+        // 300 input x $0.75 + 40 output x $4.50 = 405.
+        $this->assertSame(1440 + 405, (int) ChatbotUsageDay::query()->value('cost_micro_usd'));
     }
 
     public function test_the_arabic_site_sends_the_page_language_and_signed_follow_up_history(): void
@@ -91,8 +92,9 @@ final class ChatbotEndpointTest extends TestCase
 
         $this->assertSame(['gpt-5.4-mini', 'gpt-6-luna'], array_column($this->openAi->responseRequests, 'model'));
         $this->assertSame(['effort' => 'none'], $this->openAi->responseRequests[1]['reasoning']);
-        // Billed at GPT-6 Luna prices: 1000 x 0.10 + 200 x 0.01 + 150 x 0.50 = 177.
-        $this->assertSame(177, (int) ChatbotUsageDay::query()->value('cost_micro_usd'));
+        // Billed at GPT-6 Luna prices: 1000 x 0.10 + 200 x 0.01 + 150 x 0.50 = 177,
+        // plus the search rewrite on the main model (405).
+        $this->assertSame(177 + 405, (int) ChatbotUsageDay::query()->value('cost_micro_usd'));
     }
 
     public function test_a_rejected_key_is_not_retried_on_the_fallback(): void
