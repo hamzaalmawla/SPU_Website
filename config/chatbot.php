@@ -155,7 +155,10 @@ return [
         // document's name. Written once (saved next to the file), by the
         // reading model; about one US cent a document. 0 turns it off.
         'card_min_characters' => 2500,
-        'card_input_characters' => 120000,
+        // What the card is written from: the first and the last characters.
+        'card_head_characters' => 24000,
+        'card_tail_characters' => 8000,
+        'card_retry_ms' => 4000,
         'card_model' => env('CHATBOT_CARD_MODEL', ''),
     ],
 
