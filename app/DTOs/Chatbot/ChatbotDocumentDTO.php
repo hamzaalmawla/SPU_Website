@@ -10,6 +10,10 @@ namespace App\DTOs\Chatbot;
  * `needsReindex` is true when the passages were embedded with another model or
  * vector size than the current configuration, so they no longer match a
  * question's embedding.
+ *
+ * `scanPagesTotal` is the number of scanned pages (read by a vision model)
+ * and `scanPagesRead` how many of them are read; a pending document with
+ * fewer read than total is still being read.
  */
 final readonly class ChatbotDocumentDTO
 {
@@ -31,5 +35,7 @@ final readonly class ChatbotDocumentDTO
         public string $createdAt,
         public ?string $sourceUrl = null,
         public ?string $locale = null,
+        public int $scanPagesTotal = 0,
+        public int $scanPagesRead = 0,
     ) {}
 }

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services\Chatbot;
 
 use App\Contracts\Chatbot\ChatbotKnowledgeServiceInterface;
+use App\Contracts\Chatbot\ChatbotScanReaderInterface;
 use App\Contracts\Chatbot\ChatbotSettingsServiceInterface;
 use App\Contracts\Chatbot\ChatbotUsageServiceInterface;
 use App\Contracts\Chatbot\ChatbotWebsiteCrawlerInterface;
@@ -29,6 +30,7 @@ use App\Support\Chatbot\VectorMath;
 use App\Support\SearchTextNormalizer;
 use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -39,7 +41,11 @@ use Throwable;
  * Indexes knowledge files into embedded passages and retrieves them.
  *
  * Indexing runs inside the editor's request: there is no queue worker on this
- * host (QUEUE_CONNECTION=sync), and a 12 MB file is a few embedding calls.
+ * host (QUEUE_CONNECTION=sync), and a 16 MB file is a few embedding calls.
+ * Scanned pages are the exception: a vision model reads them a batch at a
+ * time, the text of each page is saved next to the file as it is read, and
+ * the document stays "pending" until every page is read. The admin list and
+ * the scheduler (continuePending) carry on where the last request stopped.
  *
  * Retrieval is a brute-force cosine scan over the active passages followed by
  * a keyword re-rank of the best candidates. That is exact (no approximate
@@ -54,6 +60,7 @@ final class ChatbotKnowledgeService implements ChatbotKnowledgeServiceInterface
         private readonly AuditServiceInterface $audit,
         private readonly CacheServiceInterface $cache,
         private readonly ChatbotWebsiteCrawlerInterface $crawler,
+        private readonly ChatbotScanReaderInterface $scanReader,
     ) {}
 
     public function documents(): Collection
@@ -245,6 +252,41 @@ final class ChatbotKnowledgeService implements ChatbotKnowledgeServiceInterface
         $this->audit->log('chatbot.knowledge.reindexed', $actorId, 'chatbot_document', null, ['documents' => $rebuilt]);
 
         return $rebuilt;
+    }
+
+    public function continuePending(int $seconds): int
+    {
+        $seconds = max(5, $seconds);
+        ExecutionTime::atLeast($seconds + 120);
+        $deadline = microtime(true) + $seconds;
+        $finished = 0;
+
+        $documents = ChatbotDocument::query()
+            ->where('status', ChatbotDocument::STATUS_PENDING)
+            ->where('scan_pages_total', '>', 0)
+            ->orderBy('id')
+            ->get();
+
+        foreach ($documents as $document) {
+            if (microtime(true) >= $deadline) {
+                break;
+            }
+
+            $result = $this->index($document, true, $deadline);
+            if ($result->status === ChatbotDocument::STATUS_READY) {
+                $finished++;
+            }
+        }
+
+        return $finished;
+    }
+
+    public function hasPendingScans(): bool
+    {
+        return ChatbotDocument::query()
+            ->where('status', ChatbotDocument::STATUS_PENDING)
+            ->where('scan_pages_total', '>', 0)
+            ->exists();
     }
 
     public function setActive(int $documentId, bool $active, int $actorId): bool
@@ -490,9 +532,26 @@ final class ChatbotKnowledgeService implements ChatbotKnowledgeServiceInterface
         return is_string($version) ? $version : 'none';
     }
 
-    private function index(ChatbotDocument $document, bool $announce = true): ChatbotDocumentDTO
+    private function index(ChatbotDocument $document, bool $announce = true, ?float $deadline = null): ChatbotDocumentDTO
     {
         ExecutionTime::atLeast(300);
+
+        // One reader per document: the admin list and the scheduler may both
+        // try to carry on reading the same scan.
+        $lock = Cache::lock('chatbot.index.'.$document->id, 900);
+        if (! $lock->get()) {
+            return $this->toDto($document->fresh(['uploader:id,name']) ?? $document);
+        }
+
+        try {
+            return $this->indexLocked($document, $announce, $deadline ?? microtime(true) + (int) config('chatbot.ocr.request_seconds', 40));
+        } finally {
+            $lock->release();
+        }
+    }
+
+    private function indexLocked(ChatbotDocument $document, bool $announce, float $deadline): ChatbotDocumentDTO
+    {
         $before = $announce ? $this->hasSearchable() : null;
 
         try {
@@ -506,7 +565,37 @@ final class ChatbotKnowledgeService implements ChatbotKnowledgeServiceInterface
                 throw new InvalidArgumentException('admin_chatbot.errors.source_missing');
             }
 
-            $sections = DocumentTextExtractor::extract($this->disk()->path($path), (string) $document->extension);
+            $read = DocumentTextExtractor::read($this->disk()->path($path), (string) $document->extension);
+            $sections = $read['sections'];
+            $unreadPages = 0;
+
+            if ($read['scans'] !== []) {
+                $scan = $this->readScans($document, $read['scans'], $apiKey, $deadline);
+                if ($scan === null) {
+                    // More pages to read: stays pending, carried on later.
+                    // (A re-indexed document leaves the searchable set.)
+                    if ($announce) {
+                        $this->knowledgeChanged($before);
+                    }
+
+                    return $this->toDto($document->fresh(['uploader:id,name']) ?? $document);
+                }
+
+                [$texts, $unreadPages] = $scan;
+                foreach ($sections as $index => $section) {
+                    if ($section['page'] !== null && isset($texts[$section['page']])) {
+                        $sections[$index]['text'] = $texts[$section['page']];
+                    }
+                }
+            } elseif ((int) $document->scan_pages_total !== 0) {
+                $document->update(['scan_pages_total' => 0, 'scan_pages_read' => 0]);
+            }
+
+            $sections = array_values(array_filter($sections, static fn (array $section): bool => $section['text'] !== ''));
+            if ($sections === []) {
+                throw new InvalidArgumentException($read['scans'] !== [] ? 'admin_chatbot.errors.scan_no_text' : 'admin_chatbot.errors.no_text');
+            }
+
             $chunks = TextChunker::chunk(
                 $sections,
                 (int) config('chatbot.knowledge.chunk_characters', 1100),
@@ -539,7 +628,7 @@ final class ChatbotKnowledgeService implements ChatbotKnowledgeServiceInterface
                 ];
             }
 
-            DB::transaction(function () use ($document, $rows, $chunks, $tokens, $truncated, $now): void {
+            DB::transaction(function () use ($document, $rows, $chunks, $tokens, $truncated, $unreadPages, $now): void {
                 $document->chunks()->delete();
                 foreach (array_chunk($rows, 100) as $batch) {
                     ChatbotChunk::query()->insert($batch);
@@ -547,7 +636,7 @@ final class ChatbotKnowledgeService implements ChatbotKnowledgeServiceInterface
 
                 $document->update([
                     'status' => ChatbotDocument::STATUS_READY,
-                    'error' => $truncated ? 'admin_chatbot.errors.truncated' : null,
+                    'error' => $truncated ? 'admin_chatbot.errors.truncated' : ($unreadPages > 0 ? 'admin_chatbot.errors.scan_pages_unread' : null),
                     'chunk_count' => count($rows),
                     'character_count' => array_sum(array_map(static fn (array $chunk): int => mb_strlen($chunk['content']), $chunks)),
                     'embedding_tokens' => $tokens,
@@ -572,6 +661,124 @@ final class ChatbotKnowledgeService implements ChatbotKnowledgeServiceInterface
         }
 
         return $this->toDto($document->fresh(['uploader:id,name']) ?? $document);
+    }
+
+    /**
+     * Reads the scanned pages not read yet, as far as time allows, and saves
+     * each page's text next to the file. Returns every scanned page's text
+     * and how many pages were given up on, or null while pages remain.
+     *
+     * @param  list<int>  $scans
+     * @return array{0: array<int, string>, 1: int}|null
+     */
+    private function readScans(ChatbotDocument $document, array $scans, string $apiKey, float $deadline): ?array
+    {
+        $state = $this->scanState($document);
+        $todo = array_values(array_filter($scans, static fn (int $page): bool => ! array_key_exists($page, $state['pages'])));
+
+        if ($todo !== []) {
+            $batch = $this->scanReader->read(
+                $this->disk()->path((string) $document->storage_path),
+                (string) $document->extension,
+                $todo,
+                (string) $document->title,
+                $apiKey,
+                $deadline,
+            );
+
+            foreach ($batch->texts as $page => $text) {
+                $state['pages'][$page] = $text;
+            }
+
+            $maxAttempts = max(1, (int) config('chatbot.ocr.max_attempts', 3));
+            foreach ($batch->failedPages as $page) {
+                $state['attempts'][$page] = ($state['attempts'][$page] ?? 0) + 1;
+                if ($state['attempts'][$page] >= $maxAttempts) {
+                    $state['pages'][$page] = '';
+                    $state['unread'][$page] = true;
+                }
+            }
+
+            $state['model'] = $batch->model;
+            $this->saveScanState($document, $state);
+            $this->usage->recordTranscription($batch->model, $batch->inputTokens, $batch->outputTokens);
+        }
+
+        $read = count(array_intersect_key($state['pages'], array_flip($scans)));
+        $document->update(['scan_pages_total' => count($scans), 'scan_pages_read' => $read]);
+
+        if ($read < count($scans)) {
+            $document->update(['status' => ChatbotDocument::STATUS_PENDING, 'error' => null]);
+
+            return null;
+        }
+
+        $texts = [];
+        foreach ($scans as $page) {
+            $texts[$page] = (string) $state['pages'][$page];
+        }
+
+        return [$texts, count(array_intersect_key($state['unread'], array_flip($scans)))];
+    }
+
+    /**
+     * @return array{pages: array<int, string>, attempts: array<int, int>, unread: array<int, true>, model: ?string}
+     */
+    private function scanState(ChatbotDocument $document): array
+    {
+        $empty = ['pages' => [], 'attempts' => [], 'unread' => [], 'model' => null];
+        $path = $this->scanStatePath($document);
+        if ($path === null || ! $this->disk()->exists($path)) {
+            return $empty;
+        }
+
+        $data = json_decode((string) $this->disk()->get($path), true);
+        if (! is_array($data)) {
+            return $empty;
+        }
+
+        $pages = [];
+        foreach ((array) ($data['pages'] ?? []) as $page => $text) {
+            $pages[(int) $page] = (string) $text;
+        }
+        $attempts = [];
+        foreach ((array) ($data['attempts'] ?? []) as $page => $count) {
+            $attempts[(int) $page] = (int) $count;
+        }
+        $unread = [];
+        foreach ((array) ($data['unread'] ?? []) as $page) {
+            $unread[(int) $page] = true;
+        }
+
+        return ['pages' => $pages, 'attempts' => $attempts, 'unread' => $unread, 'model' => is_string($data['model'] ?? null) ? $data['model'] : null];
+    }
+
+    /**
+     * @param  array{pages: array<int, string>, attempts: array<int, int>, unread: array<int, true>, model: ?string}  $state
+     */
+    private function saveScanState(ChatbotDocument $document, array $state): void
+    {
+        $path = $this->scanStatePath($document);
+        if ($path === null) {
+            return;
+        }
+
+        $this->disk()->put($path, (string) json_encode([
+            'model' => $state['model'],
+            'pages' => (object) $state['pages'],
+            'attempts' => (object) $state['attempts'],
+            'unread' => array_keys($state['unread']),
+        ], JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE));
+    }
+
+    /**
+     * The text read from a document's scanned pages lives next to the file.
+     */
+    private function scanStatePath(ChatbotDocument $document): ?string
+    {
+        $path = (string) $document->storage_path;
+
+        return $path !== '' ? $path.'.scan.json' : null;
     }
 
     /**
@@ -636,7 +843,7 @@ final class ChatbotKnowledgeService implements ChatbotKnowledgeServiceInterface
         });
 
         if (is_string($path) && $path !== '') {
-            $this->disk()->delete($path);
+            $this->disk()->delete([$path, $path.'.scan.json']);
         }
     }
 
@@ -692,7 +899,15 @@ final class ChatbotKnowledgeService implements ChatbotKnowledgeServiceInterface
     {
         $title = trim((string) $title);
         if ($title === '') {
-            $title = trim((string) preg_replace('/[_\-]+/u', ' ', pathinfo($originalName, PATHINFO_FILENAME)));
+            // "دليل_القبول-2026" reads "دليل القبول 2026"; a year range
+            // (2026-2027) and a spaced dash (" - ") are kept as written.
+            $title = (string) preg_replace('/_+/u', ' ', pathinfo($originalName, PATHINFO_FILENAME));
+            $title = (string) preg_replace_callback(
+                '/(\S)-+(?=(\S))/u',
+                static fn (array $match): string => $match[1].(ctype_digit($match[1]) && ctype_digit($match[2]) ? '-' : ' '),
+                $title,
+            );
+            $title = trim((string) preg_replace('/\s+/u', ' ', $title));
         }
 
         return mb_substr($title !== '' ? $title : 'Document', 0, 255);
@@ -730,6 +945,8 @@ final class ChatbotKnowledgeService implements ChatbotKnowledgeServiceInterface
             createdAt: (string) $document->created_at?->toIso8601String(),
             sourceUrl: $document->source_url,
             locale: $document->locale,
+            scanPagesTotal: (int) $document->scan_pages_total,
+            scanPagesRead: (int) $document->scan_pages_read,
         );
     }
 }

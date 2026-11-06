@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace Tests\Unit\Chatbot;
 
 use App\Support\Chatbot\DocumentTextExtractor;
+use App\Support\Chatbot\PdfLayoutText;
 use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
+use Tests\Support\KnowledgeFixtures;
 use ZipArchive;
 
 final class DocumentTextExtractorTest extends TestCase
@@ -60,7 +62,7 @@ final class DocumentTextExtractorTest extends TestCase
 
         $text = DocumentTextExtractor::extract($path, 'docx')[0]['text'];
 
-        $this->assertSame("# Admission\nApply online.\n| Faculty | Minimum |\n| Medicine | 230 |\n\nEnds here.", $text);
+        $this->assertSame("# Admission\nApply online.\n| Faculty | Minimum |\nFaculty: Medicine ; Minimum: 230\n\nEnds here.", $text);
     }
 
     public function test_pdf_text_is_read_page_by_page(): void
@@ -74,6 +76,56 @@ final class DocumentTextExtractorTest extends TestCase
         $this->assertStringContainsString('Admission opens in July.', $sections[0]['text']);
         $this->assertSame(2, $sections[1]['page']);
         $this->assertStringContainsString('Tuition is paid per semester.', $sections[1]['text']);
+    }
+
+    public function test_arabic_drawn_in_visual_order_is_read_in_reading_order_with_cells(): void
+    {
+        // Excel's "Save as PDF" draws Arabic glyph by glyph from left to
+        // right: in stream order every word is backwards and cells run on.
+        $path = $this->file('pdf', KnowledgeFixtures::visualOrderArabicPdf([['الجدول 2026', '80'], ['طب الجامعة', 'الخاصة']]));
+
+        $text = DocumentTextExtractor::extract($path, 'pdf')[0]['text'];
+
+        $this->assertSame("الجدول 2026 | 80\nطب الجامعة | الخاصة", $text);
+    }
+
+    public function test_the_reading_order_score_tells_reversed_arabic_apart(): void
+    {
+        $this->assertGreaterThan(0, PdfLayoutText::arabicOrderScore('الجامعة السورية الخاصة في ريف دمشق'));
+        $this->assertLessThan(0, PdfLayoutText::arabicOrderScore('ةعماجلا ةيروسلا ةصاخلا يف فير قشمد'));
+        $this->assertSame(0, PdfLayoutText::arabicOrderScore('Admission opens in July.'));
+    }
+
+    public function test_scanned_pdf_pages_are_reported_with_their_page_images(): void
+    {
+        $path = $this->file('pdf', KnowledgeFixtures::scannedPdf(3));
+
+        $read = DocumentTextExtractor::read($path, 'pdf');
+
+        $this->assertSame([1, 2, 3], $read['scans']);
+        // The scanner app's watermark is not kept as text.
+        $this->assertSame(['', '', ''], array_column($read['sections'], 'text'));
+
+        $images = DocumentTextExtractor::pageImages($path, 'pdf', [2, 3]);
+        $this->assertSame([2, 3], array_keys($images));
+        $this->assertSame('image/jpeg', $images[2][0]->mime);
+        $this->assertSame("\xFF\xD8", substr($images[2][0]->bytes, 0, 2));
+
+        // extract() keeps refusing a file with nothing but scans.
+        $this->expectExceptionMessage('admin_chatbot.errors.no_text_pdf');
+        DocumentTextExtractor::extract($path, 'pdf');
+    }
+
+    public function test_a_text_pdf_has_no_scans_and_an_image_upload_is_one(): void
+    {
+        $this->assertSame([], DocumentTextExtractor::read($this->file('pdf', $this->pdf(['Admission opens in July.'])), 'pdf')['scans']);
+
+        $photo = $this->file('jpg', KnowledgeFixtures::jpeg());
+        $this->assertSame(['sections' => [['page' => 1, 'text' => '']], 'scans' => [1]], DocumentTextExtractor::read($photo, 'jpg'));
+        $this->assertSame('image/jpeg', DocumentTextExtractor::pageImages($photo, 'jpg', [1])[1][0]->mime);
+
+        $this->expectExceptionMessage('admin_chatbot.errors.image_unreadable');
+        DocumentTextExtractor::read($this->file('png', 'not an image'), 'png');
     }
 
     public function test_unreadable_files_fail_with_a_translation_key(): void

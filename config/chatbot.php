@@ -96,6 +96,32 @@ return [
         'link_hosts' => ['spu.edu.sy'],
     ],
 
+    /*
+     * Scanned pages (a PDF of page images, or an uploaded photo) are read by
+     * a vision model, one page per call, `concurrency` calls at a time. A web
+     * request reads for at most `request_seconds` and the rest continues on
+     * the next refresh of the admin list or the scheduler's
+     * chatbot:continue-indexing run (every minute, `command_seconds`), so a
+     * 60-page scan never hits a request timeout. Each page is read once; its
+     * text is kept next to the file and reused when the file is re-indexed.
+     */
+    'ocr' => [
+        // Empty: the assistant's main model (GPT-5.4 mini reads images).
+        'model' => env('CHATBOT_OCR_MODEL', ''),
+        'concurrency' => (int) env('CHATBOT_OCR_CONCURRENCY', 8),
+        'request_seconds' => 40,
+        // The admin list's refresh reads one batch; keep it short so the page
+        // stays responsive while a scan is being read.
+        'poll_seconds' => 15,
+        'command_seconds' => 50,
+        // Time one batch may take, used to decide whether another fits.
+        'batch_seconds' => 45,
+        'timeout' => 120,
+        'max_output_tokens' => 8000,
+        // A page that fails this many times is given up (left empty).
+        'max_attempts' => 3,
+    ],
+
     'embedding' => [
         'model' => 'text-embedding-3-small',
         // 512 of the model's 1536 dimensions: a third of the storage and of
@@ -109,9 +135,10 @@ return [
     'knowledge' => [
         'disk' => 'local',
         'directory' => 'chatbot/documents',
-        // Livewire's temporary upload limit on this host is 12 MB.
-        'max_upload_kb' => 12288,
-        'extensions' => ['pdf', 'docx', 'txt', 'md', 'csv'],
+        // PHP's upload_max_filesize on this host is 16M; Livewire's temporary
+        // upload rule (config/livewire.php) matches it.
+        'max_upload_kb' => 16384,
+        'extensions' => ['pdf', 'docx', 'xlsx', 'txt', 'md', 'csv', 'jpg', 'jpeg', 'png', 'webp'],
         'max_documents' => 500,
         'max_chunks_per_document' => 1500,
         'chunk_characters' => 1100,

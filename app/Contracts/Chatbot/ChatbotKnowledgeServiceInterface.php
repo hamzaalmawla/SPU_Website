@@ -56,6 +56,19 @@ interface ChatbotKnowledgeServiceInterface
     public function addText(string $title, string $text, int $actorId): ChatbotDocumentDTO;
 
     /**
+     * Carry on reading documents whose scanned pages are not all read yet
+     * (see config chatbot.ocr), for at most `$seconds`. Called by the admin
+     * list while such a document is shown and by chatbot:continue-indexing.
+     * Returns how many documents became ready.
+     */
+    public function continuePending(int $seconds): int;
+
+    /**
+     * Whether any document is still having its scanned pages read.
+     */
+    public function hasPendingScans(): bool;
+
+    /**
      * Rebuild one document's passages and embeddings from its stored source.
      */
     public function reindex(int $documentId, int $actorId): ChatbotDocumentDTO;

@@ -42,6 +42,8 @@ class ChatbotDocument extends Model
         'embedding_tokens',
         'embedding_model',
         'embedding_dimensions',
+        'scan_pages_total',
+        'scan_pages_read',
         'uploaded_by',
         'indexed_at',
     ];
@@ -55,6 +57,8 @@ class ChatbotDocument extends Model
             'character_count' => 'integer',
             'embedding_tokens' => 'integer',
             'embedding_dimensions' => 'integer',
+            'scan_pages_total' => 'integer',
+            'scan_pages_read' => 'integer',
             'uploaded_by' => 'integer',
             'indexed_at' => 'datetime',
         ];
