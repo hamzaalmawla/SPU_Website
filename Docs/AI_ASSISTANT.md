@@ -1,6 +1,8 @@
-# AI assistant (public chat robot)
+# AI assistant (public chat host)
 
-A floating 3D robot on every public page opens a chat panel where visitors ask
+A small 3D host on every public page (a cartoon university host in a navy
+suit with a ruby brooch, round glasses, swept-back hair, a mustache and a
+goatee) opens a chat panel where visitors ask
 about the university in Arabic or English. It answers only from the files
 editors upload under **Administration › AI assistant**, and refuses anything
 else.
@@ -81,7 +83,7 @@ and allows only http(s), mailto, tel and same-site links.
 
 The assistant must never slow a page down:
 
-- The launcher (robot, teaser) is HTML in the layout and styled by
+- The launcher (host, teaser) is HTML in the layout and styled by
   `chatbot.css` in the main stylesheet. It shows from the first paint wherever
   JavaScript runs (`html.js`, set by the inline script in `<head>`), so it
   never appears late (which would cost Speed Index), and is hidden without
@@ -93,9 +95,17 @@ The assistant must never slow a page down:
   panel when they arrive. A visitor already in a conversation gets it back when
   the browser is idle. A page that is only loaded (a crawler, a speed test)
   never fetches them.
-- The 3D robot (`robotScene.js`, ~140 KB gzipped) loads only after an
-  interaction with the launcher, and animates only while awake; otherwise the
-  flat SVG robot stays.
+- The 3D host (`characterScene.js`, ~140 KB gzipped, built from shaped
+  primitives with no model file, lit by a generated studio environment) loads
+  only after an interaction with the launcher, and animates only while awake;
+  otherwise the drawn host stays. The drawing is one SVG `<g id="spu-host">`
+  in the layout, used by the launcher and the panel's avatar.
+- The host does what the robot before it did: idle (breathes, sways, blinks,
+  pupils and head follow the pointer, a glint crosses the glasses), thinking
+  (a hand to his goatee, eyes up, sparks round his head, the stand glows
+  amber), talking (mouth and eyebrows move, green stand), happy (squint and
+  a hop), and a wave. With reduced motion it stands still and only changes
+  pose between states.
 
 ## Admin
 
@@ -204,6 +214,6 @@ document over to a procedure another document covers.
 - Services: `app/Services/Chatbot/*` (`ChatbotScanReader` reads scanned pages)
 - Pure helpers: `app/Support/Chatbot/*` (extractor, PDF layout, spreadsheets, table rows, chunker, vectors, keywords, prompt, guard, signer)
 - Public: `ChatbotController`, `ChatbotMessageRequest`, `resources/views/public/layout/chatbot.blade.php`,
-  `resources/js/chatbot/*` (widget, Markdown renderer, state, Three.js robot), `resources/css/frontend/chatbot.css`
+  `resources/js/chatbot/*` (widget, Markdown renderer, state, Three.js host), `resources/css/frontend/chatbot.css`
 - Admin: `app/Filament/Pages/ManageChatbot.php`, `resources/views/filament/pages/manage-chatbot.blade.php`, `resources/views/filament/chatbot/*`
 - Tests: `tests/Unit/Chatbot/*`, `tests/Feature/Chatbot/*`, `tests/js/chatbot.test.js`

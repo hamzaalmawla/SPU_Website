@@ -60,16 +60,17 @@
     box-shadow: inset 0 -4px 10px rgba(32, 39, 89, 0.18), 0 0 0 3px rgba(226, 184, 100, 0.55);
 }
 
-/* Until the 3D robot arrives, the avatar shows a drawn face. */
-.spu-chatbot__avatar:not(.is-3d)::before {
-    content: "";
+/* Until the 3D host arrives (and where WebGL is unavailable), the avatar
+   shows the drawn one's face. */
+.spu-chatbot__avatar-flat {
     position: absolute;
-    inset: 13px 10px;
-    border-radius: 9px;
-    background:
-        radial-gradient(circle at 32% 45%, #8be9ff 0 3px, transparent 3.5px),
-        radial-gradient(circle at 68% 45%, #8be9ff 0 3px, transparent 3.5px),
-        #18204a;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.spu-chatbot__avatar.is-3d .spu-chatbot__avatar-flat {
+    display: none;
 }
 
 .spu-chatbot__heading {
