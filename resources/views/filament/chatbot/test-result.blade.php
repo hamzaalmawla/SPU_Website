@@ -1,6 +1,9 @@
 @php($result = is_array($result ?? null) ? $result : [])
 <div class="spu-assistant__test">
     <p class="spu-assistant__test-question" dir="auto">{{ $result['question'] ?? '' }}</p>
+    @if (! empty($result['search']))
+        <p class="spu-assistant__muted" dir="auto">{{ __('admin_chatbot.test.searched_as') }} {{ $result['search'] }}</p>
+    @endif
 
     <section>
         <h3 class="spu-assistant__card-title">

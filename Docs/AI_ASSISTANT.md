@@ -24,14 +24,18 @@ browser ── POST /{locale}/assistant/messages ──▶ ChatbotController (th
   6. site-wide daily cap, answer cache
   7. personal data removed (phones, ID numbers, emails)
   8. OpenAI moderation (free)              ── flagged ─▶ refuse
-  9. retrieval: question embedded (text-embedding-3-small, 512 dims), cosine
-     over active passages + keyword re-rank, top 6 above the threshold
- 10. model call (Responses API, store:false, structured output
+  9. search rewrite: a small call (main model, ~300 tokens, cached a week)
+     rewrites the question into the documents' wording in Arabic and
+     English (`SearchRewrite`); skipped on failure
+10. retrieval: question and rewrite embedded (text-embedding-3-small, 512
+     dims); each passage keeps its better cosine and keyword score; top 6
+     above the threshold
+11. model call (Responses API, store:false, structured output
      {category, answer}); main model, then the fallback model on failure
- 11. category not university/greeting   ── refuse (site's own message)
- 12. output guard: code, leaked instructions ── refuse; links only to
+12. category not university/greeting   ── refuse (site's own message)
+13. output guard: code, leaked instructions ── refuse; links only to
      university hosts
- 13. answer + source titles + signature of the question/answer pair
+14. answer + source titles + signature of the question/answer pair
 ```
 
 Every refusal shows the same polite message, so probing does not reveal which

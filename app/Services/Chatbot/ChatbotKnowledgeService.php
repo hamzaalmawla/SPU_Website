@@ -349,7 +349,7 @@ final class ChatbotKnowledgeService implements ChatbotKnowledgeServiceInterface
         return $text;
     }
 
-    public function retrieve(string $query, string $apiKey, ?string $locale = null): ChatbotRetrievalDTO
+    public function retrieve(string $query, string $apiKey, ?string $locale = null, ?string $searchHint = null): ChatbotRetrievalDTO
     {
         $query = trim($query);
         if ($query === '' || ! $this->hasSearchable()) {
@@ -359,6 +359,13 @@ final class ChatbotKnowledgeService implements ChatbotKnowledgeServiceInterface
         [$queryVector, $tokens] = $this->queryVector($query, $apiKey);
         if ($queryVector === []) {
             return new ChatbotRetrievalDTO([], $tokens);
+        }
+
+        $searchHint = trim((string) $searchHint);
+        $hintVector = [];
+        if ($searchHint !== '' && $searchHint !== $query) {
+            [$hintVector, $hintTokens] = $this->queryVector($searchHint, $apiKey);
+            $tokens += $hintTokens;
         }
 
         $candidateCount = max(1, (int) config('chatbot.retrieval.candidates', 40));
@@ -372,11 +379,15 @@ final class ChatbotKnowledgeService implements ChatbotKnowledgeServiceInterface
             ->where('chatbot_documents.embedding_model', (string) config('chatbot.embedding.model'))
             ->where('chatbot_documents.embedding_dimensions', (int) config('chatbot.embedding.dimensions'))
             ->orderBy('chatbot_chunks.id')
-            ->chunk(500, function (Collection $rows) use (&$scores, $queryVector, $candidateCount): void {
+            ->chunk(500, function (Collection $rows) use (&$scores, $queryVector, $hintVector, $candidateCount): void {
                 foreach ($rows as $row) {
                     $vector = VectorMath::unpack((string) base64_decode((string) $row->embedding, true));
                     if ($vector !== []) {
-                        $scores[(int) $row->id] = VectorMath::dot($queryVector, $vector);
+                        $similarity = VectorMath::dot($queryVector, $vector);
+                        if ($hintVector !== []) {
+                            $similarity = max($similarity, VectorMath::dot($hintVector, $vector));
+                        }
+                        $scores[(int) $row->id] = $similarity;
                     }
                 }
 
@@ -396,6 +407,7 @@ final class ChatbotKnowledgeService implements ChatbotKnowledgeServiceInterface
         $minimum = (float) config('chatbot.retrieval.min_similarity', 0.22);
         $keywordWeight = (float) config('chatbot.retrieval.keyword_weight', 0.18);
         $terms = KeywordScorer::terms($query);
+        $hintTerms = $hintVector !== [] ? KeywordScorer::terms($searchHint) : [];
 
         $chunks = ChatbotChunk::query()
             ->with('document:id,title,source_url,locale')
@@ -406,6 +418,9 @@ final class ChatbotKnowledgeService implements ChatbotKnowledgeServiceInterface
         foreach ($chunks as $chunk) {
             $similarity = $scores[(int) $chunk->id] ?? 0.0;
             $keywords = KeywordScorer::score($terms, (string) $chunk->content_normalized);
+            if ($hintTerms !== []) {
+                $keywords = max($keywords, KeywordScorer::score($hintTerms, (string) $chunk->content_normalized));
+            }
 
             // A passage that names the exact thing asked about may score a
             // little below the cut on meaning alone.
@@ -708,7 +723,7 @@ final class ChatbotKnowledgeService implements ChatbotKnowledgeServiceInterface
 
             $state['model'] = $model;
             $this->saveScanState($document, $state);
-            $this->usage->recordTranscription($batch->model, $batch->inputTokens, $batch->outputTokens);
+            $this->usage->recordModelUse($batch->model, $batch->inputTokens, $batch->outputTokens);
         }
 
         $read = count(array_intersect_key($state['pages'], array_flip($scans)));

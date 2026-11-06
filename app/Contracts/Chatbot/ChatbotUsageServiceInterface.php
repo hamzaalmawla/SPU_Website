@@ -36,9 +36,10 @@ interface ChatbotUsageServiceInterface
     public function recordIndexing(int $embeddingTokens): bool;
 
     /**
-     * Model tokens spent reading scanned pages of knowledge files.
+     * Model tokens spent outside answers: reading scanned pages of knowledge
+     * files, rewriting questions for search.
      */
-    public function recordTranscription(string $model, int $inputTokens, int $outputTokens): bool;
+    public function recordModelUse(string $model, int $inputTokens, int $outputTokens): bool;
 
     public function questionsToday(): int;
 

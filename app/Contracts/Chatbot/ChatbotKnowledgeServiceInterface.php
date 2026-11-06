@@ -94,8 +94,12 @@ interface ChatbotKnowledgeServiceInterface
     /**
      * Passages most relevant to a question, best first. Empty when the
      * knowledge base is empty or nothing is relevant enough.
+     *
+     * `$searchHint` is the question rewritten into the documents' wording
+     * (SearchRewrite); each passage is scored against both and keeps the
+     * better match.
      */
-    public function retrieve(string $query, string $apiKey, ?string $locale = null): ChatbotRetrievalDTO;
+    public function retrieve(string $query, string $apiKey, ?string $locale = null, ?string $searchHint = null): ChatbotRetrievalDTO;
 
     /**
      * Bring the website's published pages into the knowledge base: new pages

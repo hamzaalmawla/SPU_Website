@@ -539,20 +539,13 @@ class ManageChatbot extends Page
                 $question = trim((string) ($data['question'] ?? ''));
                 $locale = ($data['locale'] ?? 'ar') === 'en' ? 'en' : 'ar';
 
-                $passages = [];
-                $apiKey = $this->settings->apiKey();
-                if ($apiKey !== null) {
-                    try {
-                        $passages = $this->knowledge->retrieve($question, $apiKey)->passages;
-                    } catch (\Throwable) {
-                        $passages = [];
-                    }
-                }
-
+                // The passages shown are the ones the answer was given.
                 $reply = $this->chatbot->ask(new ChatbotQuestionDTO(locale: $locale, message: $question, adminTest: true));
+                $passages = $reply->passages;
 
                 $this->testResult = [
                     'question' => $question,
+                    'search' => $reply->searchHint,
                     'status' => $reply->status,
                     'reason' => $reply->reason,
                     'answer' => $reply->answer,

@@ -27,6 +27,7 @@ final readonly class ChatbotReplyDTO
 
     /**
      * @param  list<ChatbotSourceDTO>  $sources
+     * @param  list<ChatbotPassageDTO>  $passages  the passages the answer was given (admin test box only)
      */
     public function __construct(
         public string $status,
@@ -36,5 +37,8 @@ final readonly class ChatbotReplyDTO
         public ?string $signature = null,
         // Why a question was refused (admin test box only; never sent to visitors).
         public ?string $reason = null,
+        public array $passages = [],
+        // The question as rewritten for search (admin test box only).
+        public ?string $searchHint = null,
     ) {}
 }

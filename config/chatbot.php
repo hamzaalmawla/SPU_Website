@@ -174,6 +174,13 @@ return [
     'retrieval' => [
         // Passages in the visitor's language rank a little higher.
         'same_language_boost' => 0.03,
+        // Each question is first rewritten into the documents' wording, in
+        // Arabic and English, by a small model call (SearchRewrite; about
+        // 300 tokens, cached a week per question), and passages are scored
+        // against the question and the rewrite. Empty model: the main one.
+        'rewrite' => (bool) env('CHATBOT_SEARCH_REWRITE', true),
+        'rewrite_model' => env('CHATBOT_REWRITE_MODEL', ''),
+        'rewrite_timeout' => 8,
         // Passages sent to the model with each question.
         'top_k' => 6,
         // Vector candidates re-ranked with keyword overlap before the cut.
