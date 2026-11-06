@@ -38,7 +38,7 @@ final class PerformanceBudgetTest extends TestCase
         $this->assertLessThanOrEqual(80, $queryCount, "Cold homepage used {$queryCount} database queries.");
         // The page's own markup: the homepage carries the stylesheet inline on purpose
         // (HomepageInlineStylesheetTest), which is the stylesheet file, not page weight.
-        $markup = (string) preg_replace('#<style id="public-stylesheet">.*?</style>#s', '', (string) $response->getContent());
+        $markup = (string) preg_replace('#<style id="public-stylesheet"[^>]*>.*?</style>#s', '', (string) $response->getContent());
         $this->assertLessThanOrEqual(300_000, strlen($markup));
     }
 

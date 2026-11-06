@@ -156,7 +156,7 @@ final class HomepageImageDeliveryTest extends TestCase
             $html = (string) $this->get('/'.$locale)->assertOk()->getContent();
 
             $preloadPos = strpos($html, '<link rel="preload" as="image"');
-            $stylePos = strpos($html, '<style id="public-stylesheet">');
+            $stylePos = strpos($html, '<style id="public-stylesheet"');
 
             $this->assertNotFalse($preloadPos, "Locale {$locale} must preload its first hero slide in <head>.");
             $this->assertNotFalse($stylePos);

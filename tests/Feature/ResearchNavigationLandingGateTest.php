@@ -127,7 +127,7 @@ final class ResearchNavigationLandingGateTest extends TestCase
         foreach (['en', 'ar'] as $locale) {
             // Count the menu's markup, not the homepage's inline stylesheet, which
             // names the same classes in its rules.
-            $html = (string) preg_replace('#<style id="public-stylesheet">.*?</style>#s', '', (string) $this->get('/'.$locale)->assertOk()->getContent());
+            $html = (string) preg_replace('#<style id="public-stylesheet"[^>]*>.*?</style>#s', '', (string) $this->get('/'.$locale)->assertOk()->getContent());
 
             $this->assertSame(
                 3,

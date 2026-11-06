@@ -66,7 +66,7 @@
     ]
   },
   "resources/js/app.js": {
-    "file": "js/app.BF_uMzTV.js",
+    "file": "js/app.BCIsxTid.js",
     "name": "app",
     "src": "resources/js/app.js",
     "isEntry": true,
@@ -84,7 +84,7 @@
     "isDynamicEntry": true
   },
   "resources/js/chatbot/chatbotWidget.js": {
-    "file": "js/chatbotWidget.BZQtwduJ.js",
+    "file": "js/chatbotWidget.D0vZrTX2.js",
     "name": "chatbotWidget",
     "src": "resources/js/chatbot/chatbotWidget.js",
     "isDynamicEntry": true,

@@ -24,6 +24,7 @@ import { registerHomepageComponents } from './homepage.js';
 import { initPageBehaviours } from './public/pageBehaviours.js';
 import { bootChatbot } from './chatbot/bootstrap.js';
 import { reportPageView } from './public/siteStats.js';
+import { prefetchNextPageStylesheet } from './public/nextPageStylesheet.js';
 
 // Alpine components (x-data="name()")
 Alpine.data('mobileNav',       createMobileNav);
@@ -78,7 +79,7 @@ function initPlanPages() {
 }
 
 // The AI assistant's launcher is plain HTML and CSS; its script (and the 3D
-// robot after it) load on the visitor's first interaction, never as part of
+// host after it) load on the visitor's first interaction, never as part of
 // loading the page. See resources/js/chatbot/bootstrap.js.
 function initChatbot() {
     bootChatbot();
@@ -100,6 +101,7 @@ async function bootAlpine() {
     initPageBehaviours();
     // Sent before Alpine starts, so a visitor who leaves quickly still counts; it is one small async request.
     reportPageView();
+    prefetchNextPageStylesheet();
 
     // Evaluating this bundle and starting Alpine ran as one task long enough to
     // block input; yielding once lets the browser handle anything pending
