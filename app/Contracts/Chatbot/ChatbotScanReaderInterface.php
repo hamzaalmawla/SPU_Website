@@ -22,5 +22,11 @@ interface ChatbotScanReaderInterface
      *
      * @throws ChatbotProviderException when the key is rejected or the account has no credit
      */
+    /**
+     * The model pages are read with now. Saved page text read by another
+     * model is read again on re-index.
+     */
+    public function model(): string;
+
     public function read(string $path, string $extension, array $pages, string $title, string $apiKey, float $deadline): ChatbotScanBatchDTO;
 }

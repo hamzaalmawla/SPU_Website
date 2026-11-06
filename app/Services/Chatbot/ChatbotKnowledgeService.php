@@ -674,6 +674,13 @@ final class ChatbotKnowledgeService implements ChatbotKnowledgeServiceInterface
     private function readScans(ChatbotDocument $document, array $scans, string $apiKey, float $deadline): ?array
     {
         $state = $this->scanState($document);
+        // Saved text records the reading model that was asked for (even when
+        // the main model stood in for it). When that setting changes, the
+        // pages are read again by the new one.
+        $model = $this->scanReader->model();
+        if ($state['model'] !== null && $state['model'] !== $model) {
+            $state = ['pages' => [], 'attempts' => [], 'unread' => [], 'model' => null];
+        }
         $todo = array_values(array_filter($scans, static fn (int $page): bool => ! array_key_exists($page, $state['pages'])));
 
         if ($todo !== []) {
@@ -699,7 +706,7 @@ final class ChatbotKnowledgeService implements ChatbotKnowledgeServiceInterface
                 }
             }
 
-            $state['model'] = $batch->model;
+            $state['model'] = $model;
             $this->saveScanState($document, $state);
             $this->usage->recordTranscription($batch->model, $batch->inputTokens, $batch->outputTokens);
         }
