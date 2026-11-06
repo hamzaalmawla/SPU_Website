@@ -7,6 +7,7 @@ namespace App\Filament\Support;
 use App\Contracts\Media\MediaServiceInterface;
 use App\DTOs\Media\MediaUploadResultDTO;
 use App\Filament\Components\FocalPointPicker;
+use App\Filament\Support\ImageDimensionGuide;
 use App\Support\MediaUploadFailure;
 use App\Support\MediaUrlResolver;
 use Filament\Forms\Components\Actions\Action as FormAction;
@@ -118,7 +119,7 @@ final class MediaPicker
                 Placeholder::make($statePath.'_selection')
                     ->key(fn (Placeholder $component): string => self::componentKey($component->getStatePath(), $label, $type))
                     ->label($label)
-                    ->helperText(__('admin.media_picker.existing_value_help'))
+                    ->helperText(self::placeholderHelp($statePath, $type, __('admin.media_picker.existing_value_help')))
                     ->content(fn (Get $get): HtmlString|string => self::preview($get($statePath), $get($mediaIdPath)))
                     ->hintActions([
                         self::chooseOrUploadAction($statePath, $mediaIdPath, $type),
@@ -142,7 +143,7 @@ final class MediaPicker
                 Placeholder::make($statePath.'_selection')
                     ->key(fn (Placeholder $component): string => self::componentKey($component->getStatePath(), $label, $type))
                     ->label($label)
-                    ->helperText(__('admin.media_picker.choose_help'))
+                    ->helperText(self::placeholderHelp($statePath, $type, __('admin.media_picker.choose_help')))
                     ->content(fn (Get $get): HtmlString|string => self::preview($get($statePath), $get($mediaIdPath)))
                     ->hintActions([
                         self::chooseOrUploadAction($statePath, $mediaIdPath, $type),
@@ -158,6 +159,9 @@ final class MediaPicker
             ->icon('heroicon-o-photo')
             ->modalHeading(__('admin.media_picker.modal_heading'))
             ->form([
+                View::make('filament.forms.components.image-upload-guide')
+                    ->viewData(fn (): array => ['guide' => ImageDimensionGuide::forSlot($statePath, $type)])
+                    ->visible(self::isImageType($type)),
                 View::make('filament.forms.components.recent-media-cards')
                     ->viewData(fn (): array => ['assets' => self::recentImages(), 'targetField' => 'media_id'])
                     ->visible(self::isImageType($type)),
@@ -197,7 +201,7 @@ final class MediaPicker
                     ->options(fn (): array => [])
                     ->getSearchResultsUsing(fn (string $search): array => self::options($type, $search, 'legacy'))
                     ->getOptionLabelUsing(fn (mixed $value): ?string => self::optionLabel($value)),
-                self::uploadField($type, __('admin.media_picker.upload_new'), __('admin.media_picker.upload_new_help'))
+                self::uploadField($type, __('admin.media_picker.upload_new'), __('admin.media_picker.upload_new_help'), $statePath)
                     ->afterStateUpdated(function (mixed $state, Get $get, Set $set): void {
                         if (self::hasUpload($state)) {
                             $set('media_id', null);
@@ -291,6 +295,7 @@ final class MediaPicker
                     ->required($required),
                 Placeholder::make($statePath.'_preview')
                     ->label(__('admin.media_picker.selected_file'))
+                    ->helperText(self::placeholderHelp($statePath, $type, __('admin.media_picker.asset_help')))
                     ->content(fn (Get $get): HtmlString|string => self::preview(self::selectedUrl($get($statePath)), $get($statePath))),
             ]);
     }
@@ -308,7 +313,10 @@ final class MediaPicker
             ->getSearchResultsUsing(fn (string $search): array => self::options($type, $search))
             ->getOptionLabelUsing(fn (mixed $value): ?string => self::optionLabel($value))
             ->createOptionForm([
-                self::uploadField($type, __('admin.media_picker.upload_device'))
+                View::make('filament.forms.components.image-upload-guide')
+                    ->viewData(fn (): array => ['guide' => ImageDimensionGuide::forSlot($statePath, $type)])
+                    ->visible(self::isImageType($type)),
+                self::uploadField($type, __('admin.media_picker.upload_device'), null, $statePath)
                     ->required()
                     ->afterStateUpdated(fn (mixed $state, Get $get, Set $set) => self::fillFromUpload($state, $get, $set)),
                 Hidden::make('original_name'),
@@ -407,9 +415,11 @@ final class MediaPicker
     /**
      * The upload field shared by both picker forms, set up as batch upload is.
      */
-    private static function uploadField(string $type, string $label, ?string $helperText = null): FileUpload
+    private static function uploadField(string $type, string $label, ?string $helperText = null, ?string $statePath = null): FileUpload
     {
-        $hint = self::isImageType($type) ? __('admin.media_picker.image_upload_help') : null;
+        $hint = self::isImageType($type)
+            ? ImageDimensionGuide::compactSummary($statePath ?? '', $type).' • '.__('admin.media_picker.image_upload_help')
+            : null;
 
         return FileUpload::make('file')
             ->label($label)
@@ -428,6 +438,22 @@ final class MediaPicker
 
                 return hash('sha256', $file->getFilename()).'--'.$original;
             });
+    }
+
+    private static function placeholderHelp(string $statePath, string $type, string $baseHelp): HtmlString|string
+    {
+        if (! self::isImageType($type)) {
+            return $baseHelp;
+        }
+
+        $badgeHtml = (string) ImageDimensionGuide::compactBadgeHtml($statePath, $type);
+
+        return new HtmlString(
+            '<div class="spu-image-placeholder-help">'
+            .'<span>'.e($baseHelp).'</span>'
+            .$badgeHtml
+            .'</div>'
+        );
     }
 
     /**

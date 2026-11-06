@@ -62,3 +62,6 @@ TODO.md
 
 # Authoritative legacy production dump; upload separately for one-time imports.
 /spuedu_db (1).sql
+
+# Local cPanel helper script containing credentials
+/cp.sh

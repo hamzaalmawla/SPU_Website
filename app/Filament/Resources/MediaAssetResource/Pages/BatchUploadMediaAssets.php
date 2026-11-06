@@ -7,6 +7,7 @@ namespace App\Filament\Resources\MediaAssetResource\Pages;
 use App\Contracts\Media\MediaServiceInterface;
 use App\Filament\Components\FocalPointPicker;
 use App\Filament\Resources\MediaAssetResource;
+use App\Filament\Support\ImageDimensionGuide;
 use App\Support\MediaUploadFailure;
 use App\Support\MediaUrlResolver;
 use Filament\Forms\Components\Actions;
@@ -17,6 +18,7 @@ use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\View;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
@@ -90,6 +92,11 @@ final class BatchUploadMediaAssets extends Page implements HasForms
                 Section::make(__('admin_resources.media_asset.1_select_images'))
                     ->description(__('admin_resources.media_asset.drop_all_images_together_wait_until_every_preview_says_uploa'))
                     ->schema([
+                        View::make('filament.forms.components.image-upload-guide')
+                            ->viewData(fn (): array => [
+                                'guide' => ImageDimensionGuide::forSlot('general', 'image'),
+                                'isBatch' => true,
+                            ]),
                         FileUpload::make('files')
                             ->label(__('admin_resources.media_asset.images'))
                             ->multiple()
@@ -101,7 +108,7 @@ final class BatchUploadMediaAssets extends Page implements HasForms
                             // What the media library accepts. iPhone HEIC photos are
                             // refused on save otherwise, after a full upload.
                             ->acceptedFileTypes(['image/jpeg', 'image/png', 'image/webp', 'image/gif'])
-                            ->helperText(__('admin_resources.media_asset.jpg_png_webp_or_gif_up_to_10_mb_each_export_iphone_heic_phot'))
+                            ->helperText(ImageDimensionGuide::compactSummary('general', 'image').' • '.__('admin_resources.media_asset.jpg_png_webp_or_gif_up_to_10_mb_each_export_iphone_heic_phot'))
                             ->orientImagesFromExif()
                             ->maxFiles(50)
                             ->maxSize(10240)

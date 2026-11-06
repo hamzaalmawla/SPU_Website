@@ -8,6 +8,7 @@ use App\Contracts\Auth\AdminAccessServiceInterface;
 use App\Filament\Components\FocalPointPicker;
 use App\Filament\Resources\MediaAssetResource\Pages;
 use App\Filament\Support\GrantedFacultySelect;
+use App\Filament\Support\ImageDimensionGuide;
 use App\Models\Media\MediaAsset;
 use App\Models\User\User;
 use App\Support\MediaUrlResolver;
@@ -18,6 +19,7 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Tabs;
 use Filament\Forms\Components\Tabs\Tab;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\View;
 use Filament\Forms\Form;
 use Filament\Forms\Get;
 use Filament\Resources\Resource;
@@ -251,8 +253,14 @@ class MediaAssetResource extends Resource
             ->icon('heroicon-o-arrow-up-tray')
             ->schema([
                 Section::make(__('admin_resources.media_asset.file_upload'))->schema([
+                    View::make('filament.forms.components.image-upload-guide')
+                        ->viewData(fn (): array => [
+                            'guide' => ImageDimensionGuide::forSlot('general', 'image'),
+                            'isLibrary' => true,
+                        ]),
                     FileUpload::make('file')
                         ->label(__('admin_resources.media_asset.file'))
+                        ->helperText(ImageDimensionGuide::compactSummary('general', 'image').' • '.__('admin_resources.media_asset.jpg_png_webp_or_gif_up_to_10_mb_each_export_iphone_heic_phot'))
                         ->required()
                         // Re-renders the framing tab with the new image.
                         ->live()
@@ -360,9 +368,14 @@ class MediaAssetResource extends Resource
                 Section::make(__('admin_resources.media_asset.image_framing'))
                     ->description(__('admin_resources.media_asset.use_the_visual_framing_control_to_choose_the_visible_crop_wi'))
                     ->schema([
+                        View::make('filament.forms.components.image-upload-guide')
+                            ->viewData(fn (): array => [
+                                'guide' => ImageDimensionGuide::forSlot('general', 'image'),
+                                'isReplacement' => true,
+                            ]),
                         FileUpload::make('replacement_file')
                             ->label(__('admin_resources.media_asset.replace_existing_image'))
-                            ->helperText(__('admin_resources.media_asset.optional_upload_a_replacement_then_use_the_visual_framing_co'))
+                            ->helperText(ImageDimensionGuide::compactSummary('general', 'image').' • '.__('admin_resources.media_asset.optional_upload_a_replacement_then_use_the_visual_framing_co'))
                             ->image()
                             ->orientImagesFromExif()
                             ->maxSize(10240)
