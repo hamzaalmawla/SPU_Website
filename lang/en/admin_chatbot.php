@@ -5,7 +5,7 @@ declare(strict_types=1);
 return [
     'navigation' => 'AI assistant',
     'title' => 'AI assistant',
-    'subtitle' => 'The robot on every public page answers visitors from the files below. Upload official documents (PDF, Word, text, Markdown or CSV), and the assistant reads them, splits them into passages and answers only from them.',
+    'subtitle' => 'The robot on every public page answers visitors from the files below. Upload official documents (PDF with text or scanned, Word, Excel, CSV, text, Markdown, or a photo of a document), and the assistant reads them, splits them into passages and answers only from them.',
 
     'live' => 'Live on the website',
     'not_live' => 'Not shown on the website',
