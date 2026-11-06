@@ -37,7 +37,7 @@ class ManageAbout extends Page implements HasForms
 
     protected static ?string $slug = 'manage-about';
 
-    protected static ?int $navigationSort = 1;
+    protected static ?int $navigationSort = 10;
 
     protected static string $view = 'filament.pages.manage-about';
 
@@ -69,7 +69,7 @@ class ManageAbout extends Page implements HasForms
 
     public static function getNavigationGroup(): ?string
     {
-        return __('admin.navigation.groups.about');
+        return __('admin.navigation.groups.site_sections');
     }
 
     public static function getNavigationLabel(): string

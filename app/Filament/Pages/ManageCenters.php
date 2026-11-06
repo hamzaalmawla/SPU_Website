@@ -60,7 +60,7 @@ class ManageCenters extends Page implements HasForms
 
     protected static ?string $slug = 'manage-centers';
 
-    protected static ?int $navigationSort = 1;
+    protected static ?int $navigationSort = 30;
 
     protected static string $view = 'filament.pages.manage-centers';
 
@@ -96,7 +96,7 @@ class ManageCenters extends Page implements HasForms
 
     public static function getNavigationGroup(): ?string
     {
-        return __('admin.navigation.groups.centers');
+        return __('admin.navigation.groups.academic');
     }
 
     public static function getNavigationLabel(): string

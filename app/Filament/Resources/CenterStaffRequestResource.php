@@ -21,7 +21,7 @@ class CenterStaffRequestResource extends StaffIntakeRequestResource
 {
     protected static ?string $slug = 'center-staff-requests';
 
-    protected static ?int $navigationSort = 21;
+    protected static ?int $navigationSort = 4;
 
     public static function getModelLabel(): string
     {
@@ -40,7 +40,7 @@ class CenterStaffRequestResource extends StaffIntakeRequestResource
 
     public static function getNavigationGroup(): ?string
     {
-        return __('admin.navigation.groups.centers');
+        return __('admin.navigation.groups.inbox');
     }
 
     public static function getNavigationBadge(): ?string

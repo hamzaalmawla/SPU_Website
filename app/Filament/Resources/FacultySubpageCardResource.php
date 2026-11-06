@@ -32,7 +32,7 @@ class FacultySubpageCardResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-bars-3-bottom-left';
 
-    protected static ?int $navigationSort = 5;
+    protected static ?int $navigationSort = 21;
 
     public static function getModelLabel(): string
     {
@@ -46,7 +46,7 @@ class FacultySubpageCardResource extends Resource
 
     public static function getNavigationGroup(): ?string
     {
-        return __('admin.navigation.groups.facilities');
+        return __('admin.navigation.groups.academic');
     }
 
     public static function getNavigationLabel(): string

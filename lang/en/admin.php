@@ -5,6 +5,7 @@ declare(strict_types=1);
 return [
     'panel' => [
         'brand' => 'Syrian Private University Administration',
+        'skip_to_content' => 'Skip to content',
         'language_switcher' => 'Switch admin language',
         'current_language' => 'English',
         'switch_to_ar' => 'العربية',
@@ -196,6 +197,9 @@ return [
     'navigation' => [
         'groups' => [
             'content' => 'Content',
+            'site_sections' => 'Site sections',
+            'academic' => 'Academic',
+            'inbox' => 'Requests & messages',
             'news' => 'News',
             'facilities' => 'Facilities',
             'centers' => 'Centers',
@@ -496,6 +500,9 @@ return [
         'plural_model' => 'Research publications',
         'tabs' => [
             'content' => 'Content',
+            'site_sections' => 'Site sections',
+            'academic' => 'Academic',
+            'inbox' => 'Requests & messages',
             'details' => 'Details and files',
         ],
         'sections' => [
@@ -613,6 +620,9 @@ return [
         'plural_model' => 'News articles',
         'tabs' => [
             'content' => 'Content',
+            'site_sections' => 'Site sections',
+            'academic' => 'Academic',
+            'inbox' => 'Requests & messages',
             'event' => 'Event details',
             'publishing' => 'Publishing and visibility',
             'attachments' => 'Attachments',
@@ -2268,5 +2278,12 @@ return [
             'file_size' => 'The maximum size of ":name" must be between 1 and 10 MB.',
             'in_use' => 'This form is in use (:places). Disable it instead.',
         ],
+    ],
+    'status_badges' => [
+        'draft' => 'Draft',
+        'published' => 'Published',
+        'scheduled' => 'Scheduled',
+        'archived' => 'Archived',
+        'superseded' => 'Superseded',
     ],
 ];

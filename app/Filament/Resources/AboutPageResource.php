@@ -8,6 +8,7 @@ use App\Filament\Resources\AboutPageResource\Pages;
 use App\Filament\Resources\Concerns\AuthorizesThroughPermissions;
 use App\Filament\Support\JsonEditor;
 use App\Filament\Support\MediaPicker;
+use App\Filament\Support\StatusBadge;
 use App\Models\Page\AboutPage;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Section;
@@ -32,7 +33,7 @@ class AboutPageResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-building-library';
 
-    protected static ?int $navigationSort = 3;
+    protected static ?int $navigationSort = 11;
 
     public static function getRecordTitle(?Model $record): string
     {
@@ -62,7 +63,7 @@ class AboutPageResource extends Resource
 
     public static function getNavigationGroup(): ?string
     {
-        return __('admin.navigation.groups.about');
+        return __('admin.navigation.groups.site_sections');
     }
 
     public static function getNavigationLabel(): string
@@ -110,7 +111,7 @@ class AboutPageResource extends Resource
                 ->listWithLineBreaks()
                 ->limit(40),
             TextColumn::make('template')->sortable(),
-            TextColumn::make('status')->badge()->sortable(),
+            StatusBadge::publication(TextColumn::make('status'))->sortable(),
             IconColumn::make('is_enabled')->boolean(),
             TextColumn::make('updated_at')->dateTime()->sortable(),
         ])->actions([Tables\Actions\EditAction::make()])->bulkActions([]);

@@ -48,7 +48,7 @@ class ManageCampusLife extends Page implements HasForms
 
     protected static ?string $slug = 'manage-campus-life';
 
-    protected static ?int $navigationSort = 1;
+    protected static ?int $navigationSort = 30;
 
     protected static string $view = 'filament.pages.manage-campus-life';
 
@@ -86,7 +86,7 @@ class ManageCampusLife extends Page implements HasForms
 
     public static function getNavigationGroup(): ?string
     {
-        return __('admin.navigation.groups.campus_life');
+        return __('admin.navigation.groups.site_sections');
     }
 
     public static function getNavigationLabel(): string

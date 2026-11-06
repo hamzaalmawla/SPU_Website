@@ -10,7 +10,7 @@ final class ManageEvents extends ManageNews
 
     protected static ?string $slug = 'manage-events';
 
-    protected static ?int $navigationSort = 5;
+    protected static ?int $navigationSort = 12;
 
     public static function canAccess(): bool
     {

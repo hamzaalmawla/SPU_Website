@@ -33,7 +33,7 @@ class AboutNavigationCardResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-squares-2x2';
 
-    protected static ?int $navigationSort = 4;
+    protected static ?int $navigationSort = 12;
 
     protected static function permissionComponent(): string
     {
@@ -42,7 +42,7 @@ class AboutNavigationCardResource extends Resource
 
     public static function getNavigationGroup(): ?string
     {
-        return __('admin.navigation.groups.about');
+        return __('admin.navigation.groups.site_sections');
     }
 
     public static function getNavigationLabel(): string

@@ -32,7 +32,7 @@ class NewsCategoryResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-tag';
 
-    protected static ?int $navigationSort = 1;
+    protected static ?int $navigationSort = 13;
 
     public static function getModelLabel(): string
     {
@@ -56,7 +56,7 @@ class NewsCategoryResource extends Resource
 
     public static function getNavigationGroup(): ?string
     {
-        return __('admin.navigation.groups.news');
+        return __('admin.navigation.groups.content');
     }
 
     public static function getNavigationLabel(): string

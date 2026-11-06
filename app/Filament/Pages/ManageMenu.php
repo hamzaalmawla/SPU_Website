@@ -32,7 +32,7 @@ class ManageMenu extends Page implements HasForms
 
     protected static ?string $slug = 'manage-menu';
 
-    protected static ?int $navigationSort = 3;
+    protected static ?int $navigationSort = 21;
 
     protected static string $view = 'filament.pages.manage-menu';
 

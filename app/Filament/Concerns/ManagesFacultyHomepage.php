@@ -139,7 +139,7 @@ trait ManagesFacultyHomepage
 
     public static function getNavigationGroup(): ?string
     {
-        return __('admin.navigation.groups.facilities');
+        return __('admin.navigation.groups.academic');
     }
 
     public function mount(): void

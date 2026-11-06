@@ -52,7 +52,7 @@ class ResearchPublicationResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-document-text';
 
-    protected static ?int $navigationSort = 2;
+    protected static ?int $navigationSort = 41;
 
     /** @var WeakMap<HasTable, array<int, list<array{label: string, url: string, type: string}>>>|null */
     private static ?WeakMap $pageFiles = null;
@@ -74,7 +74,7 @@ class ResearchPublicationResource extends Resource
 
     public static function getNavigationGroup(): ?string
     {
-        return __('admin.navigation.groups.research');
+        return __('admin.navigation.groups.academic');
     }
 
     public static function canAccess(): bool

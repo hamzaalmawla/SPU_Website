@@ -9,6 +9,7 @@ use App\Contracts\Page\PageServiceInterface;
 use App\Filament\Components\PageUrlSelect;
 use App\Filament\Resources\PageResource\Pages;
 use App\Filament\Support\MediaPicker;
+use App\Filament\Support\StatusBadge;
 use App\Models\Page\Page;
 use App\Models\User\User;
 use Filament\Forms\Components\RichEditor;
@@ -42,7 +43,7 @@ class PageResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-document-text';
 
-    protected static ?int $navigationSort = 2;
+    protected static ?int $navigationSort = 20;
 
     public static function getRecordTitle(?Model $record): string
     {
@@ -123,15 +124,8 @@ class PageResource extends Resource
                     ->label(__('admin_resources.page.slug'))
                     ->limit(40),
 
-                TextColumn::make('status')
-                    ->label(__('admin_resources.page.status'))
-                    ->badge()
-                    ->color(fn (string $state): string => match ($state) {
-                        'published' => 'success',
-                        'scheduled' => 'warning',
-                        'draft' => 'gray',
-                        default => 'gray',
-                    }),
+                StatusBadge::publication(TextColumn::make('status')
+                    ->label(__('admin_resources.page.status'))),
 
                 TextColumn::make('parent.slug')
                     ->label(__('admin_resources.page.parent'))

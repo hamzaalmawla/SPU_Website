@@ -38,7 +38,7 @@ class FormDefinitionResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-clipboard-document-list';
 
-    protected static ?int $navigationSort = 4;
+    protected static ?int $navigationSort = 10;
 
     public static function canAccess(): bool
     {
@@ -47,7 +47,7 @@ class FormDefinitionResource extends Resource
 
     public static function getNavigationGroup(): ?string
     {
-        return __('admin.navigation.groups.contact');
+        return __('admin.navigation.groups.inbox');
     }
 
     public static function getNavigationLabel(): string

@@ -34,7 +34,7 @@ class ManageContactPage extends Page implements HasForms
 
     protected static ?string $slug = 'manage-contact-page';
 
-    protected static ?int $navigationSort = 1;
+    protected static ?int $navigationSort = 50;
 
     protected static string $view = 'filament.pages.manage-contact-page';
 
@@ -62,7 +62,7 @@ class ManageContactPage extends Page implements HasForms
 
     public static function getNavigationGroup(): ?string
     {
-        return __('admin.navigation.groups.contact');
+        return __('admin.navigation.groups.site_sections');
     }
 
     public static function getNavigationLabel(): string

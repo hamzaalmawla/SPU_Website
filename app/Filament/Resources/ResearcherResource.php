@@ -43,7 +43,7 @@ class ResearcherResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-user-circle';
 
-    protected static ?int $navigationSort = 3;
+    protected static ?int $navigationSort = 42;
 
     public static function getModelLabel(): string
     {
@@ -62,7 +62,7 @@ class ResearcherResource extends Resource
 
     public static function getNavigationGroup(): ?string
     {
-        return __('admin.navigation.groups.research');
+        return __('admin.navigation.groups.academic');
     }
 
     protected static function permissionComponent(): string
