@@ -83,6 +83,23 @@ final class FormBuilderAdminTest extends TestCase
         $this->assertSame('Open day registration', app(FormDefinitionServiceInterface::class)->options('en')['open-day']);
     }
 
+    public function test_form_key_and_field_identifiers_auto_generate_from_labels(): void
+    {
+        $undo = Repeater::fake();
+
+        Livewire::test(CreateFormDefinition::class)
+            ->set('data.nameEn', 'Research Grant Application')
+            ->assertSet('data.key', 'research-grant-application')
+            ->set('data.steps.0.fields.0.labelEn', 'Full Legal Name')
+            ->assertSet('data.steps.0.fields.0.name', 'full_legal_name')
+            ->set('data.steps.0.fields.1.labelAr', 'الرقم الجامعي')
+            ->assertSet('data.steps.0.fields.1.name', 'student_id')
+            ->set('data.steps.0.fields.2.labelAr', 'البريد الإلكتروني')
+            ->assertSet('data.steps.0.fields.2.name', 'email');
+
+        $undo();
+    }
+
     public function test_a_form_with_a_repeated_field_id_is_not_saved(): void
     {
         $undo = Repeater::fake();

@@ -7,8 +7,10 @@ namespace App\Filament\Resources;
 use App\Contracts\Form\FormDefinitionServiceInterface;
 use App\Enums\FormSubmissionInbox;
 use App\Filament\Resources\FormDefinitionResource\Pages;
+use App\Filament\Support\FormIdentifierGenerator;
 use App\Models\Form\FormDefinition;
 use App\Models\User\User;
+use Filament\Forms\Components\Actions\Action as FormAction;
 use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Section;
@@ -17,6 +19,7 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Forms\Form;
 use Filament\Forms\Get;
+use Filament\Forms\Set;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables\Actions\Action;
@@ -72,8 +75,27 @@ class FormDefinitionResource extends Resource
 
         return $form->schema([
             Section::make(__('admin.forms.sections.form'))->schema([
-                TextInput::make('nameAr')->label(__('admin.forms.fields.name_ar'))->required()->maxLength(255),
-                TextInput::make('nameEn')->label(__('admin.forms.fields.name_en'))->required()->maxLength(255)->extraInputAttributes(['dir' => 'ltr']),
+                TextInput::make('nameAr')
+                    ->label(__('admin.forms.fields.name_ar'))
+                    ->required()
+                    ->maxLength(255)
+                    ->live(onBlur: true)
+                    ->afterStateUpdated(function (?string $state, Set $set, Get $get, string $operation): void {
+                        if ($operation === 'create' && blank($get('key')) && blank($get('nameEn')) && filled($state)) {
+                            $set('key', FormIdentifierGenerator::generateFormKey(null, $state));
+                        }
+                    }),
+                TextInput::make('nameEn')
+                    ->label(__('admin.forms.fields.name_en'))
+                    ->required()
+                    ->maxLength(255)
+                    ->extraInputAttributes(['dir' => 'ltr'])
+                    ->live(onBlur: true)
+                    ->afterStateUpdated(function (?string $state, Set $set, Get $get, string $operation): void {
+                        if ($operation === 'create' && blank($get('key')) && filled($state)) {
+                            $set('key', FormIdentifierGenerator::generateFormKey($state, $get('nameAr')));
+                        }
+                    }),
                 TextInput::make('key')
                     ->label(__('admin.forms.fields.key'))
                     ->helperText(__('admin.forms.help.key'))
@@ -82,7 +104,16 @@ class FormDefinitionResource extends Resource
                     ->regex('/^[a-z0-9]+(?:-[a-z0-9]+)*$/')
                     ->disabled(fn (string $operation): bool => $operation === 'edit')
                     ->dehydrated(fn (string $operation): bool => $operation === 'create')
-                    ->extraInputAttributes(['dir' => 'ltr']),
+                    ->extraInputAttributes(['dir' => 'ltr'])
+                    ->suffixAction(
+                        FormAction::make('generateKey')
+                            ->icon('heroicon-m-sparkles')
+                            ->tooltip(__('admin.forms.actions.auto_generate'))
+                            ->visible(fn (string $operation): bool => $operation === 'create')
+                            ->action(function (Set $set, Get $get): void {
+                                $set('key', FormIdentifierGenerator::generateFormKey($get('nameEn'), $get('nameAr')));
+                            })
+                    ),
                 Select::make('inbox')
                     ->label(__('admin.forms.fields.inbox'))
                     ->helperText(__('admin.forms.help.inbox'))
@@ -102,15 +133,49 @@ class FormDefinitionResource extends Resource
                     Repeater::make('fields')
                         ->label(__('admin.forms.fields.fields'))
                         ->schema([
-                            TextInput::make('labelAr')->label(__('admin.forms.fields.label_ar'))->required()->maxLength(255),
-                            TextInput::make('labelEn')->label(__('admin.forms.fields.label_en'))->required()->maxLength(255)->extraInputAttributes(['dir' => 'ltr']),
+                            TextInput::make('labelAr')
+                                ->label(__('admin.forms.fields.label_ar'))
+                                ->required()
+                                ->maxLength(255)
+                                ->live(onBlur: true)
+                                ->afterStateUpdated(function (?string $state, Set $set, Get $get): void {
+                                    if (blank($get('name')) && blank($get('labelEn')) && filled($state)) {
+                                        $set('name', FormIdentifierGenerator::generateFieldName(null, $state));
+                                    }
+                                }),
+                            TextInput::make('labelEn')
+                                ->label(__('admin.forms.fields.label_en'))
+                                ->required()
+                                ->maxLength(255)
+                                ->extraInputAttributes(['dir' => 'ltr'])
+                                ->live(onBlur: true)
+                                ->afterStateUpdated(function (?string $state, Set $set, Get $get): void {
+                                    if (blank($get('name')) && filled($state)) {
+                                        $set('name', FormIdentifierGenerator::generateFieldName($state, $get('labelAr')));
+                                    }
+                                }),
                             TextInput::make('name')
                                 ->label(__('admin.forms.fields.field_name'))
-                                ->helperText(__('admin.forms.help.field_name'))
+                                ->helperText(function (?FormDefinition $record): string {
+                                    $base = __('admin.forms.help.field_name');
+                                    if ($record !== null && app(FormDefinitionServiceInterface::class)->submissionCount((string) $record->key) > 0) {
+                                        return $base.' · '.__('admin.forms.help.field_name_locked_warning');
+                                    }
+
+                                    return $base;
+                                })
                                 ->required()
                                 ->maxLength(60)
                                 ->regex('/^[a-zA-Z][a-zA-Z0-9_]*$/')
-                                ->extraInputAttributes(['dir' => 'ltr']),
+                                ->extraInputAttributes(['dir' => 'ltr'])
+                                ->suffixAction(
+                                    FormAction::make('generateFieldName')
+                                        ->icon('heroicon-m-sparkles')
+                                        ->tooltip(__('admin.forms.actions.auto_generate'))
+                                        ->action(function (Set $set, Get $get): void {
+                                            $set('name', FormIdentifierGenerator::generateFieldName($get('labelEn'), $get('labelAr')));
+                                        })
+                                ),
                             Select::make('type')
                                 ->label(__('admin.forms.fields.type'))
                                 ->options(collect(FormDefinitionServiceInterface::FIELD_TYPES)->mapWithKeys(fn (string $type): array => [$type => __('admin.forms.types.'.$type)])->all())
@@ -124,9 +189,41 @@ class FormDefinitionResource extends Resource
                             Repeater::make('options')
                                 ->label(__('admin.forms.fields.options'))
                                 ->schema([
-                                    TextInput::make('labelAr')->label(__('admin.forms.fields.label_ar'))->required()->maxLength(255),
-                                    TextInput::make('labelEn')->label(__('admin.forms.fields.label_en'))->required()->maxLength(255)->extraInputAttributes(['dir' => 'ltr']),
-                                    TextInput::make('value')->label(__('admin.forms.fields.option_value'))->helperText(__('admin.forms.help.option_value'))->required()->maxLength(80)->extraInputAttributes(['dir' => 'ltr']),
+                                    TextInput::make('labelAr')
+                                        ->label(__('admin.forms.fields.label_ar'))
+                                        ->required()
+                                        ->maxLength(255)
+                                        ->live(onBlur: true)
+                                        ->afterStateUpdated(function (?string $state, Set $set, Get $get): void {
+                                            if (blank($get('value')) && blank($get('labelEn')) && filled($state)) {
+                                                $set('value', FormIdentifierGenerator::generateOptionValue(null, $state));
+                                            }
+                                        }),
+                                    TextInput::make('labelEn')
+                                        ->label(__('admin.forms.fields.label_en'))
+                                        ->required()
+                                        ->maxLength(255)
+                                        ->extraInputAttributes(['dir' => 'ltr'])
+                                        ->live(onBlur: true)
+                                        ->afterStateUpdated(function (?string $state, Set $set, Get $get): void {
+                                            if (blank($get('value')) && filled($state)) {
+                                                $set('value', FormIdentifierGenerator::generateOptionValue($state, $get('labelAr')));
+                                            }
+                                        }),
+                                    TextInput::make('value')
+                                        ->label(__('admin.forms.fields.option_value'))
+                                        ->helperText(__('admin.forms.help.option_value'))
+                                        ->required()
+                                        ->maxLength(80)
+                                        ->extraInputAttributes(['dir' => 'ltr'])
+                                        ->suffixAction(
+                                            FormAction::make('generateOptionValue')
+                                                ->icon('heroicon-m-sparkles')
+                                                ->tooltip(__('admin.forms.actions.auto_generate'))
+                                                ->action(function (Set $set, Get $get): void {
+                                                    $set('value', FormIdentifierGenerator::generateOptionValue($get('labelEn'), $get('labelAr')));
+                                                })
+                                        ),
                                 ])
                                 ->columns(3)
                                 ->minItems(1)
