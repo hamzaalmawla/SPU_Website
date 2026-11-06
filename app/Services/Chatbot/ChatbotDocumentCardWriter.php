@@ -7,6 +7,7 @@ namespace App\Services\Chatbot;
 use App\Contracts\Chatbot\ChatbotDocumentCardWriterInterface;
 use App\Contracts\Chatbot\ChatbotSettingsServiceInterface;
 use App\Contracts\Chatbot\OpenAiClientInterface;
+use App\DTOs\Chatbot\ChatbotCompletionDTO;
 use App\DTOs\Chatbot\ChatbotCompletionRequestDTO;
 use App\DTOs\Chatbot\ChatbotDocumentCardDTO;
 use App\Exceptions\ChatbotProviderException;
@@ -22,8 +23,7 @@ use Illuminate\Support\Facades\Log;
  * one passage.
  *
  * Written by the reading model (chatbot.ocr.model, falling back to the main
- * model), from the first `chatbot.knowledge.card_input_characters` of the
- * text, `store: false`.
+ * model), from the start and the end of the text (excerpt()), `store: false`.
  */
 final class ChatbotDocumentCardWriter implements ChatbotDocumentCardWriterInterface
 {
@@ -45,14 +45,14 @@ TEXT;
 
     public function write(string $title, string $text, string $apiKey): ?ChatbotDocumentCardDTO
     {
-        $text = mb_substr($text, 0, max(2000, (int) config('chatbot.knowledge.card_input_characters', 120_000)));
+        $text = self::excerpt($text);
         $main = $this->settings->get()->model;
         $configured = trim((string) config('chatbot.knowledge.card_model', ''));
         $models = array_values(array_unique(array_filter([$configured !== '' ? $configured : trim((string) config('chatbot.ocr.model', '')), $main])));
 
         foreach ($models as $model) {
             try {
-                $completion = $this->openAi->respond(new ChatbotCompletionRequestDTO(
+                $completion = $this->respondWithRetry(new ChatbotCompletionRequestDTO(
                     apiKey: $apiKey,
                     model: $model,
                     instructions: self::INSTRUCTIONS,
@@ -65,7 +65,7 @@ TEXT;
                 if (in_array($exception->reason, [ChatbotProviderException::AUTH, ChatbotProviderException::QUOTA], true)) {
                     throw $exception;
                 }
-                Log::notice('Chatbot document card not written.', ['model' => $model, 'reason' => $exception->reason, 'status' => $exception->status]);
+                Log::warning('Chatbot document card not written.', ['model' => $model, 'reason' => $exception->reason, 'status' => $exception->status]);
 
                 continue;
             }
@@ -79,6 +79,42 @@ TEXT;
         }
 
         return null;
+    }
+
+    /**
+     * The start of the document and its end: announcements put their dates
+     * and how to apply at the end ("التعليمات العامة"), tables say what they
+     * list at the top. Keeps a card to a few thousand tokens, inside a new
+     * key's per-minute limits, whatever the file's size.
+     */
+    public static function excerpt(string $text): string
+    {
+        $head = max(2000, (int) config('chatbot.knowledge.card_head_characters', 24_000));
+        $tail = max(0, (int) config('chatbot.knowledge.card_tail_characters', 8_000));
+
+        if (mb_strlen($text) <= $head + $tail) {
+            return $text;
+        }
+
+        return mb_substr($text, 0, $head)."\n\n[…]\n\n".($tail > 0 ? mb_substr($text, -$tail) : '');
+    }
+
+    /**
+     * One more try after a short wait when the account's rate limit is hit
+     * (re-indexing several files in a row does that on a new key).
+     */
+    private function respondWithRetry(ChatbotCompletionRequestDTO $request): ChatbotCompletionDTO
+    {
+        try {
+            return $this->openAi->respond($request);
+        } catch (ChatbotProviderException $exception) {
+            if ($exception->reason !== ChatbotProviderException::RATE_LIMITED) {
+                throw $exception;
+            }
+            usleep(max(0, (int) config('chatbot.knowledge.card_retry_ms', 4000)) * 1000);
+
+            return $this->openAi->respond($request);
+        }
     }
 
     private function reasoningEffort(string $model): ?string

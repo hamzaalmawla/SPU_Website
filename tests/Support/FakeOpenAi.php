@@ -61,6 +61,9 @@ final class FakeOpenAi
     /** @var array<string, int> model => HTTP status it fails with */
     public array $failModels = [];
 
+    /** @var array<string, int> model => HTTP status it fails with once, then works */
+    public array $failModelsOnce = [];
+
     public int $moderationStatus = 200;
 
     /** @var list<array<string, mixed>> */
@@ -122,6 +125,12 @@ final class FakeOpenAi
 
             if (str_ends_with($request->url(), '/responses')) {
                 $fake->responseRequests[] = $payload;
+                if (isset($fake->failModelsOnce[$payload['model'] ?? ''])) {
+                    $status = $fake->failModelsOnce[$payload['model']];
+                    unset($fake->failModelsOnce[$payload['model']]);
+
+                    return Http::response(['error' => ['message' => 'slow down', 'code' => 'rate_limit_exceeded']], $status);
+                }
                 if (isset($fake->failModels[$payload['model'] ?? ''])) {
                     return Http::response(['error' => ['message' => 'over quota', 'code' => 'rate_limit_exceeded']], $fake->failModels[$payload['model']]);
                 }

@@ -172,7 +172,9 @@ file with the reason. Reading is counted in Usage (tokens and cost).
 **Document cards.** An uploaded file of at least 2,500 characters gets one
 extra passage first, "ملخص الوثيقة ومعلوماتها الأساسية" (`ChatbotDocumentCardWriter`):
 what the document is and its key facts (dates, fees, who it is for, how to
-apply) quoted from its text by the reading model. An announcement's deadline
+apply) quoted from its text by the reading model, written from the first
+24,000 and the last 8,000 characters (dates and how to apply sit at the end of
+an announcement), with one retry after a rate limit. An announcement's deadline
 otherwise sits in a passage that says "this announcement" and never names
 it, so a question naming the competition found other passages first and the
 model took another document's dates. The card is saved next to the file

@@ -7,6 +7,7 @@ namespace Tests\Feature\Chatbot;
 use App\Contracts\Chatbot\ChatbotKnowledgeServiceInterface;
 use App\Models\Chatbot\ChatbotChunk;
 use App\Models\Chatbot\ChatbotDocument;
+use App\Services\Chatbot\ChatbotDocumentCardWriter;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
@@ -80,6 +81,26 @@ final class ChatbotDocumentCardTest extends TestCase
 
         $this->assertSame('ready', $document->status);
         $this->assertNotSame(__('admin_chatbot.card_heading', [], 'ar'), ChatbotChunk::query()->where('chatbot_document_id', $document->id)->orderBy('position')->value('heading'));
+    }
+
+    public function test_a_long_file_is_summarised_from_its_start_and_end_and_a_rate_limit_is_retried(): void
+    {
+        config(['chatbot.knowledge.card_head_characters' => 2000, 'chatbot.knowledge.card_tail_characters' => 300, 'chatbot.knowledge.card_retry_ms' => 0]);
+        $excerpt = ChatbotDocumentCardWriter::excerpt(str_repeat('أ', 5000).'الموعد النهائي 2026/10/26');
+        $this->assertStringStartsWith(str_repeat('أ', 2000)."\n\n[…]\n\n", $excerpt);
+        $this->assertStringEndsWith('الموعد النهائي 2026/10/26', $excerpt);
+        $this->assertSame(2000 + 7 + 300, mb_strlen($excerpt));
+
+        $user = $this->adminUser();
+        $this->saveApiKey($user);
+        // The first card call hits the rate limit, the retry succeeds.
+        $this->openAi->failModelsOnce = ['gpt-6.1-terra' => 429];
+        Storage::disk('local')->put('chatbot/uploads/notice.md', $this->longAnnouncement());
+
+        $document = app(ChatbotKnowledgeServiceInterface::class)->addUpload('chatbot/uploads/notice.md', 'notice.md', null, (int) $user->id);
+
+        $this->assertSame(__('admin_chatbot.card_heading', [], 'ar'), ChatbotChunk::query()->where('chatbot_document_id', $document->id)->orderBy('position')->value('heading'));
+        $this->assertSame(['gpt-6.1-terra', 'gpt-6.1-terra'], array_column($this->cardRequests(), 'model'));
     }
 
     /**
