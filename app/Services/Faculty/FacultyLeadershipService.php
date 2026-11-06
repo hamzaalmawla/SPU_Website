@@ -305,8 +305,10 @@ final class FacultyLeadershipService implements FacultyLeadershipServiceInterfac
                 $rows[] = [(string) ($position['id'] ?? ''), $slug, $memberId];
             }
 
-            if ($deans !== 1) {
-                $errors[$locale][] = 'The faculty must have exactly one dean.';
+            // A faculty may publish its council before its dean is picked (the post can be vacant,
+            // or the dean's profile not ready yet); it never has two.
+            if ($deans > 1) {
+                $errors[$locale][] = 'The faculty cannot have more than one dean.';
             }
 
             $shared[$locale] = [$rows, ($translation['includeDepartmentHeads'] ?? true) !== false];

@@ -302,11 +302,11 @@ final class FacultyCouncilTest extends TestCase
 
         $this->assertTrue($workflow->readiness(self::TARGET, $this->councilPayload([$deanRow]))->isReady);
 
-        $noDean = $workflow->readiness(self::TARGET, $this->councilPayload([]));
-        $this->assertContains('The faculty must have exactly one dean.', $noDean->errors['ar']);
+        // A council with no dean yet can publish (2026-11-06): only a second dean is refused.
+        $this->assertTrue($workflow->readiness(self::TARGET, $this->councilPayload([]))->isReady);
 
         $twoDeans = $workflow->readiness(self::TARGET, $this->councilPayload([$deanRow, ['positionSlug' => 'dean', 'memberId' => (int) $hidden->getKey()]]));
-        $this->assertContains('The faculty must have exactly one dean.', $twoDeans->errors['en']);
+        $this->assertContains('The faculty cannot have more than one dean.', $twoDeans->errors['en']);
 
         $noPosition = $workflow->readiness(self::TARGET, $this->councilPayload([$deanRow, ['positionSlug' => null, 'memberId' => (int) $dean->getKey()]]));
         $this->assertContains('Every position must be picked from the positions list.', $noPosition->errors['ar']);
@@ -680,6 +680,18 @@ final class FacultyCouncilTest extends TestCase
         $published = app(CmsWorkflowServiceInterface::class)->getPublishedPayload(self::TARGET);
         $this->assertContains((int) $vice->getKey(), array_column($published['translations']['ar']['positions'], 'memberId'));
         $this->assertContains((int) $dean->getKey(), array_column($published['translations']['en']['positions'], 'memberId'));
+    }
+
+    public function test_a_council_with_no_dean_publishes_and_shows_its_positions(): void
+    {
+        $vice = $this->member('no-dean-vice', 'Dr. Vacant Dean Vice', 'د. نائب بلا عميد');
+        $workflow = app(CmsWorkflowServiceInterface::class);
+
+        $workflow->saveDraft(self::TARGET, $this->councilPayload([['positionSlug' => 'vice_dean', 'memberId' => (int) $vice->getKey()]]), (int) $this->admin->getKey());
+        $this->assertTrue($workflow->publish(self::TARGET, (int) $this->admin->getKey()));
+
+        $this->get('/ar/faculties/medicine/council')->assertOk()->assertSee('د. نائب بلا عميد');
+        $this->get('/en/faculties/medicine/council')->assertOk()->assertSee('Dr. Vacant Dean Vice');
     }
 
     public function test_matched_positions_are_not_published_over_an_open_draft_or_without_a_dean(): void

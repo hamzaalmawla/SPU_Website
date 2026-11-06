@@ -153,6 +153,9 @@ final class FacultyPositionMatchService implements FacultyPositionMatchServiceIn
                     try {
                         if ($hadOpenDraft) {
                             $notPublished[$slug] = 'an editor already had a draft open on this page';
+                        } elseif (! $hasDean) {
+                            // An editor may publish a council with no dean; this command never does.
+                            $notPublished[$slug] = 'the page has no dean';
                         } elseif ($this->workflow->publish($targetKey, $userId)) {
                             $published[] = $slug;
                         } else {

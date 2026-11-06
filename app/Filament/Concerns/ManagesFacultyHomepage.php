@@ -2885,6 +2885,7 @@ trait ManagesFacultyHomepage
     /** @param array<string, array<int, string>> $errors */
     private function formatValidationErrors(array $errors): string
     {
-        return collect($errors)->flatten()->implode(PHP_EOL);
+        // The same message for Arabic and English shows once.
+        return collect($errors)->flatten()->unique()->implode(PHP_EOL);
     }
 }
