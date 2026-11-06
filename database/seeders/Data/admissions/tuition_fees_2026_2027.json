@@ -1,0 +1,24 @@
+{
+    "source": "SPU admissions round 2026-2027 fee table (image titled \"مفاضلة 2027 - 2026\"), supplied by the university on 2026-10-18",
+    "labels": {
+        "ar": {
+            "overviewTitle": "رسوم مفاضلة العام الدراسي 2026 - 2027",
+            "feeTableIntro": "الرسوم حسب الكلية، مع الشهادة المطلوبة والمعدل المطلوب لكل فرع من فروع الثانوية العامة. ل.س.ج: ليرة سورية جديدة.",
+            "feeUnit": "للساعة المعتمدة"
+        },
+        "en": {
+            "overviewTitle": "2026 - 2027 Admissions Round Fees",
+            "feeTableIntro": "Fees by faculty, with the required General Secondary certificate track and minimum average for each. Syrian student fees are in new Syrian pounds.",
+            "feeUnit": "per credit hour"
+        }
+    },
+    "rows": [
+        { "faculty": { "ar": "الطب", "en": "Medicine" }, "scientificAverage": 80, "creditHours": 251, "syrianFee": 18000, "foreignFee": 350 },
+        { "faculty": { "ar": "طب الأسنان", "en": "Dentistry" }, "scientificAverage": 75, "creditHours": 185, "syrianFee": 16000, "foreignFee": 300 },
+        { "faculty": { "ar": "الصيدلة", "en": "Pharmacy" }, "scientificAverage": 75, "creditHours": 178, "syrianFee": 14000, "foreignFee": 250 },
+        { "faculty": { "ar": "هندسة الذكاء الاصطناعي", "en": "Artificial Intelligence Engineering" }, "scientificAverage": 65, "vocationalAverage": 75, "creditHours": 180, "syrianFee": 10000, "foreignFee": 250 },
+        { "faculty": { "ar": "هندسة تكنولوجيا البناء والتشييد", "en": "Building and Construction Technology Engineering" }, "scientificAverage": 65, "creditHours": 180, "syrianFee": 10000, "foreignFee": 200 },
+        { "faculty": { "ar": "هندسة البترول", "en": "Petroleum Engineering" }, "scientificAverage": 65, "vocationalAverage": 75, "creditHours": 180, "syrianFee": 10000, "foreignFee": 200 },
+        { "faculty": { "ar": "إدارة الأعمال", "en": "Business Administration" }, "scientificAverage": 55, "vocationalAverage": 55, "literaryAverage": 50, "creditHours": 134, "syrianFee": 7000, "foreignFee": 150 }
+    ]
+}

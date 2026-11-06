@@ -1,0 +1,41 @@
+<?php
+
+declare(strict_types=1);
+
+// Interface labels of the public centers pages. Page text is CMS content.
+return [
+    'home' => 'Home',
+    'centers' => 'Centers',
+    'explore' => 'Explore the center',
+    'visit' => 'Visit',
+    'no_centers' => 'No centers are published yet.',
+    'manager_message' => 'Manager\'s message',
+    'message_from' => 'A message from the',
+    'staff_count' => ':count staff members',
+    'no_staff' => 'No staff profiles are published yet.',
+    'view_all_staff' => 'All staff',
+    'courses_count' => ':count courses',
+    'no_courses' => 'No courses are listed here yet.',
+    'no_courses_for_faculty' => 'No course of this list belongs to this faculty.',
+    'filter_by_faculty' => 'Show the courses of',
+    'all_faculties' => 'All faculties',
+    'required' => 'Required',
+    'elective' => 'Elective',
+    'credits' => 'Credits',
+    'credits_short' => ':count cr',
+    'theory' => 'Theory hours',
+    'practical' => 'Practical hours',
+    'code' => 'Code',
+    'faculties' => 'Faculties and codes',
+    'faculty_code' => 'Code in :faculty',
+    'prerequisites' => 'Prerequisites',
+    'teachers' => 'Taught by',
+    'teacher_parts' => ['theory' => 'Theory', 'practical' => 'Practical'],
+    'lessons' => 'Course material',
+    'lesson_types' => ['lecture' => 'Lecture', 'lab' => 'Lab'],
+    'specification' => 'Course specification (PDF)',
+    'details' => 'Course details',
+    'open_study_plan' => 'Open the study plan of :faculty',
+    'unit_course_link' => 'See this course at the Requirements Unit',
+    'section_nav' => 'Center pages',
+];

@@ -1,0 +1,395 @@
+{
+  "source": "Old site faculty pages \"توصيف المقررات والمحاضرات\" (crawled 2026-10-21). Files stay on the old site's /downloads/files, which v2 serves. Specifications only; lecture files are not imported.",
+  "courses": [
+    {
+      "faculty": "pharmacy",
+      "titleAr": "مصطلحات صيدلانية باللغة الانكليزية",
+      "matchTitles": [
+        "مصطلحات صيدلانية باللغة الانكليزية"
+      ],
+      "legacyUrls": [
+        "/pharm/index.php?page=show&ex=2&dir=items&ex=2&ser=42&lang=1&cat_id=6056&act=0",
+        "/pharm/index.php?page=show&ex=2&dir=items&ex=2&ser=42&lang=1&cat_id=5499&act=0"
+      ],
+      "specification": "/downloads/files/1784025075_m.pdf"
+    },
+    {
+      "faculty": "pharmacy",
+      "titleAr": "الإحصاء الحيوي",
+      "matchTitles": [
+        "الإحصاء الحيوي"
+      ],
+      "legacyUrls": [
+        "/pharm/index.php?page=show&ex=2&dir=items&ex=2&ser=42&lang=1&cat_id=5965&act=0"
+      ],
+      "specification": "/downloads/files/1783452129_2.pdf"
+    },
+    {
+      "faculty": "pharmacy",
+      "titleAr": "تشريح ونسج",
+      "matchTitles": [
+        "تشريح ونسج"
+      ],
+      "legacyUrls": [
+        "/pharm/index.php?page=show&ex=2&dir=items&ex=2&ser=42&lang=1&cat_id=5956&act=0"
+      ],
+      "specification": "/downloads/files/1783232857_3.pdf"
+    },
+    {
+      "faculty": "pharmacy",
+      "titleAr": "الإنشاء العلمي باللغة الانكليزية",
+      "matchTitles": [
+        "الإنشاء العلمي باللغة الانكليزية"
+      ],
+      "legacyUrls": [
+        "/pharm/index.php?page=show&ex=2&dir=items&ex=2&ser=42&lang=1&cat_id=5952&act=0"
+      ],
+      "specification": "/downloads/files/1783184250_2.pdf"
+    },
+    {
+      "faculty": "pharmacy",
+      "titleAr": "بيولوجيا نباتية",
+      "matchTitles": [
+        "بيولوجيا نباتية"
+      ],
+      "legacyUrls": [
+        "/pharm/index.php?page=show&ex=2&dir=items&ex=2&ser=42&lang=1&cat_id=5875&act=0"
+      ],
+      "specification": "/downloads/files/1782736960_ccc.pdf"
+    },
+    {
+      "faculty": "pharmacy",
+      "titleAr": "كيمياء صيدلانية 1",
+      "matchTitles": [
+        "كيمياء صيدلانية 1",
+        "كيمياء صيدلية 1"
+      ],
+      "legacyUrls": [
+        "/pharm/index.php?page=show&ex=2&dir=items&ex=2&ser=42&lang=1&cat_id=5863&act=0"
+      ],
+      "specification": "/downloads/files/1782732509_v.pdf"
+    },
+    {
+      "faculty": "pharmacy",
+      "titleAr": "كيمياء صيدلانية 2",
+      "matchTitles": [
+        "كيمياء صيدلانية 2",
+        "كيمياء صيدلية 2"
+      ],
+      "legacyUrls": [
+        "/pharm/index.php?page=show&ex=2&dir=items&ex=2&ser=42&lang=1&cat_id=5543&act=0"
+      ],
+      "specification": "/downloads/files/1773249761_1.pdf"
+    },
+    {
+      "faculty": "pharmacy",
+      "titleAr": "التلوث والوبائيات",
+      "matchTitles": [
+        "التلوث والوبائيات"
+      ],
+      "legacyUrls": [
+        "/pharm/index.php?page=show&ex=2&dir=items&ex=2&ser=42&lang=1&cat_id=5684&act=0"
+      ],
+      "specification": "/downloads/files/1775322569_1.pdf"
+    },
+    {
+      "faculty": "pharmacy",
+      "titleAr": "عقاقير 1",
+      "matchTitles": [
+        "عقاقير 1"
+      ],
+      "legacyUrls": [
+        "/pharm/index.php?page=show&ex=2&dir=items&ex=2&ser=42&lang=1&cat_id=5459&act=0"
+      ],
+      "specification": "/downloads/files/1782734353_2.pdf"
+    },
+    {
+      "faculty": "pharmacy",
+      "titleAr": "عقاقير 2",
+      "matchTitles": [
+        "عقاقير 2"
+      ],
+      "legacyUrls": [
+        "/pharm/index.php?page=show&ex=2&dir=items&ex=2&ser=42&lang=1&cat_id=5871&act=0"
+      ],
+      "specification": "/downloads/files/1782733736_c.pdf"
+    },
+    {
+      "faculty": "pharmacy",
+      "titleAr": "مهارات التواصل",
+      "matchTitles": [
+        "مهارات التواصل"
+      ],
+      "legacyUrls": [
+        "/pharm/index.php?page=show&ex=2&dir=items&ex=2&ser=42&lang=1&cat_id=5681&act=0"
+      ],
+      "specification": "/downloads/files/1775320861_10.pdf"
+    },
+    {
+      "faculty": "pharmacy",
+      "titleAr": "ترويج وتسويق واقتصاد صيدلاني",
+      "matchTitles": [
+        "ترويج وتسويق واقتصاد صيدلاني"
+      ],
+      "legacyUrls": [
+        "/pharm/index.php?page=show&ex=2&dir=items&ex=2&ser=42&lang=1&cat_id=5678&act=0"
+      ],
+      "specification": "/downloads/files/1775319717_4.pdf"
+    },
+    {
+      "faculty": "pharmacy",
+      "titleAr": "رياضيات صيدلانية",
+      "matchTitles": [
+        "رياضيات صيدلانية"
+      ],
+      "legacyUrls": [
+        "/pharm/index.php?page=show&ex=2&dir=items&ex=2&ser=42&lang=1&cat_id=5569&act=0"
+      ],
+      "specification": "/downloads/files/1773595358_555.pdf"
+    },
+    {
+      "faculty": "pharmacy",
+      "titleAr": "اللقاحات والمواد البيولوجية الممنعة",
+      "matchTitles": [
+        "اللقاحات والمواد البيولوجية الممنعة"
+      ],
+      "legacyUrls": [
+        "/pharm/index.php?page=show&ex=2&dir=items&ex=2&ser=42&lang=1&cat_id=5566&act=0"
+      ],
+      "specification": "/downloads/files/1773551060_H.pdf"
+    },
+    {
+      "faculty": "pharmacy",
+      "titleAr": "الفيزياء العامة",
+      "matchTitles": [
+        "الفيزياء العامة"
+      ],
+      "legacyUrls": [
+        "/pharm/index.php?page=show&ex=2&dir=items&ex=2&ser=42&lang=1&cat_id=5563&act=0"
+      ],
+      "specification": "/downloads/files/1773544971_55.pdf"
+    },
+    {
+      "faculty": "pharmacy",
+      "titleAr": "كيمياء عامة ولا عضوية",
+      "matchTitles": [
+        "كيمياء عامة ولا عضوية"
+      ],
+      "legacyUrls": [
+        "/pharm/index.php?page=show&ex=2&dir=items&ex=2&ser=42&lang=1&cat_id=5558&act=0"
+      ],
+      "specification": "/downloads/files/1773543509_1.pdf"
+    },
+    {
+      "faculty": "pharmacy",
+      "titleAr": "كيمياء العقاقير",
+      "matchTitles": [
+        "كيمياء العقاقير"
+      ],
+      "legacyUrls": [
+        "/pharm/index.php?page=show&ex=2&dir=items&ex=2&ser=42&lang=1&cat_id=5456&act=0"
+      ],
+      "specification": "/downloads/files/1782734020_1.pdf"
+    },
+    {
+      "faculty": "business-administration",
+      "titleAr": "التدقيق الداخلي",
+      "matchTitles": [
+        "التدقيق الداخلي"
+      ],
+      "legacyUrls": [
+        "/admin/index.php?page=show&ex=2&dir=items&ex=2&ser=72&lang=1&cat_id=5586&act=0"
+      ],
+      "specification": "/downloads/files/1774717371_1.pdf"
+    },
+    {
+      "faculty": "business-administration",
+      "titleAr": "محاسبة (1)",
+      "matchTitles": [
+        "محاسبة (1)",
+        "مبادئ المحاسبة1"
+      ],
+      "legacyUrls": [
+        "/admin/index.php?page=show&ex=2&dir=items&ex=2&ser=72&lang=1&cat_id=5584&act=0"
+      ],
+      "specification": "/downloads/files/1774716510_1.pdf"
+    },
+    {
+      "faculty": "business-administration",
+      "titleAr": "محاسبة (2)",
+      "matchTitles": [
+        "محاسبة (2)",
+        "مبادئ المحاسبة2"
+      ],
+      "legacyUrls": [
+        "/admin/index.php?page=show&ex=2&dir=items&ex=2&ser=72&lang=1&cat_id=5580&act=0"
+      ],
+      "specification": "/downloads/files/1774715940_2.pdf"
+    },
+    {
+      "faculty": "business-administration",
+      "titleAr": "إدارة الجودة",
+      "matchTitles": [
+        "إدارة الجودة"
+      ],
+      "legacyUrls": [
+        "/admin/index.php?page=show&ex=2&dir=items&ex=2&ser=72&lang=1&cat_id=5552&act=0"
+      ],
+      "specification": "/downloads/files/1773270725_6.pdf"
+    },
+    {
+      "faculty": "business-administration",
+      "titleAr": "إدارة التنوع وفرق العمل",
+      "matchTitles": [
+        "إدارة التنوع وفرق العمل"
+      ],
+      "legacyUrls": [
+        "/admin/index.php?page=show&ex=2&dir=items&ex=2&ser=72&lang=1&cat_id=5549&act=0"
+      ],
+      "specification": "/downloads/files/1773268456_1.pdf"
+    },
+    {
+      "faculty": "business-administration",
+      "titleAr": "ادارة المعرفة",
+      "matchTitles": [
+        "ادارة المعرفة"
+      ],
+      "legacyUrls": [
+        "/admin/index.php?page=show&ex=2&dir=items&ex=2&ser=72&lang=1&cat_id=5540&act=0"
+      ],
+      "specification": "/downloads/files/1773249033_1.pdf"
+    },
+    {
+      "faculty": "business-administration",
+      "titleAr": "نظم معلومات إدارة الموارد البشرية",
+      "matchTitles": [
+        "نظم معلومات إدارة الموارد البشرية"
+      ],
+      "legacyUrls": [
+        "/admin/index.php?page=show&ex=2&dir=items&ex=2&ser=72&lang=1&cat_id=5537&act=0"
+      ],
+      "specification": "/downloads/files/1773243455_1.pdf"
+    },
+    {
+      "faculty": "business-administration",
+      "titleAr": "نظم المعلومات المحاسبية",
+      "matchTitles": [
+        "نظم المعلومات المحاسبية"
+      ],
+      "legacyUrls": [
+        "/admin/index.php?page=show&ex=2&dir=items&ex=2&ser=72&lang=1&cat_id=5534&act=0"
+      ],
+      "specification": "/downloads/files/1773242968_m.pdf"
+    },
+    {
+      "faculty": "business-administration",
+      "titleAr": "محاسبة متوسطة (1)",
+      "matchTitles": [
+        "محاسبة متوسطة (1)"
+      ],
+      "legacyUrls": [
+        "/admin/index.php?page=show&ex=2&dir=items&ex=2&ser=72&lang=1&cat_id=5523&act=0"
+      ],
+      "specification": "/downloads/files/1773177360_1.pdf"
+    },
+    {
+      "faculty": "business-administration",
+      "titleAr": "محاسبة تكاليف (1)",
+      "matchTitles": [
+        "محاسبة تكاليف (1)"
+      ],
+      "legacyUrls": [
+        "/admin/index.php?page=show&ex=2&dir=items&ex=2&ser=72&lang=1&cat_id=5520&act=0"
+      ],
+      "specification": "/downloads/files/1773174726_1.pdf"
+    },
+    {
+      "faculty": "business-administration",
+      "titleAr": "القيادة الادارية",
+      "matchTitles": [
+        "القيادة الادارية"
+      ],
+      "legacyUrls": [
+        "/admin/index.php?page=show&ex=2&dir=items&ex=2&ser=72&lang=1&cat_id=5484&act=0"
+      ],
+      "specification": "/downloads/files/1773173732_1.pdf"
+    },
+    {
+      "faculty": "business-administration",
+      "titleAr": "مهارات الدخول إلى سوق العمل",
+      "matchTitles": [
+        "مهارات الدخول إلى سوق العمل"
+      ],
+      "legacyUrls": [
+        "/admin/index.php?page=show&ex=2&dir=items&ex=2&ser=72&lang=1&cat_id=5496&act=0"
+      ],
+      "specification": "/downloads/files/1771825309_BAHR509.pdf"
+    },
+    {
+      "faculty": "business-administration",
+      "titleAr": "ريادة الأعمال وإدارة المشروعات الصغيرة",
+      "matchTitles": [
+        "ريادة الأعمال وإدارة المشروعات الصغيرة"
+      ],
+      "legacyUrls": [
+        "/admin/index.php?page=show&ex=2&dir=items&ex=2&ser=72&lang=1&cat_id=5493&act=0"
+      ],
+      "specification": "/downloads/files/1771825794_BAEB504.pdf"
+    },
+    {
+      "faculty": "business-administration",
+      "titleAr": "تنمية الموارد البشرية",
+      "matchTitles": [
+        "تنمية الموارد البشرية"
+      ],
+      "legacyUrls": [
+        "/admin/index.php?page=show&ex=2&dir=items&ex=2&ser=72&lang=1&cat_id=5490&act=0"
+      ],
+      "specification": "/downloads/files/1771825718_BAHR510.pdf"
+    },
+    {
+      "faculty": "business-administration",
+      "titleAr": "انكليزي الأعمال",
+      "matchTitles": [
+        "انكليزي الأعمال"
+      ],
+      "legacyUrls": [
+        "/admin/index.php?page=show&ex=2&dir=items&ex=2&ser=72&lang=1&cat_id=5487&act=0"
+      ],
+      "specification": "/downloads/files/1771825613_BAHR307.pdf"
+    },
+    {
+      "faculty": "business-administration",
+      "titleAr": "السلوك التنظيمي",
+      "matchTitles": [
+        "السلوك التنظيمي"
+      ],
+      "legacyUrls": [
+        "/admin/index.php?page=show&ex=2&dir=items&ex=2&ser=72&lang=1&cat_id=5481&act=0"
+      ],
+      "specification": "/downloads/files/1773705505_2.pdf"
+    },
+    {
+      "faculty": "business-administration",
+      "titleAr": "إدارة الموارد البشرية",
+      "matchTitles": [
+        "إدارة الموارد البشرية"
+      ],
+      "legacyUrls": [
+        "/admin/index.php?page=show&ex=2&dir=items&ex=2&ser=72&lang=1&cat_id=5478&act=0"
+      ],
+      "specification": "/downloads/files/1773268577_5.pdf"
+    },
+    {
+      "faculty": "business-administration",
+      "titleAr": "إدارة التفاوض",
+      "matchTitles": [
+        "إدارة التفاوض"
+      ],
+      "legacyUrls": [
+        "/admin/index.php?page=show&ex=2&dir=items&ex=2&ser=72&lang=1&cat_id=5475&act=0"
+      ],
+      "specification": "/downloads/files/1773704889_1.pdf"
+    }
+  ]
+}

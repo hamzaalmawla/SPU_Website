@@ -4,21 +4,24 @@ declare(strict_types=1);
 
 namespace App\Services\Placeholders;
 
-use App\Contracts\PageServiceInterface;
-use App\DTOs\BreadcrumbTrailDTO;
-use App\DTOs\HomepageDraftDTO;
-use App\DTOs\PageDraftDataDTO;
-use App\DTOs\PageDTO;
-use App\DTOs\PageMetadataDTO;
-use App\DTOs\PageSeoInputDTO;
-use App\DTOs\PageShellDataDTO;
-use App\DTOs\PageTranslationDTO;
-use App\DTOs\PreviewDTO;
+use App\Contracts\Page\PageServiceInterface;
+use App\DTOs\Page\PageDraftDataDTO;
+use App\DTOs\Page\PageDraftDTO;
+use App\DTOs\Page\PageDTO;
+use App\DTOs\Page\PageMetadataDTO;
+use App\DTOs\Page\PageShellDataDTO;
+use App\DTOs\Page\PageTranslationDTO;
+use App\DTOs\Preview\PreviewDTO;
+use App\DTOs\Seo\PageSeoInputDTO;
+use App\DTOs\Shared\BreadcrumbTrailDTO;
 use BadMethodCallException;
 use DateTimeInterface;
 
 /**
  * Placeholder implementation for the landing-page service contract.
+ *
+ * When replaced, the real service must preserve the documented read precedence:
+ * localized page_translations content first, pages.content_json only as non-localized shell data.
  */
 final class PageServicePlaceholder implements PageServiceInterface
 {
@@ -27,32 +30,32 @@ final class PageServicePlaceholder implements PageServiceInterface
         throw new BadMethodCallException(__METHOD__.' is not implemented.');
     }
 
-    public function updateBaseMetadata(int $pageId, PageMetadataDTO $payload): bool
+    public function updateBaseMetadata(int $pageId, PageMetadataDTO $payload, int $userId): bool
     {
         throw new BadMethodCallException(__METHOD__.' is not implemented.');
     }
 
-    public function updateArabicTranslation(int $pageId, PageTranslationDTO $payload): bool
+    public function updateArabicTranslation(int $pageId, PageTranslationDTO $payload, int $userId): bool
     {
         throw new BadMethodCallException(__METHOD__.' is not implemented.');
     }
 
-    public function updateEnglishTranslation(int $pageId, PageTranslationDTO $payload): bool
+    public function updateEnglishTranslation(int $pageId, PageTranslationDTO $payload, int $userId): bool
     {
         throw new BadMethodCallException(__METHOD__.' is not implemented.');
     }
 
-    public function updateArabicSeo(int $pageId, PageSeoInputDTO $payload): bool
+    public function updateArabicSeo(int $pageId, PageSeoInputDTO $payload, int $userId): bool
     {
         throw new BadMethodCallException(__METHOD__.' is not implemented.');
     }
 
-    public function updateEnglishSeo(int $pageId, PageSeoInputDTO $payload): bool
+    public function updateEnglishSeo(int $pageId, PageSeoInputDTO $payload, int $userId): bool
     {
         throw new BadMethodCallException(__METHOD__.' is not implemented.');
     }
 
-    public function saveDraft(int $pageId, PageDraftDataDTO $payload, int $userId): HomepageDraftDTO
+    public function saveDraft(int $pageId, PageDraftDataDTO $payload, int $userId, ?int $expectedVersion = null): PageDraftDTO
     {
         throw new BadMethodCallException(__METHOD__.' is not implemented.');
     }
@@ -72,6 +75,11 @@ final class PageServicePlaceholder implements PageServiceInterface
         throw new BadMethodCallException(__METHOD__.' is not implemented.');
     }
 
+    public function publishDueScheduled(): int
+    {
+        throw new BadMethodCallException(__METHOD__.' is not implemented.');
+    }
+
     public function getPublicPageBySlug(string $slug, string $locale): ?PageDTO
     {
         throw new BadMethodCallException(__METHOD__.' is not implemented.');
@@ -87,12 +95,22 @@ final class PageServicePlaceholder implements PageServiceInterface
         throw new BadMethodCallException(__METHOD__.' is not implemented.');
     }
 
-    public function buildPreviewPayload(int $pageId, string $locale, string $device): PreviewDTO
+    public function buildPreviewPayload(int $pageId, string $locale): PreviewDTO
+    {
+        throw new BadMethodCallException(__METHOD__.' is not implemented.');
+    }
+
+    public function buildPreviewPayloadFromSnapshot(int $pageId, array $snapshot, string $locale): PreviewDTO
     {
         throw new BadMethodCallException(__METHOD__.' is not implemented.');
     }
 
     public function resolveLanguageSwitchTargetUrl(int $pageId, string $targetLocale): ?string
+    {
+        throw new BadMethodCallException(__METHOD__.' is not implemented.');
+    }
+
+    public function latestEditableDraftVersion(int $pageId): ?int
     {
         throw new BadMethodCallException(__METHOD__.' is not implemented.');
     }

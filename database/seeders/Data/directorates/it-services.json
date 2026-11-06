@@ -1,0 +1,93 @@
+{
+    "slug": "it-services",
+    "translations": {
+        "ar": {
+            "title": "مديرية تطوير نظم المعلومات",
+            "summary": "التخطيط والتصميم والتحديث والإشراف على البنية التحتية التكنولوجية والبرمجية وقواعد البيانات في الجامعة.",
+            "description": "مديرية تطوير نظم المعلومات هي الوحدة التنظيمية أو الإدارية المسؤولة في الجامعة عن التخطيط، والتصميم، والتحديث، والإشراف على البنية التحتية التكنولوجية والبرمجية وقواعد البيانات. تهدف هذه المديرية إلى تحويل العمليات اليدوية أو القديمة إلى عمليات رقمية وذكية ترفع من كفاءة العمل وسرعة إنجازه.",
+            "services_json": [
+                "تطوير وتحديث الأنظمة",
+                "إدارة وتحليل البيانات",
+                "تطوير البنية التحتية التقنية",
+                "دعم التحول الرقمي",
+                "أمن المعلومات والحماية",
+                "الدعم الفني والتدريب",
+                "إعداد الخطط"
+            ],
+            "links_json": [
+                {"title": "دعم تكنولوجيا المعلومات", "url": "/ar/e-services/it-support"}
+            ],
+            "task_groups_json": [
+                {
+                    "title": "أبرز مهام مديرية تطوير نظم المعلومات",
+                    "summary": "",
+                    "items": [
+                        {"title": "تطوير وتحديث الأنظمة", "body": "تصميم وبرمجة وتحديث التطبيقات والبرمجيات والأنظمة الإلكترونية بما يتناسب مع احتياجات المؤسسة."},
+                        {"title": "إدارة وتحليل البيانات", "body": "الإشراف على قواعد البيانات، وتأمين حفظ وتشغيل واسترجاع المعلومات بسرعة ودقة عالية."},
+                        {"title": "تطوير البنية التحتية التقنية", "body": "متابعة وصيانة الأجهزة، وتطوير شبكات الاتصالات، وتحديث التقنيات المستخدمة."},
+                        {"title": "دعم التحول الرقمي", "body": "المساهمة في مشاريع الحكومة الإلكترونية أو الميكنة الشاملة لتقليل الروتين والورقية."},
+                        {"title": "أمن المعلومات والحماية", "body": "وضع خطط لحماية البيانات من الاختراقات، وإعداد خطط للطوارئ والتعافي من الكوارث التقنية."},
+                        {"title": "الدعم الفني والتدريب", "body": "تقديم الدعم للمستخدمين داخل المؤسسة، وتدريب الكوادر على استخدام الأنظمة الجديدة بكفاءة."},
+                        {"title": "إعداد الخطط", "body": "التخطيط لمشاريع التكنولوجيا المستقبلية، ودراسة الجدوى، وشراء البرمجيات والأجهزة المناسبة بأفضل تكلفة."}
+                    ]
+                },
+                {
+                    "title": "المهام الأساسية للمديرية في الجامعة",
+                    "summary": "تنقسم مهام المديرية في الوسط الجامعي إلى عدة محاور رئيسية تخدم العملية التعليمية والإدارية:",
+                    "items": [
+                        {"title": "إدارة وتطوير المنصات الأكاديمية (UMS)", "body": "بناء وتحديث أنظمة التسجيل الإلكتروني، الجداول الدراسية، وبوابات الطلاب وأعضاء هيئة التدريس."},
+                        {"title": "قيادة التحول الذكي وإدراج الذكاء الاصطناعي (AI)", "body": ""},
+                        {"title": "تطوير نظم إدارة التعلم (LMS)", "body": "الإشراف على منصات التعلم عن بعد والامتحانات الإلكترونية وتحديثها بشكل مستمر."},
+                        {"title": "دعم اتخاذ القرار لرئاسة الجامعة", "body": "توفير قواعد بيانات متكاملة ومؤشرات أداء تساعد إدارة الجامعة على المتابعة، التقييم، واتخاذ القرارات الاستراتيجية."},
+                        {"title": "الأتمتة الإدارية والمالية", "body": "ميكنة شؤون الموظفين، الرواتب، الشؤون القانونية، والمشتريات لتقليل المعاملات الورقية."},
+                        {"title": "أمن المعلومات والنسخ الاحتياطي", "body": "حماية البيئة الرقمية والبنية التحتية من الاختراقات وتأمين نسخ احتياطية دورية لها."}
+                    ]
+                }
+            ]
+        },
+        "en": {
+            "title": "Information Systems Development Directorate",
+            "summary": "Plans, designs, modernizes and oversees the university's technology and software infrastructure and its databases.",
+            "description": "The Information Systems Development Directorate is the university unit responsible for planning, designing, modernizing and overseeing the technology and software infrastructure and the databases. It aims to turn manual or outdated processes into digital, smart ones that make work more efficient and faster to complete.",
+            "services_json": [
+                "Systems development and modernization",
+                "Data management and analysis",
+                "Technical infrastructure development",
+                "Digital transformation support",
+                "Information security and protection",
+                "Technical support and training",
+                "Planning"
+            ],
+            "links_json": [
+                {"title": "IT Support", "url": "/en/e-services/it-support"}
+            ],
+            "task_groups_json": [
+                {
+                    "title": "Main tasks of the Information Systems Development Directorate",
+                    "summary": "",
+                    "items": [
+                        {"title": "Systems development and modernization", "body": "Designing, programming and updating applications, software and electronic systems to meet the institution's needs."},
+                        {"title": "Data management and analysis", "body": "Overseeing the databases and keeping information stored, running and retrievable quickly and accurately."},
+                        {"title": "Technical infrastructure development", "body": "Monitoring and maintaining equipment, developing communication networks and updating the technologies in use."},
+                        {"title": "Digital transformation support", "body": "Contributing to e-government and full automation projects that reduce routine and paperwork."},
+                        {"title": "Information security and protection", "body": "Planning to protect data from breaches, and preparing emergency and technical disaster-recovery plans."},
+                        {"title": "Technical support and training", "body": "Supporting users across the institution and training staff to use new systems efficiently."},
+                        {"title": "Planning", "body": "Planning future technology projects, studying their feasibility, and purchasing suitable software and hardware at the best cost."}
+                    ]
+                },
+                {
+                    "title": "The directorate's core tasks at the university",
+                    "summary": "At the university, the directorate's work falls into several main areas that serve teaching and administration:",
+                    "items": [
+                        {"title": "Managing and developing the academic platforms (UMS)", "body": "Building and updating online registration, timetables, and the student and faculty portals."},
+                        {"title": "Leading smart transformation and introducing artificial intelligence (AI)", "body": ""},
+                        {"title": "Developing learning management systems (LMS)", "body": "Overseeing the distance-learning and online-exam platforms and updating them continuously."},
+                        {"title": "Decision support for the university presidency", "body": "Providing integrated databases and performance indicators that help the university's leadership follow up, evaluate and make strategic decisions."},
+                        {"title": "Administrative and financial automation", "body": "Automating personnel affairs, payroll, legal affairs and procurement to reduce paper transactions."},
+                        {"title": "Information security and backup", "body": "Protecting the digital environment and infrastructure from breaches and keeping regular backups."}
+                    ]
+                }
+            ]
+        }
+    }
+}

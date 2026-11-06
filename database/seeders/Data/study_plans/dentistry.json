@@ -1,0 +1,2002 @@
+{
+  "source": "خطة درسية جديدة بقرار 176 تاريخ 23-2-2014.pdf (transcribed)",
+  "departments": [
+    {
+      "id": "dentistry",
+      "nameEn": "Dentistry",
+      "nameAr": "طب الأسنان",
+      "summaryEn": "",
+      "summaryAr": "",
+      "totalCredits": 185,
+      "terms": [
+        {
+          "id": 1,
+          "labelEn": "1",
+          "labelAr": "1",
+          "courses": [
+            {
+              "id": "unre101",
+              "code": "UNRE101",
+              "titleEn": "Computer Skills",
+              "titleAr": "مهارات الحاسوب",
+              "term": 1,
+              "type": "university",
+              "required": true,
+              "forced": false,
+              "credits": 3,
+              "prerequisites": [],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 2,
+                "practical": 2
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "unre103",
+              "code": "UNRE103",
+              "titleEn": "Arabic Language",
+              "titleAr": "لغة عربية",
+              "term": 1,
+              "type": "university",
+              "required": true,
+              "forced": false,
+              "credits": 2,
+              "prerequisites": [],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 2,
+                "practical": 0
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "unre105",
+              "code": "UNRE105",
+              "titleEn": "English Language (1)",
+              "titleAr": "لغة انكليزية (1)",
+              "term": 1,
+              "type": "university",
+              "required": true,
+              "forced": false,
+              "credits": 2,
+              "prerequisites": [],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 2,
+                "practical": 0
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "debl103",
+              "code": "DEBL103",
+              "titleEn": "Dental Biochemistry (1)",
+              "titleAr": "كيمياء حيوية لطب الأسنان (1)",
+              "term": 1,
+              "type": "faculty",
+              "required": true,
+              "forced": false,
+              "credits": 3,
+              "prerequisites": [],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 2,
+                "practical": 2
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "debl104",
+              "code": "DEBL104",
+              "titleEn": "Physiology (1)",
+              "titleAr": "فيزيولوجيا (1)",
+              "term": 1,
+              "type": "faculty",
+              "required": true,
+              "forced": false,
+              "credits": 3,
+              "prerequisites": [],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 2,
+                "practical": 2
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "debl105",
+              "code": "DEBL105",
+              "titleEn": "Cell Biology & Immunology",
+              "titleAr": "علم الخلية والمناعة",
+              "term": 1,
+              "type": "faculty",
+              "required": true,
+              "forced": false,
+              "credits": 3,
+              "prerequisites": [],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 2,
+                "practical": 2
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "deop107",
+              "code": "DEOP107",
+              "titleEn": "Dental Anatomy (1)",
+              "titleAr": "تشريح الأسنان (1)",
+              "term": 1,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 2,
+              "prerequisites": [],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 1,
+                "practical": 2
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            }
+          ]
+        },
+        {
+          "id": 2,
+          "labelEn": "2",
+          "labelAr": "2",
+          "courses": [
+            {
+              "id": "unre207",
+              "code": "UNRE207",
+              "titleEn": "English Language (2)",
+              "titleAr": "لغة انكليزية (2)",
+              "term": 2,
+              "type": "university",
+              "required": true,
+              "forced": false,
+              "credits": 2,
+              "prerequisites": [
+                "unre105"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 2,
+                "practical": 0
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "debl202",
+              "code": "DEBL202",
+              "titleEn": "Medical Physics",
+              "titleAr": "الفيزياء الطبية",
+              "term": 2,
+              "type": "faculty",
+              "required": true,
+              "forced": false,
+              "credits": 3,
+              "prerequisites": [],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 2,
+                "practical": 2
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "debl203",
+              "code": "DEBL203",
+              "titleEn": "Dental Biochemistry (2)",
+              "titleAr": "كيمياء حيوية لطب الأسنان (2)",
+              "term": 2,
+              "type": "faculty",
+              "required": true,
+              "forced": false,
+              "credits": 3,
+              "prerequisites": [
+                "debl103"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 2,
+                "practical": 2
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "debl204",
+              "code": "DEBL204",
+              "titleEn": "Physiology (2) (Oral Physiology)",
+              "titleAr": "فيزيولوجيا (2) (فيزيولوجيا الفم)",
+              "term": 2,
+              "type": "faculty",
+              "required": true,
+              "forced": false,
+              "credits": 1,
+              "prerequisites": [
+                "debl104"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 1,
+                "practical": 0
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "debl205",
+              "code": "DEBL205",
+              "titleEn": "Human Genetics",
+              "titleAr": "علم الوراثة الإنساني",
+              "term": 2,
+              "type": "faculty",
+              "required": true,
+              "forced": false,
+              "credits": 1,
+              "prerequisites": [],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 1,
+                "practical": 0
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "deos206",
+              "code": "DEOS206",
+              "titleEn": "Anatomy (1) (General)",
+              "titleAr": "تشريح (1) (عام)",
+              "term": 2,
+              "type": "faculty",
+              "required": true,
+              "forced": false,
+              "credits": 3,
+              "prerequisites": [],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 2,
+                "practical": 2
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "deop207",
+              "code": "DEOP207",
+              "titleEn": "Dental Anatomy (2)",
+              "titleAr": "تشريح الأسنان (2)",
+              "term": 2,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 2,
+              "prerequisites": [
+                "deop107"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 1,
+                "practical": 2
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "deos208",
+              "code": "DEOS208",
+              "titleEn": "Microbiology",
+              "titleAr": "علم الأحياء الدقيقة",
+              "term": 2,
+              "type": "faculty",
+              "required": true,
+              "forced": false,
+              "credits": 3,
+              "prerequisites": [],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 2,
+                "practical": 2
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            }
+          ]
+        },
+        {
+          "id": 3,
+          "labelEn": "3",
+          "labelAr": "3",
+          "courses": [
+            {
+              "id": "deop301",
+              "code": "DEOP301",
+              "titleEn": "Operative Dentistry (1)",
+              "titleAr": "مداواة أسنان ترميمية (1)",
+              "term": 3,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 4,
+              "prerequisites": [
+                "deop107"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 2,
+                "practical": 4
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "derp302",
+              "code": "DERP302",
+              "titleEn": "Removable Prosthodontics (1)",
+              "titleAr": "تعويض الأسنان المتحركة (1)",
+              "term": 3,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 3,
+              "prerequisites": [
+                "deop107"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 1,
+                "practical": 4
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "deom303",
+              "code": "DEOM303",
+              "titleEn": "Biomedical Statistics",
+              "titleAr": "علم الإحصاء الحيوي",
+              "term": 3,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 1,
+              "prerequisites": [],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 1,
+                "practical": 0
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "deos304",
+              "code": "DEOS304",
+              "titleEn": "General and Minor Surgery",
+              "titleAr": "جراحة عامة وصغرى",
+              "term": 3,
+              "type": "faculty",
+              "required": true,
+              "forced": false,
+              "credits": 3,
+              "prerequisites": [
+                "deos206"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 2,
+                "practical": 2
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "dehs305",
+              "code": "DEHS305",
+              "titleEn": "General Histology",
+              "titleAr": "علم النسج العام",
+              "term": 3,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 3,
+              "prerequisites": [
+                "debl105"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 2,
+                "practical": 2
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "deos306",
+              "code": "DEOS306",
+              "titleEn": "Anatomy (2) (Head & Neck Anatomy)",
+              "titleAr": "تشريح (2) (تشريح رأس وعنق)",
+              "term": 3,
+              "type": "faculty",
+              "required": true,
+              "forced": false,
+              "credits": 3,
+              "prerequisites": [
+                "deos206"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 2,
+                "practical": 2
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "deom307",
+              "code": "DEOM307",
+              "titleEn": "Epidemiology",
+              "titleAr": "علم الوبائيات",
+              "term": 3,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 1,
+              "prerequisites": [
+                "unre207"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 1,
+                "practical": 0
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "unre302",
+              "code": "UNRE302",
+              "titleEn": "English Language (3)",
+              "titleAr": "اللغة الإنكليزية (3)",
+              "term": 3,
+              "type": "university",
+              "required": false,
+              "forced": false,
+              "credits": 2,
+              "prerequisites": [
+                "unre207"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 2,
+                "practical": 0
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "unre104",
+              "code": "UNRE104",
+              "titleEn": "Scientific Thinking",
+              "titleAr": "المنطق والتفكير العلمي",
+              "term": 3,
+              "type": "university",
+              "required": false,
+              "forced": false,
+              "credits": 2,
+              "prerequisites": [],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 2,
+                "practical": 0
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "unre106",
+              "code": "UNRE106",
+              "titleEn": "Second Foreign Language",
+              "titleAr": "لغة أجنبية حية (ثانية)",
+              "term": 3,
+              "type": "university",
+              "required": false,
+              "forced": false,
+              "credits": 2,
+              "prerequisites": [],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 2,
+                "practical": 0
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "unre108",
+              "code": "UNRE108",
+              "titleEn": "Social Science",
+              "titleAr": "علم اجتماع",
+              "term": 3,
+              "type": "university",
+              "required": false,
+              "forced": false,
+              "credits": 2,
+              "prerequisites": [],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 2,
+                "practical": 0
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "unre110",
+              "code": "UNRE110",
+              "titleEn": "Introduction to Law",
+              "titleAr": "مدخل إلى القانون",
+              "term": 3,
+              "type": "university",
+              "required": false,
+              "forced": false,
+              "credits": 2,
+              "prerequisites": [],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 2,
+                "practical": 0
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "unre112",
+              "code": "UNRE112",
+              "titleEn": "Management Science",
+              "titleAr": "علم الإدارة",
+              "term": 3,
+              "type": "university",
+              "required": false,
+              "forced": false,
+              "credits": 2,
+              "prerequisites": [],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 2,
+                "practical": 0
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "unre114",
+              "code": "UNRE114",
+              "titleEn": "Environmental Science",
+              "titleAr": "علم البيئة",
+              "term": 3,
+              "type": "university",
+              "required": false,
+              "forced": false,
+              "credits": 2,
+              "prerequisites": [],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 2,
+                "practical": 0
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            }
+          ]
+        },
+        {
+          "id": 4,
+          "labelEn": "4",
+          "labelAr": "4",
+          "courses": [
+            {
+              "id": "depe401",
+              "code": "DEPE401",
+              "titleEn": "Infection Control",
+              "titleAr": "مكافحة العدوى",
+              "term": 4,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 1,
+              "prerequisites": [
+                "deos208"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 1,
+                "practical": 0
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "deom402",
+              "code": "DEOM402",
+              "titleEn": "Introduction to Clinical Dentistry",
+              "titleAr": "مقدمة في طب الأسنان السريري",
+              "term": 4,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 2,
+              "prerequisites": [
+                "deop207"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 1,
+                "practical": 2
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "defp403",
+              "code": "DEFP403",
+              "titleEn": "Fixed Prosthodontics (1)",
+              "titleAr": "تعويض الأسنان الثابتة (1)",
+              "term": 4,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 4,
+              "prerequisites": [
+                "deop301"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 2,
+                "practical": 4
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "defp404",
+              "code": "DEFP404",
+              "titleEn": "Occlusion",
+              "titleAr": "علم الإطباق",
+              "term": 4,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 1,
+              "prerequisites": [
+                "deop207"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 1,
+                "practical": 0
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "dehs405",
+              "code": "DEHS405",
+              "titleEn": "General Pathology",
+              "titleAr": "التشريح المرضي العام",
+              "term": 4,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 3,
+              "prerequisites": [
+                "dehs305"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 2,
+                "practical": 2
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "deop406",
+              "code": "DEOP406",
+              "titleEn": "Dental Materials (1)",
+              "titleAr": "مواد سنية (1)",
+              "term": 4,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 3,
+              "prerequisites": [
+                "debl202"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 2,
+                "practical": 2
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "deos407",
+              "code": "DEOS407",
+              "titleEn": "Pharmacology",
+              "titleAr": "علم الأدوية",
+              "term": 4,
+              "type": "faculty",
+              "required": true,
+              "forced": false,
+              "credits": 2,
+              "prerequisites": [
+                "debl203"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 2,
+                "practical": 0
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "deos408",
+              "code": "DEOS408",
+              "titleEn": "Emergencies",
+              "titleAr": "الإسعافات الأولية",
+              "term": 4,
+              "type": "faculty",
+              "required": true,
+              "forced": false,
+              "credits": 2,
+              "prerequisites": [
+                "deos304"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 1,
+                "practical": 2
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            }
+          ]
+        },
+        {
+          "id": 5,
+          "labelEn": "5",
+          "labelAr": "5",
+          "courses": [
+            {
+              "id": "deos501",
+              "code": "DEOS501",
+              "titleEn": "Internal Medicine",
+              "titleAr": "أمراض داخلية",
+              "term": 5,
+              "type": "faculty",
+              "required": true,
+              "forced": false,
+              "credits": 2,
+              "prerequisites": [
+                "deos304"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 2,
+                "practical": 0
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "deom502",
+              "code": "DEOM502",
+              "titleEn": "Dental Public Health and Preventive Dentistry",
+              "titleAr": "الصحة السنية العامة وطب الأسنان الوقائي",
+              "term": 5,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 2,
+              "prerequisites": [
+                "deom402",
+                "deom307"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 2,
+                "practical": 0
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "defp503",
+              "code": "DEFP503",
+              "titleEn": "Fixed Prosthodontics (2)",
+              "titleAr": "تعويض الأسنان الثابتة (2)",
+              "term": 5,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 3,
+              "prerequisites": [
+                "defp403"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 1,
+                "practical": 4
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "depe504",
+              "code": "DEPE504",
+              "titleEn": "Periodontology (1)",
+              "titleAr": "علم النسج حول السنية (1)",
+              "term": 5,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 2,
+              "prerequisites": [
+                "depe401"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 1,
+                "practical": 2
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "dehs505",
+              "code": "DEHS505",
+              "titleEn": "Oral Histology",
+              "titleAr": "علم النسج الخاص بالفم والأسنان",
+              "term": 5,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 3,
+              "prerequisites": [
+                "dehs305"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 2,
+                "practical": 2
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "deop506",
+              "code": "DEOP506",
+              "titleEn": "Dental Materials (2)",
+              "titleAr": "مواد سنية (2)",
+              "term": 5,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 2,
+              "prerequisites": [
+                "deop406"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 1,
+                "practical": 2
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "depd507",
+              "code": "DEPD507",
+              "titleEn": "Radiology & Imaging in Dentistry (1)",
+              "titleAr": "علم الأشعة والتصوير في طب الأسنان (1)",
+              "term": 5,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 3,
+              "prerequisites": [
+                "deos306"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 2,
+                "practical": 2
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "deop508",
+              "code": "DEOP508",
+              "titleEn": "Ethics and Laws",
+              "titleAr": "الأخلاقيات والقوانين",
+              "term": 5,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 1,
+              "prerequisites": [],
+              "prerequisiteCredits": 60,
+              "instructor": null,
+              "hours": {
+                "theory": 1,
+                "practical": 0
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            }
+          ]
+        },
+        {
+          "id": 6,
+          "labelEn": "6",
+          "labelAr": "6",
+          "courses": [
+            {
+              "id": "deop601",
+              "code": "DEOP601",
+              "titleEn": "Operative Dentistry (2)",
+              "titleAr": "مداواة أسنان ترميمية (2)",
+              "term": 6,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 3,
+              "prerequisites": [
+                "deop301"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 1,
+                "practical": 4
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "derp602",
+              "code": "DERP602",
+              "titleEn": "Removable Prosthodontics (2)",
+              "titleAr": "تعويض الأسنان المتحركة (2)",
+              "term": 6,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 3,
+              "prerequisites": [
+                "derp302"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 1,
+                "practical": 4
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "depe603",
+              "code": "DEPE603",
+              "titleEn": "Dental Management of Medically Compromised Patients",
+              "titleAr": "تدبير الأمراض العامة",
+              "term": 6,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 1,
+              "prerequisites": [
+                "deos501"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 1,
+                "practical": 0
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "deos604",
+              "code": "DEOS604",
+              "titleEn": "Principles of Pain and Anxiety Control",
+              "titleAr": "مبادئ السيطرة على الألم والقلق",
+              "term": 6,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 2,
+              "prerequisites": [
+                "deos306",
+                "deos407"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 1,
+                "practical": 2
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "dehs605",
+              "code": "DEHS605",
+              "titleEn": "Oral Pathology",
+              "titleAr": "التشريح المرضي الخاص بالفم والأسنان",
+              "term": 6,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 4,
+              "prerequisites": [
+                "dehs405",
+                "dehs505"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 2,
+                "practical": 4
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "deom606",
+              "code": "DEOM606",
+              "titleEn": "Forensic Dentistry",
+              "titleAr": "طب الأسنان الشرعي",
+              "term": 6,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 1,
+              "prerequisites": [
+                "deos306"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 1,
+                "practical": 0
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "depd607",
+              "code": "DEPD607",
+              "titleEn": "Radiology & Imaging in Dentistry (2)",
+              "titleAr": "علم الأشعة والتصوير في طب الأسنان (2)",
+              "term": 6,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 2,
+              "prerequisites": [
+                "depd507"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 1,
+                "practical": 2
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "depd608",
+              "code": "DEPD608",
+              "titleEn": "Behavioral Sciences and Communications Skills",
+              "titleAr": "العلوم السلوكية ومهارات التواصل",
+              "term": 6,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 2,
+              "prerequisites": [],
+              "prerequisiteCredits": 60,
+              "instructor": null,
+              "hours": {
+                "theory": 2,
+                "practical": 0
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            }
+          ]
+        },
+        {
+          "id": 7,
+          "labelEn": "7",
+          "labelAr": "7",
+          "courses": [
+            {
+              "id": "deop701",
+              "code": "DEOP701",
+              "titleEn": "Operative Dentistry (3)",
+              "titleAr": "مداواة أسنان ترميمية (3)",
+              "term": 7,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 3,
+              "prerequisites": [
+                "deop601",
+                "deop506"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 1,
+                "practical": 4
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "derp702",
+              "code": "DERP702",
+              "titleEn": "Removable Prosthodontics (3)",
+              "titleAr": "تعويض الأسنان المتحركة (3)",
+              "term": 7,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 4,
+              "prerequisites": [
+                "derp602"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 2,
+                "practical": 4
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "deor703",
+              "code": "DEOR703",
+              "titleEn": "Orthodontics (1)",
+              "titleAr": "تقويم الأسنان (1)",
+              "term": 7,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 3,
+              "prerequisites": [
+                "depd507"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 2,
+                "practical": 2
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "deos704",
+              "code": "DEOS704",
+              "titleEn": "Nutrition",
+              "titleAr": "التغذية",
+              "term": 7,
+              "type": "faculty",
+              "required": true,
+              "forced": false,
+              "credits": 1,
+              "prerequisites": [
+                "deom402"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 1,
+                "practical": 0
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "deop705",
+              "code": "DEOP705",
+              "titleEn": "Endodontics (1)",
+              "titleAr": "مداواة الأسنان اللبية (1)",
+              "term": 7,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 3,
+              "prerequisites": [
+                "deop601"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 2,
+                "practical": 2
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "depd706",
+              "code": "DEPD706",
+              "titleEn": "Pediatric Dentistry (1)",
+              "titleAr": "طب أسنان الأطفال (1)",
+              "term": 7,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 2,
+              "prerequisites": [
+                "deom502"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 1,
+                "practical": 2
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "deos707",
+              "code": "DEOS707",
+              "titleEn": "Oral Surgery (1)",
+              "titleAr": "جراحة الفم (1)",
+              "term": 7,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 3,
+              "prerequisites": [
+                "deos604"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 2,
+                "practical": 2
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            }
+          ]
+        },
+        {
+          "id": 8,
+          "labelEn": "8",
+          "labelAr": "8",
+          "courses": [
+            {
+              "id": "deop801",
+              "code": "DEOP801",
+              "titleEn": "Operative Dentistry (4)",
+              "titleAr": "مداواة أسنان ترميمية (4)",
+              "term": 8,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 2,
+              "prerequisites": [
+                "deop701"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 1,
+                "practical": 2
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "deos802",
+              "code": "DEOS802",
+              "titleEn": "Dental Implantology",
+              "titleAr": "غرس الأسنان",
+              "term": 8,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 2,
+              "prerequisites": [
+                "deos707"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 1,
+                "practical": 2
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "defp803",
+              "code": "DEFP803",
+              "titleEn": "Fixed Prosthodontics (3)",
+              "titleAr": "تعويض الأسنان الثابتة (3)",
+              "term": 8,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 3,
+              "prerequisites": [
+                "defp503"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 1,
+                "practical": 4
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "depe804",
+              "code": "DEPE804",
+              "titleEn": "Periodontology (2)",
+              "titleAr": "علم النسج حول السنية (2)",
+              "term": 8,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 2,
+              "prerequisites": [
+                "depe504"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 1,
+                "practical": 2
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "deop805",
+              "code": "DEOP805",
+              "titleEn": "Endodontics (2)",
+              "titleAr": "مداواة الأسنان اللبية (2)",
+              "term": 8,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 2,
+              "prerequisites": [
+                "deop705"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 1,
+                "practical": 2
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "deor806",
+              "code": "DEOR806",
+              "titleEn": "Orthodontics (2)",
+              "titleAr": "تقويم الأسنان (2)",
+              "term": 8,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 3,
+              "prerequisites": [
+                "deor703"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 2,
+                "practical": 2
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "deos807",
+              "code": "DEOS807",
+              "titleEn": "Oral Surgery (2)",
+              "titleAr": "جراحة الفم (2)",
+              "term": 8,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 2,
+              "prerequisites": [
+                "deos707"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 1,
+                "practical": 2
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "deom808",
+              "code": "DEOM808",
+              "titleEn": "Oral Medicine (1)",
+              "titleAr": "طب الفم (1)",
+              "term": 8,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 2,
+              "prerequisites": [
+                "depe603"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 1,
+                "practical": 2
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            }
+          ]
+        },
+        {
+          "id": 9,
+          "labelEn": "9",
+          "labelAr": "9",
+          "courses": [
+            {
+              "id": "deom901",
+              "code": "DEOM901",
+              "titleEn": "Geriatric Dentistry",
+              "titleAr": "طب الأسنان الشيخوخي",
+              "term": 9,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 1,
+              "prerequisites": [
+                "deom606"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 1,
+                "practical": 0
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "derp902",
+              "code": "DERP902",
+              "titleEn": "Removable Prosthodontics (4)",
+              "titleAr": "تعويض الأسنان المتحركة (4)",
+              "term": 9,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 2,
+              "prerequisites": [
+                "derp702"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 1,
+                "practical": 2
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "defp903",
+              "code": "DEFP903",
+              "titleEn": "Fixed Prosthodontics (4)",
+              "titleAr": "تعويض الأسنان الثابتة (4)",
+              "term": 9,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 2,
+              "prerequisites": [
+                "defp803"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 1,
+                "practical": 2
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "depe904",
+              "code": "DEPE904",
+              "titleEn": "Periodontology (3)",
+              "titleAr": "علم النسج حول السنية (3)",
+              "term": 9,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 2,
+              "prerequisites": [
+                "depe804"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 1,
+                "practical": 2
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "deop905",
+              "code": "DEOP905",
+              "titleEn": "Endodontics (3)",
+              "titleAr": "مداواة الأسنان اللبية (3)",
+              "term": 9,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 3,
+              "prerequisites": [
+                "deop805"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 1,
+                "practical": 4
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "depd906",
+              "code": "DEPD906",
+              "titleEn": "Pediatric Dentistry (2)",
+              "titleAr": "طب أسنان الأطفال (2)",
+              "term": 9,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 2,
+              "prerequisites": [
+                "depd706"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 1,
+                "practical": 2
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "deos907",
+              "code": "DEOS907",
+              "titleEn": "Oral Surgery (3)",
+              "titleAr": "جراحة الفم (3)",
+              "term": 9,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 2,
+              "prerequisites": [
+                "deos807"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 1,
+                "practical": 2
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "deom908",
+              "code": "DEOM908",
+              "titleEn": "Oral Medicine (2)",
+              "titleAr": "طب الفم (2)",
+              "term": 9,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 2,
+              "prerequisites": [
+                "deom808"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 1,
+                "practical": 2
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "deos909",
+              "code": "DEOS909",
+              "titleEn": "Maxillofacial Surgery (1)",
+              "titleAr": "جراحة وجه وفكين (1)",
+              "term": 9,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 1,
+              "prerequisites": [
+                "deos807"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 1,
+                "practical": 0
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            }
+          ]
+        },
+        {
+          "id": 10,
+          "labelEn": "10",
+          "labelAr": "10",
+          "courses": [
+            {
+              "id": "deop001",
+              "code": "DEOP001",
+              "titleEn": "Operative Dentistry (5)",
+              "titleAr": "مداواة أسنان ترميمية (5)",
+              "term": 10,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 2,
+              "prerequisites": [
+                "deop801"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 0,
+                "practical": 4
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "derp002",
+              "code": "DERP002",
+              "titleEn": "Removable Prosthodontics (5)",
+              "titleAr": "تعويض الأسنان المتحركة (5)",
+              "term": 10,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 2,
+              "prerequisites": [
+                "derp902"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 0,
+                "practical": 4
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "defp003",
+              "code": "DEFP003",
+              "titleEn": "Fixed Prosthodontics (5)",
+              "titleAr": "تعويض الأسنان الثابتة (5)",
+              "term": 10,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 2,
+              "prerequisites": [
+                "defp903"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 0,
+                "practical": 4
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "depe004",
+              "code": "DEPE004",
+              "titleEn": "Integrated Dental Care",
+              "titleAr": "التدبير الشامل للمريض",
+              "term": 10,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 1,
+              "prerequisites": [],
+              "prerequisiteCredits": 130,
+              "instructor": null,
+              "hours": {
+                "theory": 0,
+                "practical": 2
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "deop005",
+              "code": "DEOP005",
+              "titleEn": "Endodontics (4)",
+              "titleAr": "مداواة الأسنان اللبية (4)",
+              "term": 10,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 3,
+              "prerequisites": [
+                "deop905"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 1,
+                "practical": 4
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "depd006",
+              "code": "DEPD006",
+              "titleEn": "Pediatric Dentistry (3)",
+              "titleAr": "طب أسنان الأطفال (3)",
+              "term": 10,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 3,
+              "prerequisites": [
+                "depd906"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 1,
+                "practical": 4
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "deos007",
+              "code": "DEOS007",
+              "titleEn": "Oral Surgery (4)",
+              "titleAr": "جراحة الفم (4)",
+              "term": 10,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 2,
+              "prerequisites": [
+                "deos907"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 1,
+                "practical": 2
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "deos008",
+              "code": "DEOS008",
+              "titleEn": "Maxillofacial Surgery (2)",
+              "titleAr": "جراحة وجه وفكين (2)",
+              "term": 10,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 2,
+              "prerequisites": [
+                "deos909"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 2,
+                "practical": 0
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,1182 @@
+{
+  "ar": {
+    "title": "ماجستير تأهيل وتخصص في تكنولوجيا النانو وتطبيقاتها في هندسة البترول والطاقة",
+    "summary": "برنامج ماجستير تأهيل وتخصص في كلية هندسة البترول يجمع تكنولوجيا النانو وهندسة البترول والطاقة والنمذجة الحاسوبية والذكاء الاصطناعي، على أربعة فصول دراسية وبإجمالي 39 ساعة معتمدة.",
+    "seoTitle": "ماجستير تكنولوجيا النانو في هندسة البترول والطاقة | كلية هندسة البترول",
+    "seoDescription": "الخطة الدراسية لماجستير التأهيل والتخصص في تكنولوجيا النانو وتطبيقاتها في هندسة البترول والطاقة في الجامعة السورية الخاصة: المقررات، ومخرجات التعلم ومصفوفة تغطيتها، والتقييم، ومشروع التخرج والتدريب.",
+    "payload": {
+      "overview": [
+        {
+          "text": "نظرًا للتطورات العالمية في تكنولوجيا النانو وتطبيقاتها في قطاع الطاقة والبترول، وحرص الجامعة السورية الخاصة على الريادة الأكاديمية والبحثية في المجالات الهندسية الحديثة، أحدثت كلية هندسة البترول برنامج ماجستير تأهيل وتخصص في تكنولوجيا النانو وتطبيقاتها في هندسة البترول والطاقة."
+        },
+        {
+          "text": "يتكون البرنامج من مقررات دراسية تخصصية موزعة على ثلاثة فصول دراسية، إضافةً إلى مشروع تخرج تطبيقي في الفصل الرابع. ويتضمن الفصل الثالث مقررين اختياريين يختارهما الطالب من أربعة مقررات تخصصية. ويبلغ مجموع الساعات التدريسية الأسبوعية 54 ساعة بإجمالي 39 ساعة معتمدة، بواقع ساعة معتمدة لكل ساعة نظرية وساعة معتمدة لكل ساعتين عمليتين."
+        }
+      ],
+      "facts": [
+        {
+          "label": "الدرجة العلمية",
+          "value": "ماجستير تأهيل وتخصص"
+        },
+        {
+          "label": "مدة الدراسة",
+          "value": "أربعة فصول دراسية"
+        },
+        {
+          "label": "الساعات المعتمدة",
+          "value": "39 ساعة"
+        },
+        {
+          "label": "الساعات التدريسية الأسبوعية",
+          "value": "54 ساعة"
+        }
+      ],
+      "coding": "يختار الطالب المقررين الاختياريين وفق ما يقره مجلس الكلية وتوافر الكادر التدريسي والإمكانات المتاحة، ويجوز لمجلس الكلية تحديث قائمة المقررات الاختيارية بما ينسجم مع أهداف البرنامج والقرارات النافذة.",
+      "terms": [
+        {
+          "id": "term-1",
+          "label": "الفصل الدراسي الأول",
+          "theme": "",
+          "note": "",
+          "credits": null,
+          "courses": [
+            {
+              "id": "np-fundamentals",
+              "code": "",
+              "title": "أسس تكنولوجيا النانو وتطبيقاتها في الطاقة",
+              "titleAlt": "Fundamentals of Nanotechnology and its Energy Applications",
+              "elective": false,
+              "credits": 3,
+              "theory": 2,
+              "practical": 2,
+              "prerequisites": [],
+              "prerequisiteNote": "",
+              "description": "",
+              "outcomes": [],
+              "grading": "",
+              "coverage": {
+                "PLO1": "I",
+                "PLO2": "I",
+                "PLO3": "I",
+                "PLO4": "I",
+                "PLO7": "I",
+                "PLO8": "I",
+                "PLO9": "I",
+                "PLO10": "I",
+                "PLO11": "I"
+              }
+            },
+            {
+              "id": "np-porous-flow",
+              "code": "",
+              "title": "التدفق المتقدم للسوائل في الأوساط المسامية",
+              "titleAlt": "Advanced Fluid Flow in Porous Media",
+              "elective": false,
+              "credits": 3,
+              "theory": 2,
+              "practical": 2,
+              "prerequisites": [],
+              "prerequisiteNote": "",
+              "description": "",
+              "outcomes": [],
+              "grading": "",
+              "coverage": {
+                "PLO2": "I",
+                "PLO3": "I",
+                "PLO4": "R"
+              }
+            },
+            {
+              "id": "np-numerical-modeling",
+              "code": "",
+              "title": "الرياضيات والنمذجة العددية للأنظمة الهندسية",
+              "titleAlt": "Mathematics and Numerical Modeling of Engineering Systems",
+              "elective": false,
+              "credits": 3,
+              "theory": 2,
+              "practical": 2,
+              "prerequisites": [],
+              "prerequisiteNote": "",
+              "description": "",
+              "outcomes": [],
+              "grading": "",
+              "coverage": {
+                "PLO3": "I",
+                "PLO4": "R",
+                "PLO5": "I",
+                "PLO6": "I",
+                "PLO10": "I"
+              }
+            },
+            {
+              "id": "np-synthesis-characterization",
+              "code": "",
+              "title": "تقنيات تحضير وتوصيف المواد النانوية",
+              "titleAlt": "Synthesis and Characterization of Nanomaterials",
+              "elective": false,
+              "credits": 3,
+              "theory": 2,
+              "practical": 2,
+              "prerequisites": [],
+              "prerequisiteNote": "",
+              "description": "",
+              "outcomes": [],
+              "grading": "",
+              "coverage": {
+                "PLO1": "R",
+                "PLO2": "I",
+                "PLO3": "R",
+                "PLO6": "I",
+                "PLO7": "R",
+                "PLO10": "I",
+                "PLO11": "R",
+                "PLO12": "I"
+              }
+            }
+          ]
+        },
+        {
+          "id": "term-2",
+          "label": "الفصل الدراسي الثاني",
+          "theme": "",
+          "note": "",
+          "credits": null,
+          "courses": [
+            {
+              "id": "np-materials-corrosion",
+              "code": "",
+              "title": "المواد المتقدمة والتآكل",
+              "titleAlt": "Advanced Materials and Corrosion",
+              "elective": false,
+              "credits": 3,
+              "theory": 2,
+              "practical": 2,
+              "prerequisites": [],
+              "prerequisiteNote": "",
+              "description": "",
+              "outcomes": [],
+              "grading": "",
+              "coverage": {
+                "PLO1": "R",
+                "PLO2": "R",
+                "PLO3": "R",
+                "PLO6": "I",
+                "PLO7": "R",
+                "PLO10": "I",
+                "PLO11": "R"
+              }
+            },
+            {
+              "id": "np-ai-ml",
+              "code": "",
+              "title": "الذكاء الاصطناعي وتعلم الآلة في هندسة الطاقة",
+              "titleAlt": "Artificial Intelligence and Machine Learning in Energy Engineering",
+              "elective": false,
+              "credits": 3,
+              "theory": 2,
+              "practical": 2,
+              "prerequisites": [],
+              "prerequisiteNote": "",
+              "description": "",
+              "outcomes": [],
+              "grading": "",
+              "coverage": {
+                "PLO2": "R",
+                "PLO3": "R",
+                "PLO4": "R",
+                "PLO5": "M",
+                "PLO6": "R",
+                "PLO8": "R",
+                "PLO10": "R",
+                "PLO12": "R"
+              }
+            },
+            {
+              "id": "np-research-methodology",
+              "code": "",
+              "title": "منهجية البحث العلمي",
+              "titleAlt": "Research Methodology",
+              "elective": false,
+              "credits": 3,
+              "theory": 2,
+              "practical": 2,
+              "prerequisites": [],
+              "prerequisiteNote": "",
+              "description": "",
+              "outcomes": [],
+              "grading": "",
+              "coverage": {
+                "PLO3": "R",
+                "PLO4": "R",
+                "PLO5": "R",
+                "PLO6": "M",
+                "PLO7": "R",
+                "PLO8": "I",
+                "PLO9": "R",
+                "PLO10": "M",
+                "PLO11": "M",
+                "PLO12": "R"
+              }
+            },
+            {
+              "id": "np-nanofluids",
+              "code": "",
+              "title": "الموائع النانوية وتطبيقاتها في أنظمة الطاقة والانتقال الحراري",
+              "titleAlt": "Nanofluids and their Applications in Energy Systems and Heat Transfer",
+              "elective": false,
+              "credits": 3,
+              "theory": 2,
+              "practical": 2,
+              "prerequisites": [],
+              "prerequisiteNote": "",
+              "description": "",
+              "outcomes": [],
+              "grading": "",
+              "coverage": {
+                "PLO1": "R",
+                "PLO2": "R",
+                "PLO3": "R",
+                "PLO4": "R",
+                "PLO6": "R",
+                "PLO7": "M",
+                "PLO8": "R",
+                "PLO10": "R",
+                "PLO11": "R",
+                "PLO12": "R"
+              }
+            }
+          ]
+        },
+        {
+          "id": "term-3",
+          "label": "الفصل الدراسي الثالث",
+          "theme": "",
+          "note": "مقرران إجباريان، ويختار الطالب مقررين من المقررات الاختيارية الأربعة.",
+          "credits": 12,
+          "courses": [
+            {
+              "id": "np-nano-eor",
+              "code": "",
+              "title": "الاستخلاص المعزز للنفط باستخدام تكنولوجيا النانو (Nano-EOR)",
+              "titleAlt": "Nanotechnology-Enhanced Oil Recovery (Nano-EOR)",
+              "elective": false,
+              "credits": 3,
+              "theory": 2,
+              "practical": 2,
+              "prerequisites": [],
+              "prerequisiteNote": "",
+              "description": "",
+              "outcomes": [],
+              "grading": "",
+              "coverage": {
+                "PLO1": "R",
+                "PLO2": "M",
+                "PLO3": "M",
+                "PLO4": "R",
+                "PLO5": "R",
+                "PLO6": "R",
+                "PLO7": "M",
+                "PLO10": "R",
+                "PLO11": "R",
+                "PLO12": "R"
+              }
+            },
+            {
+              "id": "np-alternative-energy",
+              "code": "",
+              "title": "تطبيقات تكنولوجيا النانو في الطاقات البديلة",
+              "titleAlt": "Nanotechnology Applications in Alternative Energy",
+              "elective": false,
+              "credits": 3,
+              "theory": 2,
+              "practical": 2,
+              "prerequisites": [],
+              "prerequisiteNote": "",
+              "description": "",
+              "outcomes": [],
+              "grading": "",
+              "coverage": {
+                "PLO1": "R",
+                "PLO2": "R",
+                "PLO3": "R",
+                "PLO4": "R",
+                "PLO6": "R",
+                "PLO7": "R",
+                "PLO8": "M",
+                "PLO9": "R",
+                "PLO10": "R",
+                "PLO11": "R",
+                "PLO12": "R"
+              }
+            },
+            {
+              "id": "np-oil-gas-1",
+              "code": "",
+              "title": "تطبيقات النانو المتقدمة في صناعة النفط والغاز 1",
+              "titleAlt": "Advanced Nano Applications in the Oil and Gas Industry 1",
+              "elective": true,
+              "credits": 3,
+              "theory": 2,
+              "practical": 2,
+              "prerequisites": [],
+              "prerequisiteNote": "",
+              "description": "",
+              "outcomes": [],
+              "grading": "",
+              "coverage": {
+                "PLO1": "R",
+                "PLO2": "M",
+                "PLO3": "M",
+                "PLO4": "R",
+                "PLO6": "R",
+                "PLO7": "R",
+                "PLO10": "R",
+                "PLO11": "M",
+                "PLO12": "R"
+              }
+            },
+            {
+              "id": "np-carbon-capture",
+              "code": "",
+              "title": "تكنولوجيا النانو في احتجاز الكربون وتخزينه والاستدامة البيئية",
+              "titleAlt": "Nanotechnology in Carbon Capture and Storage and Environmental Sustainability",
+              "elective": true,
+              "credits": 3,
+              "theory": 2,
+              "practical": 2,
+              "prerequisites": [],
+              "prerequisiteNote": "",
+              "description": "",
+              "outcomes": [],
+              "grading": "",
+              "coverage": {
+                "PLO1": "R",
+                "PLO2": "R",
+                "PLO3": "M",
+                "PLO4": "R",
+                "PLO5": "R",
+                "PLO6": "R",
+                "PLO7": "R",
+                "PLO8": "M",
+                "PLO9": "M",
+                "PLO10": "R",
+                "PLO11": "M",
+                "PLO12": "R"
+              }
+            },
+            {
+              "id": "np-oil-gas-2",
+              "code": "",
+              "title": "تطبيقات النانو المتقدمة في صناعة النفط والغاز 2",
+              "titleAlt": "Advanced Nano Applications in the Oil and Gas Industry 2",
+              "elective": true,
+              "credits": 3,
+              "theory": 2,
+              "practical": 2,
+              "prerequisites": [],
+              "prerequisiteNote": "",
+              "description": "",
+              "outcomes": [],
+              "grading": "",
+              "coverage": {
+                "PLO1": "R",
+                "PLO2": "M",
+                "PLO3": "M",
+                "PLO4": "R",
+                "PLO5": "R",
+                "PLO6": "R",
+                "PLO7": "R",
+                "PLO8": "R",
+                "PLO10": "R",
+                "PLO11": "M",
+                "PLO12": "R"
+              }
+            },
+            {
+              "id": "np-energy-efficiency",
+              "code": "",
+              "title": "تطبيقات تكنولوجيا النانو في كفاءة الطاقة وترشيد استهلاكها",
+              "titleAlt": "Nanotechnology Applications in Energy Efficiency and Conservation",
+              "elective": true,
+              "credits": 3,
+              "theory": 2,
+              "practical": 2,
+              "prerequisites": [],
+              "prerequisiteNote": "",
+              "description": "",
+              "outcomes": [],
+              "grading": "",
+              "coverage": {
+                "PLO1": "R",
+                "PLO2": "R",
+                "PLO3": "M",
+                "PLO4": "M",
+                "PLO5": "R",
+                "PLO6": "R",
+                "PLO8": "M",
+                "PLO9": "R",
+                "PLO10": "R",
+                "PLO11": "M",
+                "PLO12": "R"
+              }
+            }
+          ]
+        },
+        {
+          "id": "term-4",
+          "label": "الفصل الدراسي الرابع",
+          "theme": "",
+          "note": "",
+          "credits": null,
+          "courses": [
+            {
+              "id": "np-graduation-project",
+              "code": "",
+              "title": "مشروع التخرج",
+              "titleAlt": "Graduation Project",
+              "elective": false,
+              "credits": 3,
+              "theory": 0,
+              "practical": 6,
+              "prerequisites": [],
+              "prerequisiteNote": "",
+              "description": "",
+              "outcomes": [],
+              "grading": "",
+              "coverage": {
+                "PLO1": "M",
+                "PLO2": "M",
+                "PLO3": "M",
+                "PLO4": "M",
+                "PLO5": "M",
+                "PLO6": "M",
+                "PLO7": "M",
+                "PLO8": "M",
+                "PLO9": "M",
+                "PLO10": "M",
+                "PLO11": "M",
+                "PLO12": "M"
+              }
+            }
+          ]
+        }
+      ],
+      "outcomes": [
+        {
+          "code": "PLO1",
+          "group": "المعرفة (K)",
+          "text": "يمتلك معرفة متقدمة في تكنولوجيا النانو والمواد النانوية وخصائصها وتطبيقاتها في الطاقة وهندسة البترول."
+        },
+        {
+          "code": "PLO2",
+          "group": "المعرفة (K)",
+          "text": "يطبق مبادئ تكنولوجيا النانو في الاستخلاص المعزز بالنانو، والآبار والحفر والإنتاج، والتآكل والترسبات، وتطبيقات الطاقة."
+        },
+        {
+          "code": "PLO3",
+          "group": "المهارات الذهنية والمعرفية (S)",
+          "text": "يحلل المشكلات الهندسية المعقدة ذات الصلة بتطبيقات النانو ويقترح حلولاً علمية مناسبة."
+        },
+        {
+          "code": "PLO4",
+          "group": "المهارات الذهنية والمعرفية (S)",
+          "text": "يوظف الرياضيات والنمذجة العددية والمحاكاة متعددة الفيزياء لتحليل الأنظمة والظواهر المرتبطة بتطبيقات النانو."
+        },
+        {
+          "code": "PLO5",
+          "group": "المهارات الذهنية والمعرفية (S)",
+          "text": "يوظف الذكاء الاصطناعي وتعلم الآلة وتحليل البيانات في التنبؤ والتحسين ودعم القرار في هندسة الطاقة."
+        },
+        {
+          "code": "PLO6",
+          "group": "المهارات الذهنية والمعرفية (S)",
+          "text": "يصمم وينفذ بحثاً علمياً أصيلاً، ويختار المنهجية المناسبة ويحلل النتائج ويستخلص الاستنتاجات."
+        },
+        {
+          "code": "PLO7",
+          "group": "المهارات العملية والمهنية (C)",
+          "text": "يستخدم الأساليب والتقنيات التجريبية لتحضير المواد النانوية وتوصيفها وتقييم أدائها وتحليل بياناتها."
+        },
+        {
+          "code": "PLO8",
+          "group": "المهارات العملية والمهنية (C)",
+          "text": "يوظف تكنولوجيا النانو في تطوير حلول للطاقة النظيفة وكفاءة الطاقة والاستدامة."
+        },
+        {
+          "code": "PLO9",
+          "group": "المهارات العملية والمهنية (C)",
+          "text": "يطبق مفاهيم النانو في احتجاز الكربون وتخزينه وتقييم الأثر البيئي والاستدامة."
+        },
+        {
+          "code": "PLO10",
+          "group": "المهارات العملية والمهنية (C)",
+          "text": "يتواصل علمياً ومهنياً بكفاءة، ويعرض النتائج ويكتب التقارير والأبحاث العلمية."
+        },
+        {
+          "code": "PLO11",
+          "group": "المهارات العملية والمهنية (C)",
+          "text": "يلتزم بأخلاقيات البحث العلمي ومتطلبات السلامة والمسؤولية البيئية والمهنية."
+        },
+        {
+          "code": "PLO12",
+          "group": "المهارات العملية والمهنية (C)",
+          "text": "يعمل بفاعلية ضمن فرق متعددة التخصصات ويتعاون مع الجهات الأكاديمية والصناعية."
+        }
+      ],
+      "coverageLegend": "I = تقديم، R = تعزيز، M = إتقان. تُحدد التغطية النهائية للطالب وفق المقررات الاختيارية التي يختارها.",
+      "assessment": [
+        {
+          "type": "الاختبارات التحريرية",
+          "weight": "",
+          "description": "قياس المعرفة والفهم والتحليل، مثل: أسس النانو، التدفق، المواد، الرياضيات."
+        },
+        {
+          "type": "الواجبات والمسائل",
+          "weight": "",
+          "description": "قياس التطبيق والتحليل وحل المشكلات، مثل: النمذجة العددية والتدفق."
+        },
+        {
+          "type": "المشروعات التطبيقية",
+          "weight": "",
+          "description": "تكامل المعرفة والمهارات، مثل: Nano-EOR والذكاء الاصطناعي والطاقة النظيفة."
+        },
+        {
+          "type": "التقييم العملي/المخبري",
+          "weight": "",
+          "description": "قياس المهارات التجريبية، مثل: تحضير وتوصيف المواد النانوية."
+        },
+        {
+          "type": "التقارير والعروض",
+          "weight": "",
+          "description": "قياس التواصل العلمي، مثل: تقارير وعروض ومناقشات."
+        },
+        {
+          "type": "البحث العلمي",
+          "weight": "",
+          "description": "قياس تصميم وتنفيذ البحث، مثل: مقترح البحث والمنهجية وتحليل النتائج."
+        },
+        {
+          "type": "مشروع التخرج",
+          "weight": "",
+          "description": "قياس الإتقان والبحث الأصيل، مثل: التجارب/النمذجة والتحليل والمناقشة."
+        },
+        {
+          "type": "المناقشة النهائية",
+          "weight": "",
+          "description": "قياس الفهم والدفاع العلمي، مثل: مناقشة الرسالة."
+        },
+        {
+          "type": "الاستبيانات",
+          "weight": "",
+          "description": "تقييم غير مباشر داعم، مثل: الطلبة والخريجون وأصحاب العمل."
+        }
+      ],
+      "projectTitle": "مشروع التخرج",
+      "projectIntro": "مشروع التخرج مشروع تطبيقي تخصصي ينجزه الطالب تحت إشراف عضو هيئة تدريس مختص، ويرتبط بأحد مجالات تكنولوجيا النانو وتطبيقاتها في هندسة البترول أو الطاقة. ويمكن أن يتضمن عملاً تجريبياً، أو نمذجة ومحاكاة حاسوبية، أو دراسة تطبيقية متقدمة. ويخضع المشروع للتقييم والمناقشة أمام لجنة مختصة وفق الأنظمة والقرارات النافذة في الجامعة ومجلس التعليم العالي، وتخصص له 6 ساعات عملية أسبوعياً تعادل 3 ساعات معتمدة.",
+      "projectRules": [],
+      "admission": {
+        "intro": "",
+        "conditions": [],
+        "majors": [],
+        "criteria": [],
+        "note": ""
+      },
+      "degreeRequirements": [
+        {
+          "text": "يُشترط لنيل درجة الماجستير إتمام تدريب تطبيقي أو ميداني في جهة أكاديمية أو بحثية أو صناعية ذات صلة بمجالات هندسة البترول والطاقة، وفق ضوابط يعتمدها مجلس الكلية. التدريب متطلب إلزامي للتخرج لا تُخصص له ساعات معتمدة، ويُثبت بتقرير تدريب أو وثيقة معتمدة من جهة التدريب."
+        }
+      ],
+      "teachingNote": ""
+    }
+  },
+  "en": {
+    "title": "Professional Master's in Nanotechnology and its Applications in Petroleum and Energy Engineering",
+    "summary": "A professional master's program at the Faculty of Petroleum Engineering that brings together nanotechnology, petroleum and energy engineering, computational modeling and artificial intelligence, over four semesters and 39 credit hours.",
+    "seoTitle": "Master's in Nanotechnology for Petroleum & Energy | Faculty of Petroleum Engineering",
+    "seoDescription": "Study plan of the Professional Master's in Nanotechnology and its Applications in Petroleum and Energy Engineering at Syrian Private University: courses, learning outcomes and their coverage, assessment, and the graduation project and training.",
+    "payload": {
+      "overview": [
+        {
+          "text": "Given the worldwide advances in nanotechnology and its applications in the energy and petroleum sector, and Syrian Private University's commitment to academic and research leadership in modern engineering fields, the Faculty of Petroleum Engineering has established a professional master's program in nanotechnology and its applications in petroleum and energy engineering."
+        },
+        {
+          "text": "The program consists of specialized courses over three semesters and an applied graduation project in the fourth. The third semester includes two electives chosen from four specialized courses. The plan has 54 weekly teaching hours and 39 credit hours in total: one credit hour per theory hour and one per two practical hours."
+        }
+      ],
+      "facts": [
+        {
+          "label": "Degree",
+          "value": "Professional Master's"
+        },
+        {
+          "label": "Duration",
+          "value": "Four semesters"
+        },
+        {
+          "label": "Credit hours",
+          "value": "39 hours"
+        },
+        {
+          "label": "Weekly teaching hours",
+          "value": "54 hours"
+        }
+      ],
+      "coding": "Students choose their two electives as approved by the Faculty Council and according to the staff and facilities available. The Faculty Council may update the list of electives in line with the program's objectives and the regulations in force.",
+      "terms": [
+        {
+          "id": "term-1",
+          "label": "First semester",
+          "theme": "",
+          "note": "",
+          "credits": null,
+          "courses": [
+            {
+              "id": "np-fundamentals",
+              "code": "",
+              "title": "Fundamentals of Nanotechnology and its Energy Applications",
+              "titleAlt": "أسس تكنولوجيا النانو وتطبيقاتها في الطاقة",
+              "elective": false,
+              "credits": 3,
+              "theory": 2,
+              "practical": 2,
+              "prerequisites": [],
+              "prerequisiteNote": "",
+              "description": "",
+              "outcomes": [],
+              "grading": "",
+              "coverage": {
+                "PLO1": "I",
+                "PLO2": "I",
+                "PLO3": "I",
+                "PLO4": "I",
+                "PLO7": "I",
+                "PLO8": "I",
+                "PLO9": "I",
+                "PLO10": "I",
+                "PLO11": "I"
+              }
+            },
+            {
+              "id": "np-porous-flow",
+              "code": "",
+              "title": "Advanced Fluid Flow in Porous Media",
+              "titleAlt": "التدفق المتقدم للسوائل في الأوساط المسامية",
+              "elective": false,
+              "credits": 3,
+              "theory": 2,
+              "practical": 2,
+              "prerequisites": [],
+              "prerequisiteNote": "",
+              "description": "",
+              "outcomes": [],
+              "grading": "",
+              "coverage": {
+                "PLO2": "I",
+                "PLO3": "I",
+                "PLO4": "R"
+              }
+            },
+            {
+              "id": "np-numerical-modeling",
+              "code": "",
+              "title": "Mathematics and Numerical Modeling of Engineering Systems",
+              "titleAlt": "الرياضيات والنمذجة العددية للأنظمة الهندسية",
+              "elective": false,
+              "credits": 3,
+              "theory": 2,
+              "practical": 2,
+              "prerequisites": [],
+              "prerequisiteNote": "",
+              "description": "",
+              "outcomes": [],
+              "grading": "",
+              "coverage": {
+                "PLO3": "I",
+                "PLO4": "R",
+                "PLO5": "I",
+                "PLO6": "I",
+                "PLO10": "I"
+              }
+            },
+            {
+              "id": "np-synthesis-characterization",
+              "code": "",
+              "title": "Synthesis and Characterization of Nanomaterials",
+              "titleAlt": "تقنيات تحضير وتوصيف المواد النانوية",
+              "elective": false,
+              "credits": 3,
+              "theory": 2,
+              "practical": 2,
+              "prerequisites": [],
+              "prerequisiteNote": "",
+              "description": "",
+              "outcomes": [],
+              "grading": "",
+              "coverage": {
+                "PLO1": "R",
+                "PLO2": "I",
+                "PLO3": "R",
+                "PLO6": "I",
+                "PLO7": "R",
+                "PLO10": "I",
+                "PLO11": "R",
+                "PLO12": "I"
+              }
+            }
+          ]
+        },
+        {
+          "id": "term-2",
+          "label": "Second semester",
+          "theme": "",
+          "note": "",
+          "credits": null,
+          "courses": [
+            {
+              "id": "np-materials-corrosion",
+              "code": "",
+              "title": "Advanced Materials and Corrosion",
+              "titleAlt": "المواد المتقدمة والتآكل",
+              "elective": false,
+              "credits": 3,
+              "theory": 2,
+              "practical": 2,
+              "prerequisites": [],
+              "prerequisiteNote": "",
+              "description": "",
+              "outcomes": [],
+              "grading": "",
+              "coverage": {
+                "PLO1": "R",
+                "PLO2": "R",
+                "PLO3": "R",
+                "PLO6": "I",
+                "PLO7": "R",
+                "PLO10": "I",
+                "PLO11": "R"
+              }
+            },
+            {
+              "id": "np-ai-ml",
+              "code": "",
+              "title": "Artificial Intelligence and Machine Learning in Energy Engineering",
+              "titleAlt": "الذكاء الاصطناعي وتعلم الآلة في هندسة الطاقة",
+              "elective": false,
+              "credits": 3,
+              "theory": 2,
+              "practical": 2,
+              "prerequisites": [],
+              "prerequisiteNote": "",
+              "description": "",
+              "outcomes": [],
+              "grading": "",
+              "coverage": {
+                "PLO2": "R",
+                "PLO3": "R",
+                "PLO4": "R",
+                "PLO5": "M",
+                "PLO6": "R",
+                "PLO8": "R",
+                "PLO10": "R",
+                "PLO12": "R"
+              }
+            },
+            {
+              "id": "np-research-methodology",
+              "code": "",
+              "title": "Research Methodology",
+              "titleAlt": "منهجية البحث العلمي",
+              "elective": false,
+              "credits": 3,
+              "theory": 2,
+              "practical": 2,
+              "prerequisites": [],
+              "prerequisiteNote": "",
+              "description": "",
+              "outcomes": [],
+              "grading": "",
+              "coverage": {
+                "PLO3": "R",
+                "PLO4": "R",
+                "PLO5": "R",
+                "PLO6": "M",
+                "PLO7": "R",
+                "PLO8": "I",
+                "PLO9": "R",
+                "PLO10": "M",
+                "PLO11": "M",
+                "PLO12": "R"
+              }
+            },
+            {
+              "id": "np-nanofluids",
+              "code": "",
+              "title": "Nanofluids and their Applications in Energy Systems and Heat Transfer",
+              "titleAlt": "الموائع النانوية وتطبيقاتها في أنظمة الطاقة والانتقال الحراري",
+              "elective": false,
+              "credits": 3,
+              "theory": 2,
+              "practical": 2,
+              "prerequisites": [],
+              "prerequisiteNote": "",
+              "description": "",
+              "outcomes": [],
+              "grading": "",
+              "coverage": {
+                "PLO1": "R",
+                "PLO2": "R",
+                "PLO3": "R",
+                "PLO4": "R",
+                "PLO6": "R",
+                "PLO7": "M",
+                "PLO8": "R",
+                "PLO10": "R",
+                "PLO11": "R",
+                "PLO12": "R"
+              }
+            }
+          ]
+        },
+        {
+          "id": "term-3",
+          "label": "Third semester",
+          "theme": "",
+          "note": "Two compulsory courses, and students choose two of the four electives.",
+          "credits": 12,
+          "courses": [
+            {
+              "id": "np-nano-eor",
+              "code": "",
+              "title": "Nanotechnology-Enhanced Oil Recovery (Nano-EOR)",
+              "titleAlt": "الاستخلاص المعزز للنفط باستخدام تكنولوجيا النانو (Nano-EOR)",
+              "elective": false,
+              "credits": 3,
+              "theory": 2,
+              "practical": 2,
+              "prerequisites": [],
+              "prerequisiteNote": "",
+              "description": "",
+              "outcomes": [],
+              "grading": "",
+              "coverage": {
+                "PLO1": "R",
+                "PLO2": "M",
+                "PLO3": "M",
+                "PLO4": "R",
+                "PLO5": "R",
+                "PLO6": "R",
+                "PLO7": "M",
+                "PLO10": "R",
+                "PLO11": "R",
+                "PLO12": "R"
+              }
+            },
+            {
+              "id": "np-alternative-energy",
+              "code": "",
+              "title": "Nanotechnology Applications in Alternative Energy",
+              "titleAlt": "تطبيقات تكنولوجيا النانو في الطاقات البديلة",
+              "elective": false,
+              "credits": 3,
+              "theory": 2,
+              "practical": 2,
+              "prerequisites": [],
+              "prerequisiteNote": "",
+              "description": "",
+              "outcomes": [],
+              "grading": "",
+              "coverage": {
+                "PLO1": "R",
+                "PLO2": "R",
+                "PLO3": "R",
+                "PLO4": "R",
+                "PLO6": "R",
+                "PLO7": "R",
+                "PLO8": "M",
+                "PLO9": "R",
+                "PLO10": "R",
+                "PLO11": "R",
+                "PLO12": "R"
+              }
+            },
+            {
+              "id": "np-oil-gas-1",
+              "code": "",
+              "title": "Advanced Nano Applications in the Oil and Gas Industry 1",
+              "titleAlt": "تطبيقات النانو المتقدمة في صناعة النفط والغاز 1",
+              "elective": true,
+              "credits": 3,
+              "theory": 2,
+              "practical": 2,
+              "prerequisites": [],
+              "prerequisiteNote": "",
+              "description": "",
+              "outcomes": [],
+              "grading": "",
+              "coverage": {
+                "PLO1": "R",
+                "PLO2": "M",
+                "PLO3": "M",
+                "PLO4": "R",
+                "PLO6": "R",
+                "PLO7": "R",
+                "PLO10": "R",
+                "PLO11": "M",
+                "PLO12": "R"
+              }
+            },
+            {
+              "id": "np-carbon-capture",
+              "code": "",
+              "title": "Nanotechnology in Carbon Capture and Storage and Environmental Sustainability",
+              "titleAlt": "تكنولوجيا النانو في احتجاز الكربون وتخزينه والاستدامة البيئية",
+              "elective": true,
+              "credits": 3,
+              "theory": 2,
+              "practical": 2,
+              "prerequisites": [],
+              "prerequisiteNote": "",
+              "description": "",
+              "outcomes": [],
+              "grading": "",
+              "coverage": {
+                "PLO1": "R",
+                "PLO2": "R",
+                "PLO3": "M",
+                "PLO4": "R",
+                "PLO5": "R",
+                "PLO6": "R",
+                "PLO7": "R",
+                "PLO8": "M",
+                "PLO9": "M",
+                "PLO10": "R",
+                "PLO11": "M",
+                "PLO12": "R"
+              }
+            },
+            {
+              "id": "np-oil-gas-2",
+              "code": "",
+              "title": "Advanced Nano Applications in the Oil and Gas Industry 2",
+              "titleAlt": "تطبيقات النانو المتقدمة في صناعة النفط والغاز 2",
+              "elective": true,
+              "credits": 3,
+              "theory": 2,
+              "practical": 2,
+              "prerequisites": [],
+              "prerequisiteNote": "",
+              "description": "",
+              "outcomes": [],
+              "grading": "",
+              "coverage": {
+                "PLO1": "R",
+                "PLO2": "M",
+                "PLO3": "M",
+                "PLO4": "R",
+                "PLO5": "R",
+                "PLO6": "R",
+                "PLO7": "R",
+                "PLO8": "R",
+                "PLO10": "R",
+                "PLO11": "M",
+                "PLO12": "R"
+              }
+            },
+            {
+              "id": "np-energy-efficiency",
+              "code": "",
+              "title": "Nanotechnology Applications in Energy Efficiency and Conservation",
+              "titleAlt": "تطبيقات تكنولوجيا النانو في كفاءة الطاقة وترشيد استهلاكها",
+              "elective": true,
+              "credits": 3,
+              "theory": 2,
+              "practical": 2,
+              "prerequisites": [],
+              "prerequisiteNote": "",
+              "description": "",
+              "outcomes": [],
+              "grading": "",
+              "coverage": {
+                "PLO1": "R",
+                "PLO2": "R",
+                "PLO3": "M",
+                "PLO4": "M",
+                "PLO5": "R",
+                "PLO6": "R",
+                "PLO8": "M",
+                "PLO9": "R",
+                "PLO10": "R",
+                "PLO11": "M",
+                "PLO12": "R"
+              }
+            }
+          ]
+        },
+        {
+          "id": "term-4",
+          "label": "Fourth semester",
+          "theme": "",
+          "note": "",
+          "credits": null,
+          "courses": [
+            {
+              "id": "np-graduation-project",
+              "code": "",
+              "title": "Graduation Project",
+              "titleAlt": "مشروع التخرج",
+              "elective": false,
+              "credits": 3,
+              "theory": 0,
+              "practical": 6,
+              "prerequisites": [],
+              "prerequisiteNote": "",
+              "description": "",
+              "outcomes": [],
+              "grading": "",
+              "coverage": {
+                "PLO1": "M",
+                "PLO2": "M",
+                "PLO3": "M",
+                "PLO4": "M",
+                "PLO5": "M",
+                "PLO6": "M",
+                "PLO7": "M",
+                "PLO8": "M",
+                "PLO9": "M",
+                "PLO10": "M",
+                "PLO11": "M",
+                "PLO12": "M"
+              }
+            }
+          ]
+        }
+      ],
+      "outcomes": [
+        {
+          "code": "PLO1",
+          "group": "Knowledge (K)",
+          "text": "Has advanced knowledge of nanotechnology and nanomaterials, their properties and their applications in energy and petroleum engineering."
+        },
+        {
+          "code": "PLO2",
+          "group": "Knowledge (K)",
+          "text": "Applies nanotechnology principles to nano-enhanced recovery, wells, drilling and production, corrosion and deposits, and energy applications."
+        },
+        {
+          "code": "PLO3",
+          "group": "Intellectual and cognitive skills (S)",
+          "text": "Analyzes complex engineering problems related to nano applications and proposes suitable scientific solutions."
+        },
+        {
+          "code": "PLO4",
+          "group": "Intellectual and cognitive skills (S)",
+          "text": "Uses mathematics, numerical modeling and multiphysics simulation to analyze systems and phenomena related to nano applications."
+        },
+        {
+          "code": "PLO5",
+          "group": "Intellectual and cognitive skills (S)",
+          "text": "Uses artificial intelligence, machine learning and data analysis for prediction, optimization and decision support in energy engineering."
+        },
+        {
+          "code": "PLO6",
+          "group": "Intellectual and cognitive skills (S)",
+          "text": "Designs and carries out original scientific research, choosing a suitable methodology, analyzing results and drawing conclusions."
+        },
+        {
+          "code": "PLO7",
+          "group": "Practical and professional skills (C)",
+          "text": "Uses experimental methods and techniques to synthesize and characterize nanomaterials, evaluate their performance and analyze their data."
+        },
+        {
+          "code": "PLO8",
+          "group": "Practical and professional skills (C)",
+          "text": "Uses nanotechnology to develop solutions for clean energy, energy efficiency and sustainability."
+        },
+        {
+          "code": "PLO9",
+          "group": "Practical and professional skills (C)",
+          "text": "Applies nano concepts to carbon capture and storage and to assessing environmental impact and sustainability."
+        },
+        {
+          "code": "PLO10",
+          "group": "Practical and professional skills (C)",
+          "text": "Communicates effectively in scientific and professional settings, presents results and writes reports and research papers."
+        },
+        {
+          "code": "PLO11",
+          "group": "Practical and professional skills (C)",
+          "text": "Upholds research ethics, safety requirements and environmental and professional responsibility."
+        },
+        {
+          "code": "PLO12",
+          "group": "Practical and professional skills (C)",
+          "text": "Works effectively in multidisciplinary teams and cooperates with academic and industrial partners."
+        }
+      ],
+      "coverageLegend": "I = Introduced, R = Reinforced, M = Mastered. A student's final coverage depends on the electives they choose.",
+      "assessment": [
+        {
+          "type": "Written exams",
+          "weight": "",
+          "description": "Assess knowledge, understanding and analysis. For example: Nano fundamentals, flow, materials, mathematics."
+        },
+        {
+          "type": "Assignments and problems",
+          "weight": "",
+          "description": "Assess application, analysis and problem solving. For example: Numerical modeling and flow."
+        },
+        {
+          "type": "Applied projects",
+          "weight": "",
+          "description": "Integrate knowledge and skills. For example: Nano-EOR, artificial intelligence and clean energy."
+        },
+        {
+          "type": "Practical / laboratory assessment",
+          "weight": "",
+          "description": "Assess experimental skills. For example: Synthesis and characterization of nanomaterials."
+        },
+        {
+          "type": "Reports and presentations",
+          "weight": "",
+          "description": "Assess scientific communication. For example: Reports, presentations and discussions."
+        },
+        {
+          "type": "Scientific research",
+          "weight": "",
+          "description": "Assess research design and execution. For example: Research proposal, methodology and analysis of results."
+        },
+        {
+          "type": "Graduation project",
+          "weight": "",
+          "description": "Assess mastery and original research. For example: Experiments or modeling, analysis and discussion."
+        },
+        {
+          "type": "Final defense",
+          "weight": "",
+          "description": "Assess understanding and scientific defense. For example: Defense of the thesis."
+        },
+        {
+          "type": "Surveys",
+          "weight": "",
+          "description": "Supporting indirect assessment. For example: Students, graduates and employers."
+        }
+      ],
+      "projectTitle": "Graduation project",
+      "projectIntro": "The graduation project is an applied, specialized project the student completes under the supervision of a faculty member, in one of the fields of nanotechnology and its applications in petroleum or energy engineering. It may involve experimental work, computational modeling and simulation, or an advanced applied study. It is assessed and defended before a specialized committee under the regulations of the university and the Council of Higher Education, and has 6 practical hours a week, equal to 3 credit hours.",
+      "projectRules": [],
+      "admission": {
+        "intro": "",
+        "conditions": [],
+        "majors": [],
+        "criteria": [],
+        "note": ""
+      },
+      "degreeRequirements": [
+        {
+          "text": "The master's degree requires applied or field training at an academic, research or industrial organization related to petroleum and energy engineering, under rules approved by the Faculty Council. The training is a compulsory graduation requirement with no credit hours, documented by a training report or a certificate from the training organization."
+        }
+      ],
+      "teachingNote": ""
+    }
+  }
+}

@@ -1,0 +1,2 @@
+@php($dir = $locale === 'ar' ? 'rtl' : 'ltr')
+<!doctype html><html lang="{{ $locale }}" dir="{{ $dir }}"><body style="font-family:Arial,sans-serif;line-height:1.7;color:#202759"><h2>{{ trans('mail.contact.received.greeting', ['name' => $applicantName], $locale) }}</h2><p>{{ trans('mail.contact.received.body', [], $locale) }}</p><p><strong>{{ trans('mail.contact.received.reference', [], $locale) }}:</strong> {{ $referenceNumber }}</p><p><strong>{{ trans('mail.contact.received.subject', [], $locale) }}:</strong> {{ $subject }}</p></body></html>

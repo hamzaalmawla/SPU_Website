@@ -1,0 +1,23 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\DTOs\Homepage;
+
+/**
+ * Typed stat item used by homepage stat-based sections.
+ */
+final readonly class HomepageStatItemDTO
+{
+    public function __construct(
+        public string $value,
+        public string $label,
+        public ?string $description = null,
+        public ?string $icon = null,
+        public ?string $prefix = null,
+        public ?string $suffix = null,
+        public ?string $helperText = null,
+        public ?string $url = null,
+        public ?int $sortOrder = null,
+    ) {}
+}

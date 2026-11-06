@@ -1,0 +1,554 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Services\News;
+
+use App\Contracts\Content\PersonIdentityServiceInterface;
+use App\Contracts\Form\FormDefinitionServiceInterface;
+use App\Contracts\News\NewsArticleEventCmsServiceInterface;
+use App\Contracts\News\NewsArticleEventServiceInterface;
+use App\DTOs\News\NewsArticleEventDTO;
+use App\DTOs\News\NewsArticleEventSessionDTO;
+use App\DTOs\News\NewsArticleEventSpeakerDTO;
+use App\DTOs\News\NewsEventDTO;
+use App\Models\Form\DynamicFormSubmission;
+use App\Models\Media\MediaAsset;
+use App\Models\News\NewsArticle;
+use App\Models\News\NewsArticleEvent;
+use App\Models\News\NewsArticleTranslation;
+use App\Models\Person\FacultyMember;
+use App\Models\Person\FacultyMemberTranslation;
+use App\Models\Person\Person;
+use App\Models\Person\PersonTranslation;
+use App\Support\MediaUrlResolver;
+use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Collection;
+
+final class NewsArticleEventService implements NewsArticleEventServiceInterface
+{
+    /** @var array<string, int>|null */
+    private ?array $movedEventArticleIds = null;
+
+    public function __construct(
+        private readonly NewsArticleEventCmsServiceInterface $eventCms,
+        private readonly FormDefinitionServiceInterface $forms,
+        private readonly PersonIdentityServiceInterface $identities,
+    ) {}
+
+    public function forArticle(int $articleId, string $locale): ?NewsArticleEventDTO
+    {
+        $payload = $this->eventCms->storedPayload($articleId);
+        if ($payload === null) {
+            return null;
+        }
+
+        $article = NewsArticle::query()->with('translations')->find($articleId);
+
+        return $article instanceof NewsArticle
+            ? $this->map($payload, $articleId, $this->articleTitle($article, $locale), $locale, false)
+            : null;
+    }
+
+    public function fromPayload(?array $event, int $articleId, string $title, string $locale): ?NewsArticleEventDTO
+    {
+        return $event === null ? null : $this->map($event, $articleId, $title, $locale, true);
+    }
+
+    public function findPublicEvent(string $article, string $locale): ?NewsArticleEventDTO
+    {
+        $record = $this->publicArticle($article);
+
+        return $record instanceof NewsArticle ? $this->forArticle((int) $record->getKey(), $locale) : null;
+    }
+
+    public function registrationCount(int $articleId): int
+    {
+        $eventId = (string) $articleId;
+
+        return DynamicFormSubmission::query()
+            ->where('payload_json', 'like', '%"event_id":'.json_encode($eventId).'%')
+            ->get(['id', 'payload_json'])
+            ->filter(fn (DynamicFormSubmission $submission): bool => ($submission->payload_json['_context']['source'] ?? null) === self::REGISTRATION_SOURCE
+                && ($submission->payload_json['_context']['event_id'] ?? null) === $eventId)
+            ->count();
+    }
+
+    public function calendarFile(string $article, string $locale): ?string
+    {
+        $record = $this->publicArticle($article);
+        $event = $record instanceof NewsArticle ? $this->forArticle((int) $record->getKey(), $locale) : null;
+        if (! $event instanceof NewsArticleEventDTO || $event->calendarUrl === null || ! $record instanceof NewsArticle) {
+            return null;
+        }
+
+        $url = url('/'.$locale.'/news/'.$record->getKey());
+        $host = (string) (parse_url((string) config('app.url'), PHP_URL_HOST) ?: 'spu.edu.sy');
+        $stamp = CarbonImmutable::now('UTC')->format('Ymd\THis\Z');
+        $lines = [
+            'BEGIN:VCALENDAR',
+            'VERSION:2.0',
+            'PRODID:-//Syrian Private University//Events//'.strtoupper($locale),
+            'CALSCALE:GREGORIAN',
+            'METHOD:PUBLISH',
+        ];
+
+        foreach ($event->sessions as $index => $session) {
+            $summary = $event->title.($session->title !== null ? ' — '.$session->title : '');
+            $lines[] = 'BEGIN:VEVENT';
+            $lines[] = 'UID:news-article-'.$record->getKey().'-'.($index + 1).'@'.$host;
+            $lines[] = 'DTSTAMP:'.$stamp;
+            $lines[] = 'DTSTART:'.CarbonImmutable::parse($session->startsAt)->utc()->format('Ymd\THis\Z');
+            if ($session->endsAt !== null) {
+                $lines[] = 'DTEND:'.CarbonImmutable::parse($session->endsAt)->utc()->format('Ymd\THis\Z');
+            }
+            $lines[] = 'SUMMARY:'.$this->icsText($summary);
+            $location = $session->location ?? $event->location ?? $event->onlineUrl;
+            if ($location !== null) {
+                $lines[] = 'LOCATION:'.$this->icsText($location);
+            }
+            $lines[] = 'URL:'.$url;
+            $lines[] = 'DESCRIPTION:'.$this->icsText($url);
+            $lines[] = 'END:VEVENT';
+        }
+
+        $lines[] = 'END:VCALENDAR';
+
+        return implode("\r\n", array_map(fn (string $line): string => $this->foldLine($line), $lines))."\r\n";
+    }
+
+    public function listingEvents(string $locale): Collection
+    {
+        return $this->publicEventArticles(['events'], false, $locale)
+            ->map(function (array $item) use ($locale): NewsEventDTO {
+                /** @var NewsArticleEventDTO $event */
+                $event = $item['event'];
+                $first = $event->sessions[0] ?? null;
+                $last = $event->sessions[count($event->sessions) - 1] ?? null;
+                $dateLabel = $first === null ? '' : ($last !== null && $last->date !== $first->date ? $first->dateLabel.' – '.$last->dateLabel : $first->dateLabel);
+
+                return $this->newsEventCard($item, $event, $locale, 'article-'.$event->articleId, $event->startsAt, $event->endsAt, $dateLabel, $first?->timeLabel ?? '', $first?->location ?? $event->location);
+            })
+            ->values();
+    }
+
+    public function calendarEntries(string $locale): Collection
+    {
+        return $this->publicEventArticles(['events', 'society-events'], true, $locale)
+            ->flatMap(function (array $item) use ($locale): array {
+                /** @var NewsArticleEventDTO $event */
+                $event = $item['event'];
+                $entries = [];
+                foreach ($event->sessions as $index => $session) {
+                    $entries[] = $this->newsEventCard(
+                        $item,
+                        $event,
+                        $locale,
+                        'article-'.$event->articleId.'-'.($index + 1),
+                        $session->startsAt,
+                        $session->endsAt,
+                        $session->dateLabel,
+                        $session->timeLabel,
+                        $session->location ?? $event->location,
+                        $session->title,
+                    );
+                }
+
+                return $entries;
+            })
+            ->values();
+    }
+
+    public function movedEventArticleIds(): array
+    {
+        return $this->movedEventArticleIds ??= NewsArticleEvent::query()
+            ->whereNotNull('legacy_event_id')
+            ->pluck('news_article_id', 'legacy_event_id')
+            ->map(fn (mixed $id): int => (int) $id)
+            ->all();
+    }
+
+    /**
+     * Public event articles of the given categories with their event, cover
+     * and summary. Most sites have a few dozen events; each is read once.
+     *
+     * @param  list<string>  $categorySlugs
+     * @return Collection<int, array{event: NewsArticleEventDTO, summary: string, imageUrl: string, featured: bool}>
+     */
+    private function publicEventArticles(array $categorySlugs, bool $calendarOnly, string $locale): Collection
+    {
+        return NewsArticle::query()
+            ->public()
+            ->whereHas('category', fn (Builder $query): Builder => $query->whereIn('slug', $categorySlugs)->where('is_enabled', true))
+            ->whereHas('event', fn (Builder $query): Builder => $calendarOnly ? $query->where('show_on_calendar', true) : $query)
+            ->with(['translations', 'coverMedia', 'seoMeta'])
+            ->get()
+            ->map(function (NewsArticle $article) use ($locale): ?array {
+                $payload = $this->eventCms->storedPayload((int) $article->getKey());
+                if ($payload === null) {
+                    return null;
+                }
+                $translation = $article->translations->firstWhere('locale', $locale) ?? $article->translations->firstWhere('locale', 'ar');
+                // The same order as the article page: sharing image, then cover.
+                $seo = $article->seoMeta->firstWhere('locale', $locale) ?? $article->seoMeta->firstWhere('locale', 'ar');
+                $cover = $this->filled($seo?->og_image_url)
+                    ?? ($article->coverMedia instanceof MediaAsset
+                        ? MediaUrlResolver::resolveImage($article->coverMedia->webp_path, $article->coverMedia->path, $article->coverMedia->disk)
+                        : MediaUrlResolver::resolveLegacy($article->legacy_cover_path));
+
+                return [
+                    'event' => $this->map($payload, (int) $article->getKey(), $this->articleTitle($article, $locale), $locale, false),
+                    'summary' => trim(strip_tags((string) ($translation?->excerpt ?? ''))),
+                    'imageUrl' => $cover ?? '/images/uni-main-place.JPG',
+                    'featured' => (bool) $article->is_featured,
+                ];
+            })
+            ->filter(fn (?array $item): bool => $item !== null && $item['event']->sessions !== [])
+            ->values();
+    }
+
+    /** @param array{event: NewsArticleEventDTO, summary: string, imageUrl: string, featured: bool} $item */
+    private function newsEventCard(
+        array $item,
+        NewsArticleEventDTO $event,
+        string $locale,
+        string $id,
+        ?string $startsAt,
+        ?string $endsAt,
+        string $dateLabel,
+        string $timeLabel,
+        ?string $location,
+        ?string $sessionTitle = null,
+    ): NewsEventDTO {
+        $speakers = $event->speakers;
+        foreach ($event->sessions as $session) {
+            $speakers = [...$speakers, ...$session->speakers];
+        }
+        $open = $event->registrationState === 'open';
+
+        return new NewsEventDTO(
+            id: $id,
+            locale: $locale,
+            title: $event->title.($sessionTitle !== null ? ' — '.$sessionTitle : ''),
+            summary: $item['summary'],
+            startsAt: (string) $startsAt,
+            endsAt: $endsAt,
+            dateLabel: $dateLabel,
+            timeLabel: $timeLabel,
+            location: (string) $location,
+            categoryId: $event->kind,
+            categoryLabel: __('public.article_event.kinds.'.$event->kind, [], $locale),
+            imageUrl: $item['imageUrl'],
+            isPast: $event->isPast,
+            isFeatured: $item['featured'],
+            formId: $event->formId,
+            capacity: $event->capacity,
+            registered: $event->capacity !== null && $event->seatsLeft !== null ? $event->capacity - $event->seatsLeft : 0,
+            remainingCapacity: $open ? $event->seatsLeft : null,
+            isRegisterable: $open,
+            registrationUrl: $event->registrationUrl,
+            detailUrl: '/'.$locale.'/news/'.$event->articleId,
+            participants: null,
+            highlights: [],
+            speakers: array_map(fn (NewsArticleEventSpeakerDTO $speaker): array => ['name' => $speaker->name, 'title' => (string) $speaker->title], $speakers),
+            results: $event->results,
+            gallery: [],
+        );
+    }
+
+    /** @param array<string, mixed> $event */
+    private function map(array $event, int $articleId, string $title, string $locale, bool $preview): NewsArticleEventDTO
+    {
+        $timezone = (string) config('app.admin_timezone', 'Asia/Damascus');
+        $sessions = [];
+        $startsAt = null;
+        $endsAt = null;
+
+        foreach ($this->sortedSessions($event['sessions'] ?? null) as $session) {
+            $date = (string) $session['date'];
+            $start = CarbonImmutable::parse($date.' '.$session['starts_at'], $timezone);
+            $end = is_string($session['ends_at'] ?? null) && $session['ends_at'] !== ''
+                ? CarbonImmutable::parse($date.' '.$session['ends_at'], $timezone)
+                : null;
+            $lastMoment = $end ?? $start->endOfDay();
+            $startsAt = $startsAt === null || $start->lessThan($startsAt) ? $start : $startsAt;
+            $endsAt = $endsAt === null || $lastMoment->greaterThan($endsAt) ? $lastMoment : $endsAt;
+
+            $sessions[] = new NewsArticleEventSessionDTO(
+                date: $date,
+                dateLabel: $start->locale($locale)->translatedFormat('l j F Y'),
+                timeLabel: $start->format('H:i').($end !== null ? ' – '.$end->format('H:i') : ''),
+                startsAt: $start->toIso8601String(),
+                endsAt: $end?->toIso8601String(),
+                title: $this->localized($session, 'title', $locale),
+                location: $this->localized($session, 'location', $locale),
+                speakers: $this->speakers($session['speakers'] ?? null, $locale),
+            );
+        }
+
+        $now = CarbonImmutable::now();
+        $isPast = $endsAt !== null && $endsAt->lessThan($now);
+        $requiresRegistration = (bool) ($event['requires_registration'] ?? false);
+        $formId = $requiresRegistration && is_string($event['formId'] ?? null) && $event['formId'] !== '' ? $event['formId'] : null;
+        $capacity = $requiresRegistration && is_numeric($event['capacity'] ?? null) ? (int) $event['capacity'] : null;
+        $closesAt = $requiresRegistration && is_string($event['registration_closes_at'] ?? null) && strtotime($event['registration_closes_at']) !== false
+            ? CarbonImmutable::parse($event['registration_closes_at'], (string) config('app.timezone', 'UTC'))
+            : null;
+        $taken = $requiresRegistration ? max(0, (int) ($event['prior_registrations'] ?? 0)) + $this->registrationCount($articleId) : 0;
+        $seatsLeft = $capacity === null ? null : max(0, $capacity - $taken);
+
+        $state = match (true) {
+            ! $requiresRegistration || $formId === null => 'none',
+            $isPast || ($closesAt !== null && $closesAt->lessThanOrEqualTo($now)) || ! $this->forms->isEnabled($formId) => 'closed',
+            $seatsLeft === 0 => 'full',
+            default => 'open',
+        };
+        $hasCertificate = (bool) ($event['has_certificate'] ?? false);
+        $articleUrl = '/'.$locale.'/news/'.$articleId;
+
+        return new NewsArticleEventDTO(
+            id: (string) $articleId,
+            articleId: $articleId,
+            locale: $locale,
+            title: $title,
+            kind: is_string($event['kind'] ?? null) ? $event['kind'] : 'event',
+            requiresRegistration: $requiresRegistration,
+            showOnCalendar: (bool) ($event['show_on_calendar'] ?? false),
+            isPast: $isPast,
+            registrationState: $state,
+            formId: $formId,
+            capacity: $capacity,
+            seatsLeft: $seatsLeft,
+            registrationClosesAt: $closesAt?->setTimezone($timezone)->toIso8601String(),
+            registrationUrl: $state === 'open' && ! $preview ? $articleUrl.'/register' : null,
+            calendarUrl: $sessions !== [] && ! $isPast && ! $preview ? $articleUrl.'/calendar.ics' : null,
+            startsAt: $startsAt?->toIso8601String(),
+            endsAt: $endsAt?->toIso8601String(),
+            language: is_string($event['language'] ?? null) ? $event['language'] : null,
+            hasCertificate: $hasCertificate,
+            certificateNote: $hasCertificate ? $this->localized($event, 'certificate_note', $locale) : null,
+            audience: array_values(array_filter(is_array($event['audience'] ?? null) ? $event['audience'] : [], 'is_string')),
+            audienceNote: $this->localized($event, 'audience_note', $locale),
+            organizer: $this->localized($event, 'organizer', $locale),
+            location: $this->localized($event, 'location', $locale),
+            mapUrl: $this->webUrl($event['map_url'] ?? null),
+            onlineUrl: $this->webUrl($event['online_url'] ?? null),
+            contactEmail: is_string($event['contact_email'] ?? null) && $event['contact_email'] !== '' ? $event['contact_email'] : null,
+            contactPhone: is_string($event['contact_phone'] ?? null) && $event['contact_phone'] !== '' ? $event['contact_phone'] : null,
+            invitationImageUrl: $this->mediaUrl($event['invitation_media_id'] ?? null),
+            results: $this->localized($event, 'results', $locale),
+            sessions: $sessions,
+            speakers: $this->speakers($event['speakers'] ?? null, $locale),
+        );
+    }
+
+    /** @return list<array<string, mixed>> */
+    private function sortedSessions(mixed $sessions): array
+    {
+        $sessions = array_values(array_filter(
+            is_array($sessions) ? $sessions : [],
+            fn (mixed $session): bool => is_array($session)
+                && preg_match('/^\d{4}-\d{2}-\d{2}$/', (string) ($session['date'] ?? '')) === 1
+                && preg_match('/^\d{2}:\d{2}$/', (string) ($session['starts_at'] ?? '')) === 1,
+        ));
+        usort($sessions, fn (array $a, array $b): int => [$a['date'], $a['starts_at']] <=> [$b['date'], $b['starts_at']]);
+
+        return $sessions;
+    }
+
+    /** @return array<int, NewsArticleEventSpeakerDTO> */
+    private function speakers(mixed $speakers, string $locale): array
+    {
+        $result = [];
+
+        foreach (is_array($speakers) ? $speakers : [] as $speaker) {
+            if (! is_array($speaker)) {
+                continue;
+            }
+            $dto = ($speaker['source'] ?? null) === 'university'
+                ? $this->profileSpeaker((string) ($speaker['profile'] ?? ''), $locale)
+                : $this->externalSpeaker($speaker, $locale);
+            if ($dto instanceof NewsArticleEventSpeakerDTO) {
+                $result[] = $dto;
+            }
+        }
+
+        return $result;
+    }
+
+    /** @param array<string, mixed> $speaker */
+    private function externalSpeaker(array $speaker, string $locale): ?NewsArticleEventSpeakerDTO
+    {
+        $name = $this->localized($speaker, 'name', $locale);
+
+        return $name === null ? null : new NewsArticleEventSpeakerDTO(
+            name: $name,
+            title: $this->localized($speaker, 'title', $locale),
+            organization: $this->localized($speaker, 'organization', $locale),
+            bio: $this->localized($speaker, 'bio', $locale),
+            photoUrl: $this->mediaUrl($speaker['photo_media_id'] ?? null),
+            profileUrl: null,
+        );
+    }
+
+    /**
+     * A university speaker always shows the profile as it is now. A hidden or
+     * deleted profile drops the speaker rather than showing a dead link.
+     */
+    private function profileSpeaker(string $profile, string $locale): ?NewsArticleEventSpeakerDTO
+    {
+        if (preg_match('/^(faculty_member|person):([1-9][0-9]*)$/', $profile, $matches) !== 1) {
+            return null;
+        }
+
+        if ($matches[1] === 'person') {
+            $person = Person::query()->public()->with(['translations', 'photoMedia'])->find((int) $matches[2]);
+            if (! $person instanceof Person) {
+                return null;
+            }
+            // A leader with a faculty profile is shown as that profile.
+            $identity = $this->identities->publicIdentities([(int) $person->getKey()], $locale)[(int) $person->getKey()] ?? null;
+            if ($identity !== null) {
+                return new NewsArticleEventSpeakerDTO(
+                    name: $identity->name,
+                    title: $this->filled($identity->title) ?? $this->filled($person->translations->firstWhere('locale', $locale)?->role),
+                    organization: null,
+                    bio: null,
+                    photoUrl: $identity->image,
+                    profileUrl: $identity->profileUrl,
+                );
+            }
+            $translation = $this->profileTranslation($person->translations->all(), $locale);
+            if (! $translation instanceof PersonTranslation || trim((string) $translation->name) === '') {
+                return null;
+            }
+
+            return new NewsArticleEventSpeakerDTO(
+                name: trim((string) $translation->name),
+                title: $this->filled($translation->title) ?? $this->filled($translation->role),
+                organization: null,
+                bio: null,
+                photoUrl: $person->photoMedia instanceof MediaAsset
+                    ? MediaUrlResolver::resolveImage($person->photoMedia->webp_path, $person->photoMedia->path, $person->photoMedia->disk)
+                    : ($this->filled($person->image) ?? MediaUrlResolver::resolveLegacy($person->legacy_photo_path)),
+                profileUrl: '/'.$locale.'/about/profile/'.$person->slug,
+            );
+        }
+
+        $member = FacultyMember::query()->public()->with(['translations', 'photoMedia'])->find((int) $matches[2]);
+        if (! $member instanceof FacultyMember) {
+            return null;
+        }
+        $translation = $this->profileTranslation($member->translations->all(), $locale);
+        if (! $translation instanceof FacultyMemberTranslation || trim((string) $translation->full_name) === '') {
+            return null;
+        }
+
+        return new NewsArticleEventSpeakerDTO(
+            name: trim((string) $translation->full_name),
+            title: $this->filled($translation->title) ?? $this->filled($translation->position),
+            organization: null,
+            bio: null,
+            photoUrl: $member->photoMedia instanceof MediaAsset
+                ? MediaUrlResolver::resolveImage($member->photoMedia->webp_path, $member->photoMedia->path, $member->photoMedia->disk)
+                : MediaUrlResolver::resolveLegacy($member->legacy_photo_path),
+            profileUrl: '/'.$locale.'/about/profile/'.$member->slug,
+        );
+    }
+
+    /** @param array<int, FacultyMemberTranslation|PersonTranslation> $translations */
+    private function profileTranslation(array $translations, string $locale): FacultyMemberTranslation|PersonTranslation|null
+    {
+        $byLocale = [];
+        foreach ($translations as $translation) {
+            $byLocale[(string) $translation->locale] = $translation;
+        }
+
+        return $byLocale[$locale] ?? $byLocale['ar'] ?? ($translations[0] ?? null);
+    }
+
+    private function publicArticle(string $article): ?NewsArticle
+    {
+        $article = trim($article);
+        if ($article === '') {
+            return null;
+        }
+
+        $record = NewsArticle::query()
+            ->public()
+            ->when(ctype_digit($article),
+                fn (Builder $query): Builder => $query->whereKey((int) $article),
+                fn (Builder $query): Builder => $query->where('slug', $article),
+            )
+            ->first();
+
+        return $record instanceof NewsArticle ? $record : null;
+    }
+
+    private function articleTitle(NewsArticle $article, string $locale): string
+    {
+        $translation = $article->translations->firstWhere('locale', $locale);
+        $title = $translation instanceof NewsArticleTranslation && trim((string) $translation->title) !== ''
+            ? $translation->title
+            : $article->translations->firstWhere('locale', 'ar')?->title;
+
+        return trim(strip_tags((string) ($title ?? $article->slug)));
+    }
+
+    /** @param array<string, mixed> $values */
+    private function localized(array $values, string $field, string $locale): ?string
+    {
+        return $this->filled($values[$field.'_'.$locale] ?? null)
+            ?? $this->filled($values[$field.'_'.($locale === 'ar' ? 'en' : 'ar')] ?? null);
+    }
+
+    private function filled(mixed $value): ?string
+    {
+        return is_string($value) && trim($value) !== '' ? trim($value) : null;
+    }
+
+    private function webUrl(mixed $value): ?string
+    {
+        $value = $this->filled($value);
+
+        return $value !== null && in_array(strtolower((string) parse_url($value, PHP_URL_SCHEME)), ['http', 'https'], true) ? $value : null;
+    }
+
+    private function mediaUrl(mixed $mediaId): ?string
+    {
+        $media = is_numeric($mediaId) ? MediaAsset::query()->find((int) $mediaId) : null;
+
+        return $media instanceof MediaAsset ? MediaUrlResolver::resolveImage($media->webp_path, $media->path, $media->disk) : null;
+    }
+
+    /** RFC 5545 text: escape backslash, semicolon, comma and line breaks. */
+    private function icsText(string $value): string
+    {
+        $value = str_replace(['\\', ';', ',', "\r\n", "\n", "\r"], ['\\\\', '\\;', '\\,', '\\n', '\\n', '\\n'], $value);
+
+        return trim(strip_tags($value));
+    }
+
+    /** Lines longer than 75 octets continue on the next line after a space, without splitting a character. */
+    private function foldLine(string $line): string
+    {
+        if (strlen($line) <= 75) {
+            return $line;
+        }
+
+        $parts = [];
+        $current = '';
+        foreach (mb_str_split($line) as $character) {
+            $limit = $parts === [] ? 75 : 74;
+            if (strlen($current.$character) > $limit) {
+                $parts[] = $current;
+                $current = '';
+            }
+            $current .= $character;
+        }
+        $parts[] = $current;
+
+        return implode("\r\n ", $parts);
+    }
+}
