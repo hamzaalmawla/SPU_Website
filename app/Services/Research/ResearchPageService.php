@@ -2328,7 +2328,8 @@ final class ResearchPageService implements ResearchPageServiceInterface
             'kind' => 'publication',
             'eyebrow' => implode(' · ', array_filter([
                 $publisher !== '' ? Str::limit($publisher, 70) : $label('publication'),
-                $year,
+                // A publisher such as "ARAGENRE 2026" already names the year.
+                $year !== '' && ! str_contains($publisher, $year) ? $year : '',
             ])),
             'title' => (string) ($publication['title'] ?? ''),
             'summary' => Str::limit((string) ($publication['summary'] ?? ''), 420),

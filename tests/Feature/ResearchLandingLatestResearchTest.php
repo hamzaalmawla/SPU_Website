@@ -188,7 +188,20 @@ final class ResearchLandingLatestResearchTest extends TestCase
         ];
     }
 
-    private function createPublication(string $title, string $publishedAt, ?string $doi): void
+    public function test_the_year_is_not_repeated_when_the_publisher_names_it(): void
+    {
+        $this->publishLanding($this->oldLanding());
+        $date = now()->subDay()->toDateString();
+        $year = substr($date, 0, 4);
+
+        $this->createPublication('Year In Publisher Paper', $date, null, 'ARAGENRE '.$year);
+        $this->assertSame('ARAGENRE '.$year, app(ResearchPageServiceInterface::class)->landing('en')->data['latestResearch']['eyebrow']);
+
+        $this->createPublication('Plain Publisher Paper', now()->toDateString(), null, 'Health Science Reports');
+        $this->assertSame('Health Science Reports · '.$year, app(ResearchPageServiceInterface::class)->landing('en')->data['latestResearch']['eyebrow']);
+    }
+
+    private function createPublication(string $title, string $publishedAt, ?string $doi, ?string $publisher = null): void
     {
         $publication = ResearchPublication::query()->create([
             'published_at' => $publishedAt,
@@ -200,6 +213,7 @@ final class ResearchLandingLatestResearchTest extends TestCase
             'research_publication_id' => $publication->getKey(),
             'locale' => 'en',
             'title' => $title,
+            'publisher' => $publisher,
         ]);
     }
 }
