@@ -53,7 +53,8 @@ final class DirectorateManagerTest extends TestCase
             ->assertSee('mailto:sami.haddad@spu.edu.sy', false)
             ->assertSee('tel:+963111234567', false)
             ->assertSee('src="/storage/media/managers/sami-haddad.webp" alt="Dr. Sami Haddad"', false)
-            ->assertDontSee('/about/profile/', false);
+            // The manager is typed here, not a staff profile: no profile link on the card.
+            ->assertDontSee('View profile');
 
         $this->get('/ar/about/directorates/it-services')
             ->assertOk()
