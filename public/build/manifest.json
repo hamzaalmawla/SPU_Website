@@ -16,7 +16,7 @@
     "src": "public/images/icon-chevron-down-outline.svg"
   },
   "resources/css/app.css": {
-    "file": "assets/app.GvBCEFbu.css",
+    "file": "assets/app.BH689CGd.css",
     "name": "app",
     "names": [
       "app.css"
@@ -66,7 +66,7 @@
     ]
   },
   "resources/js/app.js": {
-    "file": "js/app.Dfy-6pMc.js",
+    "file": "js/app.BF_uMzTV.js",
     "name": "app",
     "src": "resources/js/app.js",
     "isEntry": true,
@@ -77,8 +77,14 @@
       "resources/js/alpine/examSchedule.js"
     ]
   },
+  "resources/js/chatbot/characterScene.js": {
+    "file": "js/characterScene.U6LYwaVn.js",
+    "name": "characterScene",
+    "src": "resources/js/chatbot/characterScene.js",
+    "isDynamicEntry": true
+  },
   "resources/js/chatbot/chatbotWidget.js": {
-    "file": "js/chatbotWidget.Cn-jq51X.js",
+    "file": "js/chatbotWidget.BZQtwduJ.js",
     "name": "chatbotWidget",
     "src": "resources/js/chatbot/chatbotWidget.js",
     "isDynamicEntry": true,
@@ -86,17 +92,11 @@
       "resources/js/app.js"
     ],
     "dynamicImports": [
-      "resources/js/chatbot/robotScene.js"
+      "resources/js/chatbot/characterScene.js"
     ],
     "css": [
-      "assets/chatbotWidget.1QSBWFlk.css"
+      "assets/chatbotWidget.DD6uLZfC.css"
     ]
-  },
-  "resources/js/chatbot/robotScene.js": {
-    "file": "js/robotScene.DKxxcsEY.js",
-    "name": "robotScene",
-    "src": "resources/js/chatbot/robotScene.js",
-    "isDynamicEntry": true
   },
   "resources/js/filament/admin.js": {
     "file": "js/admin.4hnq60fq.js",

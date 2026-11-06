@@ -47,7 +47,7 @@ export function bootChatbot(root = document.querySelector('[data-chatbot]')) {
             window.removeEventListener(type, onFirstInteraction);
         }
         // Moving the mouse is intent enough to fetch the code, not to wake the
-        // robot or show the teaser; a press, key or scroll is.
+        // host or show the teaser; a press, key or scroll is.
         load({ awake: event.type !== 'pointermove' });
     };
 

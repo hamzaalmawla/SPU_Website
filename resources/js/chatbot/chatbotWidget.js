@@ -4,7 +4,7 @@ import { failureKey, historyFor, loadMessages, revealSteps, sanitizeSources, sav
 
 /**
  * The public AI assistant: launcher, teaser bubble, chat panel and the 3D
- * robot. Plain DOM code (no Alpine) so the whole widget is one lazily loaded
+ * host. Plain DOM code (no Alpine) so the whole widget is one lazily loaded
  * chunk, and the Three.js scene is a second one loaded when the browser is idle.
  */
 
@@ -24,7 +24,7 @@ const instances = new WeakMap();
 /**
  * Start the widget on its root (once), and return it. Called by
  * bootstrap.js on the visitor's first interaction; `awake` when that
- * interaction already happened, so the robot and teaser do not wait for
+ * interaction already happened, so the host and teaser do not wait for
  * another one.
  */
 export function initChatbot(root = document.querySelector('[data-chatbot]'), { awake = false } = {}) {
@@ -73,8 +73,8 @@ class ChatbotWidget {
         this.storage = safeSessionStorage();
         this.messages = loadMessages(this.storage, this.locale);
         this.busy = false;
-        this.robot = null;
-        this.robotLoading = null;
+        this.host = null;
+        this.hostLoading = null;
         this.reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
         this.mobile = matchMedia(MOBILE_QUERY);
     }
@@ -94,15 +94,15 @@ class ChatbotWidget {
         this.launcher.addEventListener('click', () => this.open());
         this.launcher.addEventListener('pointerenter', () => {
             this.wake();
-            this.loadRobot().then((robot) => robot?.wave());
+            this.loadHost().then((host) => host?.wave());
         });
         this.launcher.addEventListener('focus', () => {
             this.wake();
-            this.loadRobot();
+            this.loadHost();
         }, { once: true });
         this.launcher.addEventListener('touchstart', () => {
             this.wake();
-            this.loadRobot();
+            this.loadHost();
         }, { once: true, passive: true });
 
         this.root.querySelector('[data-chatbot-close]').addEventListener('click', () => this.close());
@@ -147,7 +147,7 @@ class ChatbotWidget {
 
         this.mobile.addEventListener?.('change', () => this.syncModal());
 
-        window.addEventListener('pointermove', (event) => this.robot?.lookAt(event.clientX, event.clientY), { passive: true });
+        window.addEventListener('pointermove', (event) => this.host?.lookAt(event.clientX, event.clientY), { passive: true });
     }
 
     /* ── Panel ─────────────────────────────────────────────────────────── */
@@ -164,7 +164,7 @@ class ChatbotWidget {
         this.syncModal();
         this.storage?.setItem(`${storageKeyPrefix(this.locale)}:open`, '1');
 
-        this.loadRobot().then(() => this.robot?.mount(this.avatar));
+        this.loadHost().then(() => this.host?.mount(this.avatar));
         this.scrollToEnd(false);
 
         if (focus) {
@@ -186,7 +186,7 @@ class ChatbotWidget {
         this.launcher.setAttribute('aria-expanded', 'false');
         document.documentElement.classList.remove('spu-chatbot-locked');
         this.storage?.removeItem(`${storageKeyPrefix(this.locale)}:open`);
-        this.robot?.mount(this.stage);
+        this.host?.mount(this.stage);
         this.launcher.focus({ preventScroll: true });
     }
 
@@ -217,7 +217,7 @@ class ChatbotWidget {
         this.messages = [];
         saveMessages(this.storage, this.locale, this.messages);
         this.renderLog();
-        this.robot?.setState('happy');
+        this.host?.setState('happy');
         this.input.value = '';
         this.autosize();
         this.syncDirection();
@@ -239,7 +239,7 @@ class ChatbotWidget {
             }
             this.teaser.hidden = false;
             this.root.classList.add('has-teaser');
-            this.robot?.wave();
+            this.host?.wave();
             this.teaserTimer = window.setTimeout(() => this.hideTeaser(false), TEASER_VISIBLE_MS);
         }, TEASER_DELAY_MS);
     }
@@ -298,11 +298,11 @@ class ChatbotWidget {
         this.scrollToEnd(true);
 
         if (reply.status === 'ok') {
-            this.robot?.setState('talking');
+            this.host?.setState('talking');
             await bubble.revealed;
-            this.robot?.setState('happy');
+            this.host?.setState('happy');
         } else {
-            this.robot?.setState('idle');
+            this.host?.setState('idle');
         }
 
         this.setBusy(false);
@@ -372,7 +372,7 @@ class ChatbotWidget {
         this.form.classList.toggle('is-busy', busy);
         this.log.setAttribute('aria-busy', busy ? 'true' : 'false');
         if (busy) {
-            this.robot?.setState('thinking');
+            this.host?.setState('thinking');
         }
     }
 
@@ -615,7 +615,7 @@ class ChatbotWidget {
         });
     }
 
-    /* ── 3D robot ──────────────────────────────────────────────────────── */
+    /* ── 3D host ───────────────────────────────────────────────────────── */
 
     awaitFirstInteraction() {
         const onInteract = () => {
@@ -639,32 +639,32 @@ class ChatbotWidget {
         this.scheduleTeaser();
     }
 
-    loadRobot() {
-        if (this.robotLoading) {
-            return this.robotLoading;
+    loadHost() {
+        if (this.hostLoading) {
+            return this.hostLoading;
         }
         if (navigator.connection?.saveData === true || !supportsWebGL()) {
-            this.robotLoading = Promise.resolve(null);
+            this.hostLoading = Promise.resolve(null);
 
-            return this.robotLoading;
+            return this.hostLoading;
         }
 
-        this.robotLoading = import('./robotScene.js')
-            .then(({ createRobot }) => {
-                this.robot = createRobot({ reducedMotion: this.reducedMotion.matches });
-                this.robot.mount(this.panel.hidden ? this.stage : this.avatar);
+        this.hostLoading = import('./characterScene.js')
+            .then(({ createCharacter }) => {
+                this.host = createCharacter({ reducedMotion: this.reducedMotion.matches });
+                this.host.mount(this.panel.hidden ? this.stage : this.avatar);
                 this.stage.classList.add('is-3d');
                 this.avatar.classList.add('is-3d');
 
-                return this.robot;
+                return this.host;
             })
             .catch(() => {
-                this.robot = null;
+                this.host = null;
 
                 return null;
             });
 
-        return this.robotLoading;
+        return this.hostLoading;
     }
 }
 

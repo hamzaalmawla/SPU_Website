@@ -1,4 +1,4 @@
-/* AI assistant: the floating robot launcher and teaser, in every page's
+/* AI assistant: the host character's launcher and teaser, in every page's
    stylesheet. The chat panel's styles (chatbot-panel.css) load with the
    widget's script on the visitor's first interaction, so pages carry ~9 KB
    less CSS and the homepage's inlined stylesheet stays small.
@@ -131,19 +131,26 @@ html:not(.js) .spu-chatbot {
     display: block;
 }
 
-.spu-chatbot__robot-flat {
+.spu-chatbot__sprite {
+    position: absolute;
+    width: 0;
+    height: 0;
+    overflow: hidden;
+}
+
+.spu-chatbot__host-flat {
     position: absolute;
     inset: 6px 10px;
     width: calc(100% - 20px);
     height: calc(100% - 12px);
-    filter: drop-shadow(0 8px 14px rgba(32, 39, 89, 0.28));
+    filter: drop-shadow(0 8px 14px rgba(32, 39, 89, 0.24));
     transition: opacity 0.4s ease;
     animation: none;
 }
 
-.spu-chatbot.is-awake .spu-chatbot__robot-flat,
-.spu-chatbot__launcher:hover .spu-chatbot__robot-flat,
-.spu-chatbot__launcher:focus-visible .spu-chatbot__robot-flat {
+.spu-chatbot.is-awake .spu-chatbot__host-flat,
+.spu-chatbot__launcher:hover .spu-chatbot__host-flat,
+.spu-chatbot__launcher:focus-visible .spu-chatbot__host-flat {
     animation: spu-chat-float 3.6s ease-in-out infinite;
 }
 
@@ -153,9 +160,9 @@ html:not(.js) .spu-chatbot {
     animation: none;
 }
 
-.spu-chatbot.is-awake .spu-chatbot__flat-eye,
-.spu-chatbot__launcher:hover .spu-chatbot__flat-eye,
-.spu-chatbot__launcher:focus-visible .spu-chatbot__flat-eye {
+/* The eyes live in the shared drawing (#spu-host), so they blink wherever
+   it is used once the widget is awake. */
+.spu-chatbot.is-awake .spu-chatbot__flat-eye {
     animation: spu-chat-blink 5s infinite;
 }
 
@@ -169,7 +176,7 @@ html:not(.js) .spu-chatbot {
     transition: opacity 0.5s ease;
 }
 
-.spu-chatbot__stage.is-3d .spu-chatbot__robot-flat {
+.spu-chatbot__stage.is-3d .spu-chatbot__host-flat {
     opacity: 0;
 }
 
