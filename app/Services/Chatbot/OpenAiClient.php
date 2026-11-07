@@ -9,6 +9,7 @@ use App\DTOs\Chatbot\ChatbotAudioTranscriptDTO;
 use App\DTOs\Chatbot\ChatbotCompletionDTO;
 use App\DTOs\Chatbot\ChatbotCompletionRequestDTO;
 use App\DTOs\Chatbot\ChatbotEmbeddingResultDTO;
+use App\DTOs\Chatbot\ChatbotRealtimeSecretDTO;
 use App\DTOs\Chatbot\ChatbotSpeechSynthesisRequestDTO;
 use App\DTOs\Chatbot\ChatbotTranscriptionCallDTO;
 use App\Exceptions\ChatbotProviderException;
@@ -327,6 +328,61 @@ final class OpenAiClient implements OpenAiClientInterface
         }
 
         return $body;
+    }
+
+    public function speakStream(ChatbotSpeechSynthesisRequestDTO $request): iterable
+    {
+        $payload = [
+            'model' => $request->model,
+            'input' => $request->input,
+            'voice' => $request->voice,
+            'response_format' => $request->format,
+            'stream_format' => 'audio',
+        ];
+        if ($request->instructions !== '') {
+            $payload['instructions'] = $request->instructions;
+        }
+
+        $response = $this->send(
+            fn (): Response => $this->base(Http::withOptions(['stream' => true]), $request->apiKey, $request->timeout)
+                ->accept('*/*')
+                ->asJson()
+                ->post('/audio/speech', $payload)
+        );
+
+        if (str_contains(strtolower($response->header('Content-Type')), 'json')) {
+            throw new ChatbotProviderException(ChatbotProviderException::INVALID, 'The speech response carried no audio.');
+        }
+
+        $body = $response->toPsrResponse()->getBody();
+
+        return (static function () use ($body): \Generator {
+            while (! $body->eof()) {
+                $chunk = $body->read(8192);
+                if ($chunk !== '') {
+                    yield $chunk;
+                }
+            }
+            $body->close();
+        })();
+    }
+
+    public function createRealtimeSecret(string $apiKey, array $session, int $expiresSeconds): ChatbotRealtimeSecretDTO
+    {
+        $response = $this->send(
+            fn (): Response => $this->request($apiKey, 15)->post('/realtime/client_secrets', [
+                'expires_after' => ['anchor' => 'created_at', 'seconds' => max(10, min(7200, $expiresSeconds))],
+                'session' => $session,
+            ])
+        );
+
+        $value = $response->json('value') ?? $response->json('client_secret.value');
+        $expiresAt = $response->json('expires_at') ?? $response->json('client_secret.expires_at');
+        if (! is_string($value) || $value === '') {
+            throw new ChatbotProviderException(ChatbotProviderException::INVALID, 'The client secret response had no key.');
+        }
+
+        return new ChatbotRealtimeSecretDTO($value, is_numeric($expiresAt) ? (int) $expiresAt : now()->addSeconds($expiresSeconds)->getTimestamp());
     }
 
     private function request(string $apiKey, int $timeout): PendingRequest

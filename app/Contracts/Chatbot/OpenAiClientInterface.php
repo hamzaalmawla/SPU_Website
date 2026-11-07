@@ -8,6 +8,7 @@ use App\DTOs\Chatbot\ChatbotAudioTranscriptDTO;
 use App\DTOs\Chatbot\ChatbotCompletionDTO;
 use App\DTOs\Chatbot\ChatbotCompletionRequestDTO;
 use App\DTOs\Chatbot\ChatbotEmbeddingResultDTO;
+use App\DTOs\Chatbot\ChatbotRealtimeSecretDTO;
 use App\DTOs\Chatbot\ChatbotSpeechSynthesisRequestDTO;
 use App\DTOs\Chatbot\ChatbotTranscriptionCallDTO;
 use App\Exceptions\ChatbotProviderException;
@@ -61,4 +62,21 @@ interface OpenAiClientInterface
      * Text to speech (POST /audio/speech): the audio file's bytes.
      */
     public function speak(ChatbotSpeechSynthesisRequestDTO $request): string;
+
+    /**
+     * Text to speech streamed as it is made (`stream_format: audio`). The
+     * request is sent, and its failure thrown, before this returns; the
+     * returned chunks are then read from the open response.
+     *
+     * @return iterable<string>
+     */
+    public function speakStream(ChatbotSpeechSynthesisRequestDTO $request): iterable;
+
+    /**
+     * A short-lived key for one Realtime session the browser opens itself
+     * (POST /realtime/client_secrets), configured by `$session`.
+     *
+     * @param  array<string, mixed>  $session
+     */
+    public function createRealtimeSecret(string $apiKey, array $session, int $expiresSeconds): ChatbotRealtimeSecretDTO;
 }

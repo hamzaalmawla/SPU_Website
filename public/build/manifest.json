@@ -1,4 +1,8 @@
 {
+  "_chatAudio.CC9zETTE.js": {
+    "file": "js/chatAudio.CC9zETTE.js",
+    "name": "chatAudio"
+  },
   "_studyPlanEdges.1FnRr4zh.js": {
     "file": "js/studyPlanEdges.1FnRr4zh.js",
     "name": "studyPlanEdges"
@@ -66,7 +70,7 @@
     ]
   },
   "resources/js/app.js": {
-    "file": "js/app.Dt7QEfuO.js",
+    "file": "js/app.CNhDYKC3.js",
     "name": "app",
     "src": "resources/js/app.js",
     "isEntry": true,
@@ -83,14 +87,29 @@
     "src": "resources/js/chatbot/characterScene.js",
     "isDynamicEntry": true
   },
+  "resources/js/chatbot/chatLive.js": {
+    "file": "js/chatLive.xy8Oj5jG.js",
+    "name": "chatLive",
+    "src": "resources/js/chatbot/chatLive.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "_chatAudio.CC9zETTE.js"
+    ],
+    "assets": [
+      "assets/pcmCapture.worklet.DGe6Dxnu.js"
+    ]
+  },
   "resources/js/chatbot/chatVoice.js": {
-    "file": "js/chatVoice.CFdBoelp.js",
+    "file": "js/chatVoice.B9Crgk-W.js",
     "name": "chatVoice",
     "src": "resources/js/chatbot/chatVoice.js",
-    "isDynamicEntry": true
+    "isDynamicEntry": true,
+    "imports": [
+      "_chatAudio.CC9zETTE.js"
+    ]
   },
   "resources/js/chatbot/chatbotWidget.js": {
-    "file": "js/chatbotWidget.Dw3rBvgT.js",
+    "file": "js/chatbotWidget.CYh8duMl.js",
     "name": "chatbotWidget",
     "src": "resources/js/chatbot/chatbotWidget.js",
     "isDynamicEntry": true,
@@ -99,11 +118,16 @@
     ],
     "dynamicImports": [
       "resources/js/chatbot/chatVoice.js",
+      "resources/js/chatbot/chatLive.js",
       "resources/js/chatbot/characterScene.js"
     ],
     "css": [
       "assets/chatbotWidget.BxWGPkW8.css"
     ]
+  },
+  "resources/js/chatbot/pcmCapture.worklet.js": {
+    "file": "assets/pcmCapture.worklet.DGe6Dxnu.js",
+    "src": "resources/js/chatbot/pcmCapture.worklet.js"
   },
   "resources/js/filament/admin.js": {
     "file": "js/admin.4hnq60fq.js",

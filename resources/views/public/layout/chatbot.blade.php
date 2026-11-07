@@ -27,6 +27,7 @@
             data-voice="{{ json_encode([
                 'transcribe' => $chatbot->transcriptionEndpoint,
                 'speech' => $chatbot->speechEndpoint,
+                'live' => $chatbot->liveTranscriptionEndpoint,
                 'server' => $chatbot->serverSpeech,
                 'maxSeconds' => $chatbot->maxRecordingSeconds,
             ], JSON_UNESCAPED_SLASHES) }}"

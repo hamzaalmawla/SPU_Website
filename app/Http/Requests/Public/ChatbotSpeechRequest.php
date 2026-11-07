@@ -30,6 +30,8 @@ final class ChatbotSpeechRequest extends FormRequest
             'text' => ['required', 'string', 'max:8000'],
             'signature' => ['required', 'string', 'size:64'],
             'segment' => ['required', 'integer', 'min:0', 'max:60'],
+            // The browser can play raw PCM as it arrives.
+            'stream' => ['sometimes', 'boolean'],
         ];
     }
 
@@ -42,6 +44,7 @@ final class ChatbotSpeechRequest extends FormRequest
             segment: (int) $this->validated('segment'),
             clientKey: $this->chatbotClientKey(),
             visitorKey: $this->chatbotVisitorKey(),
+            stream: $this->boolean('stream'),
         );
     }
 }

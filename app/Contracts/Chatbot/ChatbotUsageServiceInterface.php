@@ -51,13 +51,17 @@ interface ChatbotUsageServiceInterface
      */
     public function recordSpeech(string $model, int $characters, bool $newAnswer): bool;
 
+    /** One live transcription session started (the browser streams to OpenAI). */
+    public function recordLiveSession(): bool;
+
     /** A transcription or speech call that failed. */
     public function recordVoiceFailure(): bool;
 
     public function questionsToday(): int;
 
     /**
-     * Recordings transcribed plus replies read aloud today (the voice cap).
+     * Recordings transcribed, live sessions started and replies read aloud
+     * today (the voice cap).
      */
     public function voiceRequestsToday(): int;
 

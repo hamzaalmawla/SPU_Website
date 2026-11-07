@@ -31,6 +31,7 @@ class ChatbotUsageDay extends Model
         'voice_spoken_answers',
         'voice_characters',
         'voice_failures',
+        'voice_live_sessions',
     ];
 
     protected function casts(): array
@@ -53,6 +54,7 @@ class ChatbotUsageDay extends Model
             'voice_spoken_answers' => 'integer',
             'voice_characters' => 'integer',
             'voice_failures' => 'integer',
+            'voice_live_sessions' => 'integer',
         ];
     }
 }

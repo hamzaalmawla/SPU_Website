@@ -287,6 +287,30 @@ return [
             'keywords' => ['الجامعة السورية الخاصة', 'SPU', 'المفاضلة', 'التسجيل', 'الرسوم', 'الأقساط', 'المنح', 'كلية الطب البشري', 'كلية طب الأسنان', 'كلية الصيدلة', 'الهندسة المعلوماتية', 'إدارة الأعمال', 'الشهادة الثانوية'],
         ],
 
+        /*
+         * Live transcription: while the visitor speaks, the browser streams
+         * the microphone (PCM, 24 kHz) to OpenAI's Realtime transcription
+         * over a WebSocket, with a short-lived key this server mints for a
+         * transcription-only session (it cannot chat or answer). The text is
+         * then ready about half a second after they stop, instead of after
+         * an upload and a file transcription. Any failure falls back to the
+         * recording upload above.
+         */
+        'live_transcription' => [
+            'enabled' => (bool) env('CHATBOT_LIVE_TRANSCRIPTION', true),
+            'model' => env('CHATBOT_LIVE_TRANSCRIPTION_MODEL', 'gpt-live-transcribe'),
+            'url' => 'wss://api.openai.com/v1/realtime?intent=transcription',
+            // How long the key may be used to open the connection.
+            'key_seconds' => 60,
+            'noise_reduction' => 'near_field',
+            // Estimated USD per minute of audio, and minutes per session, for
+            // the admin's cost figures (audio is streamed only while listening).
+            'price_per_minute' => 0.017,
+            'estimated_minutes_per_session' => 1,
+            // Per visitor (browser session).
+            'sessions_per_hour' => 20,
+        ],
+
         'speech' => [
             'model' => env('CHATBOT_SPEECH_MODEL', 'gpt-4o-mini-tts'),
             // OpenAI shuts the /audio/speech models down on this date; from
@@ -296,11 +320,16 @@ return [
             // Voices editors can pick. marin and cedar are OpenAI's best.
             'voices' => ['cedar', 'marin', 'ash', 'ballad', 'coral', 'echo', 'onyx', 'sage', 'shimmer', 'verse', 'alloy', 'nova', 'fable'],
             'default_voice' => 'cedar',
+            // A whole file per segment (mp3), or, when the browser asks for it,
+            // raw PCM (24 kHz, 16-bit, mono) streamed as it is made, so the
+            // voice starts within about a second (OpenAI recommends pcm for the
+            // fastest response). The browser asks for mp3 on slow connections.
             'format' => 'mp3',
+            'stream' => (bool) env('CHATBOT_SPEECH_STREAM', true),
             // How the host should sound (the speech model's `instructions`).
             'instructions' => [
-                'ar' => 'You are the warm, professional host of the Syrian Private University. Read the text exactly as written, in clear Modern Standard Arabic with a neutral Levantine accent, at a calm, even pace. Pronounce numbers, dates and amounts carefully.',
-                'en' => 'You are the warm, professional host of the Syrian Private University. Read the text exactly as written, in clear, friendly English at a calm, even pace. Pronounce numbers, dates and amounts carefully.',
+                'ar' => 'You are the warm, confident host of the Syrian Private University, talking with a visitor. Read the text exactly as written, in clear Modern Standard Arabic with a neutral Levantine accent, at a natural, lively conversational pace, like an advisor talking to a student: brisk and fluent, never slow or drawn out, with short pauses only between sentences. Say numbers, dates and amounts clearly.',
+                'en' => 'You are the warm, confident host of the Syrian Private University, talking with a visitor. Read the text exactly as written, in clear, friendly English at a natural, lively conversational pace, like an advisor talking to a student: brisk and fluent, never slow or drawn out, with short pauses only between sentences. Say numbers, dates and amounts clearly.',
             ],
             // A call takes 3 to 10 seconds, much the same whatever its length
             // (measured on the host, 2026-11-07). The first segment is short so

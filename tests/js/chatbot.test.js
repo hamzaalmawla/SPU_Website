@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 
 import { markdownToText, parseInline, parseMarkdown, safeHref } from '../../resources/js/chatbot/chatMarkdown.js';
 import { canRecord, historyFor, loadMemory, loadMessages, memoryKey, revealSteps, sanitizeMessages, saveMemory, saveMessages, storageKey } from '../../resources/js/chatbot/chatState.js';
+import { bytesToBase64, createPcm16Decoder, createResampler, floatToPcm16, prefersStreamedSpeech, readTranscriptionEvent } from '../../resources/js/chatbot/chatAudio.js';
 import { createEndpointDetector, deviceChunks, isArabicText, levelFromSamples, pickDeviceVoice, pickRecorderType } from '../../resources/js/chatbot/chatVoice.js';
 
 test('paragraphs, lists, headings and tables parse into blocks', () => {
@@ -221,4 +222,56 @@ test('the browser voice reads short sentences in the right language', () => {
     assert.equal(chunks.at(-1), 'Third?');
     assert.equal(isArabicText('ما هي الرسوم في SPU؟'), true);
     assert.equal(isArabicText('What are the fees at SPU?'), false);
+});
+
+test('microphone audio is resampled to 24 kHz across chunks without drift', () => {
+    const resample = createResampler(48000, 24000);
+    const chunk = Float32Array.from({ length: 480 }, (_, index) => Math.sin(index / 10));
+    let total = 0;
+    for (let index = 0; index < 100; index++) {
+        total += resample(chunk).length;
+    }
+    // 48 000 samples in, 24 000 out (one second either way).
+    assert.ok(Math.abs(total - 24000) <= 1, `got ${total}`);
+
+    const fromCd = createResampler(44100, 24000);
+    let fromCdTotal = 0;
+    for (let index = 0; index < 10; index++) {
+        fromCdTotal += fromCd(new Float32Array(4410)).length;
+    }
+    assert.ok(Math.abs(fromCdTotal - 24000) <= 1, `got ${fromCdTotal}`);
+    assert.equal(createResampler(24000, 24000)(Float32Array.of(0.5)).length, 1);
+});
+
+test('floats become 16-bit PCM and back, even when a sample is split between chunks', () => {
+    const pcm = floatToPcm16(Float32Array.of(0, 1, -1, 0.5, 2));
+    assert.deepEqual([...pcm], [0, 32767, -32768, 16383, 32767]);
+
+    const bytes = new Uint8Array(pcm.buffer);
+    const decode = createPcm16Decoder();
+    const first = decode(bytes.subarray(0, 3));
+    const rest = decode(bytes.subarray(3));
+    const samples = [...first, ...rest];
+    assert.equal(samples.length, 5);
+    assert.ok(Math.abs(samples[1] - 1) < 0.001);
+    assert.equal(samples[2], -1);
+
+    assert.equal(bytesToBase64(new Uint8Array([104, 105])), 'aGk=');
+    assert.equal(bytesToBase64(new Uint8Array(70000)).length, Math.ceil(70000 / 3) * 4);
+});
+
+test('transcription events are read by kind', () => {
+    assert.deepEqual(readTranscriptionEvent('{"type":"conversation.item.input_audio_transcription.delta","item_id":"i1","delta":"ما "}'), { kind: 'partial', itemId: 'i1', text: 'ما ' });
+    assert.deepEqual(readTranscriptionEvent({ type: 'conversation.item.input_audio_transcription.completed', item_id: 'i1', transcript: ' ما هي الرسوم؟ ' }), { kind: 'final', itemId: 'i1', text: 'ما هي الرسوم؟' });
+    assert.equal(readTranscriptionEvent({ type: 'conversation.item.input_audio_transcription.failed', item_id: 'i1' }).kind, 'failed');
+    assert.equal(readTranscriptionEvent({ type: 'error', error: { message: 'buffer too small' } }).message, 'buffer too small');
+    assert.equal(readTranscriptionEvent('not json').kind, 'ignore');
+    assert.equal(readTranscriptionEvent({ type: 'session.updated' }).kind, 'ignore');
+});
+
+test('slow or data-saving connections get one mp3 per segment instead of streamed pcm', () => {
+    assert.equal(prefersStreamedSpeech(undefined), true);
+    assert.equal(prefersStreamedSpeech({ effectiveType: '4g' }), true);
+    assert.equal(prefersStreamedSpeech({ effectiveType: '3g' }), false);
+    assert.equal(prefersStreamedSpeech({ effectiveType: '4g', saveData: true }), false);
 });

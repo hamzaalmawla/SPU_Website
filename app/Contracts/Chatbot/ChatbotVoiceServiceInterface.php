@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Contracts\Chatbot;
 
+use App\DTOs\Chatbot\ChatbotLiveSessionDTO;
+use App\DTOs\Chatbot\ChatbotLiveSessionRequestDTO;
 use App\DTOs\Chatbot\ChatbotSpeechDTO;
 use App\DTOs\Chatbot\ChatbotSpeechRequestDTO;
 use App\DTOs\Chatbot\ChatbotTranscriptionDTO;
@@ -22,7 +24,16 @@ interface ChatbotVoiceServiceInterface
     public function transcribe(ChatbotTranscriptionRequestDTO $request): ChatbotTranscriptionDTO;
 
     /**
-     * One segment of a reply's spoken form, as audio.
+     * A short-lived key for live transcription: the browser streams the
+     * microphone to OpenAI while the visitor speaks, in a transcription-only
+     * session (it cannot answer or chat). Same shares, pauses and daily cap
+     * as recordings.
+     */
+    public function liveSession(ChatbotLiveSessionRequestDTO $request): ChatbotLiveSessionDTO;
+
+    /**
+     * One segment of a reply's spoken form, as audio: a whole file, or raw
+     * PCM streamed as it is made when the request asks for it.
      */
     public function speak(ChatbotSpeechRequestDTO $request): ChatbotSpeechDTO;
 }

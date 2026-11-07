@@ -66,6 +66,11 @@ final class FakeOpenAi
 
     public int $speechStatus = 200;
 
+    /** @var list<array<string, mixed>> Realtime client secrets minted */
+    public array $secretRequests = [];
+
+    public int $secretStatus = 200;
+
     /** Raw model output, bypassing the JSON wrapper (to test malformed output). */
     public ?string $rawOutput = null;
 
@@ -215,7 +220,18 @@ final class FakeOpenAi
                     return Http::response(['error' => ['message' => 'speech failed']], $fake->speechStatus);
                 }
 
-                return Http::response('ID3-fake-mp3:'.($payload['input'] ?? ''), 200, ['Content-Type' => 'audio/mpeg']);
+                return ($payload['response_format'] ?? null) === 'pcm'
+                    ? Http::response('PCM-fake:'.($payload['input'] ?? ''), 200, ['Content-Type' => 'application/octet-stream'])
+                    : Http::response('ID3-fake-mp3:'.($payload['input'] ?? ''), 200, ['Content-Type' => 'audio/mpeg']);
+            }
+
+            if (str_ends_with($request->url(), '/realtime/client_secrets')) {
+                $fake->secretRequests[] = $payload;
+                if ($fake->secretStatus !== 200) {
+                    return Http::response(['error' => ['message' => 'no']], $fake->secretStatus);
+                }
+
+                return Http::response(['value' => 'ek_test_'.count($fake->secretRequests), 'expires_at' => time() + 60, 'session' => $payload['session'] ?? []]);
             }
 
             $path = (string) parse_url($request->url(), PHP_URL_PATH);

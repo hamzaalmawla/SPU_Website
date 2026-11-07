@@ -7,15 +7,17 @@
  * stops by itself when the visitor stops speaking (endpoint detection on the
  * microphone level). The microphone is open only while listening.
  *
- * Replies are read by the server's voice one short segment at a time, each
- * fetched while the one before plays, through the Web Audio API (so playback
- * started by a tap keeps working after the network round trips, and its
- * level drives the host's mouth). When the server cannot speak (switched
- * off, over a limit, an outage) the browser's own voice reads instead.
+ * Replies are read by the server's voice, streamed as raw PCM that plays
+ * while it downloads, segment after segment on one Web Audio timeline (so
+ * playback started by a tap keeps working after the network round trips,
+ * and its level drives the host's mouth). When the server cannot speak
+ * (switched off, over a limit, an outage) the browser's own voice reads.
  *
  * The pure helpers at the top have no DOM or audio dependencies and are unit
  * tested (tests/js/chatbot.test.js).
  */
+
+import { createPcm16Decoder, PCM_RATE, prefersStreamedSpeech } from './chatAudio.js';
 
 /* ── Pure helpers ──────────────────────────────────────────────────────── */
 
@@ -204,15 +206,21 @@ export function deviceChunks(text, limit = 200) {
 
 /**
  * One spoken question. `record()` opens the microphone, resolves with
- * { blob, mimeType, durationMs } when the visitor stops speaking (or
- * `finish()` is called), or with null when nothing was said or it was
+ * { blob, mimeType, durationMs, transcript } when the visitor stops speaking
+ * (or `finish()` is called), or with null when nothing was said or it was
  * cancelled. It rejects with the getUserMedia error (NotAllowedError, ...).
+ *
+ * With a live transcriber the same audio also streams to OpenAI while it is
+ * recorded; `transcript` is then a promise of its text (null when it does not
+ * come), and the blob is the fallback to upload.
  */
 export class VoiceRecorder {
-    constructor({ audioContext, maxSeconds = 60, noSpeechMs = 7000, onLevel = () => {}, onSpeech = () => {} }) {
+    constructor({ audioContext, live = null, maxSeconds = 60, noSpeechMs = 7000, silenceMs = 900, onLevel = () => {}, onSpeech = () => {} }) {
         this.audioContext = audioContext;
+        this.live = live;
         this.maxMs = Math.max(5, maxSeconds) * 1000;
         this.noSpeechMs = noSpeechMs;
+        this.silenceMs = silenceMs;
         this.onLevel = onLevel;
         this.onSpeech = onSpeech;
         this.settle = null;
@@ -245,7 +253,8 @@ export class VoiceRecorder {
         analyser.fftSize = 1024;
         source.connect(analyser);
         const samples = new Float32Array(analyser.fftSize);
-        const detector = createEndpointDetector({ noSpeechMs: this.noSpeechMs, maxMs: this.maxMs });
+        const detector = createEndpointDetector({ noSpeechMs: this.noSpeechMs, maxMs: this.maxMs, silenceMs: this.silenceMs });
+        const streaming = this.live ? await this.live.attach(source, this.audioContext) : false;
 
         const startedAt = performance.now();
         recorder.start(250);
@@ -253,6 +262,7 @@ export class VoiceRecorder {
         return new Promise((resolve) => {
             let outcome = 'cancel';
             let spoke = false;
+            let transcript = null;
 
             const finish = (reason) => {
                 if (this.settle === null) {
@@ -261,6 +271,15 @@ export class VoiceRecorder {
                 this.settle = null;
                 outcome = reason;
                 window.clearInterval(timer);
+                // The live turn ends with the speech; its text is on the way
+                // while the recorder writes its last chunk.
+                if (streaming) {
+                    if (reason === 'done' && (detector.heardSpeech || spoke)) {
+                        transcript = this.live.commit();
+                    } else {
+                        this.live.discard();
+                    }
+                }
                 source.disconnect();
                 if (recorder.state !== 'inactive') {
                     recorder.stop();
@@ -274,7 +293,7 @@ export class VoiceRecorder {
                 const durationMs = Math.round(performance.now() - startedAt);
                 const blob = new Blob(chunks, { type: (recorder.mimeType || mimeType || 'audio/webm').split(';')[0] });
                 resolve(outcome === 'done' && (detector.heardSpeech || spoke) && blob.size > 0
-                    ? { blob, mimeType: blob.type, durationMs }
+                    ? { blob, mimeType: blob.type, durationMs, transcript }
                     : null);
             };
 
@@ -320,19 +339,31 @@ export class VoiceRecorder {
 
 /* ── Reading aloud ─────────────────────────────────────────────────────── */
 
+// Audio is scheduled a moment ahead, so network jitter does not click.
+const LEAD_SECONDS = 0.08;
+// Streamed PCM is grouped into pieces of at least this many samples (0.1 s).
+const MIN_PIECE_SAMPLES = 2400;
+
 /**
  * Reads replies aloud. `play()` resolves when the reply has been read (or
  * was stopped); only one reply plays at a time.
+ *
+ * The server's voice comes as segments; each is asked for as raw PCM that
+ * plays while it downloads (or one mp3 on a slow connection), the first two
+ * together and two in flight. Every piece is scheduled on one Web Audio
+ * timeline right after the one before, so segments join without a gap.
  */
 export class SpeechPlayer {
     constructor({ audioContext, endpoint, serverSpeech, csrfToken, locale, onLevel = () => {} }) {
         this.audioContext = audioContext;
         this.endpoint = endpoint;
-        this.serverSpeech = Boolean(serverSpeech && endpoint);
+        this.serverSpeech = Boolean(serverSpeech && endpoint && audioContext);
         this.csrfToken = csrfToken;
         this.locale = locale;
         this.onLevel = onLevel;
         this.run = 0;
+        this.sources = new Set();
+        this.nextTime = 0;
     }
 
     /** Whether replies can be read aloud here at all. */
@@ -369,13 +400,17 @@ export class SpeechPlayer {
         this.run++;
         this.controller?.abort();
         this.controller = null;
-        try {
-            this.source?.stop();
-        } catch {
-            // Already stopped.
+        for (const source of this.sources) {
+            try {
+                source.stop();
+            } catch {
+                // Not started yet, or already stopped.
+            }
         }
-        this.source = null;
+        this.sources.clear();
+        this.nextTime = 0;
         window.clearInterval(this.levelTimer);
+        this.levelTimer = null;
         this.onLevel(0);
         if ('speechSynthesis' in window) {
             window.speechSynthesis.cancel();
@@ -387,14 +422,14 @@ export class SpeechPlayer {
      * start reading (the browser's voice takes over), 'stopped' otherwise.
      */
     async playServer(run, text, signature) {
-        // Each segment takes the server several seconds whatever its length,
-        // so the first two are asked for together and two stay in flight: the
-        // rest of the answer is being made while its start plays. (A reply of
-        // one segment answers the second request with a cheap 422.)
+        const stream = prefersStreamedSpeech(navigator.connection);
         const pending = new Map();
+        // The first two together, then two in flight: the rest of the answer
+        // is made while its start plays. (A reply of one segment answers the
+        // second request with a cheap 422.)
         const request = (index) => {
             if (!pending.has(index)) {
-                const promise = this.fetchSegment(text, signature, index);
+                const promise = this.openSegment(text, signature, index, stream);
                 promise.catch(() => null);
                 pending.set(index, promise);
             }
@@ -406,34 +441,46 @@ export class SpeechPlayer {
 
         let segments = 1;
         for (let index = 0; index < segments; index++) {
-            let result;
+            let segment;
             try {
-                result = await request(index);
+                segment = await request(index);
             } catch {
-                result = null;
+                segment = null;
             }
             if (run !== this.run) {
                 return 'stopped';
             }
-            if (!result) {
+            if (!segment) {
                 return index === 0 ? 'fallback' : 'stopped';
             }
 
-            segments = result.segments;
+            segments = segment.segments;
             if (index + 2 < segments) {
                 request(index + 2);
             }
 
-            await this.playBuffer(run, result.buffer);
-            if (run !== this.run) {
-                return 'stopped';
+            // Schedules this segment's audio as it arrives; the next one is
+            // scheduled right behind it.
+            for await (const piece of segment.pieces()) {
+                if (run !== this.run) {
+                    return 'stopped';
+                }
+                this.schedule(piece);
             }
         }
 
-        return 'done';
+        await this.drained(run);
+
+        return run === this.run ? 'done' : 'stopped';
     }
 
-    async fetchSegment(text, signature, segment) {
+    /**
+     * One segment's audio: null when the server will not read it; otherwise
+     * its pieces (AudioBuffers) as an async iterable. A streamed segment is
+     * read from the network straight away (not when its turn comes), so the
+     * server is never kept waiting on a full socket.
+     */
+    async openSegment(text, signature, segment, stream) {
         this.controller ??= new AbortController();
         const response = await fetch(this.endpoint, {
             method: 'POST',
@@ -441,53 +488,152 @@ export class SpeechPlayer {
             signal: this.controller.signal,
             headers: {
                 'Content-Type': 'application/json',
-                Accept: 'audio/mpeg, application/json',
+                Accept: 'audio/L16, audio/mpeg, application/json',
                 'X-Requested-With': 'XMLHttpRequest',
                 'X-CSRF-TOKEN': this.csrfToken,
             },
-            body: JSON.stringify({ text, signature, segment }),
+            body: JSON.stringify({ text, signature, segment, stream }),
         });
-        if (!response.ok || (response.headers.get('Content-Type') ?? '').includes('json')) {
+        const type = response.headers.get('Content-Type') ?? '';
+        if (!response.ok || type.includes('json')) {
             return null;
         }
 
         const segments = Number.parseInt(response.headers.get('X-Speech-Segments') ?? '1', 10) || 1;
-        const buffer = await this.audioContext.decodeAudioData(await response.arrayBuffer());
 
-        return { buffer, segments };
-    }
+        if (!type.startsWith('audio/L16') || !response.body) {
+            const buffer = await this.audioContext.decodeAudioData(await response.arrayBuffer());
 
-    playBuffer(run, buffer) {
-        return new Promise((resolve) => {
-            if (run !== this.run) {
-                resolve();
+            return {
+                segments,
+                async *pieces() {
+                    yield buffer;
+                },
+            };
+        }
 
+        const queue = [];
+        let finished = false;
+        let wake = null;
+        const notify = () => {
+            wake?.();
+            wake = null;
+        };
+        const decode = createPcm16Decoder();
+        const reader = response.body.getReader();
+        let collected = [];
+        let collectedLength = 0;
+        const flush = () => {
+            if (!collectedLength) {
                 return;
             }
-            const source = this.audioContext.createBufferSource();
-            source.buffer = buffer;
-            const analyser = this.audioContext.createAnalyser();
-            analyser.fftSize = 512;
-            source.connect(analyser);
-            analyser.connect(this.audioContext.destination);
-            const samples = new Float32Array(analyser.fftSize);
+            const samples = new Float32Array(collectedLength);
+            let offset = 0;
+            for (const part of collected) {
+                samples.set(part, offset);
+                offset += part.length;
+            }
+            collected = [];
+            collectedLength = 0;
+            const buffer = this.audioContext.createBuffer(1, samples.length, PCM_RATE);
+            buffer.copyToChannel(samples, 0);
+            queue.push(buffer);
+            notify();
+        };
 
-            this.source = source;
-            window.clearInterval(this.levelTimer);
-            this.levelTimer = window.setInterval(() => {
-                analyser.getFloatTimeDomainData(samples);
-                this.onLevel(Math.min(1, levelFromSamples(samples) * 4));
-            }, 45);
+        (async () => {
+            try {
+                for (;;) {
+                    const { value, done } = await reader.read();
+                    if (done) {
+                        break;
+                    }
+                    const samples = decode(value);
+                    if (samples.length) {
+                        collected.push(samples);
+                        collectedLength += samples.length;
+                        if (collectedLength >= MIN_PIECE_SAMPLES) {
+                            flush();
+                        }
+                    }
+                }
+            } catch {
+                // Stopped or cut off: what arrived still plays.
+            }
+            flush();
+            finished = true;
+            notify();
+        })();
 
-            this.onStart?.();
-            source.addEventListener('ended', () => {
-                window.clearInterval(this.levelTimer);
-                this.onLevel(0);
-                source.disconnect();
-                analyser.disconnect();
-                resolve();
-            }, { once: true });
-            source.start();
+        return {
+            segments,
+            async *pieces() {
+                for (;;) {
+                    if (queue.length) {
+                        yield queue.shift();
+                    } else if (finished) {
+                        return;
+                    } else {
+                        await new Promise((resolve) => {
+                            wake = resolve;
+                        });
+                    }
+                }
+            },
+        };
+    }
+
+    /** Put one piece on the timeline, right after the one before it. */
+    schedule(buffer) {
+        const context = this.audioContext;
+        if (!this.analyser) {
+            this.analyser = context.createAnalyser();
+            this.analyser.fftSize = 512;
+            this.analyser.connect(context.destination);
+            this.samples = new Float32Array(this.analyser.fftSize);
+        }
+
+        const source = context.createBufferSource();
+        source.buffer = buffer;
+        source.connect(this.analyser);
+        // After a stall (the network fell behind), start again just ahead.
+        const startAt = Math.max(this.nextTime, context.currentTime + LEAD_SECONDS);
+        source.start(startAt);
+        this.nextTime = startAt + buffer.duration;
+        this.sources.add(source);
+        source.addEventListener('ended', () => {
+            this.sources.delete(source);
+            source.disconnect();
+        }, { once: true });
+
+        const run = this.run;
+        window.setTimeout(() => {
+            if (run === this.run) {
+                this.onStart?.();
+            }
+        }, Math.max(0, (startAt - context.currentTime) * 1000));
+
+        this.levelTimer ??= window.setInterval(() => {
+            this.analyser.getFloatTimeDomainData(this.samples);
+            this.onLevel(Math.min(1, levelFromSamples(this.samples) * 4));
+        }, 45);
+    }
+
+    /** Resolves once everything scheduled has played (or it was stopped). */
+    drained(run) {
+        return new Promise((resolve) => {
+            const check = () => {
+                if (run !== this.run || this.audioContext.currentTime >= this.nextTime - 0.01) {
+                    window.clearInterval(this.levelTimer);
+                    this.levelTimer = null;
+                    this.onLevel(0);
+                    resolve();
+
+                    return;
+                }
+                window.setTimeout(check, Math.min(250, Math.max(20, (this.nextTime - this.audioContext.currentTime) * 1000)));
+            };
+            check();
         });
     }
 

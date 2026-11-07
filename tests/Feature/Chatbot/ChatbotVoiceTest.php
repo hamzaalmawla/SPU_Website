@@ -7,6 +7,7 @@ namespace Tests\Feature\Chatbot;
 use App\Contracts\Chatbot\ChatbotServiceInterface;
 use App\Contracts\Chatbot\ChatbotSettingsServiceInterface;
 use App\Contracts\Chatbot\ChatbotVoiceServiceInterface;
+use App\DTOs\Chatbot\ChatbotLiveSessionRequestDTO;
 use App\DTOs\Chatbot\ChatbotSettingsDTO;
 use App\DTOs\Chatbot\ChatbotTranscriptionRequestDTO;
 use App\Models\Chatbot\ChatbotUsageDay;
@@ -273,6 +274,100 @@ final class ChatbotVoiceTest extends TestCase
         $widget = app(ChatbotServiceInterface::class)->widget('en');
         $this->assertFalse($widget->voiceEnabled);
         $this->assertNull($widget->transcriptionEndpoint);
+    }
+
+    public function test_live_transcription_gets_a_short_lived_transcription_only_key(): void
+    {
+        $this->liveAssistant();
+
+        $this->postJson('/ar/assistant/live-session')
+            ->assertOk()
+            ->assertHeader('Cache-Control', 'no-store, private')
+            ->assertJsonPath('status', 'ok')
+            ->assertJsonPath('key', 'ek_test_1')
+            ->assertJsonPath('url', 'wss://api.openai.com/v1/realtime?intent=transcription')
+            ->assertJsonPath('session.type', 'transcription');
+
+        $minted = $this->openAi->secretRequests[0];
+        $this->assertSame(['anchor' => 'created_at', 'seconds' => 60], $minted['expires_after']);
+        $this->assertSame('transcription', $minted['session']['type']);
+        $input = $minted['session']['audio']['input'];
+        $this->assertSame(['type' => 'audio/pcm', 'rate' => 24000], $input['format']);
+        $this->assertSame('gpt-live-transcribe', $input['transcription']['model']);
+        $this->assertSame(['ar', 'en'], $input['transcription']['languages']);
+        $this->assertContains('المفاضلة', $input['transcription']['keywords']);
+        $this->assertNull($input['turn_detection']);
+        // A transcription session has nothing that could make it answer.
+        $this->assertArrayNotHasKey('instructions', $minted['session']);
+        $this->assertArrayNotHasKey('tools', $minted['session']);
+
+        $this->assertSame(1, ChatbotUsageDay::query()->value('voice_live_sessions'));
+        // About a minute of gpt-live-transcribe, as an estimate.
+        $this->assertSame(17000, ChatbotUsageDay::query()->value('cost_micro_usd'));
+    }
+
+    public function test_live_transcription_follows_the_voice_rules(): void
+    {
+        $user = $this->liveAssistant();
+        $voice = app(ChatbotVoiceServiceInterface::class);
+        $ask = static fn (string $visitor) => $voice->liveSession(new ChatbotLiveSessionRequestDTO('en', 'campus', $visitor))->status;
+
+        foreach (range(1, 4) as $ignored) {
+            $this->assertSame('ok', $ask('student-1'));
+        }
+        $this->assertSame('limited', $ask('student-1'));
+        $this->assertSame('ok', $ask('student-2'));
+
+        Cache::put(ChatbotCaches::pauseKey('v', 'student-3'), true, 600);
+        $this->assertSame('refused', $ask('student-3'));
+
+        $this->openAi->secretStatus = 500;
+        $this->assertSame('error', $ask('student-4'));
+
+        config(['chatbot.voice.live_transcription.enabled' => false]);
+        $this->assertSame('unavailable', $ask('student-5'));
+        $this->assertNull(app(ChatbotServiceInterface::class)->widget('en')->liveTranscriptionEndpoint);
+
+        config(['chatbot.voice.live_transcription.enabled' => true]);
+        Cache::flush();
+        $this->assertSame('/en/assistant/live-session', app(ChatbotServiceInterface::class)->widget('en')->liveTranscriptionEndpoint);
+        $this->setVoice($user, enabled: false);
+        $this->assertSame('unavailable', $ask('student-6'));
+    }
+
+    public function test_the_page_lets_the_browser_reach_only_the_transcription_socket(): void
+    {
+        $policy = (string) $this->get('/en/does-not-exist-'.uniqid())->headers->get('Content-Security-Policy');
+        $this->assertMatchesRegularExpression("#connect-src 'self' wss://api\.openai\.com(;|$)#", $policy);
+
+        config(['chatbot.voice.live_transcription.enabled' => false]);
+        $policy = (string) $this->get('/en/does-not-exist-'.uniqid())->headers->get('Content-Security-Policy');
+        $this->assertStringNotContainsString('openai', $policy);
+    }
+
+    public function test_speech_streams_raw_pcm_as_it_is_made_when_asked(): void
+    {
+        $this->liveAssistant();
+        $answer = $this->postJson('/en/assistant/messages', ['message' => 'Office hours?']);
+
+        $response = $this->postJson('/en/assistant/speech', ['text' => $answer->json('answer'), 'signature' => $answer->json('speech'), 'segment' => 0, 'stream' => true])
+            ->assertOk()
+            ->assertHeader('Content-Type', 'audio/L16;rate=24000;channels=1')
+            ->assertHeader('X-Accel-Buffering', 'no')
+            ->assertHeader('X-Speech-Segment', '0');
+
+        $this->assertStringStartsWith('PCM-fake:', $response->streamedContent());
+        $call = $this->openAi->speechRequests[0];
+        $this->assertSame('pcm', $call['response_format']);
+        $this->assertSame('audio', $call['stream_format']);
+        $this->assertStringContainsString('lively conversational pace', $call['instructions']);
+        $this->assertSame(1, ChatbotUsageDay::query()->value('voice_spoken_answers'));
+
+        // Switched off, the same request gets one mp3 file.
+        config(['chatbot.voice.speech.stream' => false]);
+        $this->postJson('/en/assistant/speech', ['text' => $answer->json('answer'), 'signature' => $answer->json('speech'), 'segment' => 0, 'stream' => true])
+            ->assertOk()
+            ->assertHeader('Content-Type', 'audio/mpeg');
     }
 
     public function test_the_signature_check_ignores_how_the_browser_trims_nothing(): void

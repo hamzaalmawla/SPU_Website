@@ -10,6 +10,9 @@ namespace App\DTOs\Chatbot;
  * status: ok | forbidden | invalid | limited | refused | unavailable | busy | error.
  * Every status but "ok" tells the browser to read the reply with its own
  * voice instead (except "forbidden" and "invalid", which it never retries).
+ *
+ * An ok reply carries either the whole file (`audio`) or, when streamed,
+ * `chunks`: the audio as OpenAI makes it, to be sent on as it arrives.
  */
 final readonly class ChatbotSpeechDTO
 {
@@ -25,5 +28,7 @@ final readonly class ChatbotSpeechDTO
         public string $mimeType = 'audio/mpeg',
         public int $segment = 0,
         public int $segments = 0,
+        /** @var iterable<string>|null */
+        public ?iterable $chunks = null,
     ) {}
 }

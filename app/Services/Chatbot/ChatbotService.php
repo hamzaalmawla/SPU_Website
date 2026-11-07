@@ -98,6 +98,9 @@ final class ChatbotService implements ChatbotServiceInterface
             voiceEnabled: $voice,
             transcriptionEndpoint: $voice ? route('public.chatbot.transcriptions', ['locale' => $locale], false) : null,
             speechEndpoint: $voice ? route('public.chatbot.speech', ['locale' => $locale], false) : null,
+            liveTranscriptionEndpoint: $voice && (bool) config('chatbot.voice.live_transcription.enabled', true) && trim((string) config('chatbot.voice.live_transcription.model', '')) !== ''
+                ? route('public.chatbot.live-session', ['locale' => $locale], false)
+                : null,
             serverSpeech: $voice && (bool) ($payload['serverSpeech'] ?? false),
             maxRecordingSeconds: max(5, (int) config('chatbot.voice.transcription.max_seconds', 60)),
         );

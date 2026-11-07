@@ -26,6 +26,8 @@ final readonly class ChatbotWidgetDTO
         public bool $voiceEnabled = false,
         public ?string $transcriptionEndpoint = null,
         public ?string $speechEndpoint = null,
+        // Live transcription while the visitor speaks; null: recordings are uploaded.
+        public ?string $liveTranscriptionEndpoint = null,
         // False when answers are read by the browser's own voice only.
         public bool $serverSpeech = false,
         public int $maxRecordingSeconds = 60,

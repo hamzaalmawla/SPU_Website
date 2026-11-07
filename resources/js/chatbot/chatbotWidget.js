@@ -100,6 +100,8 @@ class ChatbotWidget {
         this.player = null;
         this.audioContext = null;
         this.voiceModule = null;
+        this.liveModule = null;
+        this.live = null;
         this.playingButton = null;
         this.playingMessage = null;
         this.announcer = root.querySelector('[data-chatbot-voice-announcer]');
@@ -542,6 +544,40 @@ class ChatbotWidget {
         return this.voiceModule;
     }
 
+    /**
+     * The live transcriber for this voice conversation (one connection for
+     * all its turns), or null where it is off or has failed: the recording
+     * is then uploaded.
+     */
+    async liveTranscriber() {
+        if (!this.voiceConfig?.live || !('WebSocket' in window) || !this.audioContext?.audioWorklet) {
+            return null;
+        }
+        if (this.live?.usable) {
+            return this.live;
+        }
+
+        try {
+            this.liveModule ??= import('./chatLive.js');
+            const { LiveTranscriber } = await this.liveModule;
+            this.live = new LiveTranscriber({
+                endpoint: this.voiceConfig.live,
+                csrfToken: csrfToken(),
+                onPartial: (text) => {
+                    if (this.voiceMode === 'listening') {
+                        this.setVoiceStatus(caption(text));
+                    }
+                },
+            });
+            // Opens while the microphone starts; audio waits for it.
+            this.live.open();
+
+            return this.live;
+        } catch {
+            return null;
+        }
+    }
+
     async listen() {
         if (this.recorder) {
             return;
@@ -553,8 +589,9 @@ class ChatbotWidget {
         }
 
         let VoiceRecorder;
+        let live = null;
         try {
-            ({ VoiceRecorder } = await this.loadVoice());
+            [{ VoiceRecorder }, live] = await Promise.all([this.loadVoice(), this.liveTranscriber()]);
         } catch {
             this.endVoice();
             this.appendNotice(this.text.micUnavailable);
@@ -569,6 +606,7 @@ class ChatbotWidget {
         this.setVoiceMode('listening');
         const recorder = new VoiceRecorder({
             audioContext: this.audioContext,
+            live,
             maxSeconds: Number(this.voiceConfig.maxSeconds) || 60,
             // After an answer the visitor may take a moment to think.
             noSpeechMs: this.voiceTurns ? 9000 : 7000,
@@ -611,7 +649,12 @@ class ChatbotWidget {
         }
 
         this.setVoiceMode('transcribing');
-        const transcript = await this.transcribe(recording);
+        // The live text is usually there already; else the recording goes up.
+        const liveText = recording.transcript ? await recording.transcript : null;
+        if (!this.voiceSession) {
+            return;
+        }
+        const transcript = liveText ? { status: 'ok', text: liveText } : await this.transcribe(recording);
         if (!this.voiceSession) {
             return;
         }
@@ -733,6 +776,8 @@ class ChatbotWidget {
         this.voiceTurns = 0;
         this.recorder?.cancel();
         this.recorder = null;
+        this.live?.close();
+        this.live = null;
         this.transcribing?.abort();
         this.player?.stop();
         this.playingMessage = null;
@@ -1184,6 +1229,13 @@ class ChatbotWidget {
 
 function storageKeyPrefix(locale) {
     return `spu-assistant:${locale}`;
+}
+
+/** The last words of what is being heard, as a quoted caption. */
+function caption(text) {
+    const words = String(text).replace(/\s+/gu, ' ').trim();
+
+    return words ? `“${words.length > 70 ? `…${words.slice(-70)}` : words}”` : '';
 }
 
 function csrfToken() {

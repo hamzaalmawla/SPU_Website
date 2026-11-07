@@ -11,6 +11,8 @@ use App\Contracts\Chatbot\ChatbotUsageServiceInterface;
 use App\Contracts\Chatbot\ChatbotVoiceServiceInterface;
 use App\Contracts\Chatbot\OpenAiClientInterface;
 use App\DTOs\Chatbot\ChatbotAudioTranscriptDTO;
+use App\DTOs\Chatbot\ChatbotLiveSessionDTO;
+use App\DTOs\Chatbot\ChatbotLiveSessionRequestDTO;
 use App\DTOs\Chatbot\ChatbotSettingsDTO;
 use App\DTOs\Chatbot\ChatbotSpeechDTO;
 use App\DTOs\Chatbot\ChatbotSpeechRequestDTO;
@@ -35,6 +37,11 @@ use Throwable;
  */
 final class ChatbotVoiceService implements ChatbotVoiceServiceInterface
 {
+    private const TRANSCRIPTION_PROMPT = 'A visitor asks the website assistant of the Syrian Private University (الجامعة السورية الخاصة, SPU) in Damascus about admission, faculties, programs, fees, exams or student services, in Arabic or English.';
+
+    /** Raw PCM as OpenAI streams it: 24 kHz, 16-bit little-endian, mono. */
+    private const PCM_MIME = 'audio/L16;rate=24000;channels=1';
+
     /** What transcription models write for silence or noise, not what anyone said. */
     private const SILENCE_PHRASES = [
         '/^(thank you|thanks)( (so much|very much))?( for watching)?[.!]?$/iu',
@@ -131,6 +138,54 @@ final class ChatbotVoiceService implements ChatbotVoiceServiceInterface
         return new ChatbotTranscriptionDTO(ChatbotTranscriptionDTO::STATUS_OK, $text);
     }
 
+    public function liveSession(ChatbotLiveSessionRequestDTO $request): ChatbotLiveSessionDTO
+    {
+        $locale = $request->locale === 'en' ? 'en' : 'ar';
+        $apiKey = $this->settings->apiKey();
+        $model = trim((string) config('chatbot.voice.live_transcription.model', ''));
+
+        if ($apiKey === null || $model === '' || ! (bool) config('chatbot.voice.live_transcription.enabled', true) || ! $this->chatbot->widget($locale)->voiceEnabled) {
+            return new ChatbotLiveSessionDTO('unavailable');
+        }
+
+        if ($this->fairUse->isPaused($request->visitorKey, $request->clientKey)) {
+            return new ChatbotLiveSessionDTO('refused');
+        }
+
+        $wait = $this->fairUse->consume('vl', [
+            'm' => [60, 4],
+            'h' => [3600, (int) config('chatbot.voice.live_transcription.sessions_per_hour', 20)],
+        ], $request->visitorKey, $request->clientKey);
+        if ($wait !== null) {
+            return new ChatbotLiveSessionDTO('limited');
+        }
+
+        if ($this->overDailyCap($this->settings->get())) {
+            return new ChatbotLiveSessionDTO('busy');
+        }
+
+        $session = $this->liveSessionConfig($model);
+
+        try {
+            $secret = $this->openAi->createRealtimeSecret($apiKey, $session, (int) config('chatbot.voice.live_transcription.key_seconds', 60));
+        } catch (ChatbotProviderException $exception) {
+            Log::notice('Chatbot live transcription key failed.', ['reason' => $exception->reason, 'status' => $exception->status]);
+            $this->usage->recordVoiceFailure();
+
+            return new ChatbotLiveSessionDTO($exception->reason === ChatbotProviderException::RATE_LIMITED ? 'busy' : 'error');
+        }
+
+        $this->usage->recordLiveSession();
+
+        return new ChatbotLiveSessionDTO(
+            ChatbotLiveSessionDTO::STATUS_OK,
+            $secret->value,
+            $secret->expiresAt,
+            (string) config('chatbot.voice.live_transcription.url'),
+            $session,
+        );
+    }
+
     public function speak(ChatbotSpeechRequestDTO $request): ChatbotSpeechDTO
     {
         $locale = $request->locale === 'en' ? 'en' : 'ar';
@@ -176,19 +231,28 @@ final class ChatbotVoiceService implements ChatbotVoiceServiceInterface
         }
 
         $input = $segments[$request->segment];
-        $format = (string) config('chatbot.voice.speech.format', 'mp3');
+        $stream = $request->stream && (bool) config('chatbot.voice.speech.stream', true);
+        $format = $stream ? 'pcm' : (string) config('chatbot.voice.speech.format', 'mp3');
         $instructions = (array) config('chatbot.voice.speech.instructions', []);
+        $synthesis = new ChatbotSpeechSynthesisRequestDTO(
+            apiKey: $apiKey,
+            model: $model,
+            voice: $settings->voiceName,
+            input: $input,
+            instructions: (string) ($instructions[SpeechText::isArabic($input) ? 'ar' : 'en'] ?? ''),
+            format: $format,
+            timeout: (int) config('chatbot.voice.speech.timeout', 30),
+        );
 
         try {
-            $audio = $this->openAi->speak(new ChatbotSpeechSynthesisRequestDTO(
-                apiKey: $apiKey,
-                model: $model,
-                voice: $settings->voiceName,
-                input: $input,
-                instructions: (string) ($instructions[SpeechText::isArabic($input) ? 'ar' : 'en'] ?? ''),
-                format: $format,
-                timeout: (int) config('chatbot.voice.speech.timeout', 30),
-            ));
+            if ($stream) {
+                $chunks = $this->openAi->speakStream($synthesis);
+                $this->usage->recordSpeech($model, mb_strlen($input), $request->segment === 0);
+
+                return new ChatbotSpeechDTO(ChatbotSpeechDTO::STATUS_OK, null, self::PCM_MIME, $request->segment, count($segments), $chunks);
+            }
+
+            $audio = $this->openAi->speak($synthesis);
         } catch (ChatbotProviderException $exception) {
             Log::notice('Chatbot speech failed.', ['reason' => $exception->reason, 'status' => $exception->status]);
             $this->usage->recordVoiceFailure();
@@ -212,6 +276,40 @@ final class ChatbotVoiceService implements ChatbotVoiceServiceInterface
         );
     }
 
+    /**
+     * A transcription-only Realtime session: the visitor's audio in, text
+     * out, no assistant answers. The browser decides when a turn ends (its
+     * own silence detection) and commits it, so the model's turn detection
+     * is off.
+     *
+     * @return array<string, mixed>
+     */
+    private function liveSessionConfig(string $model): array
+    {
+        $keywords = array_values(array_filter(
+            (array) config('chatbot.voice.transcription.keywords', []),
+            static fn (mixed $keyword): bool => is_string($keyword) && preg_match('/[<>\r\n]/', $keyword) !== 1,
+        ));
+        $noise = trim((string) config('chatbot.voice.live_transcription.noise_reduction', 'near_field'));
+
+        return [
+            'type' => 'transcription',
+            'audio' => [
+                'input' => [
+                    'format' => ['type' => 'audio/pcm', 'rate' => 24000],
+                    'noise_reduction' => $noise !== '' ? ['type' => $noise] : null,
+                    'transcription' => [
+                        'model' => $model,
+                        'languages' => ['ar', 'en'],
+                        'prompt' => self::TRANSCRIPTION_PROMPT,
+                        'keywords' => $keywords,
+                    ],
+                    'turn_detection' => null,
+                ],
+            ],
+        ];
+    }
+
     private function transcriptionCall(string $apiKey, string $model, ChatbotTranscriptionRequestDTO $request): ChatbotTranscriptionCallDTO
     {
         $hinted = in_array($model, (array) config('chatbot.voice.transcription.hinted_models', []), true);
@@ -222,7 +320,7 @@ final class ChatbotVoiceService implements ChatbotVoiceServiceInterface
             path: $request->path,
             filename: 'question.'.self::extension($request->mimeType),
             mimeType: $request->mimeType,
-            prompt: 'A visitor asks the website assistant of the Syrian Private University (الجامعة السورية الخاصة, SPU) in Damascus about admission, faculties, programs, fees, exams or student services, in Arabic or English.',
+            prompt: self::TRANSCRIPTION_PROMPT,
             languages: $hinted ? ['ar', 'en'] : [],
             keywords: $hinted ? array_values(array_filter((array) config('chatbot.voice.transcription.keywords', []), 'is_string')) : [],
             timeout: (int) config('chatbot.voice.transcription.timeout', 30),

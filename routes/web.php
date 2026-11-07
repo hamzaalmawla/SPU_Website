@@ -15,6 +15,7 @@ use App\Http\Controllers\Public\BrowserLocaleRedirectController;
 use App\Http\Controllers\Public\CampusLifeController;
 use App\Http\Controllers\Public\CenterController;
 use App\Http\Controllers\Public\ChatbotController;
+use App\Http\Controllers\Public\ChatbotLiveSessionController;
 use App\Http\Controllers\Public\ChatbotSpeechController;
 use App\Http\Controllers\Public\ChatbotTranscriptionController;
 use App\Http\Controllers\Public\DynamicFormSubmissionController;
@@ -96,6 +97,10 @@ Route::post('{locale}/assistant/transcriptions', ChatbotTranscriptionController:
     ->where(['locale' => 'ar|en'])
     ->middleware(['locale', 'throttle:chatbot-voice'])
     ->name('public.chatbot.transcriptions');
+Route::post('{locale}/assistant/live-session', ChatbotLiveSessionController::class)
+    ->where(['locale' => 'ar|en'])
+    ->middleware(['locale', 'throttle:chatbot-voice'])
+    ->name('public.chatbot.live-session');
 Route::post('{locale}/assistant/speech', ChatbotSpeechController::class)
     ->where(['locale' => 'ar|en'])
     ->middleware(['locale', 'throttle:chatbot-voice'])

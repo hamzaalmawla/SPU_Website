@@ -18,6 +18,8 @@ final readonly class ChatbotSpeechRequestDTO
         // 0-based segment of the reply's spoken form (SpeechText::segments).
         public int $segment = 0,
         public ?string $clientKey = null,
+        // The browser can play raw PCM as it arrives (else one mp3 per segment).
+        public bool $stream = false,
         public ?string $visitorKey = null,
     ) {}
 }

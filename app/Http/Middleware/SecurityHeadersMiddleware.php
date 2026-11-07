@@ -149,8 +149,29 @@ final class SecurityHeadersMiddleware
             "style-src 'self' 'unsafe-inline'",
             $this->directive('script-src', ["'self'", self::inlineScriptHash(self::JS_CLASS_BOOTSTRAP)], $analytics),
             "frame-src 'self' https://www.google.com https://maps.google.com",
-            $this->directive('connect-src', ["'self'"], $analytics),
+            $this->directive('connect-src', ["'self'", ...$this->assistantConnectSources()], $analytics),
         ]);
+    }
+
+    /**
+     * The AI assistant's live transcription: the visitor's browser streams
+     * the microphone to OpenAI's Realtime WebSocket (a transcription-only
+     * session with a key this site mints). Only that origin, only while the
+     * feature is on.
+     *
+     * @return list<string>
+     */
+    private function assistantConnectSources(): array
+    {
+        if (! (bool) config('chatbot.enabled', true) || ! (bool) config('chatbot.voice.enabled', true) || ! (bool) config('chatbot.voice.live_transcription.enabled', true)) {
+            return [];
+        }
+
+        $url = (string) config('chatbot.voice.live_transcription.url', '');
+        $scheme = parse_url($url, PHP_URL_SCHEME);
+        $host = parse_url($url, PHP_URL_HOST);
+
+        return is_string($scheme) && is_string($host) && in_array($scheme, ['wss', 'https'], true) ? [$scheme.'://'.$host] : [];
     }
 
     public static function inlineScriptHash(string $script): string

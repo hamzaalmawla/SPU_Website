@@ -107,6 +107,16 @@ final class ChatbotUsageService implements ChatbotUsageServiceInterface
         ]);
     }
 
+    public function recordLiveSession(): bool
+    {
+        // The audio goes from the browser to OpenAI, so its length is not
+        // seen here: the cost is an estimate per session.
+        $usd = (float) config('chatbot.voice.live_transcription.price_per_minute', 0.017)
+            * (float) config('chatbot.voice.live_transcription.estimated_minutes_per_session', 1);
+
+        return $this->increment(['voice_live_sessions' => 1, 'cost_micro_usd' => (int) round($usd * 1_000_000)]);
+    }
+
     public function recordVoiceFailure(): bool
     {
         return $this->increment(['voice_failures' => 1]);
@@ -119,9 +129,9 @@ final class ChatbotUsageService implements ChatbotUsageServiceInterface
 
     public function voiceRequestsToday(): int
     {
-        $row = ChatbotUsageDay::query()->where('day', $this->today())->first(['voice_transcriptions', 'voice_spoken_answers']);
+        $row = ChatbotUsageDay::query()->where('day', $this->today())->first(['voice_transcriptions', 'voice_live_sessions', 'voice_spoken_answers']);
 
-        return $row === null ? 0 : (int) $row->voice_transcriptions + (int) $row->voice_spoken_answers;
+        return $row === null ? 0 : (int) $row->voice_transcriptions + (int) $row->voice_live_sessions + (int) $row->voice_spoken_answers;
     }
 
     public function summary(): ChatbotUsageSummaryDTO
@@ -160,7 +170,7 @@ final class ChatbotUsageService implements ChatbotUsageServiceInterface
             cost30DaysUsd: round(((int) $rows->sum('cost_micro_usd')) / 1_000_000, 4),
             tokens30Days: (int) ($rows->sum('input_tokens') + $rows->sum('output_tokens') + $rows->sum('embedding_tokens')),
             days: $days,
-            voiceTranscriptionsToday: (int) ($todayRow?->voice_transcriptions ?? 0),
+            voiceTranscriptionsToday: (int) ($todayRow?->voice_transcriptions ?? 0) + (int) ($todayRow?->voice_live_sessions ?? 0),
             voiceSpokenAnswersToday: (int) ($todayRow?->voice_spoken_answers ?? 0),
             voiceMinutesToday: round(((int) ($todayRow?->voice_seconds ?? 0)) / 60, 1),
             voiceFailuresToday: (int) ($todayRow?->voice_failures ?? 0),
