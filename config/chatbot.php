@@ -300,8 +300,8 @@ return [
                 'ar' => 'You are the warm, professional host of the Syrian Private University. Read the text exactly as written, in clear Modern Standard Arabic with a neutral Levantine accent, at a calm, even pace. Pronounce numbers, dates and amounts carefully.',
                 'en' => 'You are the warm, professional host of the Syrian Private University. Read the text exactly as written, in clear, friendly English at a calm, even pace. Pronounce numbers, dates and amounts carefully.',
             ],
-            // Each call takes about ten seconds whatever its length (measured on
-            // the host, November 2026), so a reply is cut into few segments: a
+            // A call takes 3 to 10 seconds, much the same whatever its length
+            // (measured on the host, 2026-11-07), so a reply is cut into few segments: a
             // first one that starts playback, and long ones for the rest. The
             // browser fetches the first two together and keeps two in flight.
             'first_segment_characters' => 200,

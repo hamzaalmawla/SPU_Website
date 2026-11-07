@@ -86,12 +86,13 @@ mic ─ MediaRecorder (Opus/WebM, AAC/MP4 on Safari), stops itself after ~1.3 s 
     ◀─ audio/mpeg, X-Speech-Segments; the first two are fetched together, two stay in flight
 ```
 
-- **Latency.** Measured on the host (November 2026): writing a question down
-  takes about 4 s, an answer 12 to 15 s (as typed), and each speech call about
-  10 s whatever its length (2.5 s and 12 s of audio both took ~10 s). Hence few
-  long segments and two requests in flight: the first words play ~10 s after
-  the answer appears and the rest follows without gaps. At most two speech
-  requests per visitor run at once, which keeps the host's few PHP workers free.
+- **Latency.** Measured on the host (2026-11-07): writing a question down
+  takes about 4 s, an answer 5 to 15 s (as typed), and each speech call 3 to
+  10 s, much the same whatever its length (2.5 s and 12 s of audio took the
+  same time). Hence few long segments and two requests in flight: the first
+  words play a few seconds after the answer appears and the rest follows
+  without gaps. At most two speech requests per visitor run at once, which
+  keeps the host's few PHP workers free.
 
 - **Hands-free conversation.** The microphone starts a voice conversation: the
   host listens (pink stand light, head tilted, the meter follows the voice),
