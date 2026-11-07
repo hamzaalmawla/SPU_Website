@@ -340,9 +340,20 @@ export class SpeechPlayer {
         return this.serverSpeech || 'speechSynthesis' in window;
     }
 
-    async play({ text, signature, plainText }) {
+    /**
+     * `onStart` runs once, when the first sound actually plays (the wait
+     * before it is the server making the audio).
+     */
+    async play({ text, signature, plainText, onStart = () => {} }) {
         this.stop();
         const run = ++this.run;
+        let started = false;
+        this.onStart = () => {
+            if (!started && run === this.run) {
+                started = true;
+                onStart();
+            }
+        };
 
         if (this.serverSpeech && signature) {
             const outcome = await this.playServer(run, text, signature);
@@ -468,6 +479,7 @@ export class SpeechPlayer {
                 this.onLevel(Math.min(1, levelFromSamples(samples) * 4));
             }, 45);
 
+            this.onStart?.();
             source.addEventListener('ended', () => {
                 window.clearInterval(this.levelTimer);
                 this.onLevel(0);
@@ -504,6 +516,7 @@ export class SpeechPlayer {
                     this.onLevel(0.7);
                     window.setTimeout(() => this.onLevel(0.15), 120);
                 });
+                utterance.addEventListener('start', () => this.onStart?.());
                 utterance.addEventListener('end', () => resolve());
                 utterance.addEventListener('error', () => resolve());
                 synth.speak(utterance);

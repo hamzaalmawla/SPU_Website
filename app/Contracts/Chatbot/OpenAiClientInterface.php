@@ -43,6 +43,16 @@ interface OpenAiClientInterface
     public function moderate(string $input, string $apiKey): bool;
 
     /**
+     * The moderation check and one Responses call at the same time, for two
+     * steps that do not depend on each other (screening a question while it
+     * is rewritten for search). Each comes back as its result or its failure;
+     * one failing never fails the other.
+     *
+     * @return array{moderation: bool|ChatbotProviderException, completion: ChatbotCompletionDTO|ChatbotProviderException}
+     */
+    public function moderateAndRespond(string $input, string $apiKey, ChatbotCompletionRequestDTO $request): array;
+
+    /**
      * Speech to text (POST /audio/transcriptions) for one recording.
      */
     public function transcribe(ChatbotTranscriptionCallDTO $call): ChatbotAudioTranscriptDTO;

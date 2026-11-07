@@ -10,9 +10,10 @@ namespace App\Support\Chatbot;
  * Replies are Markdown written to be read: bold markers, bullets, tables and
  * links would be spoken as noise. The reply becomes plain sentences (a table
  * row becomes "column: value, column: value."), and is then cut at sentence
- * boundaries into short segments, so the first words can play while the rest
- * is still being made. The cut is deterministic: the browser asks for a
- * segment by number and the server cuts the same reply the same way.
+ * boundaries into segments that grow (each at most twice the one before), so
+ * the first words play soon and every later segment is made while the one
+ * before it plays. The cut is deterministic: the browser asks for a segment
+ * by number and the server cuts the same reply the same way.
  */
 final class SpeechText
 {
@@ -77,12 +78,13 @@ final class SpeechText
 
     /**
      * The speakable text cut into segments: the first at most
-     * `$firstCharacters` long (so playback starts quickly), the others at
-     * most `$characters`, all within `$maxCharacters`.
+     * `$firstCharacters` long (so playback starts quickly), each next one at
+     * most twice the one before and never over `$characters`, all within
+     * `$maxCharacters`.
      *
      * @return list<string>
      */
-    public static function segments(string $text, int $firstCharacters = 160, int $characters = 420, int $maxCharacters = 3000): array
+    public static function segments(string $text, int $firstCharacters = 120, int $characters = 900, int $maxCharacters = 3000): array
     {
         $text = trim($text);
         if ($text === '') {
@@ -105,7 +107,7 @@ final class SpeechText
             }
             $total += mb_strlen($piece) + 1;
 
-            $limit = $segments === [] ? max(40, $firstCharacters) : max(40, $characters);
+            $limit = self::limit(count($segments), $firstCharacters, $characters);
             if ($current !== '' && mb_strlen($current) + 1 + mb_strlen($piece) > $limit) {
                 $segments[] = $current;
                 $current = $piece;
@@ -120,11 +122,11 @@ final class SpeechText
 
         // A first sentence longer than the short limit is cut at a pause;
         // the rest of it opens the next segment when it fits there.
-        if ($segments !== [] && mb_strlen($segments[0]) > max(40, $firstCharacters)) {
-            $head = self::split($segments[0], max(40, $firstCharacters));
+        if ($segments !== [] && mb_strlen($segments[0]) > self::limit(0, $firstCharacters, $characters)) {
+            $head = self::split($segments[0], self::limit(0, $firstCharacters, $characters));
             if (count($head) > 1) {
                 $rest = trim(implode(' ', array_slice($head, 1)));
-                if (isset($segments[1]) && mb_strlen($rest) + 1 + mb_strlen($segments[1]) <= max(40, $characters)) {
+                if (isset($segments[1]) && mb_strlen($rest) + 1 + mb_strlen($segments[1]) <= self::limit(1, $firstCharacters, $characters)) {
                     array_splice($segments, 0, 2, [$head[0], $rest.' '.$segments[1]]);
                 } else {
                     array_splice($segments, 0, 1, [$head[0], $rest]);
@@ -133,6 +135,17 @@ final class SpeechText
         }
 
         return array_values(array_filter($segments, static fn (string $segment): bool => $segment !== ''));
+    }
+
+    /**
+     * The longest the segment at `$index` may be: the first limit, doubling
+     * with each segment, up to the general limit.
+     */
+    private static function limit(int $index, int $firstCharacters, int $characters): int
+    {
+        $first = max(40, $firstCharacters);
+
+        return max($first, min(max(40, $characters), $first * (2 ** min($index, 10))));
     }
 
     /**

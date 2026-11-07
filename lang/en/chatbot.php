@@ -52,6 +52,7 @@ return [
         'heard' => 'Got it, one moment…',
         'transcribing' => 'Writing down your question…',
         'speaking' => 'Reading the answer…',
+        'preparing_voice' => 'Preparing the voice…',
         'listen' => 'Listen',
         'stop_audio' => 'Stop',
         'voice_ended' => 'Voice conversation ended.',

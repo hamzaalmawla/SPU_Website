@@ -221,6 +221,8 @@ return [
         // What the search rewrite sees of the conversation, per turn.
         'rewrite_context_characters' => 400,
         'max_output_tokens' => 1200,
+        // A spoken question gets a short answer (about 70 words, read aloud).
+        'max_spoken_output_tokens' => 600,
         // Identical first questions are answered from cache until the
         // knowledge base or the settings change.
         'answer_cache_minutes' => 720,
@@ -301,10 +303,12 @@ return [
                 'en' => 'You are the warm, professional host of the Syrian Private University. Read the text exactly as written, in clear, friendly English at a calm, even pace. Pronounce numbers, dates and amounts carefully.',
             ],
             // A call takes 3 to 10 seconds, much the same whatever its length
-            // (measured on the host, 2026-11-07), so a reply is cut into few segments: a
-            // first one that starts playback, and long ones for the rest. The
-            // browser fetches the first two together and keeps two in flight.
-            'first_segment_characters' => 200,
+            // (measured on the host, 2026-11-07). The first segment is short so
+            // the voice starts soon; each next one is at most twice the one
+            // before (120, 240, 480, 900), and the browser fetches the first
+            // two together and keeps two in flight, so each is ready before
+            // the one before it ends.
+            'first_segment_characters' => 120,
             'segment_characters' => 900,
             'max_characters' => 3000,
             'timeout' => 30,

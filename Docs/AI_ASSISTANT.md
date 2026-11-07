@@ -81,7 +81,7 @@ mic ─ MediaRecorder (Opus/WebM, AAC/MP4 on Safari), stops itself after ~1.3 s 
     ◀─ { status, text }   the text appears as the visitor's message
     ─ POST /{locale}/assistant/messages (as typed) ─▶ answer + speech signature
     ─ POST /{locale}/assistant/speech {text, signature, segment} ─▶ ChatbotVoiceService::speak
-          SpeechText: Markdown → spoken sentences, cut into segments (first ≤200 chars, then ≤900)
+          SpeechText: Markdown → spoken sentences, cut into growing segments (120, 240, 480, then ≤900 chars)
           gpt-4o-mini-tts, voice from the settings (default cedar), mp3 (24 kHz mono)
     ◀─ audio/mpeg, X-Speech-Segments; the first two are fetched together, two stay in flight
 ```
@@ -89,10 +89,24 @@ mic ─ MediaRecorder (Opus/WebM, AAC/MP4 on Safari), stops itself after ~1.3 s 
 - **Latency.** Measured on the host (2026-11-07): writing a question down
   takes about 4 s, an answer 5 to 15 s (as typed), and each speech call 3 to
   10 s, much the same whatever its length (2.5 s and 12 s of audio took the
-  same time). Hence few long segments and two requests in flight: the first
-  words play a few seconds after the answer appears and the rest follows
-  without gaps. At most two speech requests per visitor run at once, which
-  keeps the host's few PHP workers free.
+  same time). What keeps a spoken answer quick:
+  - **Spoken questions get spoken answers.** The widget sends `voice: true`;
+    the question turn is marked spoken and the rules ask for under about 70
+    words in two to four plain sentences, the key facts first, with an offer
+    to say more (`max_spoken_output_tokens` 600). A long written answer would
+    take longer to write, to voice and to listen to. Spoken and typed answers
+    are cached apart; the fixed rules are the same, so prompt caching holds.
+  - **Screening and rewriting at once.** The moderation check and the search
+    rewrite go out together (`OpenAiClient::moderateAndRespond`), saving the
+    shorter of the two on every question, typed or spoken.
+  - **Growing segments, two in flight.** The first segment is short so the
+    voice starts soon; each next one is at most twice the one before, and
+    the browser asks for the first two together and keeps two in flight, so
+    each is ready before the one before it ends. At most two speech requests
+    per visitor run at once, which keeps the host's few PHP workers free.
+  - **An honest wait.** Until the first sound plays the bar says "Preparing
+    the voice…" and the host keeps his thinking pose; he talks only while
+    the voice sounds.
 
 - **Hands-free conversation.** The microphone starts a voice conversation: the
   host listens (pink stand light, head tilted, the meter follows the voice),

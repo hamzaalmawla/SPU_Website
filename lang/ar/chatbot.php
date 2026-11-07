@@ -52,6 +52,7 @@ return [
         'heard' => 'فهمت، لحظة من فضلك…',
         'transcribing' => 'أكتب سؤالك…',
         'speaking' => 'أقرأ الإجابة…',
+        'preparing_voice' => 'أحضّر الصوت…',
         'listen' => 'استماع',
         'stop_audio' => 'إيقاف',
         'voice_ended' => 'انتهت المحادثة الصوتية.',
