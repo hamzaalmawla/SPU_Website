@@ -43,6 +43,21 @@ browser ── POST /{locale}/assistant/messages ──▶ ChatbotController (th
 Every refusal shows the same polite message, so probing does not reveal which
 layer stopped it. The admin "Try it" box shows the reason.
 
+## The university at a glance
+
+Retrieval hands the model the few passages closest to a question. A question
+about *all* of something ("ما الكليات كافة في الجامعة؟") matches a few faculty
+pages, and the answer then named only those. So every answer's instructions
+also carry the complete, published lists (`ChatbotDirectoryServiceInterface`):
+every faculty and center from the faculties hub and the centers landing (the
+data their pages show), each with its Arabic and English name, its page and a
+one-line summary, about 600 tokens, read again every ten minutes. The rules say
+these lists are official and complete and that a question about all, how many
+or which faculties or centers names every one of them. A faculty or center
+added or renamed also retires the cached answers (the answer cache key carries
+the directory's hash). The lists sit in the instructions, which change only
+when the directory does, so OpenAI's prompt caching still covers them.
+
 ## Conversation memory
 
 The assistant follows a whole conversation without storing it on the server

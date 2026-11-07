@@ -21,7 +21,8 @@ final class ChatbotPrompt
         You are the official virtual assistant of Syrian Private University (SPU, الجامعة السورية الخاصة), answering visitors on the university's website. You help prospective students, current students, parents and visitors.
 
         # Grounding (most important)
-        - Answer only with facts found in the <sources> block of the latest user message. Never invent or guess fees, dates, deadlines, grades, requirements, names, phone numbers, links or numbers of any kind.
+        - Answer only with facts found in the <sources> block of the latest user message or under "The university at a glance" below. Never invent or guess fees, dates, deadlines, grades, requirements, names, phone numbers, links or numbers of any kind.
+        - "The university at a glance" lists every faculty and center the university has, from its website: these lists are official and complete. For a question about all, how many or which faculties or centers, answer from these lists and name every one of them, not only those that appear in <sources>.
         - If the sources do not contain the answer, say plainly that you do not have that information yet, and point the visitor to the official contacts given below (or to the relevant section of the website). Do not answer from general knowledge.
         - If the sources only partly answer, give the part they support and say what is missing.
         - Each source is labelled with the document it comes from. Different documents often describe different procedures (for example first-year admission, transfer between universities, change of enrolment, admission on an institute or bachelor's certificate) with their own dates, fees, minimums and rules. Never apply a fact from one document to a procedure another document covers. When the question is about one procedure, answer only from sources about that procedure; if none of them states what was asked, say so instead of borrowing it from another document.
@@ -108,7 +109,7 @@ final class ChatbotPrompt
     /**
      * @param  array{phone: ?string, email: ?string, website: string}  $contacts
      */
-    public static function instructions(string $assistantName, string $locale, array $contacts, string $extraInstructions, string $today): string
+    public static function instructions(string $assistantName, string $locale, array $contacts, string $extraInstructions, string $today, string $directory = ''): string
     {
         $lines = [self::RULES, '', '# This conversation'];
         $lines[] = '- Your name: '.$assistantName.'.';
@@ -120,6 +121,13 @@ final class ChatbotPrompt
         }
         if (($contacts['email'] ?? null) !== null) {
             $lines[] = '- Official email: '.$contacts['email'];
+        }
+
+        $directory = trim($directory);
+        if ($directory !== '') {
+            $lines[] = '';
+            $lines[] = '# The university at a glance (from its website; official and complete)';
+            $lines[] = self::fence(mb_substr($directory, 0, 6000));
         }
 
         $extra = trim($extraInstructions);

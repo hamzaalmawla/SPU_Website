@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\Chatbot;
 
+use App\Contracts\Chatbot\ChatbotDirectoryServiceInterface;
 use App\Contracts\Chatbot\ChatbotFairUseServiceInterface;
 use App\Contracts\Chatbot\ChatbotKnowledgeServiceInterface;
 use App\Contracts\Chatbot\ChatbotServiceInterface;
@@ -59,6 +60,7 @@ final class ChatbotService implements ChatbotServiceInterface
         private readonly SettingsServiceInterface $siteSettings,
         private readonly CacheServiceInterface $cache,
         private readonly ChatbotFairUseServiceInterface $fairUse,
+        private readonly ChatbotDirectoryServiceInterface $directory,
     ) {}
 
     public function widget(string $locale): ChatbotWidgetDTO
@@ -168,7 +170,8 @@ final class ChatbotService implements ChatbotServiceInterface
         $memory = ConversationMemory::open($question->memory, $locale);
         $exchanges = max($memory?->exchanges ?? 0, intdiv(count($history), 2)) + 1;
         // Only a conversation's first question is the same for everyone.
-        $cacheKey = $history === [] && $memory === null && $question->useCache && ! $question->adminTest ? $this->answerCacheKey($settings, $locale, $message, $question->spoken) : null;
+        $directory = $this->directory->forPrompt($locale);
+        $cacheKey = $history === [] && $memory === null && $question->useCache && ! $question->adminTest ? $this->answerCacheKey($settings, $locale, $message, $question->spoken, $directory) : null;
 
         if ($cacheKey !== null) {
             $cached = Cache::get($cacheKey);
@@ -226,6 +229,7 @@ final class ChatbotService implements ChatbotServiceInterface
                     $this->contacts($locale) + ['website' => (string) config('app.url')],
                     $settings->extraInstructions,
                     now()->toFormattedDateString(),
+                    $directory,
                 ),
                 messages: [
                     ...array_map(static fn (array $turn): array => ['role' => $turn['role'], 'content' => ChatbotGuard::redactPersonalData($turn['content'])], $history),
@@ -689,10 +693,12 @@ final class ChatbotService implements ChatbotServiceInterface
         return $sources;
     }
 
-    private function answerCacheKey(ChatbotSettingsDTO $settings, string $locale, string $message, bool $spoken): string
+    private function answerCacheKey(ChatbotSettingsDTO $settings, string $locale, string $message, bool $spoken, string $directory): string
     {
         return 'chatbot.answer.'.sha1(implode('|', [
             $locale,
+            // A faculty or center added or renamed changes the answers that list them.
+            sha1($directory),
             // A spoken answer is a different, shorter answer.
             $spoken ? 'spoken' : 'typed',
             $settings->model,
