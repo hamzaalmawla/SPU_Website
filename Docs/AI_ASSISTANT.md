@@ -81,10 +81,17 @@ mic ─ MediaRecorder (Opus/WebM, AAC/MP4 on Safari), stops itself after ~1.3 s 
     ◀─ { status, text }   the text appears as the visitor's message
     ─ POST /{locale}/assistant/messages (as typed) ─▶ answer + speech signature
     ─ POST /{locale}/assistant/speech {text, signature, segment} ─▶ ChatbotVoiceService::speak
-          SpeechText: Markdown → spoken sentences, cut into segments (first ≤160 chars)
-          gpt-4o-mini-tts, voice from the settings (default cedar), mp3
-    ◀─ audio/mpeg, X-Speech-Segments; the next segment is fetched while one plays
+          SpeechText: Markdown → spoken sentences, cut into segments (first ≤200 chars, then ≤900)
+          gpt-4o-mini-tts, voice from the settings (default cedar), mp3 (24 kHz mono)
+    ◀─ audio/mpeg, X-Speech-Segments; the first two are fetched together, two stay in flight
 ```
+
+- **Latency.** Measured on the host (November 2026): writing a question down
+  takes about 4 s, an answer 12 to 15 s (as typed), and each speech call about
+  10 s whatever its length (2.5 s and 12 s of audio both took ~10 s). Hence few
+  long segments and two requests in flight: the first words play ~10 s after
+  the answer appears and the rest follows without gaps. At most two speech
+  requests per visitor run at once, which keeps the host's few PHP workers free.
 
 - **Hands-free conversation.** The microphone starts a voice conversation: the
   host listens (pink stand light, head tilted, the meter follows the voice),

@@ -54,6 +54,17 @@ final class SpeechTextTest extends TestCase
         $this->assertSame(preg_replace('/\s+/u', ' ', $text), implode(' ', $segments));
     }
 
+    public function test_the_rest_of_a_long_first_sentence_opens_the_next_segment(): void
+    {
+        $text = 'For the Faculty of Pharmacy, the tuition is 14,000 SYP per credit hour for Syrian students, and 250 USD per credit hour for Arab and foreign students. The faculty lists 178 credit hours.';
+        $segments = SpeechText::segments($text, 100, 900);
+
+        $this->assertCount(2, $segments);
+        $this->assertLessThanOrEqual(100, mb_strlen($segments[0]));
+        $this->assertStringEndsWith('The faculty lists 178 credit hours.', $segments[1]);
+        $this->assertSame($text, implode(' ', $segments));
+    }
+
     public function test_the_same_text_is_always_cut_the_same_way(): void
     {
         $text = SpeechText::fromMarkdown('**Fees.** The annual tuition is 4,500,000 SYP. It is paid per semester. Scholarships cover up to 50%.');
