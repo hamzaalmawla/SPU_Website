@@ -90,16 +90,54 @@ limit, source and the conversation memory apply to spoken questions exactly
 as to typed ones; a speech-to-speech model would bypass them.
 
 ```text
-mic ─ MediaRecorder (Opus/WebM, AAC/MP4 on Safari), stops itself after ~1.3 s of silence
-    ─ POST /{locale}/assistant/transcriptions ─▶ ChatbotVoiceService::transcribe
-          gpt-transcribe (languages ar+en, university keywords; fallback gpt-4o-mini-transcribe)
-    ◀─ { status, text }   the text appears as the visitor's message
+mic ─ AudioWorklet → PCM 24 kHz ─ WebSocket ─▶ OpenAI Realtime transcription (gpt-live-transcribe)
+        key: POST /{locale}/assistant/live-session (60 s, transcription-only session)
+        words appear while the visitor speaks; 0.9 s of silence commits the turn,
+        the final text arrives ~0.75 s later
+    └ MediaRecorder (Opus/WebM, AAC/MP4 on Safari) records alongside; if the live text
+      does not come: POST /{locale}/assistant/transcriptions (gpt-transcribe, fallback
+      gpt-4o-mini-transcribe)
+    ◀─ the text appears as the visitor's message
     ─ POST /{locale}/assistant/messages (as typed) ─▶ answer + speech signature
-    ─ POST /{locale}/assistant/speech {text, signature, segment} ─▶ ChatbotVoiceService::speak
+    ─ POST /{locale}/assistant/speech {text, signature, segment, stream} ─▶ ChatbotVoiceService::speak
           SpeechText: Markdown → spoken sentences, cut into growing segments (120, 240, 480, then ≤900 chars)
-          gpt-4o-mini-tts, voice from the settings (default cedar), mp3 (24 kHz mono)
-    ◀─ audio/mpeg, X-Speech-Segments; the first two are fetched together, two stay in flight
+          gpt-4o-mini-tts, voice from the settings (default cedar), stream_format audio:
+          raw PCM sent on chunk by chunk (X-Accel-Buffering: no); mp3 on slow connections
+    ◀─ audio/l16 played while it downloads, every segment on one Web Audio timeline;
+       the first two are fetched together, two stay in flight
 ```
+
+**Measured on the live site (2026-11-07), end of speech to first word:**
+
+| Stage | Before | Now |
+|---|---|---|
+| Silence before the turn ends | 1.3 s | 0.9 s |
+| Question written down | 4.4 s (upload + file transcription) | 0.75 s (live, after the commit) |
+| Answer (server: screen ~1.0–1.4, search ~0.5–1.2, model ~1.5–1.8) | 3–15 s, long written answers | 3–4.4 s, short spoken answers |
+| First sound of the voice | ~3.1–3.5 s (whole mp3) | ~1.0–1.6 s (first PCM chunk) |
+| **Total** | **~12–25 s** | **~6 s** |
+
+Answers carry `Server-Timing` (screen, search, model, total) for these measurements.
+
+- **Live transcription.** The browser streams the microphone straight to
+  OpenAI (the visitor's address is seen by OpenAI, as it is for the
+  recording upload's content); the CSP `connect-src` admits only
+  `wss://api.openai.com`, and only while `chatbot.voice.live_transcription`
+  is on. The key this site mints (`ChatbotVoiceService::liveSession`) opens a
+  transcription-only session (no instructions, no tools, nothing that can
+  answer), expires within 60 s if unused, and follows the same pauses, shares
+  (4 a minute, 20 an hour) and daily cap; each session is counted
+  (`voice_live_sessions`, estimated at a minute of audio). One connection
+  serves a whole voice conversation and audio is sent only while listening.
+  The browser authenticates with the subprotocols `realtime` and
+  `openai-insecure-api-key.<key>` and sends `session.update` once open.
+- **Why not speech-to-speech (Realtime, GPT-Live).** It would answer with
+  its own words: the moderation, scope categories, output guard, sources and
+  conversation notes would be bypassed, GPT-Live is "trained to paraphrase"
+  the facts a backend gives it, Arabic is not among its documented voices,
+  and its guardrails need a long-lived server connection this host's few PHP
+  workers cannot hold. The chained pipeline, streamed at each stage, keeps
+  every rule and is within a few seconds of it.
 
 - **Latency.** Measured on the host (2026-11-07): writing a question down
   takes about 4 s, an answer 5 to 15 s (as typed), and each speech call 3 to
