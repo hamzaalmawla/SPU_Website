@@ -55,6 +55,7 @@ const STATE_GLOW = {
     thinking: new Color('#ffb547'),
     talking: new Color('#6ef2b0'),
     happy: new Color('#7fe6ff'),
+    listening: new Color('#ff7d9c'),
 };
 
 /* Head: an ellipsoid with a softer, narrower jaw. Features sit on its surface. */
@@ -109,6 +110,10 @@ export function createCharacter({ reducedMotion = false } = {}) {
     let nextBlink = 1.5;
     let blinkEnd = 0;
     let nextGlint = 3;
+    // The live audio level (0..1): the visitor's voice while listening, his
+    // own while talking. Stale after a moment, so a silent stretch looks it.
+    let voiceLevel = 0;
+    let voiceLevelAt = -Infinity;
     let headTarget = { x: 0, y: 0 };
     let eyeTarget = { x: 0, y: 0 };
     let container = null;
@@ -150,7 +155,7 @@ export function createCharacter({ reducedMotion = false } = {}) {
     }
 
     function isAnimatedNow(now = performance.now()) {
-        return state === 'thinking' || state === 'talking' || now < activeUntil;
+        return state === 'thinking' || state === 'talking' || state === 'listening' || now < activeUntil;
     }
 
     function schedule() {
@@ -194,6 +199,9 @@ export function createCharacter({ reducedMotion = false } = {}) {
         const motion = reducedMotion ? 0 : 1;
         const thinking = state === 'thinking';
         const talking = state === 'talking';
+        const listening = state === 'listening';
+        const level = performance.now() - voiceLevelAt < 250 ? voiceLevel : 0;
+        const liveVoice = performance.now() - voiceLevelAt < 1500;
         const happy = state === 'happy' && sinceState < 2.2;
         const ease = (from, to, amount) => MathUtils.lerp(from, to, reducedMotion ? 1 : amount);
 
@@ -208,7 +216,11 @@ export function createCharacter({ reducedMotion = false } = {}) {
         // Head follows the pointer; thinking tilts it and looks up.
         parts.head.rotation.y = ease(parts.head.rotation.y, headTarget.y + (thinking ? -0.12 : 0), 0.08);
         parts.head.rotation.x = ease(parts.head.rotation.x, headTarget.x + (thinking ? -0.12 : 0), 0.08);
-        parts.head.rotation.z = ease(parts.head.rotation.z, (thinking ? 0.12 : 0) + Math.sin(time * 1.2) * 0.02 * motion, 0.06);
+        // Listening: the head tilts towards the visitor and nods a little as they speak.
+        parts.head.rotation.z = ease(parts.head.rotation.z, (thinking ? 0.12 : listening ? -0.1 : 0) + Math.sin(time * 1.2) * 0.02 * motion, 0.06);
+        if (listening) {
+            parts.head.rotation.x = ease(parts.head.rotation.x, headTarget.x + 0.06 + level * 0.08 * motion, 0.12);
+        }
 
         // Eyes: pupils follow the pointer (up and aside while thinking).
         const lookX = thinking ? -0.5 : eyeTarget.x;
@@ -230,13 +242,16 @@ export function createCharacter({ reducedMotion = false } = {}) {
         }
 
         // Eyebrows: up when happy or talking, one raised while thinking.
-        const browLift = happy ? 0.035 : talking ? 0.012 + Math.abs(Math.sin(time * 5)) * 0.018 : 0;
+        const browLift = happy ? 0.035 : listening ? 0.022 + level * 0.02 : talking ? 0.012 + (liveVoice ? level * 0.03 : Math.abs(Math.sin(time * 5)) * 0.018) : 0;
         parts.brows[0].position.y = ease(parts.brows[0].position.y, browLift + (thinking ? 0.045 : 0), 0.2);
         parts.brows[1].position.y = ease(parts.brows[1].position.y, browLift - (thinking ? 0.01 : 0), 0.2);
         parts.brows[0].rotation.z = ease(parts.brows[0].rotation.z, thinking ? 0.12 : 0, 0.15);
 
         // Mouth: a smile; open and moving while talking, wider when happy.
-        const openTarget = talking ? 0.25 + Math.abs(Math.sin(time * 13)) * 0.75 * (0.6 + 0.4 * Math.sin(time * 3.1)) : happy ? 0.55 : 0.0;
+        // Talking with real audio, the mouth follows its level (lip-sync);
+        // otherwise it moves on its own.
+        const spoken = liveVoice ? MathUtils.clamp(level * 1.8, 0, 1) : 0.25 + Math.abs(Math.sin(time * 13)) * 0.75 * (0.6 + 0.4 * Math.sin(time * 3.1));
+        const openTarget = talking ? spoken : happy ? 0.55 : 0.0;
         parts.mouthOpen.scale.y = ease(parts.mouthOpen.scale.y, Math.max(0.001, openTarget), 0.4);
         parts.mouthOpen.visible = parts.mouthOpen.scale.y > 0.02;
         parts.smile.scale.x = ease(parts.smile.scale.x, happy ? 1.15 : 1, 0.2);
@@ -260,7 +275,8 @@ export function createCharacter({ reducedMotion = false } = {}) {
 
         // The stand's light takes the state's color.
         glow.lerp(STATE_GLOW[state] ?? STATE_GLOW.idle, reducedMotion ? 1 : 0.08);
-        const pulse = 0.7 + (Math.sin(time * (thinking ? 6 : 2.2)) * 0.5 + 0.5) * 0.6 * (motion || 0.5);
+        // While listening the stand's light rises and falls with the visitor's voice.
+        const pulse = listening ? 0.7 + level * 0.9 : 0.7 + (Math.sin(time * (thinking ? 6 : 2.2)) * 0.5 + 0.5) * 0.6 * (motion || 0.5);
         parts.standRing.material.color.copy(glow);
         parts.standRing.material.opacity = 0.55 + pulse * 0.3;
         parts.standGlow.material.color.copy(glow);
@@ -328,6 +344,10 @@ export function createCharacter({ reducedMotion = false } = {}) {
         wave() {
             waveUntil = (performance.now() - start) / 1000 + 1.5;
             wake(2_600);
+        },
+        setVoiceLevel(next) {
+            voiceLevel = MathUtils.clamp(Number(next) || 0, 0, 1);
+            voiceLevelAt = performance.now();
         },
         lookAt(clientX, clientY) {
             if (!container || reducedMotion) {

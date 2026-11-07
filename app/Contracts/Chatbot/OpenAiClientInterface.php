@@ -4,13 +4,16 @@ declare(strict_types=1);
 
 namespace App\Contracts\Chatbot;
 
+use App\DTOs\Chatbot\ChatbotAudioTranscriptDTO;
 use App\DTOs\Chatbot\ChatbotCompletionDTO;
 use App\DTOs\Chatbot\ChatbotCompletionRequestDTO;
 use App\DTOs\Chatbot\ChatbotEmbeddingResultDTO;
+use App\DTOs\Chatbot\ChatbotSpeechSynthesisRequestDTO;
+use App\DTOs\Chatbot\ChatbotTranscriptionCallDTO;
 use App\Exceptions\ChatbotProviderException;
 
 /**
- * The two OpenAI endpoints the assistant uses, behind bounded timeouts.
+ * The OpenAI endpoints the assistant uses, behind bounded timeouts.
  *
  * @throws ChatbotProviderException on any provider failure
  */
@@ -38,4 +41,14 @@ interface OpenAiClientInterface
      * OpenAI's free moderation check. True when the text is flagged as harmful.
      */
     public function moderate(string $input, string $apiKey): bool;
+
+    /**
+     * Speech to text (POST /audio/transcriptions) for one recording.
+     */
+    public function transcribe(ChatbotTranscriptionCallDTO $call): ChatbotAudioTranscriptDTO;
+
+    /**
+     * Text to speech (POST /audio/speech): the audio file's bytes.
+     */
+    public function speak(ChatbotSpeechSynthesisRequestDTO $request): string;
 }

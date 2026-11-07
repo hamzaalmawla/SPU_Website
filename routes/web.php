@@ -15,6 +15,8 @@ use App\Http\Controllers\Public\BrowserLocaleRedirectController;
 use App\Http\Controllers\Public\CampusLifeController;
 use App\Http\Controllers\Public\CenterController;
 use App\Http\Controllers\Public\ChatbotController;
+use App\Http\Controllers\Public\ChatbotSpeechController;
+use App\Http\Controllers\Public\ChatbotTranscriptionController;
 use App\Http\Controllers\Public\DynamicFormSubmissionController;
 use App\Http\Controllers\Public\EServicesController;
 use App\Http\Controllers\Public\FacultyController;
@@ -87,6 +89,17 @@ Route::post('{locale}/assistant/messages', ChatbotController::class)
     ->where(['locale' => 'ar|en'])
     ->middleware(['locale', 'throttle:chatbot'])
     ->name('public.chatbot.messages');
+
+// The assistant's voice: a recorded question in, its text out; a reply's
+// segment in, its audio out. Same per-visitor rules, own per-IP limits.
+Route::post('{locale}/assistant/transcriptions', ChatbotTranscriptionController::class)
+    ->where(['locale' => 'ar|en'])
+    ->middleware(['locale', 'throttle:chatbot-voice'])
+    ->name('public.chatbot.transcriptions');
+Route::post('{locale}/assistant/speech', ChatbotSpeechController::class)
+    ->where(['locale' => 'ar|en'])
+    ->middleware(['locale', 'throttle:chatbot-voice'])
+    ->name('public.chatbot.speech');
 
 Route::prefix('{locale}')
     ->where(['locale' => 'ar|en'])

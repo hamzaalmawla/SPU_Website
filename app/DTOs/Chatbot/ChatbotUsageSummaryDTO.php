@@ -26,5 +26,10 @@ final readonly class ChatbotUsageSummaryDTO
         public float $cost30DaysUsd,
         public int $tokens30Days,
         public array $days,
+        // Voice today: recordings transcribed (and their minutes), replies read aloud, failed calls.
+        public int $voiceTranscriptionsToday = 0,
+        public int $voiceSpokenAnswersToday = 0,
+        public float $voiceMinutesToday = 0.0,
+        public int $voiceFailuresToday = 0,
     ) {}
 }

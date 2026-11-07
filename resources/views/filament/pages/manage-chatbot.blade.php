@@ -63,6 +63,9 @@
                 <span class="spu-assistant__stat-hint">{{ __('admin_chatbot.stats.questions_hint', ['cached' => $number($usage->cacheHitsToday), 'unanswered' => $number($usage->withoutSourcesToday), 'failures' => $number($usage->failuresToday)]) }}</span>
                 <span class="spu-assistant__stat-hint">{{ __('admin_chatbot.stats.blocked_hint', ['blocked' => $number($usage->blockedToday)]) }}</span>
                 <span class="spu-assistant__stat-hint">{{ __('admin_chatbot.stats.fair_use_hint', ['limited' => $number($usage->rateLimitedToday), 'paused' => $number($usage->pausedToday)]) }}</span>
+                @if ($usage->voiceTranscriptionsToday + $usage->voiceSpokenAnswersToday + $usage->voiceFailuresToday > 0)
+                    <span class="spu-assistant__stat-hint">{{ __('admin_chatbot.stats.voice_hint', ['heard' => $number($usage->voiceTranscriptionsToday), 'minutes' => number_format($usage->voiceMinutesToday, 1), 'spoken' => $number($usage->voiceSpokenAnswersToday), 'failures' => $number($usage->voiceFailuresToday)]) }}</span>
+                @endif
             </div>
             <div class="spu-assistant__stat">
                 <span class="spu-assistant__stat-label">{{ __('admin_chatbot.stats.cost_today') }}</span>

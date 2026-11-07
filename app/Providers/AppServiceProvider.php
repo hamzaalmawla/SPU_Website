@@ -16,11 +16,13 @@ use App\Contracts\Career\StudentListImportServiceInterface;
 use App\Contracts\Center\CenterCatalogServiceInterface;
 use App\Contracts\Center\CenterPageServiceInterface;
 use App\Contracts\Chatbot\ChatbotDocumentCardWriterInterface;
+use App\Contracts\Chatbot\ChatbotFairUseServiceInterface;
 use App\Contracts\Chatbot\ChatbotKnowledgeServiceInterface;
 use App\Contracts\Chatbot\ChatbotScanReaderInterface;
 use App\Contracts\Chatbot\ChatbotServiceInterface;
 use App\Contracts\Chatbot\ChatbotSettingsServiceInterface;
 use App\Contracts\Chatbot\ChatbotUsageServiceInterface;
+use App\Contracts\Chatbot\ChatbotVoiceServiceInterface;
 use App\Contracts\Chatbot\ChatbotWebsiteCrawlerInterface;
 use App\Contracts\Chatbot\OpenAiClientInterface;
 use App\Contracts\Cms\AboutEntityCmsServiceInterface;
@@ -233,11 +235,13 @@ use App\Services\Career\StudentListImportService;
 use App\Services\Center\CenterCatalogService;
 use App\Services\Center\CenterPageService;
 use App\Services\Chatbot\ChatbotDocumentCardWriter;
+use App\Services\Chatbot\ChatbotFairUseService;
 use App\Services\Chatbot\ChatbotKnowledgeService;
 use App\Services\Chatbot\ChatbotScanReader;
 use App\Services\Chatbot\ChatbotService;
 use App\Services\Chatbot\ChatbotSettingsService;
 use App\Services\Chatbot\ChatbotUsageService;
+use App\Services\Chatbot\ChatbotVoiceService;
 use App\Services\Chatbot\ChatbotWebsiteCrawler;
 use App\Services\Chatbot\OpenAiClient;
 use App\Services\Cms\AboutEntityCmsService;
@@ -720,6 +724,16 @@ class AppServiceProvider extends ServiceProvider
             ];
         });
 
+        // Voice: a spoken answer is fetched in several short segments, so
+        // this allows more calls than questions; fair use per visitor and the
+        // site-wide voice cap live in ChatbotVoiceService.
+        RateLimiter::for('chatbot-voice', function (Request $request): array {
+            return [
+                Limit::perMinute(max(1, (int) config('chatbot.voice.limits.per_minute', 90)))->by('chatbot-voice|minute|'.$request->ip()),
+                Limit::perDay(max(1, (int) config('chatbot.voice.limits.per_day', 3000)))->by('chatbot-voice|day|'.$request->ip()),
+            ];
+        });
+
         RateLimiter::for('public-search', function (Request $request): Limit {
             return Limit::perMinute(30)->by('public-search|'.$request->ip());
         });
@@ -759,7 +773,9 @@ class AppServiceProvider extends ServiceProvider
             ChatbotScanReaderInterface::class => ChatbotScanReader::class,
             ChatbotDocumentCardWriterInterface::class => ChatbotDocumentCardWriter::class,
             ChatbotKnowledgeServiceInterface::class => ChatbotKnowledgeService::class,
+            ChatbotFairUseServiceInterface::class => ChatbotFairUseService::class,
             ChatbotServiceInterface::class => ChatbotService::class,
+            ChatbotVoiceServiceInterface::class => ChatbotVoiceService::class,
             SiteStatsRecorderInterface::class => SiteStatsRecorder::class,
             SiteStatsReportInterface::class => SiteStatsReportService::class,
             AdminDashboardServiceInterface::class => AdminDashboardService::class,

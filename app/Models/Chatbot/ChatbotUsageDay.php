@@ -7,8 +7,8 @@ namespace App\Models\Chatbot;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- * Daily counters of the AI assistant: questions, tokens and estimated spend.
- * No question or answer text is stored.
+ * Daily counters of the AI assistant: questions, voice, tokens and estimated
+ * spend. No question or answer text and no audio is stored.
  */
 class ChatbotUsageDay extends Model
 {
@@ -26,6 +26,11 @@ class ChatbotUsageDay extends Model
         'output_tokens',
         'embedding_tokens',
         'cost_micro_usd',
+        'voice_transcriptions',
+        'voice_seconds',
+        'voice_spoken_answers',
+        'voice_characters',
+        'voice_failures',
     ];
 
     protected function casts(): array
@@ -43,6 +48,11 @@ class ChatbotUsageDay extends Model
             'output_tokens' => 'integer',
             'embedding_tokens' => 'integer',
             'cost_micro_usd' => 'integer',
+            'voice_transcriptions' => 'integer',
+            'voice_seconds' => 'integer',
+            'voice_spoken_answers' => 'integer',
+            'voice_characters' => 'integer',
+            'voice_failures' => 'integer',
         ];
     }
 }

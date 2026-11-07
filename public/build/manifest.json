@@ -66,7 +66,7 @@
     ]
   },
   "resources/js/app.js": {
-    "file": "js/app.BCIsxTid.js",
+    "file": "js/app.BI_DYIxC.js",
     "name": "app",
     "src": "resources/js/app.js",
     "isEntry": true,
@@ -78,13 +78,19 @@
     ]
   },
   "resources/js/chatbot/characterScene.js": {
-    "file": "js/characterScene.U6LYwaVn.js",
+    "file": "js/characterScene.CrNh22HQ.js",
     "name": "characterScene",
     "src": "resources/js/chatbot/characterScene.js",
     "isDynamicEntry": true
   },
+  "resources/js/chatbot/chatVoice.js": {
+    "file": "js/chatVoice.BZwY4viE.js",
+    "name": "chatVoice",
+    "src": "resources/js/chatbot/chatVoice.js",
+    "isDynamicEntry": true
+  },
   "resources/js/chatbot/chatbotWidget.js": {
-    "file": "js/chatbotWidget.D0vZrTX2.js",
+    "file": "js/chatbotWidget.KRkVTL59.js",
     "name": "chatbotWidget",
     "src": "resources/js/chatbot/chatbotWidget.js",
     "isDynamicEntry": true,
@@ -92,10 +98,11 @@
       "resources/js/app.js"
     ],
     "dynamicImports": [
+      "resources/js/chatbot/chatVoice.js",
       "resources/js/chatbot/characterScene.js"
     ],
     "css": [
-      "assets/chatbotWidget.DD6uLZfC.css"
+      "assets/chatbotWidget.5Gm26UKm.css"
     ]
   },
   "resources/js/filament/admin.js": {

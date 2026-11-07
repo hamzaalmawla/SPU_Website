@@ -1,11 +1,17 @@
 import '../../css/frontend/chatbot-panel.css';
 import { markdownToText, renderMarkdown } from './chatMarkdown.js';
-import { failureKey, historyFor, loadMessages, revealSteps, sanitizeSources, saveMessages } from './chatState.js';
+import { canRecord, failureKey, historyFor, loadMemory, loadMessages, revealSteps, sanitizeSources, saveMemory, saveMessages } from './chatState.js';
 
 /**
  * The public AI assistant: launcher, teaser bubble, chat panel and the 3D
  * host. Plain DOM code (no Alpine) so the whole widget is one lazily loaded
  * chunk, and the Three.js scene is a second one loaded when the browser is idle.
+ *
+ * Voice (chatVoice.js, a third chunk loaded on the first voice control): the
+ * microphone starts a voice conversation. The host listens, the question is
+ * written down and sent like a typed one, the answer is read aloud, and the
+ * host listens again, until the visitor stops, types, closes the panel or
+ * says nothing. Any answer can also be played with its Listen button.
  */
 
 const REQUEST_TIMEOUT_MS = 60_000;
@@ -17,6 +23,8 @@ const MOBILE_QUERY = '(max-width: 640px), (max-height: 560px)';
 const ICON_SOURCES = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 5a2 2 0 0 1 2-2h9l5 5v11a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M8 12h8M8 16h5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
 const ICON_LINK = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
 const ICON_DOCUMENT = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6 3h8l4 4v14H6z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>';
+const ICON_LISTEN = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 9v6h4l5 4V5L8 9z" fill="currentColor"/><path d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
+const ICON_STOP = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="6" y="6" width="12" height="12" rx="2" fill="currentColor"/></svg>';
 const ICON_COPY = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="8" y="8" width="12" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2" fill="none" stroke="currentColor" stroke-width="2"/></svg>';
 
 const instances = new WeakMap();
@@ -72,6 +80,29 @@ class ChatbotWidget {
 
         this.storage = safeSessionStorage();
         this.messages = loadMessages(this.storage, this.locale);
+        this.memory = loadMemory(this.storage, this.locale);
+
+        this.voiceConfig = parseJson(root.dataset.voice, null);
+        this.micButton = root.querySelector('[data-chatbot-mic]');
+        this.voiceBar = root.querySelector('[data-chatbot-voice]');
+        this.voiceStatus = root.querySelector('[data-chatbot-voice-status]');
+        this.voiceTime = root.querySelector('[data-chatbot-voice-time]');
+        this.voiceMeter = root.querySelector('[data-chatbot-voice-meter]');
+        this.voiceStop = root.querySelector('[data-chatbot-voice-stop]');
+        this.voiceStopLabel = root.querySelector('[data-chatbot-voice-stop-label]');
+        this.voiceCancel = root.querySelector('[data-chatbot-voice-cancel]');
+        this.canTalk = Boolean(this.voiceConfig?.transcribe && this.micButton && this.voiceBar && canRecord(window));
+        this.canListen = Boolean(this.voiceConfig && (this.voiceConfig.server || 'speechSynthesis' in window));
+        this.voiceMode = 'off';
+        this.voiceSession = false;
+        this.voiceTurns = 0;
+        this.recorder = null;
+        this.player = null;
+        this.audioContext = null;
+        this.voiceModule = null;
+        this.playingButton = null;
+        this.playingMessage = null;
+        this.announcer = root.querySelector('[data-chatbot-voice-announcer]');
         this.busy = false;
         this.host = null;
         this.hostLoading = null;
@@ -81,6 +112,9 @@ class ChatbotWidget {
 
     start() {
         this.root.hidden = false;
+        if (this.canTalk) {
+            this.micButton.hidden = false;
+        }
         this.renderLog();
         this.bind();
         this.awaitFirstInteraction();
@@ -125,11 +159,33 @@ class ChatbotWidget {
             this.autosize();
             this.syncDirection();
             this.syncCounter();
+            // Typing takes over from talking.
+            if (this.voiceSession && this.input.value.trim() !== '') {
+                this.endVoice();
+            }
         });
+
+        if (this.canTalk) {
+            this.micButton.addEventListener('click', () => this.onMicPress());
+            this.voiceStop.addEventListener('click', () => this.onVoiceStop());
+            this.voiceCancel.addEventListener('click', () => this.endVoice({ announce: true }));
+            document.addEventListener('visibilitychange', () => {
+                if (document.hidden && this.voiceMode === 'listening') {
+                    this.endVoice();
+                }
+            });
+        }
 
         this.panel.addEventListener('keydown', (event) => {
             if (event.key === 'Escape') {
                 event.stopPropagation();
+                // Escape first stops talking or reading, then closes.
+                if (this.voiceMode !== 'off' || this.playingMessage) {
+                    this.endVoice({ announce: true });
+                    this.micButton?.focus({ preventScroll: true });
+
+                    return;
+                }
                 this.close();
             } else if (event.key === 'Tab' && this.mobile.matches) {
                 this.trapFocus(event);
@@ -181,6 +237,7 @@ class ChatbotWidget {
             return;
         }
 
+        this.endVoice();
         this.panel.hidden = true;
         this.root.classList.remove('is-open');
         this.launcher.setAttribute('aria-expanded', 'false');
@@ -214,8 +271,11 @@ class ChatbotWidget {
     }
 
     reset() {
+        this.endVoice();
         this.messages = [];
+        this.memory = null;
         saveMessages(this.storage, this.locale, this.messages);
+        saveMemory(this.storage, this.locale, null);
         this.renderLog();
         this.host?.setState('happy');
         this.input.value = '';
@@ -255,10 +315,17 @@ class ChatbotWidget {
 
     /* ── Conversation ──────────────────────────────────────────────────── */
 
-    async send(rawText) {
+    /**
+     * Ask a question. `spoken` when it came from the microphone: the answer
+     * is then read aloud and, in a voice conversation, the host listens again.
+     */
+    async send(rawText, { spoken = false } = {}) {
         const text = String(rawText ?? '').trim();
         if (this.busy || text === '') {
             return;
+        }
+        if (!spoken) {
+            this.endVoice();
         }
         if (text.length > this.maxLength) {
             this.appendNotice(this.text.tooLong);
@@ -289,13 +356,34 @@ class ChatbotWidget {
             status: reply.status,
             sources: reply.status === 'ok' ? reply.sources : [],
             ...(reply.signature ? { signature: reply.signature } : {}),
+            ...(reply.speech ? { speech: reply.speech } : {}),
         };
         this.messages.push(message);
         saveMessages(this.storage, this.locale, this.messages);
+        // The notes on the conversation so far; a reply without them keeps the last ones.
+        if (reply.memory) {
+            this.memory = reply.memory;
+            saveMemory(this.storage, this.locale, this.memory);
+        }
 
         const bubble = this.renderMessage(message, { reveal: reply.status === 'ok' });
         this.log.append(bubble.element);
         this.scrollToEnd(true);
+        this.setBusy(false);
+
+        if (spoken && this.voiceSession) {
+            // The answer is read while it appears; the host listens again after it.
+            const reading = this.speak(message);
+            await bubble.revealed;
+            await reading;
+            if (this.voiceSession && (reply.status === 'ok' || reply.status === 'refused')) {
+                this.listen();
+            } else {
+                this.endVoice();
+            }
+
+            return;
+        }
 
         if (reply.status === 'ok') {
             this.host?.setState('talking');
@@ -305,7 +393,6 @@ class ChatbotWidget {
             this.host?.setState('idle');
         }
 
-        this.setBusy(false);
         if (!this.panel.hidden && !window.matchMedia('(pointer: coarse)').matches) {
             this.input.focus({ preventScroll: true });
         }
@@ -324,9 +411,9 @@ class ChatbotWidget {
                     'Content-Type': 'application/json',
                     Accept: 'application/json',
                     'X-Requested-With': 'XMLHttpRequest',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '',
+                    'X-CSRF-TOKEN': csrfToken(),
                 },
-                body: JSON.stringify({ message, history }),
+                body: JSON.stringify({ message, history, ...(this.memory ? { memory: this.memory } : {}) }),
             });
 
             if (!response.ok) {
@@ -343,6 +430,8 @@ class ChatbotWidget {
                 answer: data.answer,
                 sources: Array.isArray(data.sources) ? data.sources : [],
                 signature: typeof data.signature === 'string' ? data.signature : null,
+                memory: typeof data.memory === 'string' && data.memory !== '' ? data.memory : null,
+                speech: typeof data.speech === 'string' ? data.speech : null,
             };
         } catch {
             return { status: 'error', answer: this.failureText('offline'), sources: [] };
@@ -369,11 +458,389 @@ class ChatbotWidget {
     setBusy(busy) {
         this.busy = busy;
         this.sendButton.disabled = busy;
+        if (this.micButton) {
+            this.micButton.disabled = busy && this.voiceMode === 'off';
+        }
         this.form.classList.toggle('is-busy', busy);
         this.log.setAttribute('aria-busy', busy ? 'true' : 'false');
         if (busy) {
             this.host?.setState('thinking');
         }
+    }
+
+    /* ── Voice ─────────────────────────────────────────────────────────── */
+
+    /**
+     * The microphone: starts a voice conversation; while listening, sends
+     * what was said; while reading aloud, interrupts and listens; while
+     * working, cancels.
+     */
+    onMicPress() {
+        switch (this.voiceMode) {
+            case 'listening':
+                this.recorder?.finish();
+                break;
+            case 'speaking':
+                // The conversation goes on: the reading ends and he listens.
+                this.player?.stop();
+                break;
+            case 'transcribing':
+            case 'thinking':
+                this.endVoice({ announce: true });
+                break;
+            default:
+                if (this.busy) {
+                    return;
+                }
+                this.voiceSession = true;
+                this.voiceTurns = 0;
+                this.unlockAudio();
+                this.listen();
+        }
+    }
+
+    onVoiceStop() {
+        if (this.voiceMode === 'listening') {
+            this.recorder?.finish();
+        } else {
+            this.endVoice({ announce: true });
+        }
+    }
+
+    /**
+     * Audio may only start from a tap; the context made here keeps playing
+     * after the network round trips that follow. On engines that need it, a
+     * silent utterance does the same for the browser's own voice.
+     */
+    unlockAudio() {
+        const Context = window.AudioContext || window.webkitAudioContext;
+        if (!Context) {
+            return null;
+        }
+        try {
+            this.audioContext ??= new Context();
+            if (this.audioContext.state === 'suspended') {
+                this.audioContext.resume().catch(() => {});
+            }
+        } catch {
+            this.audioContext = null;
+        }
+        if (!this.voiceConfig?.server && 'speechSynthesis' in window && !this.deviceVoiceUnlocked) {
+            this.deviceVoiceUnlocked = true;
+            const silence = new SpeechSynthesisUtterance(' ');
+            silence.volume = 0;
+            window.speechSynthesis.speak(silence);
+        }
+
+        return this.audioContext;
+    }
+
+    loadVoice() {
+        this.voiceModule ??= import('./chatVoice.js');
+
+        return this.voiceModule;
+    }
+
+    async listen() {
+        if (this.recorder) {
+            return;
+        }
+        if (!this.voiceSession || this.busy || this.panel.hidden || !this.audioContext) {
+            this.endVoice();
+
+            return;
+        }
+
+        let VoiceRecorder;
+        try {
+            ({ VoiceRecorder } = await this.loadVoice());
+        } catch {
+            this.endVoice();
+            this.appendNotice(this.text.micUnavailable);
+
+            return;
+        }
+        if (!this.voiceSession) {
+            return;
+        }
+
+        this.player?.stop();
+        this.setVoiceMode('listening');
+        const recorder = new VoiceRecorder({
+            audioContext: this.audioContext,
+            maxSeconds: Number(this.voiceConfig.maxSeconds) || 60,
+            // After an answer the visitor may take a moment to think.
+            noSpeechMs: this.voiceTurns ? 9000 : 7000,
+            onLevel: (level) => this.showLevel(level),
+            onSpeech: () => this.setVoiceStatus(this.text.listening),
+        });
+        this.recorder = recorder;
+        this.startVoiceClock();
+
+        let recording;
+        try {
+            recording = await recorder.record();
+        } catch (error) {
+            this.stopVoiceClock();
+            if (this.recorder === recorder) {
+                this.recorder = null;
+                this.endVoice();
+                this.appendNotice(this.microphoneError(error));
+            }
+
+            return;
+        }
+        this.stopVoiceClock();
+        if (this.recorder !== recorder) {
+            return;
+        }
+        this.recorder = null;
+        if (!this.voiceSession) {
+            return;
+        }
+
+        if (!recording) {
+            const firstTurn = this.voiceTurns === 0;
+            this.endVoice({ announce: !firstTurn });
+            if (firstTurn) {
+                this.appendNotice(this.text.noSpeech);
+            }
+
+            return;
+        }
+
+        this.setVoiceMode('transcribing');
+        const transcript = await this.transcribe(recording);
+        if (!this.voiceSession) {
+            return;
+        }
+        if (transcript.status !== 'ok') {
+            this.endVoice();
+            this.appendNotice(transcript.message || this.failureText('offline'));
+
+            return;
+        }
+
+        this.voiceTurns++;
+        this.setVoiceMode('thinking');
+        await this.send(transcript.text, { spoken: true });
+    }
+
+    async transcribe(recording) {
+        const form = new FormData();
+        const extension = recording.mimeType.includes('mp4') ? 'mp4' : recording.mimeType.includes('ogg') ? 'ogg' : 'webm';
+        form.append('audio', recording.blob, `question.${extension}`);
+        form.append('duration', String(recording.durationMs));
+
+        const controller = new AbortController();
+        this.transcribing = controller;
+        const timer = window.setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+        try {
+            const response = await fetch(this.voiceConfig.transcribe, {
+                method: 'POST',
+                credentials: 'same-origin',
+                signal: controller.signal,
+                headers: {
+                    Accept: 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': csrfToken(),
+                },
+                body: form,
+            });
+            if (!response.ok) {
+                return { status: 'error', message: this.failureText(failureKey(response.status)) };
+            }
+            const data = await response.json();
+
+            return {
+                status: typeof data?.status === 'string' ? data.status : 'error',
+                text: typeof data?.text === 'string' ? data.text : '',
+                message: typeof data?.message === 'string' ? data.message : '',
+            };
+        } catch {
+            return { status: 'error', message: controller.signal.aborted && !this.voiceSession ? '' : this.failureText('offline') };
+        } finally {
+            window.clearTimeout(timer);
+            this.transcribing = null;
+        }
+    }
+
+    /**
+     * Read one message aloud (the server's voice, else the browser's).
+     * Resolves when it has been read or was stopped.
+     */
+    async speak(message, button = null) {
+        if (!this.canListen) {
+            return;
+        }
+
+        let SpeechPlayer;
+        try {
+            ({ SpeechPlayer } = await this.loadVoice());
+        } catch {
+            return;
+        }
+
+        const context = this.audioContext ?? this.unlockAudio();
+        this.player ??= new SpeechPlayer({
+            audioContext: context,
+            endpoint: this.voiceConfig.speech,
+            serverSpeech: this.voiceConfig.server && context !== null,
+            csrfToken: csrfToken(),
+            locale: this.locale,
+            onLevel: (level) => {
+                this.host?.setVoiceLevel?.(level);
+                if (this.voiceMode === 'speaking') {
+                    this.showLevel(level);
+                }
+            },
+        });
+
+        this.playingMessage = message;
+        this.setPlaying(button);
+        if (this.voiceSession) {
+            this.setVoiceMode('speaking');
+        }
+        this.host?.setState('talking');
+
+        await this.player.play({ text: message.content, signature: message.speech ?? null, plainText: markdownToText(message.content) });
+
+        if (this.playingMessage === message) {
+            this.playingMessage = null;
+            this.setPlaying(null);
+        }
+        this.host?.setVoiceLevel?.(0);
+    }
+
+    /** End the voice conversation and anything it is doing. */
+    endVoice({ announce = false } = {}) {
+        const wasOn = this.voiceSession || this.voiceMode !== 'off';
+        this.voiceSession = false;
+        this.voiceTurns = 0;
+        this.recorder?.cancel();
+        this.recorder = null;
+        this.transcribing?.abort();
+        this.player?.stop();
+        this.playingMessage = null;
+        this.setPlaying(null);
+        this.stopVoiceClock();
+        if (this.voiceMode !== 'off') {
+            this.setVoiceMode('off');
+        }
+        if (wasOn && announce) {
+            this.announce(this.text.voiceEnded);
+        }
+    }
+
+    setVoiceMode(mode) {
+        this.voiceMode = mode;
+        if (!this.voiceBar) {
+            return;
+        }
+
+        const on = mode !== 'off';
+        this.voiceBar.hidden = !on;
+        this.form.classList.toggle('is-voice', on);
+        for (const name of ['listening', 'transcribing', 'thinking', 'speaking']) {
+            this.voiceBar.classList.toggle(`is-${name}`, mode === name);
+        }
+        this.micButton.setAttribute('aria-pressed', on ? 'true' : 'false');
+        const label = mode === 'listening' ? this.text.stopListening : on ? this.text.cancelVoice : this.text.speak;
+        this.micButton.setAttribute('aria-label', label);
+        this.micButton.title = label;
+        this.micButton.disabled = false;
+
+        this.voiceStop.hidden = mode !== 'listening' && mode !== 'speaking';
+        this.voiceStopLabel.textContent = mode === 'speaking' ? this.text.stopAudio : this.text.stopListening;
+        this.voiceStop.title = this.voiceStopLabel.textContent;
+        this.voiceTime.hidden = mode !== 'listening';
+        this.showLevel(0);
+
+        const status = { listening: this.text.listening, transcribing: this.text.transcribing, thinking: this.text.thinking, speaking: this.text.speaking }[mode] ?? '';
+        this.setVoiceStatus(status);
+
+        if (mode === 'listening') {
+            this.host?.setState('listening');
+        } else if (mode === 'transcribing' || mode === 'thinking') {
+            this.host?.setState('thinking');
+        } else if (mode === 'off') {
+            this.host?.setVoiceLevel?.(0);
+            if (!this.busy) {
+                this.host?.setState('idle');
+            }
+        }
+    }
+
+    setVoiceStatus(text) {
+        if (this.voiceStatus && this.voiceStatus.textContent !== text) {
+            this.voiceStatus.textContent = text ?? '';
+        }
+    }
+
+    /** A message for screen readers only (the voice bar may be hidden). */
+    announce(text) {
+        if (!this.announcer || !text) {
+            return;
+        }
+        this.announcer.textContent = text;
+        window.setTimeout(() => {
+            if (this.announcer.textContent === text) {
+                this.announcer.textContent = '';
+            }
+        }, 4000);
+    }
+
+    showLevel(level) {
+        this.voiceMeter?.style.setProperty('--level', this.reducedMotion.matches ? '0.35' : String(Math.round(level * 100) / 100));
+        if (this.voiceMode === 'listening') {
+            this.host?.setVoiceLevel?.(level);
+        }
+    }
+
+    startVoiceClock() {
+        this.stopVoiceClock();
+        const started = performance.now();
+        const paint = () => {
+            const seconds = Math.floor((performance.now() - started) / 1000);
+            this.voiceTime.textContent = `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
+        };
+        paint();
+        this.voiceClock = window.setInterval(paint, 500);
+    }
+
+    stopVoiceClock() {
+        window.clearInterval(this.voiceClock);
+        this.voiceClock = null;
+    }
+
+    setPlaying(button) {
+        if (this.playingButton && this.playingButton !== button) {
+            this.paintListenButton(this.playingButton, false);
+        }
+        this.playingButton = button;
+        if (button) {
+            this.paintListenButton(button, true);
+        }
+    }
+
+    paintListenButton(button, playing) {
+        button.classList.toggle('is-playing', playing);
+        button.setAttribute('aria-pressed', playing ? 'true' : 'false');
+        button.innerHTML = playing ? ICON_STOP : ICON_LISTEN;
+        const label = document.createElement('span');
+        label.textContent = playing ? this.text.stopAudio : this.text.listen;
+        button.append(label);
+    }
+
+    microphoneError(error) {
+        if (error?.name === 'NotAllowedError' || error?.name === 'SecurityError') {
+            return this.text.micDenied;
+        }
+        if (error?.name === 'NotFoundError' || error?.name === 'OverconstrainedError') {
+            return this.text.micMissing;
+        }
+
+        return this.text.micUnavailable;
     }
 
     /* ── Rendering ─────────────────────────────────────────────────────── */
@@ -436,17 +903,18 @@ class ChatbotWidget {
         body.className = 'spu-chatbot__md';
         bubble.append(body);
 
+        const result = { element, revealed: Promise.resolve(), listenButton: null };
         const finish = () => {
             body.replaceChildren(renderMarkdown(message.content));
             if (!welcome) {
-                this.appendFooter(bubble, message);
+                this.appendFooter(bubble, message, result);
             }
         };
 
         if (!reveal || this.reducedMotion.matches) {
             finish();
 
-            return { element, revealed: Promise.resolve() };
+            return result;
         }
 
         // Screen readers wait for aria-busy to clear and read the answer once.
@@ -470,11 +938,12 @@ class ChatbotWidget {
             };
             tick();
         });
+        result.revealed = revealed;
 
-        return { element, revealed };
+        return result;
     }
 
-    appendFooter(bubble, message) {
+    appendFooter(bubble, message, result = null) {
         const footer = document.createElement('div');
         footer.className = 'spu-chatbot__meta';
 
@@ -525,6 +994,37 @@ class ChatbotWidget {
 
         const actions = document.createElement('div');
         actions.className = 'spu-chatbot__actions';
+
+        if (this.canListen) {
+            const listen = document.createElement('button');
+            listen.type = 'button';
+            listen.className = 'spu-chatbot__copy spu-chatbot__listen';
+            listen.setAttribute('aria-pressed', 'false');
+            this.paintListenButton(listen, false);
+            listen.addEventListener('click', () => {
+                if (this.playingMessage === message) {
+                    this.endVoice();
+
+                    return;
+                }
+                this.endVoice();
+                this.unlockAudio();
+                this.speak(message, listen).then(() => {
+                    if (!this.playingMessage) {
+                        this.host?.setState('happy');
+                    }
+                });
+            });
+            actions.append(listen);
+            if (result) {
+                result.listenButton = listen;
+            }
+            // The answer may already be playing while it is revealed.
+            if (this.playingMessage === message) {
+                this.setPlaying(listen);
+            }
+        }
+
         const copy = document.createElement('button');
         copy.type = 'button';
         copy.className = 'spu-chatbot__copy';
@@ -670,6 +1170,10 @@ class ChatbotWidget {
 
 function storageKeyPrefix(locale) {
     return `spu-assistant:${locale}`;
+}
+
+function csrfToken() {
+    return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '';
 }
 
 function parseJson(value, fallback) {

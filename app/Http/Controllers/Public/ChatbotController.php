@@ -31,6 +31,8 @@ final class ChatbotController extends Controller
                     $reply->sources,
                 ),
                 'signature' => $reply->signature,
+                'memory' => $reply->memory,
+                'speech' => $reply->speechSignature,
             ])
             ->header('Cache-Control', 'no-store, private')
             ->header('X-Robots-Tag', 'noindex, nofollow');

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\Chatbot;
 
+use App\Contracts\Chatbot\ChatbotFairUseServiceInterface;
 use App\Contracts\Chatbot\ChatbotKnowledgeServiceInterface;
 use App\Contracts\Chatbot\ChatbotServiceInterface;
 use App\Contracts\Chatbot\ChatbotSettingsServiceInterface;
@@ -13,6 +14,7 @@ use App\Contracts\Settings\SettingsServiceInterface;
 use App\Contracts\Shared\CacheServiceInterface;
 use App\DTOs\Chatbot\ChatbotCompletionDTO;
 use App\DTOs\Chatbot\ChatbotCompletionRequestDTO;
+use App\DTOs\Chatbot\ChatbotConversationMemoryDTO;
 use App\DTOs\Chatbot\ChatbotPassageDTO;
 use App\DTOs\Chatbot\ChatbotQuestionDTO;
 use App\DTOs\Chatbot\ChatbotReplyDTO;
@@ -22,12 +24,13 @@ use App\DTOs\Chatbot\ChatbotWidgetDTO;
 use App\Exceptions\ChatbotProviderException;
 use App\Support\Chatbot\ChatbotGuard;
 use App\Support\Chatbot\ChatbotPrompt;
+use App\Support\Chatbot\ConversationMemory;
 use App\Support\Chatbot\ConversationSigner;
 use App\Support\Chatbot\SearchRewrite;
+use App\Support\Chatbot\VoiceModels;
 use App\Support\SearchTextNormalizer;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\RateLimiter;
 use Throwable;
 
 /**
@@ -36,6 +39,12 @@ use Throwable;
  * One question costs one embedding call (cached per question text) and one
  * Responses call. An identical first question is answered from cache until
  * the knowledge base or the settings change.
+ *
+ * A conversation is remembered without storing it: the last few signed
+ * question-and-answer pairs come back verbatim, and the model's own notes on
+ * everything before them come back sealed (ConversationMemory). Both inform
+ * the search rewrite, so a follow-up such as "and the fees?" is searched as
+ * the question it stands for.
  *
  * Logs carry the failure kind and HTTP status only, never the question, the
  * answer or the key.
@@ -49,6 +58,7 @@ final class ChatbotService implements ChatbotServiceInterface
         private readonly OpenAiClientInterface $openAi,
         private readonly SettingsServiceInterface $siteSettings,
         private readonly CacheServiceInterface $cache,
+        private readonly ChatbotFairUseServiceInterface $fairUse,
     ) {}
 
     public function widget(string $locale): ChatbotWidgetDTO
@@ -67,8 +77,11 @@ final class ChatbotService implements ChatbotServiceInterface
                 'suggestions' => $locale === 'ar' ? $settings->suggestionsAr : $settings->suggestionsEn,
                 'phone' => $contacts['phone'],
                 'email' => $contacts['email'],
+                'voice' => (bool) config('chatbot.voice.enabled', true) && $settings->voiceEnabled,
+                'serverSpeech' => VoiceModels::speech() !== null,
             ];
         }, 3600);
+        $voice = (bool) ($payload['voice'] ?? false) && VoiceModels::transcription() !== [];
 
         return new ChatbotWidgetDTO(
             enabled: (bool) ($payload['enabled'] ?? false),
@@ -80,12 +93,36 @@ final class ChatbotService implements ChatbotServiceInterface
             maxMessageLength: (int) config('chatbot.conversation.max_message_characters', 1000),
             contactPhone: is_string($payload['phone'] ?? null) ? $payload['phone'] : null,
             contactEmail: is_string($payload['email'] ?? null) ? $payload['email'] : null,
+            voiceEnabled: $voice,
+            transcriptionEndpoint: $voice ? route('public.chatbot.transcriptions', ['locale' => $locale], false) : null,
+            speechEndpoint: $voice ? route('public.chatbot.speech', ['locale' => $locale], false) : null,
+            serverSpeech: $voice && (bool) ($payload['serverSpeech'] ?? false),
+            maxRecordingSeconds: max(5, (int) config('chatbot.voice.transcription.max_seconds', 60)),
         );
     }
 
     public function ask(ChatbotQuestionDTO $question): ChatbotReplyDTO
     {
         $locale = $question->locale === 'en' ? 'en' : 'ar';
+        $reply = $this->answer($question, $locale);
+
+        // Every reply the visitor sees may be read aloud, and only those.
+        return new ChatbotReplyDTO(
+            $reply->status,
+            $reply->answer,
+            $reply->sources,
+            $reply->cached,
+            $reply->signature,
+            $reply->reason,
+            $reply->passages,
+            $reply->searchHint,
+            $reply->memory,
+            ConversationSigner::signSpeech($locale, $reply->answer),
+        );
+    }
+
+    private function answer(ChatbotQuestionDTO $question, string $locale): ChatbotReplyDTO
+    {
         $settings = $this->settings->get();
         $apiKey = $this->settings->apiKey();
 
@@ -95,13 +132,13 @@ final class ChatbotService implements ChatbotServiceInterface
 
         // A visitor or address that kept asking for things the assistant does
         // not do is paused before anything else runs, so it costs nothing.
-        if (! $question->adminTest && $this->isPaused($question)) {
+        if (! $question->adminTest && $this->fairUse->isPaused($question->visitorKey, $question->clientKey)) {
             return $this->notice(ChatbotReplyDTO::STATUS_REFUSED, 'blocked', $locale, false);
         }
 
         // Fair use: each visitor gets a share per minute, hour and day.
         if (! $question->adminTest) {
-            $wait = $this->fairUseWait($question, $this->settings->get());
+            $wait = $this->fairUseWait($question, $settings);
             if ($wait !== null) {
                 $this->usage->recordRateLimited();
                 $reply = $this->notice(ChatbotReplyDTO::STATUS_LIMITED, 'limited', $locale, false);
@@ -128,7 +165,10 @@ final class ChatbotService implements ChatbotServiceInterface
         }
 
         $history = $this->history($question->history, $locale);
-        $cacheKey = $history === [] && $question->useCache && ! $question->adminTest ? $this->answerCacheKey($settings, $locale, $message) : null;
+        $memory = ConversationMemory::open($question->memory, $locale);
+        $exchanges = max($memory?->exchanges ?? 0, intdiv(count($history), 2)) + 1;
+        // Only a conversation's first question is the same for everyone.
+        $cacheKey = $history === [] && $memory === null && $question->useCache && ! $question->adminTest ? $this->answerCacheKey($settings, $locale, $message) : null;
 
         if ($cacheKey !== null) {
             $cached = Cache::get($cacheKey);
@@ -141,6 +181,7 @@ final class ChatbotService implements ChatbotServiceInterface
                     $this->sourcesFromArray((array) ($cached['sources'] ?? [])),
                     true,
                     ConversationSigner::sign($locale, $message, $cached['answer']),
+                    memory: ConversationMemory::seal($locale, is_string($cached['memory'] ?? null) ? $cached['memory'] : '', $exchanges),
                 );
             }
         }
@@ -157,7 +198,17 @@ final class ChatbotService implements ChatbotServiceInterface
             }
 
             $searchQuery = $this->retrievalQuery($outgoing, $history);
-            $searchHint = $this->searchHint($searchQuery, $apiKey, $settings->model);
+            $searchHint = $this->searchHint(
+                SearchRewrite::input(
+                    $outgoing,
+                    array_map(static fn (array $turn): array => ['role' => $turn['role'], 'content' => ChatbotGuard::redactPersonalData($turn['content'])], array_slice($history, -4)),
+                    $memory?->notes ?? '',
+                    (int) config('chatbot.conversation.rewrite_context_characters', 400),
+                ),
+                $outgoing,
+                $apiKey,
+                $settings->model,
+            );
             $retrieval = $this->knowledge->retrieve($searchQuery, $apiKey, $locale, $searchHint);
             $embeddingTokens = $retrieval->embeddingTokens;
 
@@ -176,7 +227,7 @@ final class ChatbotService implements ChatbotServiceInterface
                 ),
                 messages: [
                     ...array_map(static fn (array $turn): array => ['role' => $turn['role'], 'content' => ChatbotGuard::redactPersonalData($turn['content'])], $history),
-                    ['role' => 'user', 'content' => ChatbotPrompt::questionTurn($outgoing, $retrieval->passages, (int) config('chatbot.retrieval.max_passage_characters', 1400))],
+                    ['role' => 'user', 'content' => ChatbotPrompt::questionTurn($outgoing, $retrieval->passages, (int) config('chatbot.retrieval.max_passage_characters', 1400), $memory)],
                 ],
                 maxOutputTokens: (int) config('chatbot.conversation.max_output_tokens', 1200),
                 reasoningEffort: $this->reasoningEffort($settings->model),
@@ -231,11 +282,13 @@ final class ChatbotService implements ChatbotServiceInterface
 
         $answer = ChatbotGuard::restrictLinks($reply['answer'], $this->linkHosts());
         $sources = $reply['category'] === 'university' ? $this->sources($retrieval->passages) : [];
+        $notes = $this->nextNotes($reply['memory'], $memory);
 
         if ($cacheKey !== null && ! $completion->truncated) {
             Cache::put($cacheKey, [
                 'answer' => $answer,
                 'sources' => array_map(static fn (ChatbotSourceDTO $source): array => ['title' => $source->title, 'pages' => $source->pages, 'url' => $source->url], $sources),
+                'memory' => $notes,
             ], (int) config('chatbot.conversation.answer_cache_minutes', 720) * 60);
         }
 
@@ -247,22 +300,41 @@ final class ChatbotService implements ChatbotServiceInterface
             ConversationSigner::sign($locale, $message, $answer),
             passages: $question->adminTest ? $retrieval->passages : [],
             searchHint: $question->adminTest ? $searchHint : null,
+            memory: ConversationMemory::seal($locale, $notes, $exchanges),
         );
     }
 
     /**
-     * The question in the documents' wording (SearchRewrite), from a small
-     * model call; cached a week per question. Null when switched off or when
-     * the call fails: retrieval then uses the question alone.
+     * The notes to carry forward: the model's update, unless it is unusable
+     * (empty while there were notes, or carrying code or instruction text),
+     * in which case the previous notes stay.
      */
-    private function searchHint(string $query, string $apiKey, string $mainModel): ?string
+    private function nextNotes(string $update, ?ChatbotConversationMemoryDTO $memory): string
     {
-        if (! (bool) config('chatbot.retrieval.rewrite', true) || mb_strlen($query) < 3) {
+        $previous = $memory?->notes ?? '';
+        $update = ConversationMemory::clean($update);
+
+        if ($update === '' || ChatbotGuard::inspectAnswer($update) !== null) {
+            return $previous;
+        }
+
+        return $update;
+    }
+
+    /**
+     * The question in the documents' wording (SearchRewrite), from a small
+     * model call that also sees the conversation, so follow-ups come out as
+     * whole searches; cached a week per input. Null when switched off or
+     * when the call fails: retrieval then uses the question alone.
+     */
+    private function searchHint(string $input, string $message, string $apiKey, string $mainModel): ?string
+    {
+        if (! (bool) config('chatbot.retrieval.rewrite', true) || mb_strlen($message) < 3) {
             return null;
         }
 
         $model = trim((string) config('chatbot.retrieval.rewrite_model', '')) ?: $mainModel;
-        $key = 'chatbot.search-hint.'.sha1($model.'|'.SearchTextNormalizer::normalize($query));
+        $key = 'chatbot.search-hint.'.sha1($model.'|'.SearchTextNormalizer::normalize($input));
         $cached = Cache::get($key);
         if (is_string($cached)) {
             return $cached !== '' ? $cached : null;
@@ -273,7 +345,7 @@ final class ChatbotService implements ChatbotServiceInterface
                 apiKey: $apiKey,
                 model: $model,
                 instructions: SearchRewrite::INSTRUCTIONS,
-                messages: [['role' => 'user', 'content' => $query]],
+                messages: [['role' => 'user', 'content' => $input]],
                 maxOutputTokens: 300,
                 reasoningEffort: $this->reasoningEffort($model),
                 cacheKey: 'spu-assistant-search',
@@ -286,7 +358,7 @@ final class ChatbotService implements ChatbotServiceInterface
         }
 
         $this->usage->recordModelUse($model, $completion->inputTokens, $completion->outputTokens);
-        $hint = SearchRewrite::parse($completion->text, $query);
+        $hint = SearchRewrite::parse($completion->text, $message);
         Cache::put($key, $hint ?? '', 604_800);
 
         return $hint;
@@ -337,62 +409,23 @@ final class ChatbotService implements ChatbotServiceInterface
             ? (int) config('chatbot.guard.repeat_block_hours', 24) * 3600
             : (int) config('chatbot.guard.block_minutes', 60) * 60;
 
-        Cache::put("chatbot.paused.{$scope}.{$key}", true, $seconds);
+        Cache::put(ChatbotCaches::pauseKey($scope, $key), true, $seconds);
         Cache::put($repeatKey, true, 86400);
         $this->usage->recordPaused();
         Log::notice('Chatbot paused a visitor after repeated refused questions.', ['scope' => $scope, 'key' => substr($key, 0, 12), 'minutes' => intdiv($seconds, 60)]);
     }
 
-    private function isPaused(ChatbotQuestionDTO $question): bool
-    {
-        return ($question->visitorKey !== null && Cache::get('chatbot.paused.v.'.$question->visitorKey) === true)
-            || ($question->clientKey !== null && Cache::get('chatbot.paused.ip.'.$question->clientKey) === true);
-    }
-
     /**
      * Seconds until this visitor may ask again, or null when within their
-     * share. A visitor's share comes from the settings; one IP address may
-     * use several shares, because a campus network shares one address.
+     * share (minute, hour and day; the last two from the settings).
      */
     private function fairUseWait(ChatbotQuestionDTO $question, ChatbotSettingsDTO $settings): ?int
     {
-        $multiplier = max(1, (int) config('chatbot.fair_use.ip_multiplier', 8));
-        $windows = [
+        return $this->fairUse->consume('q', [
             'm' => [60, (int) config('chatbot.fair_use.per_minute', 5)],
             'h' => [3600, $settings->visitorHourlyLimit],
             'd' => [86400, $settings->visitorDailyLimit],
-        ];
-
-        $buckets = [];
-        foreach ($windows as $name => [$decay, $limit]) {
-            if ($limit <= 0) {
-                continue;
-            }
-            if ($question->visitorKey !== null) {
-                $buckets[] = ["chatbot-fair:v:{$question->visitorKey}:{$name}", $limit, $decay];
-            }
-            if ($question->clientKey !== null) {
-                // Without a session there is nothing to tell visitors apart.
-                $buckets[] = ["chatbot-fair:ip:{$question->clientKey}:{$name}", $question->visitorKey !== null ? $limit * $multiplier : $limit, $decay];
-            }
-        }
-
-        $wait = null;
-        foreach ($buckets as [$key, $limit]) {
-            if (RateLimiter::tooManyAttempts($key, $limit)) {
-                $wait = max($wait ?? 0, RateLimiter::availableIn($key));
-            }
-        }
-
-        if ($wait !== null) {
-            return $wait;
-        }
-
-        foreach ($buckets as [$key, , $decay]) {
-            RateLimiter::hit($key, $decay);
-        }
-
-        return null;
+        ], $question->visitorKey, $question->clientKey);
     }
 
     private function isRepeated(ChatbotQuestionDTO $question, string $message): bool
@@ -501,16 +534,17 @@ final class ChatbotService implements ChatbotServiceInterface
 
     /**
      * Earlier turns, kept only as whole question-and-answer pairs this server
-     * produced (signed), newest last. A forged or edited turn is dropped with
-     * its partner.
+     * produced (signed), newest last, the newest that fit the character
+     * budget. A forged or edited turn is dropped with its partner.
      *
      * @param  list<array{role: 'user'|'assistant', content: string, signature?: ?string}>  $history
      * @return list<array{role: 'user'|'assistant', content: string}>
      */
     private function history(array $history, string $locale): array
     {
-        $maxTurns = (int) config('chatbot.conversation.max_history_turns', 6);
+        $maxTurns = (int) config('chatbot.conversation.max_history_turns', 8);
         $maxCharacters = (int) config('chatbot.conversation.max_history_characters', 1500);
+        $budget = (int) config('chatbot.conversation.max_history_total_characters', 6000);
 
         $pairs = [];
         for ($index = 0; $index < count($history) - 1; $index++) {
@@ -529,7 +563,21 @@ final class ChatbotService implements ChatbotServiceInterface
             }
         }
 
-        return array_merge(...array_slice($pairs, -max(1, intdiv($maxTurns, 2))));
+        $pairs = array_slice($pairs, -max(1, intdiv($maxTurns, 2)));
+
+        // Within the budget, newest first: older turns live on in the notes.
+        $kept = [];
+        $used = 0;
+        foreach (array_reverse($pairs) as $pair) {
+            $length = mb_strlen($pair[0]['content']) + mb_strlen($pair[1]['content']);
+            if ($kept !== [] && $used + $length > $budget) {
+                break;
+            }
+            $used += $length;
+            array_unshift($kept, $pair);
+        }
+
+        return array_merge(...$kept);
     }
 
     /**

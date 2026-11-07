@@ -202,10 +202,24 @@ return [
         'max_passage_characters' => 1400,
     ],
 
+    /*
+     * Conversation memory (Docs/AI_ASSISTANT.md, "Conversation memory").
+     * The last `max_history_turns` messages travel verbatim (signed pairs, at
+     * most `max_history_total_characters` together). Everything said before
+     * them lives in the conversation notes: the model rewrites them with
+     * every answer (the `memory` field of its structured reply), and the
+     * visitor's browser keeps them as a sealed token (ConversationMemory)
+     * that expires after `memory_hours`. Nothing is stored on the server.
+     */
     'conversation' => [
         'max_message_characters' => 1000,
-        'max_history_turns' => 6,
+        'max_history_turns' => 8,
         'max_history_characters' => 1500,
+        'max_history_total_characters' => 6000,
+        'memory_characters' => 900,
+        'memory_hours' => 24,
+        // What the search rewrite sees of the conversation, per turn.
+        'rewrite_context_characters' => 400,
         'max_output_tokens' => 1200,
         // Identical first questions are answered from cache until the
         // knowledge base or the settings change.
@@ -235,5 +249,76 @@ return [
         'ip_multiplier' => 8,
         // The same question this many times in ten minutes is spam.
         'repeat_limit' => 3,
+    ],
+
+    /*
+     * Voice (Docs/AI_ASSISTANT.md, "Voice"). A spoken question is recorded
+     * in the browser, transcribed here, and then asked like a typed one, so
+     * every guard, limit and source applies. The answer is read aloud by
+     * OpenAI's speech model, one short segment at a time so the first words
+     * play within a second; the browser's own voice takes over whenever that
+     * is unavailable (switched off, over the daily cap, an outage, or after
+     * the model's shutdown date). Audio is never stored.
+     */
+    'voice' => [
+        'enabled' => (bool) env('CHATBOT_VOICE_ENABLED', true),
+
+        'transcription' => [
+            // OpenAI's recommended model for recorded speech (November 2026);
+            // the fallback answers when the key cannot use it. Both list the
+            // estimated USD price per minute of audio.
+            'model' => env('CHATBOT_TRANSCRIPTION_MODEL', 'gpt-transcribe'),
+            'fallback_model' => env('CHATBOT_TRANSCRIPTION_FALLBACK_MODEL', 'gpt-4o-mini-transcribe'),
+            'prices_per_minute' => [
+                'gpt-transcribe' => 0.0045,
+                'gpt-4o-mini-transcribe' => 0.003,
+                'gpt-4o-transcribe' => 0.006,
+            ],
+            // Models that take `languages[]` and `keywords[]` (the older ones take neither).
+            'hinted_models' => ['gpt-transcribe'],
+            // A minute of Opus is ~0.25 MB and of Safari's AAC ~1 MB.
+            'max_kb' => 3072,
+            'max_seconds' => 60,
+            'timeout' => 30,
+            // Accepted recordings (what MediaRecorder produces in each browser).
+            'mimes' => ['audio/webm', 'video/webm', 'audio/ogg', 'audio/mp4', 'video/mp4', 'audio/x-m4a', 'audio/m4a', 'audio/mpeg', 'audio/wav', 'audio/x-wav'],
+            'keywords' => ['الجامعة السورية الخاصة', 'SPU', 'المفاضلة', 'التسجيل', 'الرسوم', 'الأقساط', 'المنح', 'كلية الطب البشري', 'كلية طب الأسنان', 'كلية الصيدلة', 'الهندسة المعلوماتية', 'إدارة الأعمال', 'الشهادة الثانوية'],
+        ],
+
+        'speech' => [
+            'model' => env('CHATBOT_SPEECH_MODEL', 'gpt-4o-mini-tts'),
+            // OpenAI shuts the /audio/speech models down on this date; from
+            // then on answers are read by the browser's voice until a new
+            // model is configured (and this date updated or cleared).
+            'retires_on' => env('CHATBOT_SPEECH_RETIRES_ON', '2027-01-06'),
+            // Voices editors can pick. marin and cedar are OpenAI's best.
+            'voices' => ['cedar', 'marin', 'ash', 'ballad', 'coral', 'echo', 'onyx', 'sage', 'shimmer', 'verse', 'alloy', 'nova', 'fable'],
+            'default_voice' => 'cedar',
+            'format' => 'mp3',
+            // How the host should sound (the speech model's `instructions`).
+            'instructions' => [
+                'ar' => 'You are the warm, professional host of the Syrian Private University. Read the text exactly as written, in clear Modern Standard Arabic with a neutral Levantine accent, at a calm, even pace. Pronounce numbers, dates and amounts carefully.',
+                'en' => 'You are the warm, professional host of the Syrian Private University. Read the text exactly as written, in clear, friendly English at a calm, even pace. Pronounce numbers, dates and amounts carefully.',
+            ],
+            // The first segment is short so playback starts quickly; the rest
+            // are fetched while the one before plays.
+            'first_segment_characters' => 160,
+            'segment_characters' => 420,
+            'max_characters' => 3000,
+            'timeout' => 30,
+            // Estimated price: ~$0.015 a minute of speech, ~900 characters a minute.
+            'usd_per_1k_characters' => 0.017,
+        ],
+
+        'limits' => [
+            // Flood guard per IP address (route middleware `chatbot-voice`).
+            'per_minute' => (int) env('CHATBOT_VOICE_RATE_PER_MINUTE', 90),
+            'per_day' => (int) env('CHATBOT_VOICE_RATE_PER_DAY', 3000),
+            // Per visitor (browser session); one address gets fair_use.ip_multiplier shares.
+            'transcriptions_per_hour' => 30,
+            'speech_segments_per_hour' => 200,
+            // Site-wide default, editable in the admin (0 = no limit).
+            'daily_requests' => 1500,
+        ],
     ],
 ];

@@ -5,13 +5,17 @@ declare(strict_types=1);
 namespace App\Http\Requests\Public;
 
 use App\DTOs\Chatbot\ChatbotQuestionDTO;
+use App\Http\Requests\Public\Concerns\IdentifiesChatbotVisitor;
 use Illuminate\Foundation\Http\FormRequest;
 
 /**
- * One visitor message to the assistant, with the conversation so far.
+ * One visitor message to the assistant, with the conversation so far
+ * (signed recent turns and the sealed notes on the turns before them).
  */
 final class ChatbotMessageRequest extends FormRequest
 {
+    use IdentifiesChatbotVisitor;
+
     public function authorize(): bool
     {
         return true;
@@ -31,6 +35,8 @@ final class ChatbotMessageRequest extends FormRequest
             'history.*.role' => ['required', 'string', 'in:user,assistant'],
             'history.*.content' => ['required', 'string', 'max:8000'],
             'history.*.signature' => ['nullable', 'string', 'size:64'],
+            // The sealed conversation notes (ConversationMemory) of the last answer.
+            'memory' => ['nullable', 'string', 'max:8000'],
         ];
     }
 
@@ -49,9 +55,9 @@ final class ChatbotMessageRequest extends FormRequest
             locale: $locale,
             message: trim((string) $this->validated('message')),
             history: $history,
-            // Keyed, so the stored value cannot be turned back into an address.
-            clientKey: hash_hmac('sha256', (string) $this->ip(), 'chatbot-client|'.(string) config('app.key')),
-            visitorKey: $this->hasSession() ? hash_hmac('sha256', $this->session()->getId(), 'chatbot-visitor|'.(string) config('app.key')) : null,
+            clientKey: $this->chatbotClientKey(),
+            visitorKey: $this->chatbotVisitorKey(),
+            memory: is_string($this->validated('memory')) ? $this->validated('memory') : null,
         );
     }
 }

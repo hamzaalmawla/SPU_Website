@@ -30,6 +30,7 @@ return [
         'cost_30' => 'Estimated cost, 30 days',
         'cost_30_hint' => ':questions questions · :tokens tokens',
         'model' => 'Model: :model',
+        'voice_hint' => 'Voice: :heard spoken questions (:minutes min) · :spoken answers read aloud · :failures failed',
     ],
     'usage_chart' => 'Questions in the last 14 days',
     'usage_chart_empty' => 'No questions yet.',
@@ -172,6 +173,15 @@ return [
         'fair_use_help' => 'Stops one person from using the assistant for play or attacks. Each visitor may also ask at most :minute questions a minute; one network address (a campus Wi-Fi) may ask :multiplier times a visitor\'s share. A visitor who keeps asking for code, off-topic tasks, insults or rule-bypass (:strikes points within an hour) is paused for an hour, and for a day if it happens again. 0 means no limit.',
         'visitor_hourly_limit' => 'Questions per visitor per hour',
         'visitor_daily_limit' => 'Questions per visitor per day',
+        'section_voice' => 'Voice',
+        'voice_help' => 'Visitors can ask by voice and hear the answers. A spoken question is written down by OpenAI (:transcription) and then answered like a typed one, with the same rules and limits. Answers are read by OpenAI\'s voice (:speech), or by the visitor\'s own browser voice when that is unavailable. Recordings are never stored. About $0.005 a minute to listen and $0.015 a minute to speak.',
+        'voice_retiring' => 'OpenAI shuts down the speech model :model on :date. From then on answers are read by the visitor\'s browser voice until a new speech model is configured.',
+        'voice_retired' => 'OpenAI\'s speech model :model was shut down on :date, so answers are read by the visitor\'s browser voice. Configure a new speech model to bring the university voice back.',
+        'voice_enabled' => 'Let visitors talk with the assistant',
+        'voice_name' => 'Voice',
+        'voice_name_help' => 'Cedar and Marin are OpenAI\'s most natural voices; Cedar suits the host character.',
+        'voice_daily_limit' => 'Voice requests per day, whole site',
+        'voice_daily_limit_help' => 'Recordings written down plus answers read aloud. Beyond it, visitors can still type, and answers are read by their browser\'s voice. 0 means no limit.',
     ],
 
     'notifications' => [
@@ -199,6 +209,7 @@ return [
 
     'errors' => [
         'unreadable' => 'The file could not be read.',
+        'unknown_voice' => 'Pick one of the listed voices.',
         'unsupported_type' => 'This file type is not supported. Use PDF, Word (.docx), Excel (.xlsx), .csv, .txt, .md, or a JPG, PNG or WebP image.',
         'no_text' => 'No text was found in the file.',
         'no_text_pdf' => 'No text was found in this PDF, and it has no scanned pages to read.',

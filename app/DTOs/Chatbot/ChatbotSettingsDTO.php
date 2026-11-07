@@ -34,5 +34,10 @@ final readonly class ChatbotSettingsDTO
         // Fair use per visitor (browser session); 0 means no limit.
         public int $visitorHourlyLimit = 20,
         public int $visitorDailyLimit = 40,
+        // Voice: spoken questions and answers read aloud.
+        public bool $voiceEnabled = true,
+        public string $voiceName = 'cedar',
+        // Recordings transcribed plus answers read aloud per day, whole site; 0 means no limit.
+        public int $voiceDailyLimit = 1500,
     ) {}
 }

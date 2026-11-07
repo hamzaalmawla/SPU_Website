@@ -5,9 +5,12 @@ declare(strict_types=1);
 namespace App\Services\Chatbot;
 
 use App\Contracts\Chatbot\OpenAiClientInterface;
+use App\DTOs\Chatbot\ChatbotAudioTranscriptDTO;
 use App\DTOs\Chatbot\ChatbotCompletionDTO;
 use App\DTOs\Chatbot\ChatbotCompletionRequestDTO;
 use App\DTOs\Chatbot\ChatbotEmbeddingResultDTO;
+use App\DTOs\Chatbot\ChatbotSpeechSynthesisRequestDTO;
+use App\DTOs\Chatbot\ChatbotTranscriptionCallDTO;
 use App\Exceptions\ChatbotProviderException;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\PendingRequest;
@@ -17,10 +20,12 @@ use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
 
 /**
- * OpenAI's Responses and Embeddings endpoints over Laravel's HTTP client.
+ * OpenAI's Responses, Embeddings, Moderation and Audio endpoints over
+ * Laravel's HTTP client.
  *
  * Requests use `store: false`, so OpenAI keeps no copy of the conversation
- * for later retrieval. Nothing here logs the key, the prompt or the answer.
+ * for later retrieval. Nothing here logs the key, the prompt, the answer or
+ * the audio.
  */
 final class OpenAiClient implements OpenAiClientInterface
 {
@@ -199,6 +204,89 @@ final class OpenAiClient implements OpenAiClientInterface
         return false;
     }
 
+    public function transcribe(ChatbotTranscriptionCallDTO $call): ChatbotAudioTranscriptDTO
+    {
+        $handle = @fopen($call->path, 'rb');
+        if ($handle === false) {
+            throw new ChatbotProviderException(ChatbotProviderException::INVALID, 'The recording could not be read.');
+        }
+
+        $parts = [
+            ['name' => 'model', 'contents' => $call->model],
+            ['name' => 'response_format', 'contents' => 'json'],
+        ];
+        if ($call->prompt !== '') {
+            $parts[] = ['name' => 'prompt', 'contents' => $call->prompt];
+        }
+        foreach ($call->languages as $language) {
+            $parts[] = ['name' => 'languages[]', 'contents' => $language];
+        }
+        foreach ($call->keywords as $keyword) {
+            $parts[] = ['name' => 'keywords[]', 'contents' => $keyword];
+        }
+        $parts[] = ['name' => 'file', 'contents' => $handle, 'filename' => $call->filename, 'headers' => ['Content-Type' => $call->mimeType]];
+
+        try {
+            $response = $this->send(
+                fn (): Response => $this->base(Http::withOptions([]), $call->apiKey, $call->timeout)
+                    ->asMultipart()
+                    ->post('/audio/transcriptions', $parts)
+            );
+        } finally {
+            if (is_resource($handle)) {
+                fclose($handle);
+            }
+        }
+
+        $text = $response->json('text');
+        if (! is_string($text)) {
+            throw new ChatbotProviderException(ChatbotProviderException::INVALID, 'Transcription response had no text.');
+        }
+
+        $languages = [];
+        foreach ((array) $response->json('languages', []) as $language) {
+            if (is_array($language) && is_string($language['code'] ?? null)) {
+                $languages[] = $language['code'];
+            }
+        }
+        $usage = (array) $response->json('usage', []);
+
+        return new ChatbotAudioTranscriptDTO(
+            text: trim($text),
+            languages: $languages,
+            seconds: ($usage['type'] ?? null) === 'duration' && is_numeric($usage['seconds'] ?? null) ? (float) $usage['seconds'] : null,
+            inputTokens: (int) ($usage['input_tokens'] ?? 0),
+            outputTokens: (int) ($usage['output_tokens'] ?? 0),
+        );
+    }
+
+    public function speak(ChatbotSpeechSynthesisRequestDTO $request): string
+    {
+        $payload = [
+            'model' => $request->model,
+            'input' => $request->input,
+            'voice' => $request->voice,
+            'response_format' => $request->format,
+        ];
+        if ($request->instructions !== '') {
+            $payload['instructions'] = $request->instructions;
+        }
+
+        $response = $this->send(
+            fn (): Response => $this->base(Http::withOptions([]), $request->apiKey, $request->timeout)
+                ->accept('*/*')
+                ->asJson()
+                ->post('/audio/speech', $payload)
+        );
+
+        $body = $response->body();
+        if ($body === '' || str_contains(strtolower($response->header('Content-Type')), 'json')) {
+            throw new ChatbotProviderException(ChatbotProviderException::INVALID, 'The speech response carried no audio.');
+        }
+
+        return $body;
+    }
+
     private function request(string $apiKey, int $timeout): PendingRequest
     {
         return $this->configure(Http::withOptions([]), $apiKey, $timeout);
@@ -206,10 +294,13 @@ final class OpenAiClient implements OpenAiClientInterface
 
     private function configure(PendingRequest $request, string $apiKey, int $timeout): PendingRequest
     {
+        return $this->base($request, $apiKey, $timeout)->acceptJson()->asJson();
+    }
+
+    private function base(PendingRequest $request, string $apiKey, int $timeout): PendingRequest
+    {
         return $request->baseUrl((string) config('chatbot.openai.base_url'))
             ->withToken($apiKey)
-            ->acceptJson()
-            ->asJson()
             ->connectTimeout((int) config('chatbot.openai.connect_timeout', 5))
             ->timeout($timeout);
     }

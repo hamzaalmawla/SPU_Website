@@ -28,7 +28,7 @@ final class ChatbotSettingsService implements ChatbotSettingsServiceInterface
     private const KEYS = [
         'enabled', 'model', 'api_key', 'assistant_name_ar', 'assistant_name_en', 'welcome_ar', 'welcome_en',
         'suggestions_ar', 'suggestions_en', 'extra_instructions', 'daily_question_limit', 'fallback_model',
-        'visitor_hourly_limit', 'visitor_daily_limit',
+        'visitor_hourly_limit', 'visitor_daily_limit', 'voice_enabled', 'voice_name', 'voice_daily_limit',
     ];
 
     public function __construct(
@@ -58,6 +58,9 @@ final class ChatbotSettingsService implements ChatbotSettingsServiceInterface
             fallbackModel: $this->fallbackModel($values),
             visitorHourlyLimit: max(0, (int) ($values['visitor_hourly_limit'] ?? config('chatbot.fair_use.hourly', 20))),
             visitorDailyLimit: max(0, (int) ($values['visitor_daily_limit'] ?? config('chatbot.fair_use.daily', 40))),
+            voiceEnabled: ($values['voice_enabled'] ?? '1') === '1',
+            voiceName: $this->voice($values['voice_name'] ?? null),
+            voiceDailyLimit: max(0, (int) ($values['voice_daily_limit'] ?? config('chatbot.voice.limits.daily_requests', 1500))),
         );
     }
 
@@ -91,6 +94,10 @@ final class ChatbotSettingsService implements ChatbotSettingsServiceInterface
             throw new InvalidArgumentException('admin_chatbot.errors.unknown_model');
         }
 
+        if (! in_array($settings->voiceName, $this->voices(), true)) {
+            throw new InvalidArgumentException('admin_chatbot.errors.unknown_voice');
+        }
+
         $newApiKey = $newApiKey !== null ? trim($newApiKey) : null;
         if ($newApiKey !== null && $newApiKey !== '' && preg_match('/^[A-Za-z0-9_\-]{20,300}$/', $newApiKey) !== 1) {
             throw new InvalidArgumentException('admin_chatbot.errors.invalid_api_key');
@@ -111,6 +118,9 @@ final class ChatbotSettingsService implements ChatbotSettingsServiceInterface
             'fallback_model' => $settings->fallbackModel !== null && $settings->fallbackModel !== $settings->model ? $settings->fallbackModel : 'none',
             'visitor_hourly_limit' => (string) max(0, min(1000, $settings->visitorHourlyLimit)),
             'visitor_daily_limit' => (string) max(0, min(5000, $settings->visitorDailyLimit)),
+            'voice_enabled' => $settings->voiceEnabled ? '1' : '0',
+            'voice_name' => $settings->voiceName,
+            'voice_daily_limit' => (string) max(0, min(1_000_000, $settings->voiceDailyLimit)),
         ];
 
         $keyChange = null;
@@ -143,10 +153,14 @@ final class ChatbotSettingsService implements ChatbotSettingsServiceInterface
             'daily_question_limit' => $after->dailyQuestionLimit,
             'visitor_hourly_limit' => $after->visitorHourlyLimit,
             'visitor_daily_limit' => $after->visitorDailyLimit,
+            'voice_enabled' => $after->voiceEnabled,
+            'voice_name' => $after->voiceName,
+            'voice_daily_limit' => $after->voiceDailyLimit,
             'api_key' => $keyChange ?? 'unchanged',
         ]);
 
-        ChatbotCaches::widgetChanged($this->cache, $before->enabled !== $after->enabled || $before->hasApiKey !== $after->hasApiKey);
+        // The voice controls are part of the page HTML too.
+        ChatbotCaches::widgetChanged($this->cache, $before->enabled !== $after->enabled || $before->hasApiKey !== $after->hasApiKey || $before->voiceEnabled !== $after->voiceEnabled);
 
         return true;
     }
@@ -196,6 +210,19 @@ final class ChatbotSettingsService implements ChatbotSettingsServiceInterface
         return $candidate !== 'none' && $candidate !== '' && array_key_exists($candidate, $models) && $candidate !== $this->model($values['model'] ?? null)
             ? $candidate
             : null;
+    }
+
+    private function voice(?string $voice): string
+    {
+        $default = (string) config('chatbot.voice.speech.default_voice', 'cedar');
+
+        return is_string($voice) && in_array($voice, $this->voices(), true) ? $voice : $default;
+    }
+
+    /** @return list<string> */
+    private function voices(): array
+    {
+        return array_values(array_filter((array) config('chatbot.voice.speech.voices', []), 'is_string'));
     }
 
     private function text(?string $value, mixed $default): string

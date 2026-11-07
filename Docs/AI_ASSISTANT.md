@@ -43,6 +43,94 @@ browser ── POST /{locale}/assistant/messages ──▶ ChatbotController (th
 Every refusal shows the same polite message, so probing does not reveal which
 layer stopped it. The admin "Try it" box shows the reason.
 
+## Conversation memory
+
+The assistant follows a whole conversation without storing it on the server
+(the "summary buffer" pattern of conversational RAG):
+
+| Layer | What it holds | How it travels |
+|---|---|---|
+| Recent turns | The last 4 question-and-answer pairs, verbatim (`max_history_turns` 8 messages, at most 1500 characters each and `max_history_total_characters` 6000 together, newest kept first) | The browser sends them back; each pair is HMAC-signed (`ConversationSigner`), so a forged or edited turn is dropped with its partner |
+| Conversation notes | The model's own notes on everything said (what the visitor is looking for, their situation, what was answered, open questions), at most ~80 words, no personal data | Written with every answer as the `memory` field of the structured reply; sealed with Laravel's encrypter (`ConversationMemory`: APP_KEY, bound to its purpose and language, expires after `memory_hours` 24) and kept by the browser in `sessionStorage` |
+
+- The notes reach the model inside the question turn as `<conversation_notes>`,
+  fenced as data like the sources. The rules say earlier answers may be referred
+  to, but every new fact still comes from the latest sources.
+- The **search rewrite** sees the notes and the latest two pairs
+  (`SearchRewrite::input`), so "and the fees?" or "what about the second one?"
+  becomes a whole search ("رسوم كلية الصيدلة / Pharmacy tuition") before
+  retrieval. A first question is rewritten exactly as before (cached a week).
+- Notes that come back empty, or carrying code or instruction text
+  (`ChatbotGuard::inspectAnswer`), keep the previous notes. Phones, ID numbers
+  and emails are removed before sealing (`ConversationMemory::clean`).
+- Only a conversation's first question is answered from the shared answer
+  cache; a cached answer carries its notes. Refusals return no new notes, so
+  the browser keeps the last ones. "New conversation" clears both.
+
+## Voice
+
+Visitors can talk with the host and hear the answers. It is a cascaded
+pipeline (speech to text, the normal answer, text to speech), so every guard,
+limit, source and the conversation memory apply to spoken questions exactly
+as to typed ones; a speech-to-speech model would bypass them.
+
+```text
+mic ─ MediaRecorder (Opus/WebM, AAC/MP4 on Safari), stops itself after ~1.3 s of silence
+    ─ POST /{locale}/assistant/transcriptions ─▶ ChatbotVoiceService::transcribe
+          gpt-transcribe (languages ar+en, university keywords; fallback gpt-4o-mini-transcribe)
+    ◀─ { status, text }   the text appears as the visitor's message
+    ─ POST /{locale}/assistant/messages (as typed) ─▶ answer + speech signature
+    ─ POST /{locale}/assistant/speech {text, signature, segment} ─▶ ChatbotVoiceService::speak
+          SpeechText: Markdown → spoken sentences, cut into segments (first ≤160 chars)
+          gpt-4o-mini-tts, voice from the settings (default cedar), mp3
+    ◀─ audio/mpeg, X-Speech-Segments; the next segment is fetched while one plays
+```
+
+- **Hands-free conversation.** The microphone starts a voice conversation: the
+  host listens (pink stand light, head tilted, the meter follows the voice),
+  writes the question down, answers aloud (the mouth follows the audio level:
+  lip-sync through an AnalyserNode), then listens again. It ends when the
+  visitor taps stop or cancel, presses Escape, types, closes the panel, leaves
+  the tab, or says nothing for 9 seconds. Tapping the microphone while he
+  speaks interrupts him and he listens. Every answer also has a Listen button.
+- **Only the assistant's own words are spoken.** Every reply carries
+  `speech`, an HMAC of its exact text (`ConversationSigner::signSpeech`); the
+  speech endpoint refuses anything else (403), so it cannot be used as a free
+  text-to-speech service.
+- **The browser's voice is the fallback.** When the server cannot speak
+  (voice off, the daily cap, a visitor's share, an outage, or the model's
+  shutdown date) the endpoint answers JSON with a non-2xx status and the
+  widget reads the answer with `speechSynthesis`, picking the best installed
+  voice for the language.
+- **OpenAI shuts the `/audio/speech` models down on 2027-01-06**
+  (`gpt-4o-mini-tts`, `tts-1`, `tts-1-hd`). Its named replacement,
+  `gpt-realtime-2.1-mini`, works only through the Realtime API (raw PCM, about
+  48 KB a second). `chatbot.voice.speech.retires_on` switches the server voice
+  off on that date by itself (`VoiceModels::speech()`), the admin settings show
+  a warning before it and a notice after, and answers are then read by the
+  browser. To keep a university voice, configure a new speech model
+  (`CHATBOT_SPEECH_MODEL`, `CHATBOT_SPEECH_RETIRES_ON`) before then.
+- **Audio is never stored**: the recording goes from PHP's upload temp file
+  to OpenAI and is deleted with the request; usage keeps counts only.
+- **Silence is not a question**: transcripts that are only what transcription
+  models write for noise ("Thank you for watching", "اشتركوا في القناة") come
+  back as `empty`.
+- **Limits.** Per visitor (session, with the address getting
+  `ip_multiplier` shares): 8 recordings a minute and 30 an hour, 40 segments a
+  minute and 200 an hour. Site-wide: "Voice requests per day" in the settings
+  (recordings plus answers read aloud, default 1500). Route limiter
+  `chatbot-voice`: 90 a minute and 3000 a day per IP. A paused visitor cannot
+  talk either. Recordings up to 3 MB and 60 seconds.
+- **Cost.** About $0.0045 a minute to listen and $0.015 a minute to speak; both
+  are in the admin's cost figures (`chatbot_usage_days.voice_*`).
+- **Browser support.** Recording needs a secure page, `getUserMedia`,
+  MediaRecorder and Web Audio (all current browsers, Safari 14.1+); the
+  microphone button is hidden elsewhere. `Permissions-Policy` allows
+  `microphone=(self)` (middleware and `public/.htaccess`); the browser still
+  asks the visitor first. Playback uses Web Audio, so the CSP needs no
+  `media-src`. The voice code (`chatVoice.js`, ~3 KB gzipped) loads on the
+  first voice control.
+
 ## Models and cost
 
 | Setting | Default | Why |
@@ -119,7 +207,8 @@ super admins have both, other roles get it under Administration › Roles).
   Every change is audited (`chatbot.*` actions) and retires cached answers.
 - Settings: on/off, main and fallback model, OpenAI key (encrypted with
   APP_KEY, only the last four characters shown), names, welcome texts,
-  suggested questions, extra instructions, site-wide and per-visitor limits.
+  suggested questions, extra instructions, site-wide and per-visitor limits,
+  and Voice (on/off, the voice, voice requests per day).
 - Usage: questions, cache hits, unanswered, refused, limited, paused,
   estimated cost; 14-day chart.
 
@@ -195,9 +284,11 @@ document over to a procedure another document covers.
 
 ## Operations
 
-- Migrations `2026_11_03_000001_create_chatbot_tables` and
-  `2026_11_06_000001_add_scan_progress_to_chatbot_documents` are schema-only
+- Migrations `2026_11_03_000001_create_chatbot_tables`,
+  `2026_11_06_000001_add_scan_progress_to_chatbot_documents` and
+  `2026_11_07_000001_add_voice_usage_to_chatbot_usage_days` are schema-only
   (no approval file needed).
+- `CHATBOT_VOICE_ENABLED=false` hides the voice controls whatever the admin says.
 - The scheduler cron (`schedule:run` every minute) must be running for long
   scans to finish without the admin page open.
 - Files live on the `local` disk under `storage/app/private/chatbot/documents`,
@@ -210,10 +301,10 @@ document over to a procedure another document covers.
 
 ## Code map
 
-- Contracts: `app/Contracts/Chatbot/*` (service, knowledge, settings, usage, OpenAI client)
+- Contracts: `app/Contracts/Chatbot/*` (service, voice, fair use, knowledge, settings, usage, OpenAI client)
 - Services: `app/Services/Chatbot/*` (`ChatbotScanReader` reads scanned pages)
-- Pure helpers: `app/Support/Chatbot/*` (extractor, PDF layout, spreadsheets, table rows, chunker, vectors, keywords, prompt, guard, signer)
-- Public: `ChatbotController`, `ChatbotMessageRequest`, `resources/views/public/layout/chatbot.blade.php`,
-  `resources/js/chatbot/*` (widget, Markdown renderer, state, Three.js host), `resources/css/frontend/chatbot.css`
+- Pure helpers: `app/Support/Chatbot/*` (extractor, PDF layout, spreadsheets, table rows, chunker, vectors, keywords, prompt, guard, signer, conversation memory, speech text, voice models)
+- Public: `ChatbotController`, `ChatbotTranscriptionController`, `ChatbotSpeechController` and their requests, `resources/views/public/layout/chatbot.blade.php`,
+  `resources/js/chatbot/*` (widget, voice, Markdown renderer, state, Three.js host), `resources/css/frontend/chatbot.css`
 - Admin: `app/Filament/Pages/ManageChatbot.php`, `resources/views/filament/pages/manage-chatbot.blade.php`, `resources/views/filament/chatbot/*`
 - Tests: `tests/Unit/Chatbot/*`, `tests/Feature/Chatbot/*`, `tests/js/chatbot.test.js`
