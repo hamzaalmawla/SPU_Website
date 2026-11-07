@@ -6,6 +6,7 @@ namespace Tests\Feature;
 
 use App\Contracts\Center\CenterCatalogServiceInterface;
 use App\Contracts\Cms\CmsWorkflowServiceInterface;
+use App\Contracts\Faculty\FacultyStudyPlanEditorServiceInterface;
 use App\Contracts\Page\FacultyPageServiceInterface;
 use App\Enums\PublicationStatus;
 use App\Models\Person\FacultyMember;
@@ -168,6 +169,56 @@ final class CentersPagesTest extends TestCase
         $this->assertSame('/en/centers/requirements-unit/required-courses#course-computer-skills', $catalog->studyPlanCourseUrl('pharmacy', ['type' => 'university', 'code' => 'requ103'], 'en'));
         $this->assertSame('/en/centers/requirements-unit/elective-courses#course-sociology', $catalog->studyPlanCourseUrl('pharmacy', ['type' => 'university', 'code' => 'X1', 'requirementsUnitCourseId' => 'sociology'], 'en'));
         $this->assertNull($catalog->studyPlanCourseUrl('pharmacy', ['type' => 'faculty', 'code' => 'REQU103'], 'en'));
+    }
+
+    public function test_a_university_elective_box_opens_the_elective_list_in_a_new_tab(): void
+    {
+        $payload = app(FacultyPageServiceInterface::class)->getEditablePayload('facilities.dentistry.study_plan');
+        foreach (['ar', 'en'] as $locale) {
+            $payload['translations'][$locale]['payload']['plan']['departments'][0]['terms'][0]['courses'] = [
+                ['id' => 'university-elective', 'code' => '', 'titleAr' => 'مقرر جامعة اختياري', 'titleEn' => 'University elective course', 'type' => 'university', 'required' => false, 'electiveSlot' => true, 'credits' => 2, 'prerequisites' => [], 'hours' => ['theory' => 2, 'practical' => 0]],
+                ['id' => 'unre103', 'code' => 'UNRE103', 'titleAr' => 'لغة عربية', 'titleEn' => 'Arabic Language', 'type' => 'university', 'required' => true, 'credits' => 2, 'prerequisites' => [], 'hours' => ['theory' => 2, 'practical' => 0]],
+            ];
+        }
+        $workflow = app(CmsWorkflowServiceInterface::class);
+        $workflow->saveDraft('facilities.dentistry.study_plan', $payload, (int) $this->admin->getKey());
+        $workflow->publish('facilities.dentistry.study_plan', (int) $this->admin->getKey());
+
+        foreach (['en' => 'University elective course', 'ar' => 'مقرر جامعة اختياري'] as $locale => $title) {
+            $html = (string) $this->get('/'.$locale.'/faculties/dentistry/study-plan')->assertOk()->getContent();
+
+            $this->assertMatchesRegularExpression('#<a href="/'.$locale.'/centers/requirements-unit/elective-courses" target="_blank" rel="noopener" data-course-card data-elective-slot data-course-id="university-elective"#', $html);
+            $this->assertMatchesRegularExpression('#<a href="/'.$locale.'/centers/requirements-unit/elective-courses" target="_blank" rel="noopener" data-list-card data-elective-slot#', $html);
+            $this->assertStringContainsString($title, $html);
+            $this->assertStringContainsString(__('centers.elective_slot_open', [], $locale), $html);
+            $this->assertStringContainsString(__('centers.elective_slot_legend', [], $locale), $html);
+            // An ordinary course still opens its dialog.
+            $this->assertMatchesRegularExpression('#<button type="button" data-course-card data-course-id="unre103"#', $html);
+        }
+    }
+
+    public function test_publishing_rejects_a_course_that_needs_a_university_elective_box(): void
+    {
+        $payload = app(FacultyPageServiceInterface::class)->getEditablePayload('facilities.dentistry.study_plan');
+        foreach (['ar', 'en'] as $locale) {
+            $payload['translations'][$locale]['payload']['plan']['departments'][0]['terms'][0]['courses'] = [
+                ['id' => 'university-elective', 'code' => '', 'titleAr' => 'مقرر جامعة اختياري', 'titleEn' => 'University elective course', 'type' => 'university', 'required' => false, 'electiveSlot' => true, 'credits' => 2, 'prerequisites' => []],
+                ['id' => 'unre103', 'code' => 'UNRE103', 'titleAr' => 'لغة عربية', 'titleEn' => 'Arabic Language', 'type' => 'faculty', 'required' => true, 'electiveSlot' => true, 'credits' => 2, 'prerequisites' => ['university-elective']],
+            ];
+        }
+
+        $errors = app(FacultyStudyPlanEditorServiceInterface::class)->validationErrors($payload);
+
+        $this->assertContains('No course can need a university elective box.', $errors['en']);
+        $this->assertContains('A university elective box must be an elective university requirement.', $errors['ar']);
+        $this->assertContains('A university elective box has no prerequisites.', $errors['ar']);
+    }
+
+    public function test_a_university_elective_box_leads_to_the_elective_list_even_with_a_matching_code(): void
+    {
+        $catalog = app(CenterCatalogServiceInterface::class);
+
+        $this->assertSame('/en/centers/requirements-unit/elective-courses', $catalog->studyPlanCourseUrl('pharmacy', ['type' => 'university', 'code' => 'X1', 'required' => false, 'electiveSlot' => true, 'requirementsUnitCourseId' => 'sociology'], 'en'));
     }
 
     private function member(string $slug, string $nameEn, string $nameAr, int $order, bool $published = true, ?string $center = 'requirements-unit'): FacultyMember

@@ -48,6 +48,7 @@ use App\Contracts\Faculty\FacultyProgramServiceInterface;
 use App\Contracts\Faculty\FacultyStructureImportServiceInterface;
 use App\Contracts\Faculty\FacultyStudyPlanBoardServiceInterface;
 use App\Contracts\Faculty\FacultyStudyPlanEditorServiceInterface;
+use App\Contracts\Faculty\FacultyStudyPlanGuideServiceInterface;
 use App\Contracts\Faculty\FacultyStudyPlanImportServiceInterface;
 use App\Contracts\Faculty\FacultyStudyPlanLinkServiceInterface;
 use App\Contracts\Faculty\LegacyCourseSpecificationImportServiceInterface;
@@ -268,6 +269,7 @@ use App\Services\Faculty\FacultyProgramService;
 use App\Services\Faculty\FacultyStructureImportService;
 use App\Services\Faculty\FacultyStudyPlanBoardService;
 use App\Services\Faculty\FacultyStudyPlanEditorService;
+use App\Services\Faculty\FacultyStudyPlanGuideService;
 use App\Services\Faculty\FacultyStudyPlanImportService;
 use App\Services\Faculty\FacultyStudyPlanLinkService;
 use App\Services\Faculty\LegacyCourseSpecificationImportService;
@@ -817,6 +819,7 @@ class AppServiceProvider extends ServiceProvider
             LegacyCourseSpecificationImportServiceInterface::class => LegacyCourseSpecificationImportService::class,
             FacultyStructureImportServiceInterface::class => FacultyStructureImportService::class,
             FacultyStudyPlanBoardServiceInterface::class => FacultyStudyPlanBoardService::class,
+            FacultyStudyPlanGuideServiceInterface::class => FacultyStudyPlanGuideService::class,
             FacultyStudyPlanLinkServiceInterface::class => FacultyStudyPlanLinkService::class,
             FacultyLeadershipServiceInterface::class => FacultyLeadershipService::class,
             FacultyPositionServiceInterface::class => FacultyPositionService::class,

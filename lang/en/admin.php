@@ -1565,6 +1565,9 @@ return [
             ],
         ],
         'board' => [
+            'elective_slot' => 'University elective box',
+            'elective_slot_help' => 'Shows as one "University elective course" box that opens the Requirements Unit\'s elective course list. It has no code, hours, teachers, lectures or prerequisites, and no course can need it. Only for an elective university requirement.',
+            'elective_slot_short' => 'Elective list',
             'unit_course' => 'Requirements Unit course',
             'unit_course_auto' => 'Match by this course\'s code',
             'unit_course_help' => 'For a university requirement: the course on the Requirements Unit page this one opens. By default it is the unit course that lists this faculty and code.',
@@ -1744,6 +1747,18 @@ return [
             'internal_type_id' => 'Internal type identifier',
             'advanced_identity' => 'Advanced technical identity',
             'electives_promotion' => 'Electives and promotion requirements',
+            'guide' => [
+                'section' => 'How to read this plan (student help)',
+                'section_help' => 'Shown to students above the plan: a short guide that opens on request, and a hint beside the course types. It starts from the university\'s standard wording; reword it for this faculty if needed. Empty a field to hide it.',
+                'title' => 'Guide heading',
+                'legend_hint' => 'Hint beside the course types',
+                'steps' => 'Guide steps',
+                'steps_help' => 'Each step is a short tip with a picture. The six standard steps keep their pictures; a step you add shows its number instead. Remove every step to hide the guide.',
+                'step_title' => 'Step heading',
+                'step_text' => 'Explanation',
+                'type_description' => 'What it means for students',
+                'type_description_help' => 'One short sentence shown under the type, such as "Taken by every student of this faculty."',
+            ],
             'legend_settings' => 'Type legend and lesson settings',
             'types' => [
                 'university' => 'University requirement',

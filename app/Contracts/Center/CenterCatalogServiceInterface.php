@@ -80,7 +80,8 @@ interface CenterCatalogServiceInterface
      * Where a faculty study plan course of the university type leads: the
      * matching Requirements Unit course (the one picked on the board, else the
      * one listing this faculty and code), or the unit's required or elective
-     * list when none matches. Null for a course of another type.
+     * list when none matches. A university elective box (`electiveSlot`)
+     * always leads to the elective list. Null for a course of another type.
      *
      * @param  array<string, mixed>  $course  a study plan course
      */

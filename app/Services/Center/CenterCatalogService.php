@@ -206,6 +206,12 @@ final class CenterCatalogService implements CenterCatalogServiceInterface
         }
 
         $base = '/'.$locale.'/centers/'.$centerSlug.'/';
+
+        // A university elective box stands for any of the unit's elective courses.
+        if (($course['electiveSlot'] ?? false) === true && ($course['required'] ?? true) === false) {
+            return $base.'elective-courses';
+        }
+
         $match = $this->matchingUnitCourse($centerSlug, $facultySlug, $course);
 
         if ($match !== null) {

@@ -45,6 +45,8 @@ export function bindCourseCardInteractions(card, { highlight, clear, open }) {
     card.addEventListener('mouseleave', clear);
     card.addEventListener('focus', () => highlight(courseId));
     card.addEventListener('blur', clear);
+    // A university elective box is a link to the Requirements Unit's elective list.
+    if (card.dataset.electiveSlot !== undefined) return;
     card.addEventListener('click', () => open(courseId, card));
 }
 
@@ -128,6 +130,7 @@ function createStudyPlanPage(root) {
     const svg = root.querySelector('[data-study-plan-svg]');
     const svgTop = root.querySelector('[data-study-plan-svg-top]');
     const courseCards = Array.from(root.querySelectorAll('[data-course-card]'));
+    const dialogCards = courseCards.filter((card) => card.dataset.electiveSlot === undefined);
     const listCards = Array.from(root.querySelectorAll('[data-list-card]'));
     const legendButtons = Array.from(root.querySelectorAll('[data-legend-type]'));
     const viewToggles = Array.from(root.querySelectorAll('[data-study-plan-view-toggle]'));
@@ -423,7 +426,7 @@ function createStudyPlanPage(root) {
         modal.classList.remove('hidden');
         modal.classList.add('flex');
         modal.setAttribute('aria-hidden', 'false');
-        courseCards.forEach((card) => card.setAttribute('aria-expanded', card.dataset.courseId === courseId ? 'true' : 'false'));
+        dialogCards.forEach((card) => card.setAttribute('aria-expanded', card.dataset.courseId === courseId ? 'true' : 'false'));
         document.body.classList.add('overflow-hidden');
         requestAnimationFrame(() => modal.querySelector('[data-modal-initial-focus]')?.focus());
     }
@@ -435,7 +438,7 @@ function createStudyPlanPage(root) {
         modal.classList.add('hidden');
         modal.classList.remove('flex');
         modal.setAttribute('aria-hidden', 'true');
-        courseCards.forEach((card) => card.setAttribute('aria-expanded', 'false'));
+        dialogCards.forEach((card) => card.setAttribute('aria-expanded', 'false'));
         document.body.classList.remove('overflow-hidden');
         setHoveredCourse('');
         modalTrigger?.focus();
@@ -742,7 +745,7 @@ function createStudyPlanPage(root) {
             });
         });
 
-        listCards.forEach((card) => {
+        listCards.filter((card) => card.dataset.electiveSlot === undefined).forEach((card) => {
             card.addEventListener('click', () => openModal(card.dataset.courseId || '', card));
         });
 

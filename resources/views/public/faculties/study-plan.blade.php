@@ -45,12 +45,6 @@
         'specialization' => 'sp-card-accent-spec border-indigo-200 focus:ring-indigo-400',
         'elective' => 'sp-card-accent-elec border-slate-200 focus:ring-amber-400',
     ];
-    $dotClasses = [
-        'university' => 'bg-spu-blue',
-        'faculty' => 'bg-slate-400',
-        'specialization' => 'bg-spu-blue/70',
-        'elective' => 'bg-slate-300',
-    ];
     $poolLabel = fn (string $poolId): string => match ($poolId) {
         'university' => $label('universityElective'),
         'faculty' => $label('facultyElective'),
@@ -72,6 +66,16 @@
             }
         }
     }
+    // A university elective box opens the Requirements Unit's elective list
+    // (unitCourseUrl, set by the service) instead of a course dialog.
+    $electiveSlotUrl = static fn (array $course): ?string => ($course['electiveSlot'] ?? false) === true
+        && is_string($course['unitCourseUrl'] ?? null) && str_starts_with($course['unitCourseUrl'], '/')
+        ? $course['unitCourseUrl']
+        : null;
+    $electiveListUrl = $terms->flatMap(fn (array $term): array => is_array($term['courses'] ?? null) ? $term['courses'] : [])
+        ->map(fn (mixed $course): ?string => is_array($course) ? $electiveSlotUrl($course) : null)
+        ->first(fn (?string $url): bool => $url !== null);
+    $slotIcon = '<svg class="h-3.5 w-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5h5v5m0-5L10 14M19 14v5H5V5h5" /></svg>';
     $prereqCodesFor = fn (array $course): string => collect($course['prerequisites'] ?? [])
         ->map(fn ($prereqId) => $courseIndex[(string) $prereqId]['code'] ?? null)
         ->filter()
@@ -120,18 +124,9 @@
                         </div>
                     @endif
 
-                    <div class="flex flex-wrap items-center justify-between gap-4">
-                        <div class="flex flex-wrap items-center gap-4">
-                            <p class="text-[14px] font-semibold text-slate-500">{{ $label('courseTypes') ?: ($isAr ? 'أنواع المقررات' : 'Course Types') }}</p>
-                            @foreach ($legend as $item)
-                                @php($legendType = $item['id'] ?? 'faculty')
-                                <button type="button" data-legend-type="{{ $legendType }}" aria-pressed="false" class="flex items-center gap-2.5 rounded-full border border-slate-100 bg-white px-5 py-2.5 shadow-sm transition-all hover:border-slate-200 hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-spu-blue aria-pressed:border-spu-blue aria-pressed:shadow-md">
-                                    <span class="h-2.5 w-2.5 rounded-full {{ $dotClasses[$legendType] ?? 'bg-slate-400' }}"></span>
-                                    <span class="text-[12px] font-extrabold uppercase tracking-widest text-slate-700">{{ $text($item, 'label') }}</span>
-                                </button>
-                            @endforeach
-                        </div>
+                    @include('public.faculties.partials.study-plan-guide')
 
+                    <div class="flex flex-wrap items-center justify-end gap-4">
                         <div class="flex flex-wrap items-center gap-2">
                             <div class="inline-flex rounded-lg border border-slate-200 bg-white p-0.5 shadow-sm" role="group" aria-label="{{ $isAr ? 'طريقة العرض' : 'View mode' }}">
                                 <button type="button" data-study-plan-view-toggle="graph" aria-pressed="true" class="rounded-md px-3.5 py-2 text-[12px] font-bold text-spu-blue/70 transition-colors aria-pressed:bg-spu-blue aria-pressed:text-white">{{ $isAr ? 'مخطط' : 'Graph' }}</button>
@@ -173,6 +168,18 @@
 
                                             @foreach (collect($term['courses'] ?? [])->filter(fn ($item) => is_array($item)) as $course)
                                                 @php($courseType = $typeKey($course))
+                                                @php($slotUrl = $electiveSlotUrl($course))
+                                                @if ($slotUrl !== null)
+                                                    <a href="{{ $slotUrl }}" target="_blank" rel="noopener" data-course-card data-elective-slot data-course-id="{{ $course['id'] ?? '' }}" data-course-type="{{ $courseType }}" aria-label="{{ __('centers.elective_slot_aria', ['title' => $text($course, 'title'), 'credits' => $course['credits'] ?? 0]) }}" class="sp-course-card sp-elective-slot group relative flex min-h-[100px] w-full flex-col rounded-2xl p-3.5 text-start shadow-sm transition-all duration-300 hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-amber-400 focus:ring-offset-2" dir="{{ $direction }}" draggable="false">
+                                                        <span class="flex items-center justify-between gap-2">
+                                                            {!! $slotIcon !!}
+                                                            <span class="rounded bg-white/70 px-2 py-0.5 text-[10px] font-bold">{{ $course['credits'] ?? 0 }}cr</span>
+                                                        </span>
+                                                        <span class="mt-2.5 block break-words text-[12px] font-extrabold leading-[1.5]">{{ $text($course, 'title') }}</span>
+                                                        <span class="mt-auto pt-1.5 text-[10px] font-bold underline-offset-2 group-hover:underline">{{ __('centers.elective_slot_open') }}</span>
+                                                    </a>
+                                                    @continue
+                                                @endif
                                                 <button type="button" data-course-card data-course-id="{{ $course['id'] ?? '' }}" data-course-type="{{ $courseType }}" aria-haspopup="dialog" aria-expanded="false" class="sp-course-card group relative min-h-[100px] w-full rounded-2xl bg-white p-3.5 text-start border shadow-sm transition-all duration-300 hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-offset-2 {{ $typeClasses[$courseType] ?? $typeClasses['faculty'] }}" dir="{{ $direction }}">
                                                     <div class="flex items-center justify-between gap-2">
                                                         <span class="text-[11px] font-black uppercase tracking-[0.15em] text-slate-400 group-hover:text-spu-red">{{ $course['code'] ?? '' }}</span>
@@ -198,6 +205,19 @@
                                     @foreach (collect($term['courses'] ?? [])->filter(fn ($item) => is_array($item)) as $course)
                                         @php($courseType = $typeKey($course))
                                         @php($prereqCodes = $prereqCodesFor($course))
+                                        @php($slotUrl = $electiveSlotUrl($course))
+                                        @if ($slotUrl !== null)
+                                            <li>
+                                                <a href="{{ $slotUrl }}" target="_blank" rel="noopener" data-list-card data-elective-slot data-course-id="{{ $course['id'] ?? '' }}" data-course-type="{{ $courseType }}" aria-label="{{ __('centers.elective_slot_aria', ['title' => $text($course, 'title'), 'credits' => $course['credits'] ?? 0]) }}" class="sp-course-card sp-elective-slot group flex min-h-[64px] w-full flex-col gap-1.5 rounded-xl p-3.5 text-start shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-400 focus:ring-offset-2" dir="{{ $direction }}">
+                                                    <span class="flex items-center justify-between gap-2">
+                                                        <span class="flex items-center gap-1.5 text-[11px] font-bold">{!! $slotIcon !!}<span class="group-hover:underline">{{ __('centers.elective_slot_open') }}</span></span>
+                                                        <span class="rounded bg-white/70 px-2 py-0.5 text-[10px] font-bold">{{ $course['credits'] ?? 0 }}cr</span>
+                                                    </span>
+                                                    <span class="block break-words text-[13px] font-extrabold leading-[1.5]">{{ $text($course, 'title') }}</span>
+                                                </a>
+                                            </li>
+                                            @continue
+                                        @endif
                                         <li>
                                             <button type="button" data-list-card data-course-id="{{ $course['id'] ?? '' }}" data-course-type="{{ $courseType }}" aria-haspopup="dialog" class="sp-course-card group flex min-h-[64px] w-full flex-col gap-1.5 rounded-xl border bg-white p-3.5 text-start shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 {{ $typeClasses[$courseType] ?? $typeClasses['faculty'] }}" dir="{{ $direction }}">
                                                 <span class="flex items-center justify-between gap-2">

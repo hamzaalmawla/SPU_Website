@@ -10,6 +10,7 @@ use App\Contracts\Content\PersonIdentityServiceInterface;
 use App\Contracts\Faculty\FacultyLeadershipServiceInterface;
 use App\Contracts\Faculty\FacultyMasterProgramServiceInterface;
 use App\Contracts\Faculty\FacultyProgramServiceInterface;
+use App\Contracts\Faculty\FacultyStudyPlanGuideServiceInterface;
 use App\Contracts\Faculty\FacultyStudyPlanLinkServiceInterface;
 use App\Contracts\Faculty\ProjectFieldBlockParserInterface;
 use App\Contracts\Page\AboutPageServiceInterface;
@@ -116,6 +117,7 @@ final class FacultyPageService implements FacultyPageServiceInterface
         private readonly FacultyMasterProgramServiceInterface $masterProgramService,
         private readonly CenterCatalogServiceInterface $centerCatalog,
         private readonly FacultyProgramServiceInterface $programService,
+        private readonly FacultyStudyPlanGuideServiceInterface $studyPlanGuide,
     ) {}
 
     public function getHub(string $locale): FacultyHubPageDTO
@@ -404,6 +406,8 @@ final class FacultyPageService implements FacultyPageServiceInterface
         $pagination = $this->emptyPagination(count($items));
 
         if (in_array($subpageSlug, ['study-plan', 'study-plan-course'], true)) {
+            // The "How to read this plan" guide and course type explanations.
+            $pageData['payload'] = $this->studyPlanGuide->withDefaults(is_array($pageData['payload'] ?? null) ? $pageData['payload'] : [], $locale);
             $pageData['payload']['plan']['pdfUrl'] = $this->studyPlanLinkService->sanitizeCourseMaterialPath(
                 $pageData['payload']['plan']['pdfUrl'] ?? null,
             );

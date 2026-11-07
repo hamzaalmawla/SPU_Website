@@ -92,8 +92,9 @@
     --accent-glow: rgba(32, 39, 89, 0.25);
 }
 
+/* Grey, never the faculty accent: specialisation cards carry the accent, so the two types stay apart. */
 .sp-card-accent-fac {
-    border-inline-start: 4px solid var(--accent-color, #64748b);
+    border-inline-start: 4px solid #64748b;
     --accent-glow: rgba(100, 116, 139, 0.25);
 }
 
@@ -105,6 +106,19 @@
 .sp-card-accent-elec {
     border-inline-start: 4px dashed #f59e0b;
     --accent-glow: rgba(245, 158, 11, 0.25);
+}
+
+/* A university elective box: the elective orange, filled, with a dashed outline. */
+.sp-elective-slot {
+    border: 1.5px dashed #f59e0b;
+    border-inline-start-width: 4px;
+    background-color: #fffbeb;
+    color: #92400e;
+    --accent-glow: rgba(245, 158, 11, 0.25);
+}
+
+.sp-elective-slot:hover {
+    background-color: #fef3c7;
 }
 
 .sp-custom-scrollbar::-webkit-scrollbar {

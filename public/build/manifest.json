@@ -20,7 +20,7 @@
     "src": "public/images/icon-chevron-down-outline.svg"
   },
   "resources/css/app.css": {
-    "file": "assets/app.CBVBCTBs.css",
+    "file": "assets/app.BKS3XFCE.css",
     "name": "app",
     "names": [
       "app.css"
@@ -34,7 +34,7 @@
     ]
   },
   "resources/css/filament/admin.css": {
-    "file": "assets/admin.oEwBm2R8.css",
+    "file": "assets/admin.u0BRt-5A.css",
     "name": "admin",
     "names": [
       "admin.css"
@@ -61,7 +61,7 @@
     ]
   },
   "resources/js/alpine/studyPlan.js": {
-    "file": "js/studyPlan.DCs2YyJA.js",
+    "file": "js/studyPlan.CmN5HW6l.js",
     "name": "studyPlan",
     "src": "resources/js/alpine/studyPlan.js",
     "isDynamicEntry": true,
@@ -70,7 +70,7 @@
     ]
   },
   "resources/js/app.js": {
-    "file": "js/app.BHlSFd27.js",
+    "file": "js/app.W0CvBdLX.js",
     "name": "app",
     "src": "resources/js/app.js",
     "isEntry": true,
@@ -109,7 +109,7 @@
     ]
   },
   "resources/js/chatbot/chatbotWidget.js": {
-    "file": "js/chatbotWidget.D-xvVXzK.js",
+    "file": "js/chatbotWidget.CcowtW_7.js",
     "name": "chatbotWidget",
     "src": "resources/js/chatbot/chatbotWidget.js",
     "isDynamicEntry": true,

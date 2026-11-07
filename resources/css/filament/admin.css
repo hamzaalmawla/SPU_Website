@@ -1379,6 +1379,9 @@
 .spu-board__card--faculty { border-inline-start-color: #64748b; }
 .spu-board__card--specialization { border-inline-start-color: #8b5cf6; }
 .spu-board__card.is-elective { border-inline-start-style: dashed; border-inline-start-color: #f59e0b; }
+.spu-board__card.is-elective-slot { border: 1.5px dashed #f59e0b; border-inline-start-width: 4px; background: #fffbeb; }
+.spu-board__card.is-elective-slot .spu-board__card-meta > span:first-child { color: #b45309; font-weight: 700; }
+.spu-board-form__slot small { display: block; font-weight: 400; }
 .spu-board__card.has-warning { border-color: var(--board-warning); }
 .spu-board__card-meta { display: flex; justify-content: space-between; gap: .5rem; color: var(--board-muted); font-weight: 700; letter-spacing: .02em; font-size: .6875rem; }
 .spu-board__card-title { font-weight: 700; line-height: 1.35; overflow-wrap: anywhere; }

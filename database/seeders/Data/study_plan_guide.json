@@ -1,0 +1,43 @@
+{
+    "_note": "Default student help on every faculty study plan page: the 'How to read this plan' guide and the course type explanations. Editors can reword both per faculty and language (Study plan editor > How to read this plan, and Legend settings). Read by FacultyStudyPlanGuideService.",
+    "guide": {
+        "ar": {
+            "title": "كيف تقرأ الخطة الدراسية",
+            "legendHint": "اختر نوعاً لإبراز مقرراته في الخطة.",
+            "steps": [
+                {"id": "card", "title": "كل بطاقة مقرر واحد", "text": "تعرض البطاقة رمز المقرر واسمه وعدد ساعاته المعتمدة (cr). تُحتسب الساعات المعتمدة من مجموع الساعات المطلوبة للتخرج."},
+                {"id": "columns", "title": "كل عمود فصل دراسي", "text": "ابدأ من الفصل الأول على اليسار وتقدّم نحو اليمين. يقع كل مقرر في الفصل الذي تنصحك الخطة بدراسته فيه."},
+                {"id": "lines", "title": "الخطوط تبيّن ما يجب دراسته أولاً", "text": "الخط من مقرر إلى آخر يعني أن عليك النجاح في المقرر الأول قبل أن تستطيع التسجيل في الثاني."},
+                {"id": "highlight", "title": "أشر إلى مقرر لترى مساره", "text": "مرّر المؤشر فوق المقرر أو المسه: تبقى المقررات التي يحتاجها والتي يفتحها واضحة ويخفت الباقي. اضغط عليه لعرض تفاصيله."},
+                {"id": "electives", "title": "البطاقات البرتقالية المنقّطة اختيارية", "text": "تختار المقرر الاختياري من بين عدة مقررات. بطاقة «مقرر جامعة اختياري» تفتح قائمة المقررات الجامعية الاختيارية التي يمكنك الاختيار منها."},
+                {"id": "views", "title": "مخطط أو قائمة", "text": "اختر «قائمة» لعرض المقررات فصلاً بعد فصل، وهي أسهل على الهاتف. ويحفظ زر «تحميل الساعات» ملخصاً بالساعات المطلوبة."}
+            ]
+        },
+        "en": {
+            "title": "How to read this study plan",
+            "legendHint": "Select a type to highlight its courses in the plan.",
+            "steps": [
+                {"id": "card", "title": "Each card is one course", "text": "A card shows the course code, its name and its credit hours (cr). Credit hours count toward the total you need to graduate."},
+                {"id": "columns", "title": "Each column is a semester", "text": "Start with semester 1 on the left and move to the right. Each course sits in the semester the plan recommends you take it."},
+                {"id": "lines", "title": "Lines show what comes first", "text": "A line from one course to another means you must pass the first course before you can register for the second."},
+                {"id": "highlight", "title": "Point at a course to see its path", "text": "Hover over or tap a course: the courses it needs and the ones it opens stay bright, and the rest fade. Select it to see its details."},
+                {"id": "electives", "title": "Dashed orange cards are electives", "text": "You choose an elective from several courses. A “University elective course” card opens the list of university electives you can pick from."},
+                {"id": "views", "title": "Graph or list", "text": "Choose List to see the courses semester by semester, which is easier on a phone. Download Hours saves a summary of the hours you need."}
+            ]
+        }
+    },
+    "legendDescriptions": {
+        "ar": {
+            "university": "يدرسه جميع طلاب الجامعة مهما كانت كليتهم.",
+            "faculty": "يدرسه جميع طلاب هذه الكلية.",
+            "specialization": "خاص ببرنامجك أو تخصصك.",
+            "elective": "تختاره بنفسك من بين عدة مقررات متاحة."
+        },
+        "en": {
+            "university": "Taken by every SPU student, whatever their faculty.",
+            "faculty": "Taken by every student of this faculty.",
+            "specialization": "Part of your own program (specialisation).",
+            "elective": "You choose it yourself from several courses on offer."
+        }
+    }
+}
