@@ -543,15 +543,20 @@ final class CmsWorkflowService implements CmsWorkflowServiceInterface
 
     public function publishDueScheduled(): int
     {
-        $drafts = CmsDraft::query()
+        // Order ids only, then load each draft on its own, so payload_json never
+        // passes through the sort buffer (see latestEditableDraft).
+        $draftIds = CmsDraft::query()
             ->where('status', PublicationStatus::Scheduled->value)
             ->where('scheduled_at', '<=', now())
             ->orderBy('scheduled_at')
-            ->get();
+            ->orderBy('id')
+            ->pluck('id');
 
         $published = 0;
 
-        foreach ($drafts as $draft) {
+        foreach ($draftIds as $draftId) {
+            $draft = CmsDraft::query()->find((int) $draftId);
+
             if (! $draft instanceof CmsDraft) {
                 continue;
             }
@@ -696,25 +701,33 @@ final class CmsWorkflowService implements CmsWorkflowServiceInterface
         return $draft;
     }
 
+    /**
+     * Find the newest editable draft by id first, then load that one row.
+     *
+     * Sorting whole rows drags payload_json (a large JSON column) through
+     * MySQL's sort buffer. Once a target collects many big versions, as study
+     * plans do, the server refuses with "Out of sort memory" (1038). Sorting
+     * only ids keeps the sort tiny, and idx_cms_drafts_latest lets MySQL read
+     * them in order without sorting at all.
+     */
     private function latestEditableDraft(string $targetKey): ?CmsDraft
     {
-        $draft = CmsDraft::query()
-            ->where('target_key', $targetKey)
-            ->where('status', PublicationStatus::Draft->value)
-            ->latest('updated_at')
-            ->latest('id')
-            ->first();
-
-        if (! $draft instanceof CmsDraft) {
-            $draft = CmsDraft::query()
+        foreach ([PublicationStatus::Draft->value, PublicationStatus::Scheduled->value] as $status) {
+            $id = CmsDraft::query()
                 ->where('target_key', $targetKey)
-                ->where('status', PublicationStatus::Scheduled->value)
-                ->latest('updated_at')
-                ->latest('id')
-                ->first();
+                ->where('status', $status)
+                ->orderByDesc('updated_at')
+                ->orderByDesc('id')
+                ->value('id');
+
+            if ($id !== null) {
+                $draft = CmsDraft::query()->find((int) $id);
+
+                return $draft instanceof CmsDraft ? $draft : null;
+            }
         }
 
-        return $draft instanceof CmsDraft ? $draft : null;
+        return null;
     }
 
     /** @return array<string, mixed>|null */
