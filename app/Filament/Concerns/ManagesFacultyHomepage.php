@@ -13,6 +13,7 @@ use App\Contracts\Faculty\FacultyMasterProgramServiceInterface;
 use App\Contracts\Faculty\FacultyPositionServiceInterface;
 use App\Contracts\Faculty\FacultyStudyPlanBoardServiceInterface;
 use App\Contracts\Faculty\FacultyStudyPlanEditorServiceInterface;
+use App\Contracts\Faculty\FacultyStudyPlanGuideServiceInterface;
 use App\Contracts\Faculty\FacultyStudyPlanLinkServiceInterface;
 use App\Contracts\Media\MediaServiceInterface;
 use App\Contracts\Page\FacultyPageServiceInterface;
@@ -1304,12 +1305,37 @@ trait ManagesFacultyHomepage
                 TextInput::make($prefix.'.payload.plan.accent')->label(__('admin.faculty_workspace.study_plan.plan_color'))->maxLength(20),
             ])->columns(2)->collapsed(),
 
+            Section::make(__('admin.faculty_workspace.study_plan.guide.section'))
+                ->description(__('admin.faculty_workspace.study_plan.guide.section_help'))
+                ->schema([
+                    TextInput::make($prefix.'.payload.guide.title')->label(__('admin.faculty_workspace.study_plan.guide.title'))->maxLength(120),
+                    TextInput::make($prefix.'.payload.guide.legendHint')->label(__('admin.faculty_workspace.study_plan.guide.legend_hint'))->maxLength(160),
+                    Repeater::make($prefix.'.payload.guide.steps')
+                        ->label(__('admin.faculty_workspace.study_plan.guide.steps'))
+                        ->helperText(__('admin.faculty_workspace.study_plan.guide.steps_help'))
+                        ->schema([
+                            Hidden::make('id')->dehydrated(),
+                            TextInput::make('title')->label(__('admin.faculty_workspace.study_plan.guide.step_title'))->required()->maxLength(120),
+                            Textarea::make('text')->label(__('admin.faculty_workspace.study_plan.guide.step_text'))->rows(2)->maxLength(400),
+                        ])
+                        ->itemLabel(fn (array $state): ?string => ($state['title'] ?? '') !== '' ? (string) $state['title'] : null)
+                        ->defaultItems(0)
+                        ->maxItems(10)
+                        ->reorderable()
+                        ->collapsible()
+                        ->columnSpanFull(),
+                ])->columns(2)->collapsed(),
+
             Section::make(__('admin.faculty_workspace.study_plan.legend_settings'))->schema([
                 Repeater::make($prefix.'.payload.legend')
                     ->label(__('admin.faculty_workspace.study_plan.course_type_legend'))
                     ->schema([
                         Hidden::make('id')->dehydrated(),
                         TextInput::make('label')->label(__('admin.faculty_workspace.editor.fields.label'))->required()->maxLength(120),
+                        TextInput::make('description')
+                            ->label(__('admin.faculty_workspace.study_plan.guide.type_description'))
+                            ->helperText(__('admin.faculty_workspace.study_plan.guide.type_description_help'))
+                            ->maxLength(200),
                     ])
                     ->columns(2)
                     ->defaultItems(0)
@@ -2049,6 +2075,8 @@ trait ManagesFacultyHomepage
         unset($plan['departments'], $plan['terms'], $plan['courses'], $plan['lessons'], $plan['electivePools'], $plan['promotionRequirements']);
         $payload['plan'] = $plan;
         $payload['lessonTypes'] = $this->lessonTypesForForm($payload['lessonTypes'] ?? []);
+        // Start the guide and course type explanations from the reviewed defaults.
+        $payload = app(FacultyStudyPlanGuideServiceInterface::class)->withDefaults($payload, $locale);
         $content['payload'] = $payload;
 
         return $content;
@@ -2289,6 +2317,18 @@ trait ManagesFacultyHomepage
             $content['payload']['labels'] = is_array($content['payload']['labels'] ?? null) ? $content['payload']['labels'] : [];
             $content['payload']['courseLabels'] = is_array($content['payload']['courseLabels'] ?? null) ? $content['payload']['courseLabels'] : [];
             $content['payload']['legend'] = $this->listOfArrays($content['payload']['legend'] ?? []);
+            if (array_key_exists('guide', $content['payload'])) {
+                $guide = is_array($content['payload']['guide']) ? $content['payload']['guide'] : [];
+                $content['payload']['guide'] = [
+                    'title' => trim((string) ($guide['title'] ?? '')),
+                    'legendHint' => trim((string) ($guide['legendHint'] ?? '')),
+                    'steps' => array_map(static fn (array $step): array => [
+                        'id' => trim((string) ($step['id'] ?? '')),
+                        'title' => trim((string) ($step['title'] ?? '')),
+                        'text' => trim((string) ($step['text'] ?? '')),
+                    ], $this->listOfArrays($guide['steps'] ?? [])),
+                ];
+            }
             $content['payload']['lessonTypes'] = $this->keyedItemsById($content['payload']['lessonTypes'] ?? []);
             $content = $this->mergeStudyPlanDepartmentContent($targetKey, $locale, $content);
             unset($content['items'], $content['stats'], $content['dean']);
@@ -2813,7 +2853,7 @@ trait ManagesFacultyHomepage
             }
         }
 
-        foreach (['labels', 'courseLabels', 'legend', 'lessonTypes'] as $key) {
+        foreach (['labels', 'courseLabels', 'legend', 'lessonTypes', 'guide'] as $key) {
             if (array_key_exists($key, $editedPayload)) {
                 $baseContent['payload'][$key] = $editedPayload[$key];
             }

@@ -45,12 +45,6 @@
         'specialization' => 'sp-card-accent-spec border-indigo-200 focus:ring-indigo-400',
         'elective' => 'sp-card-accent-elec border-slate-200 focus:ring-amber-400',
     ];
-    $dotClasses = [
-        'university' => 'bg-spu-blue',
-        'faculty' => 'bg-slate-400',
-        'specialization' => 'bg-spu-blue/70',
-        'elective' => 'bg-slate-300',
-    ];
     $poolLabel = fn (string $poolId): string => match ($poolId) {
         'university' => $label('universityElective'),
         'faculty' => $label('facultyElective'),
@@ -130,24 +124,9 @@
                         </div>
                     @endif
 
-                    <div class="flex flex-wrap items-center justify-between gap-4">
-                        <div class="flex flex-wrap items-center gap-4">
-                            <p class="text-[14px] font-semibold text-slate-500">{{ $label('courseTypes') ?: ($isAr ? 'أنواع المقررات' : 'Course Types') }}</p>
-                            @foreach ($legend as $item)
-                                @php($legendType = $item['id'] ?? 'faculty')
-                                <button type="button" data-legend-type="{{ $legendType }}" aria-pressed="false" class="flex items-center gap-2.5 rounded-full border border-slate-100 bg-white px-5 py-2.5 shadow-sm transition-all hover:border-slate-200 hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-spu-blue aria-pressed:border-spu-blue aria-pressed:shadow-md">
-                                    <span class="h-2.5 w-2.5 rounded-full {{ $dotClasses[$legendType] ?? 'bg-slate-400' }}"></span>
-                                    <span class="text-[12px] font-extrabold uppercase tracking-widest text-slate-700">{{ $text($item, 'label') }}</span>
-                                </button>
-                            @endforeach
-                            @if ($electiveListUrl !== null)
-                                <a href="{{ $electiveListUrl }}" target="_blank" rel="noopener" class="sp-elective-slot flex items-center gap-2.5 rounded-full px-5 py-2.5 shadow-sm transition-all hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400">
-                                    <span class="text-[12px] font-extrabold uppercase tracking-widest">{{ __('centers.elective_slot_legend') }}</span>
-                                    {!! $slotIcon !!}
-                                </a>
-                            @endif
-                        </div>
+                    @include('public.faculties.partials.study-plan-guide')
 
+                    <div class="flex flex-wrap items-center justify-end gap-4">
                         <div class="flex flex-wrap items-center gap-2">
                             <div class="inline-flex rounded-lg border border-slate-200 bg-white p-0.5 shadow-sm" role="group" aria-label="{{ $isAr ? 'طريقة العرض' : 'View mode' }}">
                                 <button type="button" data-study-plan-view-toggle="graph" aria-pressed="true" class="rounded-md px-3.5 py-2 text-[12px] font-bold text-spu-blue/70 transition-colors aria-pressed:bg-spu-blue aria-pressed:text-white">{{ $isAr ? 'مخطط' : 'Graph' }}</button>
