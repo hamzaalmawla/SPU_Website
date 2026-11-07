@@ -92,8 +92,9 @@
     --accent-glow: rgba(32, 39, 89, 0.25);
 }
 
+/* Grey, never the faculty accent: specialisation cards carry the accent, so the two types stay apart. */
 .sp-card-accent-fac {
-    border-inline-start: 4px solid var(--accent-color, #64748b);
+    border-inline-start: 4px solid #64748b;
     --accent-glow: rgba(100, 116, 139, 0.25);
 }
 
