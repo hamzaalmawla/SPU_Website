@@ -37,9 +37,11 @@ interface ChatbotUsageServiceInterface
 
     /**
      * Model tokens spent outside answers: reading scanned pages of knowledge
-     * files, rewriting questions for search.
+     * files, rewriting questions for search. `$cachedInputTokens` are the
+     * input tokens OpenAI served from its prompt cache (billed at the cached
+     * price).
      */
-    public function recordModelUse(string $model, int $inputTokens, int $outputTokens): bool;
+    public function recordModelUse(string $model, int $inputTokens, int $outputTokens, int $cachedInputTokens = 0): bool;
 
     /**
      * One recording transcribed (its billed or measured length in seconds).

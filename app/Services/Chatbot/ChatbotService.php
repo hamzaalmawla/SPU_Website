@@ -435,7 +435,7 @@ final class ChatbotService implements ChatbotServiceInterface
             return null;
         }
 
-        $this->usage->recordModelUse($plan['model'], $outcome->inputTokens, $outcome->outputTokens);
+        $this->usage->recordModelUse($plan['model'], $outcome->inputTokens, $outcome->outputTokens, $outcome->cachedInputTokens);
         $hint = SearchRewrite::parse($outcome->text, $message);
         Cache::put($plan['key'], $hint ?? '', 604_800);
 

@@ -72,6 +72,13 @@
                 <span class="spu-assistant__stat-value" dir="ltr">{{ $money($usage->costTodayUsd) }}</span>
                 <span class="spu-assistant__stat-hint">{{ __('admin_chatbot.stats.cost_30') }}: <bdi dir="ltr">{{ $money($usage->cost30DaysUsd) }}</bdi></span>
                 <span class="spu-assistant__stat-hint">{{ __('admin_chatbot.stats.cost_30_hint', ['questions' => $number($usage->questions30Days), 'tokens' => $number($usage->tokens30Days)]) }}</span>
+                @if ($usage->promptCacheRate30Days !== null)
+                    <span class="spu-assistant__stat-hint" title="{{ __('admin_chatbot.stats.prompt_cache_help') }}">{{ __('admin_chatbot.stats.prompt_cache_hint', [
+                        'today' => $usage->promptCacheRateToday !== null ? $usage->promptCacheRateToday.'%' : '—',
+                        'month' => $usage->promptCacheRate30Days.'%',
+                        'tokens' => $number($usage->cachedInputTokens30Days),
+                    ]) }}</span>
+                @endif
             </div>
         </div>
 

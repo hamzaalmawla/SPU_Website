@@ -6,6 +6,7 @@ namespace Tests\Feature\Chatbot;
 
 use App\Contracts\Chatbot\ChatbotKnowledgeServiceInterface;
 use App\Contracts\Chatbot\ChatbotSettingsServiceInterface;
+use App\Contracts\Chatbot\ChatbotUsageServiceInterface;
 use App\Filament\Pages\ManageChatbot;
 use App\Models\Chatbot\ChatbotDocument;
 use App\Models\Chatbot\ChatbotSetting;
@@ -40,6 +41,30 @@ final class ManageChatbotPageTest extends TestCase
             ->assertActionHidden('uploadDocuments')
             ->assertActionHidden('editSettings')
             ->assertActionHidden('testAssistant');
+    }
+
+    public function test_the_usage_panel_shows_how_much_input_the_prompt_cache_served(): void
+    {
+        $admin = $this->liveAssistant();
+
+        $this->actingAs($admin)->get('/admin/ai-assistant')->assertOk()->assertDontSee(__('admin_chatbot.stats.prompt_cache_help'));
+
+        // One answer: 1,200 input tokens, 200 of them from OpenAI's cache, and
+        // the search rewrite: 300 more, none cached.
+        auth()->logout();
+        $this->postJson('/en/assistant/messages', ['message' => 'Office hours?'])->assertOk();
+        // The rewrite's cached tokens count too, at the cached price.
+        app(ChatbotUsageServiceInterface::class)->recordModelUse('gpt-5.4-mini', 1000, 40, 800);
+
+        $usage = app(ChatbotUsageServiceInterface::class)->summary();
+        // (200 + 800) cached of (1,200 + 300 + 1,000) input.
+        $this->assertSame(40, $usage->promptCacheRateToday);
+        $this->assertSame(40, $usage->promptCacheRate30Days);
+        $this->assertSame(1000, $usage->cachedInputTokens30Days);
+
+        $this->actingAs($admin)->get('/admin/ai-assistant')
+            ->assertOk()
+            ->assertSee(__('admin_chatbot.stats.prompt_cache_hint', ['today' => '40%', 'month' => '40%', 'tokens' => '1,000']));
     }
 
     public function test_settings_save_the_key_encrypted_and_never_show_it(): void

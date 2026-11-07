@@ -31,5 +31,10 @@ final readonly class ChatbotUsageSummaryDTO
         public int $voiceSpokenAnswersToday = 0,
         public float $voiceMinutesToday = 0.0,
         public int $voiceFailuresToday = 0,
+        // Share of model input tokens OpenAI served from its prompt cache
+        // (billed at about a tenth of the price), in percent; null before any input.
+        public ?int $promptCacheRateToday = null,
+        public ?int $promptCacheRate30Days = null,
+        public int $cachedInputTokens30Days = 0,
     ) {}
 }

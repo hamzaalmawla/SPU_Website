@@ -30,6 +30,8 @@ return [
         'cost_30' => 'Estimated cost, 30 days',
         'cost_30_hint' => ':questions questions · :tokens tokens',
         'model' => 'Model: :model',
+        'prompt_cache_hint' => 'Prompt cache: :today of input tokens today · :month over 30 days (:tokens tokens)',
+        'prompt_cache_help' => 'OpenAI reuses the fixed start of each request (the assistant\'s rules, contacts and faculty list) and bills those tokens at about a tenth of the price. Higher is cheaper and faster.',
         'voice_hint' => 'Voice: :heard spoken questions (:minutes min) · :spoken answers read aloud · :failures failed',
     ],
     'usage_chart' => 'Questions in the last 14 days',

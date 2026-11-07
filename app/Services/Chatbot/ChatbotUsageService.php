@@ -69,16 +69,19 @@ final class ChatbotUsageService implements ChatbotUsageServiceInterface
         ]);
     }
 
-    public function recordModelUse(string $model, int $inputTokens, int $outputTokens): bool
+    public function recordModelUse(string $model, int $inputTokens, int $outputTokens, int $cachedInputTokens = 0): bool
     {
         if ($inputTokens <= 0 && $outputTokens <= 0) {
             return true;
         }
 
+        $cachedInputTokens = min(max(0, $cachedInputTokens), max(0, $inputTokens));
+
         return $this->increment([
             'input_tokens' => max(0, $inputTokens),
+            'cached_input_tokens' => $cachedInputTokens,
             'output_tokens' => max(0, $outputTokens),
-            'cost_micro_usd' => $this->costMicroUsd($model, $inputTokens, 0, $outputTokens),
+            'cost_micro_usd' => $this->costMicroUsd($model, $inputTokens, $cachedInputTokens, $outputTokens),
         ]);
     }
 
@@ -174,7 +177,18 @@ final class ChatbotUsageService implements ChatbotUsageServiceInterface
             voiceSpokenAnswersToday: (int) ($todayRow?->voice_spoken_answers ?? 0),
             voiceMinutesToday: round(((int) ($todayRow?->voice_seconds ?? 0)) / 60, 1),
             voiceFailuresToday: (int) ($todayRow?->voice_failures ?? 0),
+            promptCacheRateToday: $this->share((int) ($todayRow?->cached_input_tokens ?? 0), (int) ($todayRow?->input_tokens ?? 0)),
+            promptCacheRate30Days: $this->share((int) $rows->sum('cached_input_tokens'), (int) $rows->sum('input_tokens')),
+            cachedInputTokens30Days: (int) $rows->sum('cached_input_tokens'),
         );
+    }
+
+    /**
+     * A part of a whole as a whole percentage, or null when there is no whole.
+     */
+    private function share(int $part, int $whole): ?int
+    {
+        return $whole > 0 ? (int) round(min($part, $whole) / $whole * 100) : null;
     }
 
     /**
