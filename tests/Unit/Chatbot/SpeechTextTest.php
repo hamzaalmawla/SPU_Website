@@ -65,6 +65,23 @@ final class SpeechTextTest extends TestCase
         $this->assertSame($text, implode(' ', $segments));
     }
 
+    public function test_segments_grow_so_each_is_ready_before_the_one_before_ends(): void
+    {
+        $sentence = 'The admission office is open from Sunday to Thursday.';
+        $segments = SpeechText::segments(str_repeat($sentence.' ', 40), 120, 900, 3000);
+
+        $previous = 60;
+        foreach ($segments as $index => $segment) {
+            $this->assertLessThanOrEqual(min(900, 120 * 2 ** $index), mb_strlen($segment), "segment {$index}");
+            if ($index < count($segments) - 1) {
+                $this->assertGreaterThan($previous, mb_strlen($segment), "segment {$index} grows");
+                $previous = mb_strlen($segment);
+            }
+        }
+        $this->assertLessThanOrEqual(120, mb_strlen($segments[0]));
+        $this->assertGreaterThan(400, mb_strlen($segments[3]));
+    }
+
     public function test_the_same_text_is_always_cut_the_same_way(): void
     {
         $text = SpeechText::fromMarkdown('**Fees.** The annual tuition is 4,500,000 SYP. It is paid per semester. Scholarships cover up to 50%.');

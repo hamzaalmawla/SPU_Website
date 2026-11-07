@@ -709,7 +709,8 @@ a.spu-chatbot__source:focus-visible {
 }
 
 .spu-chatbot__voice.is-transcribing,
-.spu-chatbot__voice.is-thinking {
+.spu-chatbot__voice.is-thinking,
+.spu-chatbot__voice.is-preparing {
     border-color: #f3d9a4;
     background: #fffaf0;
 }
@@ -750,7 +751,8 @@ a.spu-chatbot__source:focus-visible {
 }
 
 .spu-chatbot__voice.is-transcribing .spu-chatbot__voice-meter i,
-.spu-chatbot__voice.is-thinking .spu-chatbot__voice-meter i {
+.spu-chatbot__voice.is-thinking .spu-chatbot__voice-meter i,
+.spu-chatbot__voice.is-preparing .spu-chatbot__voice-meter i {
     background: #c98a12;
     animation: spu-chat-dot 1.2s ease-in-out infinite;
     transform: scaleY(0.4);

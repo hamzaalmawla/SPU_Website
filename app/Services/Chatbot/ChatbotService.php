@@ -168,7 +168,7 @@ final class ChatbotService implements ChatbotServiceInterface
         $memory = ConversationMemory::open($question->memory, $locale);
         $exchanges = max($memory?->exchanges ?? 0, intdiv(count($history), 2)) + 1;
         // Only a conversation's first question is the same for everyone.
-        $cacheKey = $history === [] && $memory === null && $question->useCache && ! $question->adminTest ? $this->answerCacheKey($settings, $locale, $message) : null;
+        $cacheKey = $history === [] && $memory === null && $question->useCache && ! $question->adminTest ? $this->answerCacheKey($settings, $locale, $message, $question->spoken) : null;
 
         if ($cacheKey !== null) {
             $cached = Cache::get($cacheKey);
@@ -191,24 +191,26 @@ final class ChatbotService implements ChatbotServiceInterface
         $embeddingTokens = 0;
 
         try {
-            // Layer 2: OpenAI's free moderation check for harmful content. An
-            // outage here does not stop answers: the other layers still apply.
-            if ((bool) config('chatbot.guard.moderation', true) && $this->flagged($outgoing, $apiKey)) {
-                return $this->refuse($question, $locale, 'unsafe');
-            }
-
-            $searchQuery = $this->retrievalQuery($outgoing, $history);
-            $searchHint = $this->searchHint(
+            // Layer 2 (OpenAI's free moderation check for harmful content) runs
+            // at the same time as the search rewrite, which does not depend on
+            // it. A moderation outage does not stop answers: the other layers
+            // still apply.
+            [$flagged, $searchHint] = $this->screenAndRewrite(
+                $outgoing,
                 SearchRewrite::input(
                     $outgoing,
                     array_map(static fn (array $turn): array => ['role' => $turn['role'], 'content' => ChatbotGuard::redactPersonalData($turn['content'])], array_slice($history, -4)),
                     $memory?->notes ?? '',
                     (int) config('chatbot.conversation.rewrite_context_characters', 400),
                 ),
-                $outgoing,
                 $apiKey,
                 $settings->model,
             );
+            if ($flagged) {
+                return $this->refuse($question, $locale, 'unsafe');
+            }
+
+            $searchQuery = $this->retrievalQuery($outgoing, $history);
             $retrieval = $this->knowledge->retrieve($searchQuery, $apiKey, $locale, $searchHint);
             $embeddingTokens = $retrieval->embeddingTokens;
 
@@ -227,9 +229,12 @@ final class ChatbotService implements ChatbotServiceInterface
                 ),
                 messages: [
                     ...array_map(static fn (array $turn): array => ['role' => $turn['role'], 'content' => ChatbotGuard::redactPersonalData($turn['content'])], $history),
-                    ['role' => 'user', 'content' => ChatbotPrompt::questionTurn($outgoing, $retrieval->passages, (int) config('chatbot.retrieval.max_passage_characters', 1400), $memory)],
+                    ['role' => 'user', 'content' => ChatbotPrompt::questionTurn($outgoing, $retrieval->passages, (int) config('chatbot.retrieval.max_passage_characters', 1400), $memory, $question->spoken)],
                 ],
-                maxOutputTokens: (int) config('chatbot.conversation.max_output_tokens', 1200),
+                // A spoken answer is read aloud, so it is short: less to write and to say.
+                maxOutputTokens: $question->spoken
+                    ? (int) config('chatbot.conversation.max_spoken_output_tokens', 600)
+                    : (int) config('chatbot.conversation.max_output_tokens', 1200),
                 reasoningEffort: $this->reasoningEffort($settings->model),
                 cacheKey: 'spu-assistant-'.$locale,
                 jsonSchema: ChatbotPrompt::schema(),
@@ -322,46 +327,96 @@ final class ChatbotService implements ChatbotServiceInterface
     }
 
     /**
-     * The question in the documents' wording (SearchRewrite), from a small
-     * model call that also sees the conversation, so follow-ups come out as
-     * whole searches; cached a week per input. Null when switched off or
-     * when the call fails: retrieval then uses the question alone.
+     * The moderation verdict and the search hint for one question. Both are
+     * OpenAI calls that do not depend on each other, so they go out together
+     * (a second saved on every question); either may be skipped (moderation
+     * switched off, the hint cached or switched off).
+     *
+     * @return array{0: bool, 1: ?string} flagged, search hint
+     *
+     * @throws ChatbotProviderException when the key is rejected or the account is empty
      */
-    private function searchHint(string $input, string $message, string $apiKey, string $mainModel): ?string
+    private function screenAndRewrite(string $outgoing, string $rewriteInput, string $apiKey, string $mainModel): array
     {
-        if (! (bool) config('chatbot.retrieval.rewrite', true) || mb_strlen($message) < 3) {
-            return null;
+        $moderate = (bool) config('chatbot.guard.moderation', true);
+        $rewrite = $this->rewritePlan($rewriteInput, $outgoing, $apiKey, $mainModel);
+
+        if ($rewrite['request'] === null) {
+            return [$moderate && $this->flagged($outgoing, $apiKey), $rewrite['hint']];
         }
 
+        if (! $moderate) {
+            return [false, $this->rewriteResult($rewrite, $this->attempt($rewrite['request']), $outgoing)];
+        }
+
+        $results = $this->openAi->moderateAndRespond($outgoing, $apiKey, $rewrite['request']);
+
+        return [$this->moderationVerdict($results['moderation']), $this->rewriteResult($rewrite, $results['completion'], $outgoing)];
+    }
+
+    /**
+     * How to get the question in the documents' wording (SearchRewrite): a
+     * hint already cached for this input (a week), or the small model call
+     * that writes it, which also sees the conversation so follow-ups come
+     * out as whole searches. No request when switched off or cached.
+     *
+     * @return array{hint: ?string, request: ?ChatbotCompletionRequestDTO, key: string, model: string}
+     */
+    private function rewritePlan(string $input, string $message, string $apiKey, string $mainModel): array
+    {
         $model = trim((string) config('chatbot.retrieval.rewrite_model', '')) ?: $mainModel;
         $key = 'chatbot.search-hint.'.sha1($model.'|'.SearchTextNormalizer::normalize($input));
-        $cached = Cache::get($key);
-        if (is_string($cached)) {
-            return $cached !== '' ? $cached : null;
+        $plan = ['hint' => null, 'request' => null, 'key' => $key, 'model' => $model];
+
+        if (! (bool) config('chatbot.retrieval.rewrite', true) || mb_strlen($message) < 3) {
+            return $plan;
         }
 
-        try {
-            $completion = $this->openAi->respond(new ChatbotCompletionRequestDTO(
-                apiKey: $apiKey,
-                model: $model,
-                instructions: SearchRewrite::INSTRUCTIONS,
-                messages: [['role' => 'user', 'content' => $input]],
-                maxOutputTokens: 300,
-                reasoningEffort: $this->reasoningEffort($model),
-                cacheKey: 'spu-assistant-search',
-                timeout: (int) config('chatbot.retrieval.rewrite_timeout', 8),
-            ));
-        } catch (ChatbotProviderException $exception) {
-            Log::notice('Chatbot search rewrite skipped.', ['reason' => $exception->reason, 'status' => $exception->status]);
+        $cached = Cache::get($key);
+        if (is_string($cached)) {
+            return ['hint' => $cached !== '' ? $cached : null] + $plan;
+        }
+
+        return ['request' => new ChatbotCompletionRequestDTO(
+            apiKey: $apiKey,
+            model: $model,
+            instructions: SearchRewrite::INSTRUCTIONS,
+            messages: [['role' => 'user', 'content' => $input]],
+            maxOutputTokens: 300,
+            reasoningEffort: $this->reasoningEffort($model),
+            cacheKey: 'spu-assistant-search',
+            timeout: (int) config('chatbot.retrieval.rewrite_timeout', 8),
+        )] + $plan;
+    }
+
+    /**
+     * The hint from the rewrite call's outcome, counted and cached. A failed
+     * rewrite gives none: retrieval then uses the question alone.
+     *
+     * @param  array{hint: ?string, request: ?ChatbotCompletionRequestDTO, key: string, model: string}  $plan
+     */
+    private function rewriteResult(array $plan, ChatbotCompletionDTO|ChatbotProviderException $outcome, string $message): ?string
+    {
+        if ($outcome instanceof ChatbotProviderException) {
+            Log::notice('Chatbot search rewrite skipped.', ['reason' => $outcome->reason, 'status' => $outcome->status]);
 
             return null;
         }
 
-        $this->usage->recordModelUse($model, $completion->inputTokens, $completion->outputTokens);
-        $hint = SearchRewrite::parse($completion->text, $message);
-        Cache::put($key, $hint ?? '', 604_800);
+        $this->usage->recordModelUse($plan['model'], $outcome->inputTokens, $outcome->outputTokens);
+        $hint = SearchRewrite::parse($outcome->text, $message);
+        Cache::put($plan['key'], $hint ?? '', 604_800);
 
         return $hint;
+    }
+
+    private function attempt(ChatbotCompletionRequestDTO $request): ChatbotCompletionDTO|ChatbotProviderException
+    {
+        try {
+            return $this->openAi->respond($request);
+        } catch (ChatbotProviderException $exception) {
+            return $exception;
+        }
     }
 
     /**
@@ -478,13 +533,28 @@ final class ChatbotService implements ChatbotServiceInterface
         try {
             return $this->openAi->moderate($text, $apiKey);
         } catch (ChatbotProviderException $exception) {
-            if ($exception->reason === ChatbotProviderException::AUTH || $exception->reason === ChatbotProviderException::QUOTA) {
-                throw $exception;
-            }
-            Log::notice('Chatbot moderation check skipped.', ['reason' => $exception->reason, 'status' => $exception->status]);
-
-            return false;
+            return $this->moderationVerdict($exception);
         }
+    }
+
+    /**
+     * A moderation outcome as a verdict. A rejected key or an empty account
+     * stops the answer (it would fail the same way); any other failure lets
+     * it through to the remaining layers.
+     *
+     * @throws ChatbotProviderException
+     */
+    private function moderationVerdict(bool|ChatbotProviderException $outcome): bool
+    {
+        if (is_bool($outcome)) {
+            return $outcome;
+        }
+        if ($outcome->reason === ChatbotProviderException::AUTH || $outcome->reason === ChatbotProviderException::QUOTA) {
+            throw $outcome;
+        }
+        Log::notice('Chatbot moderation check skipped.', ['reason' => $outcome->reason, 'status' => $outcome->status]);
+
+        return false;
     }
 
     /**
@@ -619,10 +689,12 @@ final class ChatbotService implements ChatbotServiceInterface
         return $sources;
     }
 
-    private function answerCacheKey(ChatbotSettingsDTO $settings, string $locale, string $message): string
+    private function answerCacheKey(ChatbotSettingsDTO $settings, string $locale, string $message, bool $spoken): string
     {
         return 'chatbot.answer.'.sha1(implode('|', [
             $locale,
+            // A spoken answer is a different, shorter answer.
+            $spoken ? 'spoken' : 'typed',
             $settings->model,
             $this->settings->version(),
             $this->knowledge->version(),

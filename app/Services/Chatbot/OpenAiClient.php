@@ -184,12 +184,54 @@ final class OpenAiClient implements OpenAiClientInterface
     public function moderate(string $input, string $apiKey): bool
     {
         $response = $this->send(
-            fn (): Response => $this->request($apiKey, 10)->post('/moderations', [
-                'model' => (string) config('chatbot.guard.moderation_model', 'omni-moderation-latest'),
-                'input' => $input,
-            ])
+            fn (): Response => $this->request($apiKey, 10)->post('/moderations', $this->moderationPayload($input))
         );
 
+        return $this->flagged($response);
+    }
+
+    public function moderateAndRespond(string $input, string $apiKey, ChatbotCompletionRequestDTO $request): array
+    {
+        $responses = Http::pool(fn (Pool $pool): array => [
+            $this->configure($pool->as('moderation'), $apiKey, 10)->post('/moderations', $this->moderationPayload($input)),
+            $this->configure($pool->as('completion'), $request->apiKey, $request->timeout ?? (int) config('chatbot.openai.timeout', 45))
+                ->post('/responses', $this->responsePayload($request)),
+        ]);
+
+        $results = [];
+        foreach (['moderation', 'completion'] as $key) {
+            $response = $responses[$key] ?? null;
+
+            try {
+                if (! $response instanceof Response) {
+                    throw new ChatbotProviderException(ChatbotProviderException::UNAVAILABLE, 'OpenAI could not be reached.');
+                }
+                if (! $response->successful()) {
+                    throw $this->failure($response);
+                }
+                $results[$key] = $key === 'moderation' ? $this->flagged($response) : $this->completion($response);
+            } catch (ChatbotProviderException $exception) {
+                $results[$key] = $exception;
+            }
+        }
+
+        /** @var array{moderation: bool|ChatbotProviderException, completion: ChatbotCompletionDTO|ChatbotProviderException} $results */
+        return $results;
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function moderationPayload(string $input): array
+    {
+        return [
+            'model' => (string) config('chatbot.guard.moderation_model', 'omni-moderation-latest'),
+            'input' => $input,
+        ];
+    }
+
+    private function flagged(Response $response): bool
+    {
         $results = $response->json('results');
         if (! is_array($results) || $results === []) {
             throw new ChatbotProviderException(ChatbotProviderException::INVALID, 'Moderation response had no results.');

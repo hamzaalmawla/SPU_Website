@@ -37,6 +37,8 @@ final class ChatbotMessageRequest extends FormRequest
             'history.*.signature' => ['nullable', 'string', 'size:64'],
             // The sealed conversation notes (ConversationMemory) of the last answer.
             'memory' => ['nullable', 'string', 'max:8000'],
+            // The question was spoken and its answer will be read aloud.
+            'voice' => ['sometimes', 'boolean'],
         ];
     }
 
@@ -58,6 +60,7 @@ final class ChatbotMessageRequest extends FormRequest
             clientKey: $this->chatbotClientKey(),
             visitorKey: $this->chatbotVisitorKey(),
             memory: is_string($this->validated('memory')) ? $this->validated('memory') : null,
+            spoken: $this->boolean('voice'),
         );
     }
 }

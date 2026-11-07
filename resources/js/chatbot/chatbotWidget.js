@@ -345,7 +345,7 @@ class ChatbotWidget {
         let reply;
 
         try {
-            reply = await this.request(text, history);
+            reply = await this.request(text, history, { spoken });
         } finally {
             typing.remove();
         }
@@ -398,7 +398,7 @@ class ChatbotWidget {
         }
     }
 
-    async request(message, history) {
+    async request(message, history, { spoken = false } = {}) {
         const controller = new AbortController();
         const timer = window.setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
@@ -413,7 +413,7 @@ class ChatbotWidget {
                     'X-Requested-With': 'XMLHttpRequest',
                     'X-CSRF-TOKEN': csrfToken(),
                 },
-                body: JSON.stringify({ message, history, ...(this.memory ? { memory: this.memory } : {}) }),
+                body: JSON.stringify({ message, history, ...(this.memory ? { memory: this.memory } : {}), ...(spoken ? { voice: true } : {}) }),
             });
 
             if (!response.ok) {
@@ -480,6 +480,7 @@ class ChatbotWidget {
             case 'listening':
                 this.recorder?.finish();
                 break;
+            case 'preparing':
             case 'speaking':
                 // The conversation goes on: the reading ends and he listens.
                 this.player?.stop();
@@ -698,12 +699,25 @@ class ChatbotWidget {
 
         this.playingMessage = message;
         this.setPlaying(button);
+        // He thinks until the voice is ready, and talks only while it sounds.
         if (this.voiceSession) {
-            this.setVoiceMode('speaking');
+            this.setVoiceMode('preparing');
         }
-        this.host?.setState('talking');
+        this.host?.setState('thinking');
 
-        await this.player.play({ text: message.content, signature: message.speech ?? null, plainText: markdownToText(message.content) });
+        await this.player.play({
+            text: message.content,
+            signature: message.speech ?? null,
+            plainText: markdownToText(message.content),
+            onStart: () => {
+                if (this.voiceSession && this.voiceMode === 'preparing') {
+                    this.setVoiceMode('speaking');
+                }
+                if (this.playingMessage === message) {
+                    this.host?.setState('talking');
+                }
+            },
+        });
 
         if (this.playingMessage === message) {
             this.playingMessage = null;
@@ -741,7 +755,7 @@ class ChatbotWidget {
         const on = mode !== 'off';
         this.voiceBar.hidden = !on;
         this.form.classList.toggle('is-voice', on);
-        for (const name of ['listening', 'transcribing', 'thinking', 'speaking']) {
+        for (const name of ['listening', 'transcribing', 'thinking', 'preparing', 'speaking']) {
             this.voiceBar.classList.toggle(`is-${name}`, mode === name);
         }
         this.micButton.setAttribute('aria-pressed', on ? 'true' : 'false');
@@ -750,18 +764,18 @@ class ChatbotWidget {
         this.micButton.title = label;
         this.micButton.disabled = false;
 
-        this.voiceStop.hidden = mode !== 'listening' && mode !== 'speaking';
-        this.voiceStopLabel.textContent = mode === 'speaking' ? this.text.stopAudio : this.text.stopListening;
+        this.voiceStop.hidden = mode !== 'listening' && mode !== 'speaking' && mode !== 'preparing';
+        this.voiceStopLabel.textContent = mode === 'listening' ? this.text.stopListening : this.text.stopAudio;
         this.voiceStop.title = this.voiceStopLabel.textContent;
         this.voiceTime.hidden = mode !== 'listening';
         this.showLevel(0);
 
-        const status = { listening: this.text.listening, transcribing: this.text.transcribing, thinking: this.text.thinking, speaking: this.text.speaking }[mode] ?? '';
+        const status = { listening: this.text.listening, transcribing: this.text.transcribing, thinking: this.text.thinking, preparing: this.text.preparingVoice, speaking: this.text.speaking }[mode] ?? '';
         this.setVoiceStatus(status);
 
         if (mode === 'listening') {
             this.host?.setState('listening');
-        } else if (mode === 'transcribing' || mode === 'thinking') {
+        } else if (mode === 'transcribing' || mode === 'thinking' || mode === 'preparing') {
             this.host?.setState('thinking');
         } else if (mode === 'off') {
             this.host?.setVoiceLevel?.(0);

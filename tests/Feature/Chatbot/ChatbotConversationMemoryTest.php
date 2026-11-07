@@ -140,6 +140,55 @@ final class ChatbotConversationMemoryTest extends TestCase
         $this->assertNull($refused->json('memory'));
     }
 
+    public function test_a_spoken_question_gets_a_short_answer_made_for_reading_aloud(): void
+    {
+        $this->liveAssistant();
+
+        $this->postJson('/en/assistant/messages', ['message' => 'Office hours?', 'voice' => true])->assertOk()->assertJsonPath('status', 'ok');
+        $spoken = end($this->openAi->responseRequests);
+        $this->assertStringContainsString("Visitor's question (spoken; the answer will be read aloud):\nOffice hours?", $this->openAi->lastQuestionTurn());
+        $this->assertStringContainsString('under about 70 words', (string) $spoken['instructions']);
+        $this->assertSame(600, $spoken['max_output_tokens']);
+
+        // The same words typed are a different (fuller) answer, not the cached spoken one.
+        $this->postJson('/en/assistant/messages', ['message' => 'Office hours?'])->assertOk();
+        $this->assertCount(2, $this->openAi->responseRequests);
+        $this->assertStringContainsString("Visitor's question:\nOffice hours?", $this->openAi->lastQuestionTurn());
+        $this->assertSame(1200, end($this->openAi->responseRequests)['max_output_tokens']);
+        // The fixed rules are the same for both, so OpenAI's prompt cache serves both.
+        $this->assertSame($spoken['instructions'], end($this->openAi->responseRequests)['instructions']);
+    }
+
+    public function test_the_question_is_screened_and_rewritten_at_the_same_time(): void
+    {
+        $this->liveAssistant();
+
+        $this->ask('en', 'Pharmacy tuition?')->assertJsonPath('status', 'ok');
+        $this->assertCount(1, $this->openAi->moderationRequests);
+        $this->assertCount(1, $this->openAi->rewriteRequests);
+
+        // Harmful: refused, however the rewrite went.
+        $this->openAi->flagged = true;
+        $this->ask('en', 'Something harmful about the campus')->assertJsonPath('status', 'refused');
+        $this->assertCount(1, $this->openAi->responseRequests);
+
+        // Moderation down: the rewrite and the answer still go ahead.
+        $this->openAi->flagged = false;
+        $this->openAi->moderationStatus = 503;
+        $this->ask('en', 'Medicine minimum total?')->assertJsonPath('status', 'ok');
+
+        // A rejected key fails the answer, as before.
+        $this->openAi->moderationStatus = 401;
+        $this->ask('en', 'Dentistry fees?')->assertJsonPath('status', 'error');
+        $this->assertCount(2, $this->openAi->responseRequests);
+
+        // Rewrite down: the answer goes ahead on the question alone.
+        $this->openAi->moderationStatus = 200;
+        $this->openAi->rewriteStatus = 500;
+        $this->ask('en', 'Engineering fees?')->assertJsonPath('status', 'ok');
+        $this->assertCount(3, $this->openAi->responseRequests);
+    }
+
     /**
      * @param  list<array<string, mixed>>  $history
      */

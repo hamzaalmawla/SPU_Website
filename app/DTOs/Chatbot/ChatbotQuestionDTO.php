@@ -30,5 +30,7 @@ final readonly class ChatbotQuestionDTO
         public ?string $visitorKey = null,
         // The sealed conversation notes the last answer handed out (ConversationMemory).
         public ?string $memory = null,
+        // Asked by voice: the answer will be read aloud, so it is short and plain.
+        public bool $spoken = false,
     ) {}
 }

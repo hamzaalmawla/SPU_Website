@@ -51,6 +51,7 @@
             'heard' => $chatbotText['heard'],
             'transcribing' => $chatbotText['transcribing'],
             'speaking' => $chatbotText['speaking'],
+            'preparingVoice' => $chatbotText['preparing_voice'],
             'listen' => $chatbotText['listen'],
             'stopAudio' => $chatbotText['stop_audio'],
             'voiceEnded' => $chatbotText['voice_ended'],
