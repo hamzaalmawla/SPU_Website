@@ -70,7 +70,7 @@
     ]
   },
   "resources/js/app.js": {
-    "file": "js/app.CNhDYKC3.js",
+    "file": "js/app.BHlSFd27.js",
     "name": "app",
     "src": "resources/js/app.js",
     "isEntry": true,
@@ -100,7 +100,7 @@
     ]
   },
   "resources/js/chatbot/chatVoice.js": {
-    "file": "js/chatVoice.B9Crgk-W.js",
+    "file": "js/chatVoice.oE-BAjVB.js",
     "name": "chatVoice",
     "src": "resources/js/chatbot/chatVoice.js",
     "isDynamicEntry": true,
@@ -109,7 +109,7 @@
     ]
   },
   "resources/js/chatbot/chatbotWidget.js": {
-    "file": "js/chatbotWidget.CYh8duMl.js",
+    "file": "js/chatbotWidget.D-xvVXzK.js",
     "name": "chatbotWidget",
     "src": "resources/js/chatbot/chatbotWidget.js",
     "isDynamicEntry": true,

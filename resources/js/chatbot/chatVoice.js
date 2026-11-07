@@ -494,14 +494,15 @@ export class SpeechPlayer {
             },
             body: JSON.stringify({ text, signature, segment, stream }),
         });
-        const type = response.headers.get('Content-Type') ?? '';
+        // Media types are case-insensitive (the host sends audio/l16).
+        const type = (response.headers.get('Content-Type') ?? '').toLowerCase();
         if (!response.ok || type.includes('json')) {
             return null;
         }
 
         const segments = Number.parseInt(response.headers.get('X-Speech-Segments') ?? '1', 10) || 1;
 
-        if (!type.startsWith('audio/L16') || !response.body) {
+        if (!type.startsWith('audio/l16') || !response.body) {
             const buffer = await this.audioContext.decodeAudioData(await response.arrayBuffer());
 
             return {

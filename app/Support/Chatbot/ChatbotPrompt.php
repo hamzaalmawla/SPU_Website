@@ -168,7 +168,9 @@ final class ChatbotPrompt
             $notes = '<conversation_notes exchanges="'.$memory->exchanges."\">\n".self::fence($memory->notes)."\n</conversation_notes>\n\n";
         }
 
-        $label = $spoken ? "Visitor's question (spoken; the answer will be read aloud):" : "Visitor's question:";
+        $label = $spoken
+            ? "Visitor's question (spoken; the answer will be read aloud: at most about 70 words in two to four plain sentences, no list, no table, the key facts first, then offer more detail if there is more):"
+            : "Visitor's question:";
 
         return $notes."<sources>\n".$sources."\n</sources>\n\n".$label."\n".self::fence($question);
     }

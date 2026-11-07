@@ -44,6 +44,8 @@ final readonly class ChatbotReplyDTO
         public ?string $memory = null,
         // Proof that this server wrote `answer`, which lets it be read aloud.
         public ?string $speechSignature = null,
+        /** @var array<string, int> milliseconds per stage (screen, search, model), for Server-Timing */
+        public array $timings = [],
     ) {}
 
 }

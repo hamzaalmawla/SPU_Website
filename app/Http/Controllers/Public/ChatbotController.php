@@ -35,6 +35,12 @@ final class ChatbotController extends Controller
                 'speech' => $reply->speechSignature,
             ])
             ->header('Cache-Control', 'no-store, private')
-            ->header('X-Robots-Tag', 'noindex, nofollow');
+            ->header('X-Robots-Tag', 'noindex, nofollow')
+            // How long each stage took (durations only), for measuring latency.
+            ->header('Server-Timing', implode(', ', array_map(
+                static fn (string $stage, int $ms): string => $stage.';dur='.$ms,
+                array_keys($reply->timings),
+                $reply->timings,
+            )));
     }
 }

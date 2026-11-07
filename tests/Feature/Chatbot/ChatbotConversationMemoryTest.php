@@ -146,7 +146,7 @@ final class ChatbotConversationMemoryTest extends TestCase
 
         $this->postJson('/en/assistant/messages', ['message' => 'Office hours?', 'voice' => true])->assertOk()->assertJsonPath('status', 'ok');
         $spoken = end($this->openAi->responseRequests);
-        $this->assertStringContainsString("Visitor's question (spoken; the answer will be read aloud):\nOffice hours?", $this->openAi->lastQuestionTurn());
+        $this->assertStringContainsString("Visitor's question (spoken; the answer will be read aloud: at most about 70 words in two to four plain sentences, no list, no table, the key facts first, then offer more detail if there is more):\nOffice hours?", $this->openAi->lastQuestionTurn());
         $this->assertStringContainsString('under about 70 words', (string) $spoken['instructions']);
         $this->assertSame(600, $spoken['max_output_tokens']);
 

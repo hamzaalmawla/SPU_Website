@@ -109,7 +109,10 @@ final class ChatbotService implements ChatbotServiceInterface
     public function ask(ChatbotQuestionDTO $question): ChatbotReplyDTO
     {
         $locale = $question->locale === 'en' ? 'en' : 'ar';
+        $this->timings = [];
+        $started = hrtime(true);
         $reply = $this->answer($question, $locale);
+        $this->timings['total'] = intdiv(hrtime(true) - $started, 1_000_000);
 
         // Every reply the visitor sees may be read aloud, and only those.
         return new ChatbotReplyDTO(
@@ -123,7 +126,29 @@ final class ChatbotService implements ChatbotServiceInterface
             $reply->searchHint,
             $reply->memory,
             ConversationSigner::signSpeech($locale, $reply->answer),
+            $this->timings,
         );
+    }
+
+    /** @var array<string, int> milliseconds per stage of the current question */
+    private array $timings = [];
+
+    /**
+     * Run one stage of an answer and note how long it took.
+     *
+     * @template T
+     *
+     * @param  callable(): T  $stage
+     * @return T
+     */
+    private function timed(string $name, callable $stage): mixed
+    {
+        $started = hrtime(true);
+        try {
+            return $stage();
+        } finally {
+            $this->timings[$name] = intdiv(hrtime(true) - $started, 1_000_000);
+        }
     }
 
     private function answer(ChatbotQuestionDTO $question, string $locale): ChatbotReplyDTO
@@ -201,7 +226,7 @@ final class ChatbotService implements ChatbotServiceInterface
             // at the same time as the search rewrite, which does not depend on
             // it. A moderation outage does not stop answers: the other layers
             // still apply.
-            [$flagged, $searchHint] = $this->screenAndRewrite(
+            [$flagged, $searchHint] = $this->timed('screen', fn (): array => $this->screenAndRewrite(
                 $outgoing,
                 SearchRewrite::input(
                     $outgoing,
@@ -211,13 +236,13 @@ final class ChatbotService implements ChatbotServiceInterface
                 ),
                 $apiKey,
                 $settings->model,
-            );
+            ));
             if ($flagged) {
                 return $this->refuse($question, $locale, 'unsafe');
             }
 
             $searchQuery = $this->retrievalQuery($outgoing, $history);
-            $retrieval = $this->knowledge->retrieve($searchQuery, $apiKey, $locale, $searchHint);
+            $retrieval = $this->timed('search', fn () => $this->knowledge->retrieve($searchQuery, $apiKey, $locale, $searchHint));
             $embeddingTokens = $retrieval->embeddingTokens;
 
             // Layer 3: the model classifies the message before answering
@@ -246,7 +271,7 @@ final class ChatbotService implements ChatbotServiceInterface
                 cacheKey: 'spu-assistant-'.$locale,
                 jsonSchema: ChatbotPrompt::schema(),
             );
-            [$completion, $model] = $this->respondWithFallback($request, $settings->fallbackModel);
+            [$completion, $model] = $this->timed('model', fn (): array => $this->respondWithFallback($request, $settings->fallbackModel));
         } catch (ChatbotProviderException $exception) {
             $this->usage->recordFailure($embeddingTokens);
             Log::warning('Chatbot provider call failed.', ['reason' => $exception->reason, 'status' => $exception->status]);
