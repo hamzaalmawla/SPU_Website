@@ -142,8 +142,8 @@ final class ChatbotVoiceService implements ChatbotVoiceServiceInterface
 
         $segments = SpeechText::segments(
             SpeechText::fromMarkdown($request->text),
-            (int) config('chatbot.voice.speech.first_segment_characters', 160),
-            (int) config('chatbot.voice.speech.segment_characters', 420),
+            (int) config('chatbot.voice.speech.first_segment_characters', 200),
+            (int) config('chatbot.voice.speech.segment_characters', 900),
             (int) config('chatbot.voice.speech.max_characters', 3000),
         );
         if ($request->segment < 0 || $request->segment >= count($segments)) {

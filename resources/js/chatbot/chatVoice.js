@@ -376,13 +376,28 @@ export class SpeechPlayer {
      * start reading (the browser's voice takes over), 'stopped' otherwise.
      */
     async playServer(run, text, signature) {
-        let segments = 1;
-        let next = this.fetchSegment(text, signature, 0);
+        // Each segment takes the server several seconds whatever its length,
+        // so the first two are asked for together and two stay in flight: the
+        // rest of the answer is being made while its start plays. (A reply of
+        // one segment answers the second request with a cheap 422.)
+        const pending = new Map();
+        const request = (index) => {
+            if (!pending.has(index)) {
+                const promise = this.fetchSegment(text, signature, index);
+                promise.catch(() => null);
+                pending.set(index, promise);
+            }
 
+            return pending.get(index);
+        };
+        request(0);
+        request(1);
+
+        let segments = 1;
         for (let index = 0; index < segments; index++) {
             let result;
             try {
-                result = await next;
+                result = await request(index);
             } catch {
                 result = null;
             }
@@ -394,8 +409,9 @@ export class SpeechPlayer {
             }
 
             segments = result.segments;
-            next = index + 1 < segments ? this.fetchSegment(text, signature, index + 1) : null;
-            next?.catch(() => null);
+            if (index + 2 < segments) {
+                request(index + 2);
+            }
 
             await this.playBuffer(run, result.buffer);
             if (run !== this.run) {

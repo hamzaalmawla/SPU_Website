@@ -300,10 +300,12 @@ return [
                 'ar' => 'You are the warm, professional host of the Syrian Private University. Read the text exactly as written, in clear Modern Standard Arabic with a neutral Levantine accent, at a calm, even pace. Pronounce numbers, dates and amounts carefully.',
                 'en' => 'You are the warm, professional host of the Syrian Private University. Read the text exactly as written, in clear, friendly English at a calm, even pace. Pronounce numbers, dates and amounts carefully.',
             ],
-            // The first segment is short so playback starts quickly; the rest
-            // are fetched while the one before plays.
-            'first_segment_characters' => 160,
-            'segment_characters' => 420,
+            // Each call takes about ten seconds whatever its length (measured on
+            // the host, November 2026), so a reply is cut into few segments: a
+            // first one that starts playback, and long ones for the rest. The
+            // browser fetches the first two together and keeps two in flight.
+            'first_segment_characters' => 200,
+            'segment_characters' => 900,
             'max_characters' => 3000,
             'timeout' => 30,
             // Estimated price: ~$0.015 a minute of speech, ~900 characters a minute.

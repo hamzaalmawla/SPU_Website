@@ -118,12 +118,17 @@ final class SpeechText
             $segments[] = $current;
         }
 
-        // A first sentence longer than the short limit is cut at a pause.
+        // A first sentence longer than the short limit is cut at a pause;
+        // the rest of it opens the next segment when it fits there.
         if ($segments !== [] && mb_strlen($segments[0]) > max(40, $firstCharacters)) {
             $head = self::split($segments[0], max(40, $firstCharacters));
             if (count($head) > 1) {
                 $rest = trim(implode(' ', array_slice($head, 1)));
-                array_splice($segments, 0, 1, [$head[0], $rest]);
+                if (isset($segments[1]) && mb_strlen($rest) + 1 + mb_strlen($segments[1]) <= max(40, $characters)) {
+                    array_splice($segments, 0, 2, [$head[0], $rest.' '.$segments[1]]);
+                } else {
+                    array_splice($segments, 0, 1, [$head[0], $rest]);
+                }
             }
         }
 
