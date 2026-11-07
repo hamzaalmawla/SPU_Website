@@ -3,21 +3,30 @@
  *
  * The conversation lives in sessionStorage (per tab, per language), so it
  * survives moving between pages and is gone when the tab closes. Nothing is
- * kept on the server.
+ * kept on the server: the recent turns travel back signed, and the
+ * assistant's notes on the turns before them travel back as a sealed token
+ * (the "memory") the browser cannot read or change.
  */
 
 export const MAX_STORED_MESSAGES = 30;
-export const MAX_HISTORY_MESSAGES = 6;
+export const MAX_HISTORY_MESSAGES = 8;
+
+export const MAX_MEMORY_LENGTH = 8000;
 
 export function storageKey(locale) {
     return `spu-assistant:v1:${locale === 'en' ? 'en' : 'ar'}`;
 }
 
+export function memoryKey(locale) {
+    return `${storageKey(locale)}:memory`;
+}
+
 /**
- * A stored message: { role: 'user'|'assistant', content, status?, sources?, signature? }.
+ * A stored message: { role: 'user'|'assistant', content, status?, sources?, signature?, speech? }.
  * The signature is the server's proof that it produced an answer to that
  * question; only signed pairs are accepted back as conversation history.
- * Anything else read back from storage is dropped.
+ * `speech` is its proof that it wrote the reply, which lets the reply be
+ * read aloud. Anything else read back from storage is dropped.
  */
 export function sanitizeMessages(value) {
     if (!Array.isArray(value)) {
@@ -31,9 +40,14 @@ export function sanitizeMessages(value) {
             content: message.content.slice(0, 8000),
             status: typeof message.status === 'string' ? message.status : 'ok',
             sources: Array.isArray(message.sources) ? sanitizeSources(message.sources) : [],
-            ...(typeof message.signature === 'string' && /^[a-f0-9]{64}$/u.test(message.signature) ? { signature: message.signature } : {}),
+            ...(isSignature(message.signature) ? { signature: message.signature } : {}),
+            ...(isSignature(message.speech) ? { speech: message.speech } : {}),
         }))
         .slice(-MAX_STORED_MESSAGES);
+}
+
+function isSignature(value) {
+    return typeof value === 'string' && /^[a-f0-9]{64}$/u.test(value);
 }
 
 export function sanitizeSources(sources) {
@@ -89,6 +103,32 @@ export function saveMessages(storage, locale, messages) {
 }
 
 /**
+ * The sealed conversation notes, or null. The browser only stores and
+ * returns the token; the server checks it.
+ */
+export function loadMemory(storage, locale) {
+    try {
+        const token = storage?.getItem(memoryKey(locale));
+
+        return typeof token === 'string' && token !== '' && token.length <= MAX_MEMORY_LENGTH ? token : null;
+    } catch {
+        return null;
+    }
+}
+
+export function saveMemory(storage, locale, token) {
+    try {
+        if (typeof token === 'string' && token !== '' && token.length <= MAX_MEMORY_LENGTH) {
+            storage?.setItem(memoryKey(locale), token);
+        } else {
+            storage?.removeItem(memoryKey(locale));
+        }
+    } catch {
+        // As above: the conversation still works, with its recent turns only.
+    }
+}
+
+/**
  * Steps of a typing reveal: cumulative cut points at word boundaries, about
  * `steps` of them whatever the answer's length.
  */
@@ -113,6 +153,19 @@ export function revealSteps(text, steps = 40) {
     picked[picked.length - 1] = text.length;
 
     return [...new Set(picked)];
+}
+
+/**
+ * Whether this browser can record a spoken question at all (a secure page,
+ * a microphone API, MediaRecorder and Web Audio).
+ */
+export function canRecord(win = globalThis) {
+    return Boolean(
+        win?.isSecureContext
+        && win.navigator?.mediaDevices?.getUserMedia
+        && typeof win.MediaRecorder === 'function'
+        && (win.AudioContext || win.webkitAudioContext),
+    );
 }
 
 /**

@@ -23,6 +23,14 @@
         data-welcome="{{ $chatbot->welcome }}"
         data-suggestions="{{ json_encode($chatbot->suggestions, JSON_UNESCAPED_UNICODE) }}"
         data-contact="{{ json_encode(array_values(array_filter([$chatbot->contactPhone, $chatbot->contactEmail])), JSON_UNESCAPED_UNICODE) }}"
+        @if ($chatbot->voiceEnabled)
+            data-voice="{{ json_encode([
+                'transcribe' => $chatbot->transcriptionEndpoint,
+                'speech' => $chatbot->speechEndpoint,
+                'server' => $chatbot->serverSpeech,
+                'maxSeconds' => $chatbot->maxRecordingSeconds,
+            ], JSON_UNESCAPED_SLASHES) }}"
+        @endif
         data-i18n="{{ json_encode([
             'thinking' => $chatbotText['thinking'],
             'sources' => $chatbotText['sources'],
@@ -36,6 +44,20 @@
             'offline' => $chatbotText['offline'],
             'expired' => $chatbotText['expired'],
             'suggestions' => $chatbotText['suggestions'],
+            'speak' => $chatbotText['speak'],
+            'stopListening' => $chatbotText['stop_listening'],
+            'cancelVoice' => $chatbotText['cancel_voice'],
+            'listening' => $chatbotText['listening'],
+            'heard' => $chatbotText['heard'],
+            'transcribing' => $chatbotText['transcribing'],
+            'speaking' => $chatbotText['speaking'],
+            'listen' => $chatbotText['listen'],
+            'stopAudio' => $chatbotText['stop_audio'],
+            'voiceEnded' => $chatbotText['voice_ended'],
+            'micDenied' => $chatbotText['mic_denied'],
+            'micMissing' => $chatbotText['mic_missing'],
+            'micUnavailable' => $chatbotText['mic_unavailable'],
+            'noSpeech' => $chatbotText['no_speech'],
         ], JSON_UNESCAPED_UNICODE) }}"
     >
         <svg class="spu-chatbot__sprite" width="0" height="0" aria-hidden="true" focusable="false">
@@ -207,6 +229,28 @@
                     ></textarea>
                     <span class="spu-chatbot__counter" data-chatbot-counter aria-live="polite" hidden></span>
                 </div>
+                @if ($chatbot->voiceEnabled)
+                    {{-- Shown by the script where the browser can record. --}}
+                    <button type="button" class="spu-chatbot__mic" data-chatbot-mic aria-label="{{ $chatbotText['speak'] }}" title="{{ $chatbotText['speak'] }}" aria-pressed="false" hidden>
+                        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="9" y="3" width="6" height="11" rx="3" fill="currentColor"/><path d="M6 11a6 6 0 0 0 12 0M12 17v4M9 21h6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                    </button>
+                    <span class="spu-chatbot__sr" data-chatbot-voice-announcer role="status" aria-live="polite"></span>
+                    {{-- Covers the composer while the assistant listens, writes the question down or reads aloud. --}}
+                    <div class="spu-chatbot__voice" data-chatbot-voice hidden>
+                        <span class="spu-chatbot__voice-meter" data-chatbot-voice-meter aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span>
+                        <span class="spu-chatbot__voice-text">
+                            <span class="spu-chatbot__voice-status" data-chatbot-voice-status role="status" aria-live="polite"></span>
+                            <span class="spu-chatbot__voice-time" data-chatbot-voice-time dir="ltr" aria-hidden="true"></span>
+                        </span>
+                        <button type="button" class="spu-chatbot__voice-cancel" data-chatbot-voice-cancel aria-label="{{ $chatbotText['cancel_voice'] }}" title="{{ $chatbotText['cancel_voice'] }}">
+                            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                        </button>
+                        <button type="button" class="spu-chatbot__voice-stop" data-chatbot-voice-stop>
+                            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="7" y="7" width="10" height="10" rx="2" fill="currentColor"/></svg>
+                            <span data-chatbot-voice-stop-label>{{ $chatbotText['stop_listening'] }}</span>
+                        </button>
+                    </div>
+                @endif
                 <button type="submit" class="spu-chatbot__send" data-chatbot-send aria-label="{{ $chatbotText['send'] }}" title="{{ $chatbotText['send'] }}">
                     <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 12l16-8-6 16-2.5-6.5L4 12z" fill="currentColor"/></svg>
                 </button>

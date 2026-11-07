@@ -82,9 +82,46 @@ final class ChatbotUsageService implements ChatbotUsageServiceInterface
         ]);
     }
 
+    public function recordTranscription(string $model, float $seconds): bool
+    {
+        $seconds = max(0.0, $seconds);
+        $prices = (array) config('chatbot.voice.transcription.prices_per_minute', []);
+        $usd = $seconds / 60 * (float) ($prices[$model] ?? 0);
+
+        return $this->increment([
+            'voice_transcriptions' => 1,
+            'voice_seconds' => (int) ceil($seconds),
+            'cost_micro_usd' => (int) round($usd * 1_000_000),
+        ]);
+    }
+
+    public function recordSpeech(string $model, int $characters, bool $newAnswer): bool
+    {
+        $characters = max(0, $characters);
+        $usd = $characters / 1000 * (float) config('chatbot.voice.speech.usd_per_1k_characters', 0.017);
+
+        return $this->increment([
+            'voice_spoken_answers' => $newAnswer ? 1 : 0,
+            'voice_characters' => $characters,
+            'cost_micro_usd' => (int) round($usd * 1_000_000),
+        ]);
+    }
+
+    public function recordVoiceFailure(): bool
+    {
+        return $this->increment(['voice_failures' => 1]);
+    }
+
     public function questionsToday(): int
     {
         return (int) ChatbotUsageDay::query()->where('day', $this->today())->value('questions');
+    }
+
+    public function voiceRequestsToday(): int
+    {
+        $row = ChatbotUsageDay::query()->where('day', $this->today())->first(['voice_transcriptions', 'voice_spoken_answers']);
+
+        return $row === null ? 0 : (int) $row->voice_transcriptions + (int) $row->voice_spoken_answers;
     }
 
     public function summary(): ChatbotUsageSummaryDTO
@@ -123,6 +160,10 @@ final class ChatbotUsageService implements ChatbotUsageServiceInterface
             cost30DaysUsd: round(((int) $rows->sum('cost_micro_usd')) / 1_000_000, 4),
             tokens30Days: (int) ($rows->sum('input_tokens') + $rows->sum('output_tokens') + $rows->sum('embedding_tokens')),
             days: $days,
+            voiceTranscriptionsToday: (int) ($todayRow?->voice_transcriptions ?? 0),
+            voiceSpokenAnswersToday: (int) ($todayRow?->voice_spoken_answers ?? 0),
+            voiceMinutesToday: round(((int) ($todayRow?->voice_seconds ?? 0)) / 60, 1),
+            voiceFailuresToday: (int) ($todayRow?->voice_failures ?? 0),
         );
     }
 

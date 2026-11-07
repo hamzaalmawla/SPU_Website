@@ -22,5 +22,12 @@ final readonly class ChatbotWidgetDTO
         public int $maxMessageLength,
         public ?string $contactPhone,
         public ?string $contactEmail,
+        // Voice: spoken questions (needs a microphone) and answers read aloud.
+        public bool $voiceEnabled = false,
+        public ?string $transcriptionEndpoint = null,
+        public ?string $speechEndpoint = null,
+        // False when answers are read by the browser's own voice only.
+        public bool $serverSpeech = false,
+        public int $maxRecordingSeconds = 60,
     ) {}
 }

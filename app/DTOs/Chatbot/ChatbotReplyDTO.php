@@ -40,5 +40,10 @@ final readonly class ChatbotReplyDTO
         public array $passages = [],
         // The question as rewritten for search (admin test box only).
         public ?string $searchHint = null,
+        // The conversation notes, sealed for the next question (ok answers only).
+        public ?string $memory = null,
+        // Proof that this server wrote `answer`, which lets it be read aloud.
+        public ?string $speechSignature = null,
     ) {}
+
 }

@@ -14,6 +14,7 @@ use App\DTOs\Chatbot\ChatbotQuestionDTO;
 use App\DTOs\Chatbot\ChatbotSettingsDTO;
 use App\DTOs\Chatbot\ChatbotSourceDTO;
 use App\Support\Chatbot\ExecutionTime;
+use App\Support\Chatbot\VoiceModels;
 use Filament\Actions\Action;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Placeholder;
@@ -28,6 +29,7 @@ use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Support\Enums\MaxWidth;
 use Illuminate\Contracts\View\View;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
 use InvalidArgumentException;
@@ -347,6 +349,9 @@ class ManageChatbot extends Page
                     'daily_question_limit' => $settings->dailyQuestionLimit,
                     'visitor_hourly_limit' => $settings->visitorHourlyLimit,
                     'visitor_daily_limit' => $settings->visitorDailyLimit,
+                    'voice_enabled' => $settings->voiceEnabled,
+                    'voice_name' => $settings->voiceName,
+                    'voice_daily_limit' => $settings->voiceDailyLimit,
                 ];
             })
             ->form(fn (): array => $this->settingsSchema())
@@ -369,6 +374,9 @@ class ManageChatbot extends Page
                     fallbackModel: is_string($data['fallback_model'] ?? null) && $data['fallback_model'] !== 'none' ? $data['fallback_model'] : null,
                     visitorHourlyLimit: (int) ($data['visitor_hourly_limit'] ?? 0),
                     visitorDailyLimit: (int) ($data['visitor_daily_limit'] ?? 0),
+                    voiceEnabled: (bool) ($data['voice_enabled'] ?? false),
+                    voiceName: (string) ($data['voice_name'] ?? ''),
+                    voiceDailyLimit: (int) ($data['voice_daily_limit'] ?? 0),
                 );
 
                 try {
@@ -475,7 +483,64 @@ class ManageChatbot extends Page
                         ->label(__('admin_chatbot.settings.visitor_daily_limit'))
                         ->numeric()->integer()->minValue(0)->maxValue(5000)->required(),
                 ]),
+            $this->voiceSection(),
         ];
+    }
+
+    private function voiceSection(): Section
+    {
+        $speechModel = trim((string) config('chatbot.voice.speech.model', ''));
+        $retiresOn = trim((string) config('chatbot.voice.speech.retires_on', ''));
+        $voices = [];
+        foreach ((array) config('chatbot.voice.speech.voices', []) as $voice) {
+            if (is_string($voice)) {
+                $voices[$voice] = ucfirst($voice);
+            }
+        }
+
+        $notice = null;
+        if ($speechModel !== '' && $retiresOn !== '') {
+            $date = $this->formatDate($retiresOn);
+            $notice = VoiceModels::speech() === null
+                ? __('admin_chatbot.settings.voice_retired', ['model' => $speechModel, 'date' => $date])
+                : __('admin_chatbot.settings.voice_retiring', ['model' => $speechModel, 'date' => $date]);
+        }
+
+        return Section::make(__('admin_chatbot.settings.section_voice'))
+            ->description(__('admin_chatbot.settings.voice_help', [
+                'transcription' => implode(' / ', VoiceModels::transcription()),
+                'speech' => $speechModel !== '' ? $speechModel : '—',
+            ]))
+            ->columns(2)
+            ->schema([
+                Toggle::make('voice_enabled')
+                    ->label(__('admin_chatbot.settings.voice_enabled'))
+                    ->columnSpanFull(),
+                Select::make('voice_name')
+                    ->label(__('admin_chatbot.settings.voice_name'))
+                    ->helperText(__('admin_chatbot.settings.voice_name_help'))
+                    ->options($voices)
+                    ->native(false)
+                    ->required(),
+                TextInput::make('voice_daily_limit')
+                    ->label(__('admin_chatbot.settings.voice_daily_limit'))
+                    ->helperText(__('admin_chatbot.settings.voice_daily_limit_help'))
+                    ->numeric()->integer()->minValue(0)->maxValue(1_000_000)->required(),
+                Placeholder::make('voice_model_notice')
+                    ->hiddenLabel()
+                    ->content($notice)
+                    ->visible($notice !== null)
+                    ->columnSpanFull(),
+            ]);
+    }
+
+    private function formatDate(string $date): string
+    {
+        try {
+            return Carbon::parse($date)->locale(app()->getLocale())->translatedFormat('j F Y');
+        } catch (\Throwable) {
+            return $date;
+        }
     }
 
     private function syncWebsiteAction(): Action

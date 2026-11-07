@@ -401,6 +401,7 @@ a.spu-chatbot__source:focus-visible {
 .spu-chatbot__actions {
     display: flex;
     justify-content: flex-end;
+    gap: 0.25rem;
 }
 
 .spu-chatbot__copy {
@@ -495,6 +496,7 @@ a.spu-chatbot__source:focus-visible {
 /* ── Composer ────────────────────────────────────────────────────────── */
 
 .spu-chatbot__composer {
+    position: relative;
     display: flex;
     align-items: flex-end;
     gap: 0.5rem;
@@ -625,6 +627,243 @@ a.spu-chatbot__source:focus-visible {
     font-size: 0.69rem;
     line-height: 1.45;
     text-align: center;
+}
+
+/* ── Voice ───────────────────────────────────────────────────────────── */
+
+.spu-chatbot__mic {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 44px;
+    height: 44px;
+    border: 1px solid #d5dbee;
+    border-radius: 14px;
+    background: #f8f9fd;
+    color: var(--spu-chat-navy);
+    cursor: pointer;
+    transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
+}
+
+.spu-chatbot__mic[hidden] {
+    display: none;
+}
+
+.spu-chatbot__mic svg {
+    width: 20px;
+    height: 20px;
+}
+
+.spu-chatbot__mic:hover:not(:disabled) {
+    border-color: var(--spu-chat-navy-2);
+    background: #fff;
+    transform: translateY(-1px);
+}
+
+.spu-chatbot__mic:focus-visible {
+    outline: 3px solid var(--spu-chat-gold);
+    outline-offset: 2px;
+}
+
+.spu-chatbot__mic:disabled {
+    cursor: progress;
+    opacity: 0.55;
+}
+
+.spu-chatbot__mic[aria-pressed="true"],
+.spu-chatbot__mic[aria-pressed="true"]:hover:not(:disabled) {
+    border-color: #d33a5e;
+    background: #d33a5e;
+    color: #fff;
+}
+
+/* Covers the field while talking; the microphone and send stay beside it. */
+.spu-chatbot__voice {
+    position: absolute;
+    inset-block: 0.7rem 0.35rem;
+    inset-inline-start: 0.75rem;
+    inset-inline-end: calc(0.75rem + 88px + 1rem);
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    padding: 0 0.4rem 0 0.75rem;
+    border: 1px solid #f2c4cf;
+    border-radius: 14px;
+    background: linear-gradient(90deg, #fff5f7, #fff);
+    color: var(--spu-chat-ink);
+    container-type: inline-size;
+    animation: spu-chat-message 0.2s ease-out;
+}
+
+[dir="rtl"] .spu-chatbot__voice {
+    padding: 0 0.75rem 0 0.4rem;
+    background: linear-gradient(270deg, #fff5f7, #fff);
+}
+
+.spu-chatbot__voice[hidden] {
+    display: none;
+}
+
+.spu-chatbot__composer.is-voice .spu-chatbot__field {
+    visibility: hidden;
+}
+
+.spu-chatbot__voice.is-transcribing,
+.spu-chatbot__voice.is-thinking {
+    border-color: #f3d9a4;
+    background: #fffaf0;
+}
+
+.spu-chatbot__voice.is-speaking {
+    border-color: #b9ebd3;
+    background: #f2fcf7;
+}
+
+/* Five bars that follow the level (--level, 0..1) of whoever is speaking. */
+.spu-chatbot__voice-meter {
+    --level: 0;
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    gap: 3px;
+    height: 26px;
+}
+
+.spu-chatbot__voice-meter i {
+    display: block;
+    width: 4px;
+    height: 26px;
+    border-radius: 2px;
+    background: #d33a5e;
+    transform: scaleY(calc(0.18 + var(--level) * var(--bar, 0.8)));
+    transition: transform 0.08s linear;
+}
+
+.spu-chatbot__voice-meter i:nth-child(1),
+.spu-chatbot__voice-meter i:nth-child(5) { --bar: 0.45; }
+.spu-chatbot__voice-meter i:nth-child(2),
+.spu-chatbot__voice-meter i:nth-child(4) { --bar: 0.7; }
+.spu-chatbot__voice-meter i:nth-child(3) { --bar: 0.82; }
+
+.spu-chatbot__voice.is-speaking .spu-chatbot__voice-meter i {
+    background: #11885a;
+}
+
+.spu-chatbot__voice.is-transcribing .spu-chatbot__voice-meter i,
+.spu-chatbot__voice.is-thinking .spu-chatbot__voice-meter i {
+    background: #c98a12;
+    animation: spu-chat-dot 1.2s ease-in-out infinite;
+    transform: scaleY(0.4);
+}
+
+.spu-chatbot__voice-meter i:nth-child(2) { animation-delay: 0.1s; }
+.spu-chatbot__voice-meter i:nth-child(3) { animation-delay: 0.2s; }
+.spu-chatbot__voice-meter i:nth-child(4) { animation-delay: 0.3s; }
+.spu-chatbot__voice-meter i:nth-child(5) { animation-delay: 0.4s; }
+
+.spu-chatbot__voice-text {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    min-width: 0;
+    line-height: 1.25;
+}
+
+.spu-chatbot__voice-status {
+    overflow: hidden;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.spu-chatbot__voice-time {
+    color: var(--spu-chat-muted);
+    font-size: 0.7rem;
+    font-variant-numeric: tabular-nums;
+    text-align: start;
+}
+
+.spu-chatbot__voice-time[hidden] {
+    display: none;
+}
+
+.spu-chatbot__voice-cancel,
+.spu-chatbot__voice-stop {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    gap: 0.3rem;
+    height: 32px;
+    border: 0;
+    border-radius: 10px;
+    font: inherit;
+    font-size: 0.75rem;
+    cursor: pointer;
+}
+
+.spu-chatbot__voice-cancel {
+    width: 32px;
+    background: transparent;
+    color: var(--spu-chat-muted);
+}
+
+.spu-chatbot__voice-stop {
+    width: 32px;
+    background: var(--spu-chat-navy);
+    color: #fff;
+}
+
+/* An icon button: its label is for screen readers (and its tooltip). */
+.spu-chatbot__voice-stop span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+}
+
+.spu-chatbot__voice-stop[hidden] {
+    display: none;
+}
+
+.spu-chatbot__voice-cancel svg,
+.spu-chatbot__voice-stop svg {
+    width: 15px;
+    height: 15px;
+}
+
+.spu-chatbot__voice-cancel:hover,
+.spu-chatbot__voice-cancel:focus-visible {
+    background: var(--spu-chat-surface);
+    color: var(--spu-chat-navy);
+}
+
+.spu-chatbot__voice-cancel:focus-visible,
+.spu-chatbot__voice-stop:focus-visible {
+    outline: 2px solid var(--spu-chat-navy);
+    outline-offset: 1px;
+}
+
+/* A narrow bar (phones): the status may take two lines; the clock gives way. */
+@container (max-width: 280px) {
+    .spu-chatbot__voice-status {
+        display: -webkit-box;
+        font-size: 0.78rem;
+        line-height: 1.2;
+        white-space: normal;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
+    }
+    .spu-chatbot__voice-time {
+        display: none;
+    }
+}
+
+.spu-chatbot__listen.is-playing {
+    color: #11885a;
 }
 
 /* ── Phones: the panel becomes a full-screen sheet ───────────────────── */

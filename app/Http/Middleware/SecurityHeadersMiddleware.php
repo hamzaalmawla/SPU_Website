@@ -46,7 +46,11 @@ final class SecurityHeadersMiddleware
         $response->headers->set('Referrer-Policy', 'strict-origin-when-cross-origin');
 
         $response->headers->set('X-Frame-Options', 'SAMEORIGIN');
-        $response->headers->set('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=(), usb=()');
+        // microphone=(self): the AI assistant takes spoken questions on this
+        // site's own pages (never in a frame from another origin). The
+        // browser still asks the visitor before it records anything.
+        // public/.htaccess sends the same value for static files.
+        $response->headers->set('Permissions-Policy', 'camera=(), microphone=(self), geolocation=(), payment=(), usb=()');
 
         // Keeps pages this site opens from reaching back into it through
         // window.opener, while popups it opens (share dialogs) still work.

@@ -23,6 +23,15 @@ final class ChatbotCaches
 
     public const KNOWLEDGE_VERSION = 'chatbot.knowledge.version';
 
+    /**
+     * Set by ChatbotService when a visitor ('v') or an address ('ip') is
+     * paused for repeated misuse; read by ChatbotFairUseService.
+     */
+    public static function pauseKey(string $scope, string $key): string
+    {
+        return "chatbot.paused.{$scope}.{$key}";
+    }
+
     public static function widgetKey(string $locale): string
     {
         return self::WIDGET_PREFIX.$locale;

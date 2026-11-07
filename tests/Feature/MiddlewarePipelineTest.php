@@ -60,7 +60,7 @@ class MiddlewarePipelineTest extends TestCase
             ->assertHeader('X-Content-Type-Options', 'nosniff')
             ->assertHeader('Referrer-Policy', 'strict-origin-when-cross-origin')
             ->assertHeader('X-Frame-Options', 'SAMEORIGIN')
-            ->assertHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=(), usb=()')
+            ->assertHeader('Permissions-Policy', 'camera=(), microphone=(self), geolocation=(), payment=(), usb=()')
             ->assertHeader('Cross-Origin-Opener-Policy', 'same-origin-allow-popups')
             ->assertHeader('Content-Security-Policy');
 

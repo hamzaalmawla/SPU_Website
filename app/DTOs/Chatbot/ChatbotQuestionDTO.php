@@ -7,7 +7,8 @@ namespace App\DTOs\Chatbot;
 /**
  * A visitor's question with the turns before it, already validated.
  *
- * History comes from the visitor's browser and is untrusted: it only gives
+ * History and memory come from the visitor's browser and are untrusted:
+ * only signed pairs and sealed notes this server produced are used, to give
  * follow-up questions their context.
  */
 final readonly class ChatbotQuestionDTO
@@ -27,5 +28,7 @@ final readonly class ChatbotQuestionDTO
         public ?string $clientKey = null,
         // A keyed hash of the visitor's browser session, for fair-use limits.
         public ?string $visitorKey = null,
+        // The sealed conversation notes the last answer handed out (ConversationMemory).
+        public ?string $memory = null,
     ) {}
 }

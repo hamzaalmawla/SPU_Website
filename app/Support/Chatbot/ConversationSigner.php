@@ -24,6 +24,20 @@ final class ConversationSigner
         return is_string($signature) && $signature !== '' && hash_equals(self::sign($locale, $question, $answer), $signature);
     }
 
+    /**
+     * Signs a reply's text for reading aloud. The speech endpoint speaks only
+     * text that carries this, so it cannot be used to voice anything else.
+     */
+    public static function signSpeech(string $locale, string $text): string
+    {
+        return hash_hmac('sha256', implode("\x1F", ['spu-assistant-speech-v1', $locale, trim($text)]), self::key());
+    }
+
+    public static function verifySpeech(string $locale, string $text, ?string $signature): bool
+    {
+        return is_string($signature) && $signature !== '' && hash_equals(self::signSpeech($locale, $text), $signature);
+    }
+
     private static function key(): string
     {
         return 'chatbot-history|'.(string) config('app.key');

@@ -41,7 +41,25 @@ interface ChatbotUsageServiceInterface
      */
     public function recordModelUse(string $model, int $inputTokens, int $outputTokens): bool;
 
+    /**
+     * One recording transcribed (its billed or measured length in seconds).
+     */
+    public function recordTranscription(string $model, float $seconds): bool;
+
+    /**
+     * One segment of a reply read aloud; `$newAnswer` for a reply's first segment.
+     */
+    public function recordSpeech(string $model, int $characters, bool $newAnswer): bool;
+
+    /** A transcription or speech call that failed. */
+    public function recordVoiceFailure(): bool;
+
     public function questionsToday(): int;
+
+    /**
+     * Recordings transcribed plus replies read aloud today (the voice cap).
+     */
+    public function voiceRequestsToday(): int;
 
     public function summary(): ChatbotUsageSummaryDTO;
 }

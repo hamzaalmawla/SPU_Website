@@ -47,6 +47,25 @@ final class FakeOpenAi
     /** The category the model claims (structured output). */
     public string $category = 'university';
 
+    /** @var (callable(array<string, mixed>): string)|null the conversation notes the model writes; default: none */
+    public $memoryWith = null;
+
+    /** @var list<array<string, mixed>> speech-to-text uploads (multipart parts by name; the file as its size) */
+    public array $transcriptionRequests = [];
+
+    /** @var array<string, int> transcription model => HTTP status it fails with */
+    public array $failTranscriptionModels = [];
+
+    public string $transcript = 'What are the office hours of admission?';
+
+    /** @var array<string, mixed>|null usage the transcription reports */
+    public ?array $transcriptionUsage = ['type' => 'duration', 'seconds' => 4];
+
+    /** @var list<array<string, mixed>> text-to-speech requests */
+    public array $speechRequests = [];
+
+    public int $speechStatus = 200;
+
     /** Raw model output, bypassing the JSON wrapper (to test malformed output). */
     public ?string $rawOutput = null;
 
@@ -141,7 +160,11 @@ final class FakeOpenAi
                 $answer = $fake->answerWith !== null ? ($fake->answerWith)($payload) : 'The admission office is open **Sunday to Thursday**.';
                 $structured = ($payload['text']['format']['type'] ?? null) === 'json_schema';
                 $text = $fake->rawOutput ?? ($structured
-                    ? (string) json_encode(['category' => $fake->category, 'answer' => in_array($fake->category, ['university', 'greeting'], true) ? $answer : ''], JSON_UNESCAPED_UNICODE)
+                    ? (string) json_encode([
+                        'category' => $fake->category,
+                        'answer' => in_array($fake->category, ['university', 'greeting'], true) ? $answer : '',
+                        'memory' => $fake->memoryWith !== null ? ($fake->memoryWith)($payload) : '',
+                    ], JSON_UNESCAPED_UNICODE)
                     : $answer);
 
                 return Http::response([
@@ -154,6 +177,45 @@ final class FakeOpenAi
                     ],
                     'usage' => ['input_tokens' => 1200, 'input_tokens_details' => ['cached_tokens' => 200], 'output_tokens' => 150, 'total_tokens' => 1350],
                 ]);
+            }
+
+            if (str_ends_with($request->url(), '/audio/transcriptions')) {
+                $parts = [];
+                foreach ((array) $payload as $part) {
+                    if (! is_array($part) || ! isset($part['name'])) {
+                        continue;
+                    }
+                    $value = $part['contents'] ?? null;
+                    $value = is_resource($value) ? (string) stream_get_contents($value) : (is_string($value) ? $value : '');
+                    if ($part['name'] === 'file') {
+                        $parts['file'] = ['bytes' => strlen($value), 'filename' => $part['filename'] ?? null, 'type' => $part['headers']['Content-Type'] ?? null];
+                    } elseif (str_ends_with((string) $part['name'], '[]')) {
+                        $parts[substr((string) $part['name'], 0, -2)][] = $value;
+                    } else {
+                        $parts[(string) $part['name']] = $value;
+                    }
+                }
+                $fake->transcriptionRequests[] = $parts;
+
+                $model = (string) ($parts['model'] ?? '');
+                if (isset($fake->failTranscriptionModels[$model])) {
+                    return Http::response(['error' => ['message' => 'model not found', 'code' => 'model_not_found']], $fake->failTranscriptionModels[$model]);
+                }
+
+                return Http::response(array_filter([
+                    'text' => $fake->transcript,
+                    'languages' => [['code' => 'en']],
+                    'usage' => $fake->transcriptionUsage,
+                ], static fn (mixed $value): bool => $value !== null));
+            }
+
+            if (str_ends_with($request->url(), '/audio/speech')) {
+                $fake->speechRequests[] = $payload;
+                if ($fake->speechStatus !== 200) {
+                    return Http::response(['error' => ['message' => 'speech failed']], $fake->speechStatus);
+                }
+
+                return Http::response('ID3-fake-mp3:'.($payload['input'] ?? ''), 200, ['Content-Type' => 'audio/mpeg']);
             }
 
             $path = (string) parse_url($request->url(), PHP_URL_PATH);
