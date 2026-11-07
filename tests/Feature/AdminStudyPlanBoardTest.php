@@ -105,6 +105,44 @@ final class AdminStudyPlanBoardTest extends TestCase
         $this->assertArrayNotHasKey('requirementsUnitCourseId', $this->course('den-907') ?? []);
     }
 
+    public function test_an_elective_university_requirement_can_become_an_elective_box(): void
+    {
+        $page = $this->page();
+
+        $page->call('newBoardCourse', '1')
+            ->set('boardCourse.type', 'university')
+            ->assertDontSeeHtml('wire:model.live="boardCourse.electiveSlot"')
+            ->set('boardCourse.required', false)
+            ->assertSeeHtml('wire:model.live="boardCourse.electiveSlot"')
+            ->set('boardCourse.electiveSlot', true)
+            // Only the title, credits and term are left to edit.
+            ->assertDontSeeHtml('wire:model="boardCourse.code"')
+            ->assertDontSeeHtml('wire:model="boardCourse.prerequisites"')
+            ->assertDontSeeHtml('wire:model="boardCourse.requirementsUnitCourseId"')
+            ->assertDontSeeHtml('wire:model="lectureUploads"')
+            ->set('boardCourse.code', '')
+            ->set('boardCourse.titleEn', '')
+            ->set('boardCourse.titleAr', '')
+            ->set('boardCourse.credits', 2)
+            ->call('saveBoardCourse')
+            ->assertSeeHtml('is-elective-slot');
+
+        $box = $this->course('university-elective');
+        $this->assertIsArray($box);
+        $this->assertTrue($box['electiveSlot']);
+        $this->assertSame('University elective course', $box['titleEn']);
+        $this->assertSame([], $box['prerequisites']);
+
+        $page->call('openBoardCourse', 'university-elective')
+            ->assertSet('boardCourse.electiveSlot', true)
+            ->set('boardCourse.required', true)
+            ->assertSeeHtml('wire:model="boardCourse.code"')
+            ->set('boardCourse.code', 'DEN-908')
+            ->call('saveBoardCourse');
+
+        $this->assertArrayNotHasKey('electiveSlot', $this->course('university-elective') ?? []);
+    }
+
     public function test_an_invalid_course_is_not_saved(): void
     {
         $page = $this->page();

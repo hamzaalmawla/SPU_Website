@@ -36,6 +36,9 @@ return [
     'specification' => 'توصيف المقرر (PDF)',
     'details' => 'تفاصيل المقرر',
     'open_study_plan' => 'فتح الخطة الدراسية في :faculty',
+    'elective_slot_open' => 'عرض قائمة المقررات الاختيارية',
+    'elective_slot_aria' => ':title، :credits ساعات معتمدة: يفتح قائمة المقررات الاختيارية في وحدة المتطلبات في نافذة جديدة',
+    'elective_slot_legend' => 'مقرر جامعة اختياري',
     'unit_course_link' => 'عرض المقرر في وحدة المتطلبات',
     'section_nav' => 'صفحات المركز',
 ];

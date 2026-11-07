@@ -107,6 +107,19 @@
     --accent-glow: rgba(245, 158, 11, 0.25);
 }
 
+/* A university elective box: the elective orange, filled, with a dashed outline. */
+.sp-elective-slot {
+    border: 1.5px dashed #f59e0b;
+    border-inline-start-width: 4px;
+    background-color: #fffbeb;
+    color: #92400e;
+    --accent-glow: rgba(245, 158, 11, 0.25);
+}
+
+.sp-elective-slot:hover {
+    background-color: #fef3c7;
+}
+
 .sp-custom-scrollbar::-webkit-scrollbar {
     width: 8px;
     height: 8px;

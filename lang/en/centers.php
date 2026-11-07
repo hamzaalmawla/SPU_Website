@@ -36,6 +36,9 @@ return [
     'specification' => 'Course specification (PDF)',
     'details' => 'Course details',
     'open_study_plan' => 'Open the study plan of :faculty',
+    'elective_slot_open' => 'Open elective list',
+    'elective_slot_aria' => ':title, :credits credits: opens the Requirements Unit elective course list in a new tab',
+    'elective_slot_legend' => 'University elective course',
     'unit_course_link' => 'See this course at the Requirements Unit',
     'section_nav' => 'Center pages',
 ];

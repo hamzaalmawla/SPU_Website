@@ -59,6 +59,25 @@ test('course focus and hover share prerequisite highlighting behavior', () => {
     assert.deepEqual(opened, ['course-101', card]);
 });
 
+test('a university elective box highlights but is left to its link', () => {
+    const listeners = {};
+    const card = {
+        dataset: { courseId: 'university-elective', electiveSlot: '' },
+        addEventListener: (type, listener) => { listeners[type] = listener; },
+    };
+    const highlighted = [];
+
+    bindCourseCardInteractions(card, {
+        highlight: (courseId) => highlighted.push(courseId),
+        clear: () => {},
+        open: () => assert.fail('an elective box opens no course dialog'),
+    });
+
+    listeners.mouseenter();
+    assert.deepEqual(highlighted, ['university-elective']);
+    assert.equal(listeners.click, undefined);
+});
+
 test('graph keyboard panning follows the screen direction in both locales', () => {
     // The graph is always laid out left to right, so Arabic does not mirror the arrow keys.
     assert.deepEqual(studyPlanKeyboardAction('ArrowLeft'), { panX: 40, panY: 0, zoom: 0 });

@@ -320,6 +320,58 @@ final class FacultyStudyPlanBoardServiceTest extends TestCase
         $this->assertSame(['cs-101'], $this->courseOf($payload, 'en', 'cs', 'cs-201')['prerequisites']);
     }
 
+    public function test_a_university_elective_box_needs_no_code_and_drops_every_prerequisite_link(): void
+    {
+        $payload = $this->payload();
+        $form = [...$this->service->emptyCourseForm('2'), 'code' => '', 'titleAr' => '', 'titleEn' => '', 'credits' => 2,
+            'type' => 'university', 'required' => false, 'electiveSlot' => true, 'prerequisites' => ['cs-101'], 'prerequisiteCredits' => 30];
+
+        $payload = $this->service->saveCourse($payload, 'cs', $form);
+        $box = $this->courseOf($payload, 'en', 'cs', 'university-elective');
+
+        $this->assertIsArray($box);
+        $this->assertTrue($box['electiveSlot']);
+        $this->assertSame('', $box['code']);
+        $this->assertSame('University elective course', $box['titleEn']);
+        $this->assertSame('مقرر جامعة اختياري', $this->courseOf($payload, 'ar', 'cs', 'university-elective')['titleAr']);
+        $this->assertSame([], $box['prerequisites']);
+        $this->assertSame(0, $box['prerequisiteCredits']);
+
+        $board = $this->service->board($payload, 'en', 'cs');
+        $this->assertTrue($board['terms'][1]['courses'][1]['electiveSlot']);
+        $this->assertArrayNotHasKey('university-elective', $board['prerequisiteOptions']);
+        $this->assertTrue($this->service->courseForm($payload, 'cs', 'university-elective')['electiveSlot']);
+    }
+
+    public function test_turning_a_course_into_an_elective_box_removes_links_to_it(): void
+    {
+        $payload = $this->service->saveCourse($this->payload(), 'cs', $this->form($this->payload(), 'cs-101', [
+            'type' => 'university', 'required' => false, 'electiveSlot' => true,
+        ]));
+
+        $this->assertTrue($this->courseOf($payload, 'en', 'cs', 'cs-101')['electiveSlot']);
+        $this->assertSame([], $this->courseOf($payload, 'en', 'cs', 'cs-201')['prerequisites']);
+        $this->assertSame([], $this->courseOf($payload, 'ar', 'cs', 'cs-201')['prerequisites']);
+
+        // Switched off again, it is an ordinary course and needs its code back.
+        $payload = $this->service->saveCourse($payload, 'cs', $this->form($payload, 'cs-101', ['electiveSlot' => false]));
+        $this->assertArrayNotHasKey('electiveSlot', $this->courseOf($payload, 'en', 'cs', 'cs-101'));
+    }
+
+    public function test_only_an_elective_university_requirement_can_be_an_elective_box(): void
+    {
+        foreach ([['type' => 'faculty', 'required' => false], ['type' => 'university', 'required' => true]] as $override) {
+            $payload = $this->service->saveCourse($this->payload(), 'cs', $this->form($this->payload(), 'cs-101', [...$override, 'electiveSlot' => true]));
+
+            $this->assertArrayNotHasKey('electiveSlot', $this->courseOf($payload, 'en', 'cs', 'cs-101'));
+            $this->assertSame(['cs-101'], $this->courseOf($payload, 'en', 'cs', 'cs-201')['prerequisites']);
+        }
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->service->saveCourse($this->payload(), 'cs', [...$this->service->emptyCourseForm('1'), 'code' => '', 'titleAr' => 'أ', 'titleEn' => 'A',
+            'type' => 'university', 'required' => true, 'electiveSlot' => true]);
+    }
+
     /** @return array<string, mixed>|null */
     private function courseOf(array $payload, string $locale, string $departmentId, string $courseId): ?array
     {

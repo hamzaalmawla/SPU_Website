@@ -1565,6 +1565,9 @@ return [
             ],
         ],
         'board' => [
+            'elective_slot' => 'University elective box',
+            'elective_slot_help' => 'Shows as one "University elective course" box that opens the Requirements Unit\'s elective course list. It has no code, hours, teachers, lectures or prerequisites, and no course can need it. Only for an elective university requirement.',
+            'elective_slot_short' => 'Elective list',
             'unit_course' => 'Requirements Unit course',
             'unit_course_auto' => 'Match by this course\'s code',
             'unit_course_help' => 'For a university requirement: the course on the Requirements Unit page this one opens. By default it is the unit course that lists this faculty and code.',

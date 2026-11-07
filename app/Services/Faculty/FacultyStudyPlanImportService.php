@@ -196,7 +196,7 @@ final class FacultyStudyPlanImportService implements FacultyStudyPlanImportServi
         $descriptionAr = (string) ($course['descriptionAr'] ?? '');
         $descriptionEn = (string) ($course['descriptionEn'] ?? '');
 
-        return [
+        $record = [
             'id' => (string) $course['id'],
             'code' => (string) ($course['code'] ?? ''),
             'titleAr' => $titleAr,
@@ -220,6 +220,13 @@ final class FacultyStudyPlanImportService implements FacultyStudyPlanImportServi
             'description' => $locale === 'ar' ? $descriptionAr : $descriptionEn,
             'lessons' => is_array($course['lessons'] ?? null) ? $course['lessons'] : [],
         ];
+
+        // A university elective box (one of the Requirements Unit's elective courses).
+        if (($course['electiveSlot'] ?? false) === true) {
+            $record['electiveSlot'] = true;
+        }
+
+        return $record;
     }
 
     /** Credit values such as 4.5 are real, so they must not be cast to int. */

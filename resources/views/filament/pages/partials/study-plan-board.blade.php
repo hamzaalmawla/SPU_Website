@@ -66,13 +66,13 @@
 
                             @foreach ($term['courses'] as $course)
                                 <button type="button" wire:key="board-card-{{ $board['departmentId'] }}-{{ $course['id'] }}"
-                                    class="spu-board__card spu-board__card--{{ $course['type'] }} @if (! $course['required']) is-elective @endif @if ($course['warning']) has-warning @endif"
+                                    class="spu-board__card spu-board__card--{{ $course['type'] }} @if (! $course['required']) is-elective @endif @if ($course['electiveSlot']) is-elective-slot @endif @if ($course['warning']) has-warning @endif"
                                     data-board-card data-course-id="{{ $course['id'] }}" data-prereqs='@json($course['prerequisites'])'
                                     draggable="true" wire:click="openBoardCourse('{{ $course['id'] }}')"
                                     x-on:dragstart="dragStart($event, '{{ $course['id'] }}')"
                                     x-on:mouseenter="highlight('{{ $course['id'] }}')" x-on:mouseleave="highlight('')"
                                     x-on:focus="highlight('{{ $course['id'] }}')" x-on:blur="highlight('')">
-                                    <span class="spu-board__card-meta"><span>{{ $course['code'] }}</span><span>{{ $course['credits'] }} {{ $creditsShort }}</span></span>
+                                    <span class="spu-board__card-meta"><span>{{ $course['electiveSlot'] ? $t('elective_slot_short').' ↗' : $course['code'] }}</span><span>{{ $course['credits'] }} {{ $creditsShort }}</span></span>
                                     <span class="spu-board__card-title" dir="auto">{{ $course['title'] }}</span>
                                     @if ($course['lessonCount'] > 0 || $course['prerequisiteCredits'] > 0 || $course['warning'] || $course['sharedIn'] !== [])
                                         <span class="spu-board__card-flags">
@@ -99,18 +99,23 @@
 
     @if (is_array($this->boardCourse))
         @php($course = $this->boardCourse)
+        @php($canBeElectiveSlot = ($course['type'] ?? '') === 'university' && ! filter_var($course['required'] ?? true, FILTER_VALIDATE_BOOLEAN))
+        {{-- A university elective box has only a title, credits and a term. --}}
+        @php($isElectiveSlot = $canBeElectiveSlot && filter_var($course['electiveSlot'] ?? false, FILTER_VALIDATE_BOOLEAN))
         <div class="spu-board-panel" role="dialog" aria-modal="true" aria-labelledby="spu-board-course-title" wire:key="board-course-panel"
             x-data x-on:keydown.escape.window="$wire.closeBoardPanels()">
             <div class="spu-board-panel__backdrop" wire:click="closeBoardPanels"></div>
             <form class="spu-board-panel__sheet" wire:submit="saveBoardCourse">
                 <header class="spu-board-panel__head">
-                    <h3 id="spu-board-course-title">{{ $this->boardCourseIsNew ? $t('new_course') : ($course['code'].' - '.($course['titleEn'] ?: $course['titleAr'])) }}</h3>
+                    <h3 id="spu-board-course-title">{{ $this->boardCourseIsNew ? $t('new_course') : (($course['code'] !== '' ? $course['code'].' - ' : '').($course['titleEn'] ?: $course['titleAr'])) }}</h3>
                     <button type="button" class="spu-board__icon" wire:click="closeBoardPanels" aria-label="{{ $t('close') }}">&times;</button>
                 </header>
 
                 <div class="spu-board-panel__body">
                     <div class="spu-board-form">
-                        <label>{{ $t('code') }}<input type="text" wire:model="boardCourse.code" maxlength="80" required></label>
+                        @unless ($isElectiveSlot)
+                            <label>{{ $t('code') }}<input type="text" wire:model="boardCourse.code" maxlength="80" required></label>
+                        @endunless
                         <label>{{ $t('term_field') }}
                             <select wire:model="boardCourse.termId">
                                 @foreach ($board['terms'] as $term)
@@ -126,10 +131,18 @@
                                 @endforeach
                             </select>
                         </label>
-                        <label>{{ $t('theory') }}<input type="number" step="0.5" min="0" max="40" wire:model="boardCourse.theory"></label>
-                        <label>{{ $t('practical') }}<input type="number" step="0.5" min="0" max="40" wire:model="boardCourse.practical"></label>
-                        <label class="spu-board-form__check"><input type="checkbox" wire:model="boardCourse.required"> {{ $t('required') }}</label>
-                        @if (($this->boardCourse['type'] ?? '') === 'university')
+                        @unless ($isElectiveSlot)
+                            <label>{{ $t('theory') }}<input type="number" step="0.5" min="0" max="40" wire:model="boardCourse.theory"></label>
+                            <label>{{ $t('practical') }}<input type="number" step="0.5" min="0" max="40" wire:model="boardCourse.practical"></label>
+                        @endunless
+                        <label class="spu-board-form__check"><input type="checkbox" wire:model.live="boardCourse.required"> {{ $t('required') }}</label>
+                        @if ($canBeElectiveSlot)
+                            <label class="spu-board-form__check spu-board-form__slot">
+                                <input type="checkbox" wire:model.live="boardCourse.electiveSlot" aria-describedby="board-elective-slot-help"> {{ $t('elective_slot') }}
+                                <small id="board-elective-slot-help">{{ $t('elective_slot_help') }}</small>
+                            </label>
+                        @endif
+                        @if (($this->boardCourse['type'] ?? '') === 'university' && ! $isElectiveSlot)
                             <label>{{ $t('unit_course') }}
                                 <select wire:model="boardCourse.requirementsUnitCourseId" aria-describedby="board-unit-course-help">
                                     <option value="">{{ $t('unit_course_auto') }}</option>
@@ -160,6 +173,7 @@
                         </fieldset>
                     @endif
 
+                    @unless ($isElectiveSlot)
                     <fieldset class="spu-board-form">
                         <legend>{{ $t('teachers') }}</legend>
                         @php($teacherChoices = $this->boardTeacherChoices())
@@ -200,14 +214,18 @@
                         @endforeach
                         <small>{{ $t('teachers_help') }}</small>
                     </fieldset>
+                    @endunless
 
                     <div class="spu-board-form spu-board-form--stack">
                         <label>{{ $t('title_en') }}<input type="text" dir="ltr" wire:model="boardCourse.titleEn" maxlength="180" required></label>
                         <label>{{ $t('title_ar') }}<input type="text" dir="rtl" wire:model="boardCourse.titleAr" maxlength="180" required></label>
+                        @unless ($isElectiveSlot)
                         <label>{{ $t('description_en') }}<textarea dir="ltr" rows="2" wire:model="boardCourse.descriptionEn"></textarea></label>
                         <label>{{ $t('description_ar') }}<textarea dir="rtl" rows="2" wire:model="boardCourse.descriptionAr"></textarea></label>
+                        @endunless
                     </div>
 
+                    @unless ($isElectiveSlot)
                     <fieldset class="spu-board-form spu-board-form--stack">
                         <legend>{{ $t('prerequisites') }}</legend>
                         <input type="search" wire:model.live.debounce.300ms="boardPrerequisiteSearch" placeholder="{{ $t('prerequisites_search') }}" aria-label="{{ $t('prerequisites_search') }}">
@@ -289,6 +307,7 @@
                             </div>
                         @endif
                     </fieldset>
+                    @endunless
                 </div>
 
                 <footer class="spu-board-panel__foot">

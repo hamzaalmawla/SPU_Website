@@ -13,7 +13,7 @@ final class FacultyStudyPlanEditorService implements FacultyStudyPlanEditorServi
     private const LOCALES = ['ar', 'en'];
 
     /** @var list<string> */
-    private const SHARED_COURSE_FIELDS = ['code', 'credits', 'type', 'required', 'prerequisites', 'prerequisiteCredits'];
+    private const SHARED_COURSE_FIELDS = ['code', 'credits', 'type', 'required', 'electiveSlot', 'prerequisites', 'prerequisiteCredits'];
 
     /** @var list<string> */
     private const SHARED_LESSON_FIELDS = ['order', 'type', 'pdfUrl'];
@@ -774,7 +774,25 @@ final class FacultyStudyPlanEditorService implements FacultyStudyPlanEditorServi
         }
 
         foreach ($courses as $courseId => $course) {
+            if (array_key_exists('electiveSlot', $course) && $course['electiveSlot'] !== true && $course['electiveSlot'] !== false) {
+                $errors[$locale][] = 'A course is a university elective box or not (true or false).';
+            }
+
+            if (($course['electiveSlot'] ?? false) === true) {
+                if (($course['type'] ?? null) !== 'university' || ($course['required'] ?? true) !== false) {
+                    $errors[$locale][] = 'A university elective box must be an elective university requirement.';
+                }
+
+                if ($this->stringList($course['prerequisites'] ?? []) !== [] || (int) ($course['prerequisiteCredits'] ?? 0) > 0) {
+                    $errors[$locale][] = 'A university elective box has no prerequisites.';
+                }
+            }
+
             foreach ($this->stringList($course['prerequisites'] ?? []) as $prerequisiteId) {
+                if (($courses[$prerequisiteId]['electiveSlot'] ?? false) === true) {
+                    $errors[$locale][] = 'No course can need a university elective box.';
+                }
+
                 if ($prerequisiteId === $courseId) {
                     $errors[$locale][] = 'A course cannot be its own prerequisite.';
                 } elseif (! isset($facultyCourseIds[$prerequisiteId]) && ! isset($allowedDanglingEdges[$courseId.'|'.$prerequisiteId])) {

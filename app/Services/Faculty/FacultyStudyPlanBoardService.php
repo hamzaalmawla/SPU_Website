@@ -18,6 +18,10 @@ final class FacultyStudyPlanBoardService implements FacultyStudyPlanBoardService
 
     private const MAX_TEACHERS_PER_PART = 12;
 
+    private const ELECTIVE_SLOT_TITLE_AR = 'مقرر جامعة اختياري';
+
+    private const ELECTIVE_SLOT_TITLE_EN = 'University elective course';
+
     public function brokenPrerequisiteEdges(array $payload): array
     {
         $known = array_flip($this->allCourseIds($payload));
@@ -129,6 +133,7 @@ final class FacultyStudyPlanBoardService implements FacultyStudyPlanBoardService
                     'credits' => $credits,
                     'type' => (string) ($course['type'] ?? 'faculty'),
                     'required' => (bool) ($course['required'] ?? true),
+                    'electiveSlot' => $this->isElectiveSlot($course),
                     'prerequisites' => $prerequisites,
                     'prerequisiteCredits' => (int) ($course['prerequisiteCredits'] ?? 0),
                     'lessonCount' => count($this->records($course['lessons'] ?? [])),
@@ -149,6 +154,11 @@ final class FacultyStudyPlanBoardService implements FacultyStudyPlanBoardService
 
         foreach ($terms as $term) {
             foreach ($term['courses'] as $card) {
+                // A university elective box stands for a choice of courses: nothing can need it.
+                if ($card['electiveSlot']) {
+                    continue;
+                }
+
                 $options[$card['id']] = $card['code'].' - '.$card['title'];
             }
         }
@@ -225,6 +235,7 @@ final class FacultyStudyPlanBoardService implements FacultyStudyPlanBoardService
             'practical' => $this->number($en['hours']['practical'] ?? 0),
             'type' => (string) ($en['type'] ?? 'specialization'),
             'required' => (bool) ($en['required'] ?? true),
+            'electiveSlot' => $this->isElectiveSlot($en),
             'prerequisites' => $this->stringList($en['prerequisites'] ?? []),
             'prerequisiteCredits' => (int) ($en['prerequisiteCredits'] ?? 0),
             'lessons' => $lessons,
@@ -273,6 +284,7 @@ final class FacultyStudyPlanBoardService implements FacultyStudyPlanBoardService
             'practical' => 2,
             'type' => 'specialization',
             'required' => true,
+            'electiveSlot' => false,
             'prerequisites' => [],
             'prerequisiteCredits' => 0,
             'lessons' => [],
@@ -287,7 +299,7 @@ final class FacultyStudyPlanBoardService implements FacultyStudyPlanBoardService
     {
         $clean = $this->cleanCourseForm($form);
         $originalId = trim((string) ($form['originalId'] ?? ''));
-        $id = $originalId !== '' ? $originalId : $this->uniqueId($this->slug($clean['code']), $this->allCourseIds($payload));
+        $id = $originalId !== '' ? $originalId : $this->uniqueId($this->slug($clean['code']) ?: ($clean['electiveSlot'] ? 'university-elective' : ''), $this->allCourseIds($payload));
         $departmentCourseIds = $this->departmentCourseIds($payload, $departmentId);
 
         if ($this->department($payload, 'en', $departmentId) === []) {
@@ -349,7 +361,8 @@ final class FacultyStudyPlanBoardService implements FacultyStudyPlanBoardService
             $payload['translations'][$locale]['payload']['plan']['departments'] = $departments;
         }
 
-        return $payload;
+        // No course may need a university elective box.
+        return $clean['electiveSlot'] ? $this->stripPrerequisites($payload, [$id]) : $payload;
     }
 
     public function deleteCourse(array $payload, string $departmentId, string $courseId): array
@@ -720,8 +733,18 @@ final class FacultyStudyPlanBoardService implements FacultyStudyPlanBoardService
         $code = trim((string) ($form['code'] ?? ''));
         $titleAr = trim((string) ($form['titleAr'] ?? ''));
         $titleEn = trim((string) ($form['titleEn'] ?? ''));
+        $type = (string) ($form['type'] ?? 'specialization');
+        $required = filter_var($form['required'] ?? true, FILTER_VALIDATE_BOOLEAN);
+        // A university elective box stands for "one of the Requirements Unit's
+        // elective courses": it has no code of its own and no prerequisites.
+        $electiveSlot = $type === 'university' && ! $required && filter_var($form['electiveSlot'] ?? false, FILTER_VALIDATE_BOOLEAN);
 
-        if ($code === '' || mb_strlen($code) > 80) {
+        if ($electiveSlot) {
+            $titleAr = $titleAr !== '' ? $titleAr : self::ELECTIVE_SLOT_TITLE_AR;
+            $titleEn = $titleEn !== '' ? $titleEn : self::ELECTIVE_SLOT_TITLE_EN;
+        }
+
+        if ((! $electiveSlot && $code === '') || mb_strlen($code) > 80) {
             throw new InvalidArgumentException('Enter a course code (up to 80 characters).');
         }
 
@@ -752,8 +775,6 @@ final class FacultyStudyPlanBoardService implements FacultyStudyPlanBoardService
         if (! is_numeric($credits) || (float) $credits < 0 || (float) $credits > 400) {
             throw new InvalidArgumentException('Completed credits must be a number between 0 and 400.');
         }
-
-        $type = (string) ($form['type'] ?? 'specialization');
 
         $teachers = null;
         if (array_key_exists('theoryTeacherIds', $form) || array_key_exists('practicalTeacherIds', $form)) {
@@ -793,9 +814,10 @@ final class FacultyStudyPlanBoardService implements FacultyStudyPlanBoardService
             'theory' => $this->number($form['theory'] ?? 0),
             'practical' => $this->number($form['practical'] ?? 0),
             'type' => in_array($type, self::TYPES, true) ? $type : 'specialization',
-            'required' => filter_var($form['required'] ?? true, FILTER_VALIDATE_BOOLEAN),
-            'prerequisites' => $this->stringList($form['prerequisites'] ?? []),
-            'prerequisiteCredits' => (int) $credits,
+            'required' => $required,
+            'electiveSlot' => $electiveSlot,
+            'prerequisites' => $electiveSlot ? [] : $this->stringList($form['prerequisites'] ?? []),
+            'prerequisiteCredits' => $electiveSlot ? 0 : (int) $credits,
             'termId' => trim((string) ($form['termId'] ?? '')),
         ];
     }
@@ -924,6 +946,10 @@ final class FacultyStudyPlanBoardService implements FacultyStudyPlanBoardService
         $record['term'] = (int) $clean['termId'];
         $record['type'] = $clean['type'];
         $record['required'] = $clean['required'];
+        unset($record['electiveSlot']);
+        if ($clean['electiveSlot']) {
+            $record['electiveSlot'] = true;
+        }
         $record['forced'] = (bool) ($base['forced'] ?? false);
         $record['credits'] = $clean['credits'];
         $record['prerequisites'] = $clean['prerequisites'];
@@ -946,7 +972,7 @@ final class FacultyStudyPlanBoardService implements FacultyStudyPlanBoardService
             ? trim((string) $form['requirementsUnitCourseId'])
             : trim((string) ($base['requirementsUnitCourseId'] ?? ''));
         unset($record['requirementsUnitCourseId']);
-        if ($clean['type'] === 'university' && preg_match('/^[a-z0-9]+(?:-[a-z0-9]+)*$/', $unitCourseId) === 1) {
+        if ($clean['type'] === 'university' && ! $clean['electiveSlot'] && preg_match('/^[a-z0-9]+(?:-[a-z0-9]+)*$/', $unitCourseId) === 1) {
             $record['requirementsUnitCourseId'] = $unitCourseId;
         }
 
@@ -1324,6 +1350,14 @@ final class FacultyStudyPlanBoardService implements FacultyStudyPlanBoardService
     private function slug(string $value): string
     {
         return trim((string) preg_replace('/[^a-z0-9]+/', '-', strtolower($value)), '-');
+    }
+
+    /** @param array<string, mixed> $course */
+    private function isElectiveSlot(array $course): bool
+    {
+        return ($course['electiveSlot'] ?? false) === true
+            && ($course['type'] ?? null) === 'university'
+            && ($course['required'] ?? true) === false;
     }
 
     /** @param array<string, mixed> $item */
