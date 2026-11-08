@@ -58,6 +58,18 @@ added or renamed also retires the cached answers (the answer cache key carries
 the directory's hash). The lists sit in the instructions, which change only
 when the directory does, so OpenAI's prompt caching still covers them.
 
+The directory opens with the **current leadership**: the president, the vice
+presidents and every dean, as the leadership page (`/about/leadership`) shows
+them, each with the Arabic and English name. Older pages and files still carry
+former office-holders' names, mostly as the signature of a circular, policy or
+decision (the quality policy, the exam instructions, the 2014–2015 council
+decisions), and retrieval finds exactly those for "who is the president?". The
+rules say who holds a post now comes from this list, that a name in the sources
+is whoever held the post when that text was issued, and that a source's date is
+when it was issued, not today. A change on the leadership page reaches the
+assistant within ten minutes and retires the cached answers with the rest of
+the directory.
+
 ## Conversation memory
 
 The assistant follows a whole conversation without storing it on the server
