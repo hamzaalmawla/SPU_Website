@@ -146,7 +146,9 @@
                     @endforeach
                 </div>
             </section>
-            @php($externalApplicationForm = $section['applicationFormUrl'] ?? null)
+            @php
+                $externalApplicationForm = $section['applicationFormUrl'] ?? null;
+            @endphp
             <section id="application" class="admissions-shell scroll-mt-28 pb-20" aria-labelledby="admissions-application-title" @unless($externalApplicationForm) x-data="dynamicFormShell()" data-form-id="{{ $section['applicationFormId'] ?? 'admissions-application' }}" data-locale="{{ $locale }}" data-preview="{{ !empty($isPreview) ? '1' : '0' }}" @endunless>
                 <div class="mx-auto max-w-3xl rounded-2xl border border-spu-blue/10 bg-white p-6 shadow-sm sm:p-9">
                     <h2 id="admissions-application-title" class="text-3xl font-black text-spu-blue">{{ $section['applicationTitle'] ?? '' }}</h2>
