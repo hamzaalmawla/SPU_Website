@@ -199,7 +199,7 @@ class NavigationSeeder extends Seeder
             ['label' => 'كلية هندسة الذكاء الاصطناعي', 'target_kind' => 'url', 'url' => '/ar/faculties/artificial-intelligence'],
             ['label' => 'كلية هندسة البناء', 'target_kind' => 'url', 'url' => '/ar/faculties/building-construction-engineering'],
             ['label' => 'كلية هندسة البترول', 'target_kind' => 'url', 'url' => '/ar/faculties/petroleum'],
-            ['label' => 'كلية إدارة الأعمال', 'target_kind' => 'url', 'url' => '/ar/faculties/business-administration'],
+            ['label' => 'كلية الأعمال', 'target_kind' => 'url', 'url' => '/ar/faculties/business-administration'],
         ]];
         $items[] = ['type' => 'header', 'group_key' => 'header', 'locale' => 'en', 'label' => 'Faculties', 'target_kind' => 'url', 'page_slug' => null, 'url' => '/en/faculties', 'target' => null, 'icon' => null, 'is_utility' => false, 'open_in_new_tab' => false, 'sort_order' => 2, 'children' => [
             ['label' => 'Medicine', 'target_kind' => 'url', 'url' => '/en/faculties/medicine'],
@@ -208,7 +208,7 @@ class NavigationSeeder extends Seeder
             ['label' => 'AI Engineering', 'target_kind' => 'url', 'url' => '/en/faculties/artificial-intelligence'],
             ['label' => 'Construction Engineering', 'target_kind' => 'url', 'url' => '/en/faculties/building-construction-engineering'],
             ['label' => 'Petroleum Engineering', 'target_kind' => 'url', 'url' => '/en/faculties/petroleum'],
-            ['label' => 'Business Administration', 'target_kind' => 'url', 'url' => '/en/faculties/business-administration'],
+            ['label' => 'Business Faculty', 'target_kind' => 'url', 'url' => '/en/faculties/business-administration'],
         ]];
 
         // ── Admissions (sort 3) ──

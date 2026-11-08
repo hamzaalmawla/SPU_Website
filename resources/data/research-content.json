@@ -215,8 +215,8 @@
         },
         {
           "value": "business",
-          "labelEn": "Business Administration",
-          "labelAr": "إدارة الأعمال"
+          "labelEn": "Business Faculty",
+          "labelAr": "كلية الأعمال"
         }
       ],
       "publicationTypes": [
@@ -553,8 +553,8 @@
         "typeEn": "Journal Paper",
         "typeAr": "ورقة مجلة",
         "typeSlug": "journal-paper",
-        "facultyEn": "Faculty of Business Administration",
-        "facultyAr": "كلية إدارة الأعمال",
+        "facultyEn": "Business Faculty",
+        "facultyAr": "كلية الأعمال",
         "facultySlug": "business",
         "authorEn": "Dr. Samar Habib",
         "authorAr": "د. سمر حبيب",
@@ -946,8 +946,8 @@
         },
         {
           "value": "business",
-          "labelEn": "Business Administration",
-          "labelAr": "إدارة الأعمال"
+          "labelEn": "Business Faculty",
+          "labelAr": "كلية الأعمال"
         }
       ],
       "themes": [
@@ -1369,8 +1369,8 @@
       },
       {
         "id": "business",
-        "nameEn": "Faculty of Business Administration",
-        "nameAr": "كلية إدارة الأعمال"
+        "nameEn": "Business Faculty",
+        "nameAr": "كلية الأعمال"
       }
     ],
     "expertiseAreas": [
@@ -1406,8 +1406,8 @@
       },
       {
         "id": "business-administration",
-        "nameEn": "Business Administration",
-        "nameAr": "إدارة الأعمال"
+        "nameEn": "Business Faculty",
+        "nameAr": "كلية الأعمال"
       },
       {
         "id": "medical-education",
@@ -1665,10 +1665,10 @@
         "slug": "samar-habib",
         "nameEn": "Dr. Samar Habib",
         "nameAr": "د. سمر حبيب",
-        "titleEn": "Dean of Business Administration",
-        "titleAr": "عميدة كلية إدارة الأعمال",
-        "facultyEn": "Faculty of Business Administration",
-        "facultyAr": "كلية إدارة الأعمال",
+        "titleEn": "Dean of the Business Faculty",
+        "titleAr": "عميدة كلية الأعمال",
+        "facultyEn": "Business Faculty",
+        "facultyAr": "كلية الأعمال",
         "facultyId": "business",
         "facultySlug": "business",
         "departmentEn": "Management",
@@ -1805,8 +1805,8 @@
       },
       {
         "id": "business",
-        "nameEn": "Faculty of Business Administration",
-        "nameAr": "كلية إدارة الأعمال"
+        "nameEn": "Business Faculty",
+        "nameAr": "كلية الأعمال"
       }
     ],
     "expertiseAreas": [
@@ -1842,8 +1842,8 @@
       },
       {
         "id": "business-administration",
-        "nameEn": "Business Administration",
-        "nameAr": "إدارة الأعمال"
+        "nameEn": "Business Faculty",
+        "nameAr": "كلية الأعمال"
       }
     ],
     "researchers": [
@@ -2025,10 +2025,10 @@
         "slug": "samar-habib",
         "nameEn": "Dr. Samar Habib",
         "nameAr": "د. سمر حبيب",
-        "titleEn": "Dean of Business Administration",
-        "titleAr": "عميدة كلية إدارة الأعمال",
-        "facultyEn": "Faculty of Business Administration",
-        "facultyAr": "كلية إدارة الأعمال",
+        "titleEn": "Dean of the Business Faculty",
+        "titleAr": "عميدة كلية الأعمال",
+        "facultyEn": "Business Faculty",
+        "facultyAr": "كلية الأعمال",
         "facultyId": "business",
         "expertiseEn": [
           "Human Resource Management",
