@@ -7,6 +7,7 @@ namespace Tests\Feature;
 use App\Contracts\Cms\CmsWorkflowServiceInterface;
 use App\Contracts\Research\ResearchPageServiceInterface;
 use App\Filament\Pages\ManageResearch;
+use App\Models\Person\FacultyMember;
 use App\Models\User\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
@@ -87,7 +88,7 @@ final class AdminResearchWorkspaceTest extends TestCase
             'research.experts' => 'translations.en.researchers.0',
             'research.conferences' => 'translations.en.upcoming.0',
             'research.library' => 'translations.en.databases.0',
-            'research.office' => 'translations.en.leadership.items.0',
+            'research.office' => 'translations.en.council.members.0',
             'research.policies' => 'translations.en.sections.0',
         ];
 
@@ -150,6 +151,39 @@ final class AdminResearchWorkspaceTest extends TestCase
         $savedConferences = $workflow->latestEditableDraftPayload('research.conferences', (int) $user->getKey());
         $this->assertSame('symposium-registration', $savedConferences['translations']['en']['upcoming'][0]['formId'] ?? null);
         $this->assertStringContainsString('event=', (string) ($savedConferences['translations']['en']['upcoming'][0]['registrationUrl'] ?? ''));
+    }
+
+    public function test_council_members_are_saved_once_for_both_languages(): void
+    {
+        $user = $this->editor();
+        $this->actingAs($user, 'web');
+        $staff = FacultyMember::query()->create(['slug' => 'council-staff', 'is_enabled' => true, 'publication_status' => 'published', 'published_at' => now()->subDay()]);
+        $staff->translations()->create(['locale' => 'ar', 'full_name' => 'د. عضو الهيئة']);
+        $staff->translations()->create(['locale' => 'en', 'full_name' => 'Dr. Staff Member']);
+
+        Livewire::withQueryParams(['target' => 'research.office'])
+            ->test(ManageResearch::class)
+            ->set('data.office_members', [
+                ['id' => 'head-1', 'role' => 'head', 'isStaff' => true, 'staffId' => $staff->getKey(), 'nameAr' => 'stale', 'nameEn' => '', 'positionAr' => 'رئيس', 'positionEn' => 'Chair', 'image' => '/images/x.jpg'],
+                ['id' => 'guest-1', 'role' => 'member', 'isStaff' => false, 'staffId' => null, 'nameAr' => 'ضيف', 'nameEn' => '', 'positionAr' => '', 'positionEn' => 'Expert', 'image' => null],
+            ])
+            ->call('save')
+            ->assertHasNoErrors();
+
+        $saved = app(CmsWorkflowServiceInterface::class)->latestEditableDraftPayload('research.office', (int) $user->getKey());
+        $this->assertSame('head', data_get($saved, 'translations.ar.council.members.0.role'));
+        $this->assertTrue(data_get($saved, 'translations.en.council.members.0.isStaff'));
+        $this->assertSame($staff->getKey(), data_get($saved, 'translations.en.council.members.0.staffId'));
+        $this->assertSame('', data_get($saved, 'translations.en.council.members.0.name'));
+        $this->assertNull(data_get($saved, 'translations.en.council.members.0.image'));
+        $this->assertSame('Chair', data_get($saved, 'translations.en.council.members.0.position'));
+        $this->assertSame('ضيف', data_get($saved, 'translations.ar.council.members.1.name'));
+        // An English name left empty shows the Arabic one.
+        $this->assertSame('ضيف', data_get($saved, 'translations.en.council.members.1.name'));
+        $this->assertNull(data_get($saved, 'translations.en.council.members.1.staffId'));
+        $this->assertNotEmpty(data_get($saved, 'translations.en.functions.items'));
+        $this->assertNull(data_get($saved, 'translations.en.statistics'));
+        $this->assertNull(data_get($saved, 'translations.en.contact'));
     }
 
     private function editor(): User

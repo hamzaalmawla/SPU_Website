@@ -361,7 +361,7 @@ class NavigationSeeder extends Seeder
                 ['label' => 'المؤتمرات والندوات', 'target_kind' => 'url', 'url' => '/ar/research/conferences'],
                 ['label' => 'مكتبة البحث', 'target_kind' => 'url', 'url' => '/ar/research/library'],
                 ['label' => 'السياسات والأخلاقيات', 'target_kind' => 'url', 'url' => '/ar/research/policies'],
-                ['label' => 'مكتب البحث', 'target_kind' => 'url', 'url' => '/ar/research/office'],
+                ['label' => 'مجلس البحث والنشر العلمي', 'target_kind' => 'url', 'url' => '/ar/research/office'],
             ];
         }
 
@@ -393,7 +393,7 @@ class NavigationSeeder extends Seeder
             ['label' => 'Conferences & Seminars', 'target_kind' => 'url', 'url' => '/en/research/conferences'],
             ['label' => 'Research Library', 'target_kind' => 'url', 'url' => '/en/research/library'],
             ['label' => 'Policies & Ethics', 'target_kind' => 'url', 'url' => '/en/research/policies'],
-            ['label' => 'Research Office', 'target_kind' => 'url', 'url' => '/en/research/office'],
+            ['label' => 'Research and Scientific Publication Council', 'target_kind' => 'url', 'url' => '/en/research/office'],
         ];
     }
 

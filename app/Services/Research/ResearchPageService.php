@@ -7,6 +7,7 @@ namespace App\Services\Research;
 use App\Contracts\Cms\CmsWorkflowServiceInterface;
 use App\Contracts\Form\FormDefinitionServiceInterface;
 use App\Contracts\Page\ProfilePageServiceInterface;
+use App\Contracts\Research\ResearchCouncilStaffServiceInterface;
 use App\Contracts\Research\ResearchPageServiceInterface;
 use App\DTOs\Content\ProfilePageDTO;
 use App\DTOs\Content\ResearchCardDTO;
@@ -56,6 +57,7 @@ final class ResearchPageService implements ResearchPageServiceInterface
         private readonly CmsWorkflowServiceInterface $cmsWorkflowService,
         private readonly ProfilePageServiceInterface $profilePageService,
         private readonly FormDefinitionServiceInterface $formDefinitions,
+        private readonly ResearchCouncilStaffServiceInterface $councilStaff,
     ) {}
 
     public function landing(string $locale): ResearchPageDTO
@@ -406,6 +408,7 @@ final class ResearchPageService implements ResearchPageServiceInterface
         $content = match ($targetKey) {
             'research.conferences' => $this->normalizedConferencesContent($content),
             'research.policies' => $this->normalizedPoliciesContent($content),
+            'research.office' => $this->normalizedOfficeContent($content, $locale),
             default => $content,
         };
 
@@ -826,10 +829,107 @@ final class ResearchPageService implements ResearchPageServiceInterface
         $cmsContent = $this->publishedLocalizedPayload('research.office', $locale);
 
         if (is_array($cmsContent)) {
+            $cmsContent = $this->normalizedOfficeContent($cmsContent, $locale);
+
             return $this->pageDto($locale, 'office', $cmsContent, '/research/office', $cmsContent['hero'] ?? [], true);
         }
 
         return $this->pageDto($locale, 'office', [], '/research/office', [], false);
+    }
+
+    /**
+     * The council page's content as the view shows it: the members split into the
+     * heads and the other members, each with what the page shows for them. A
+     * teaching staff member is read live from their profile (and left out while
+     * the profile is not published); anyone else shows as typed, with no profile
+     * link. Content saved before the council layout (leadership and services) is
+     * read as members and functions; the old statistics and contact are dropped.
+     *
+     * @param  array<string, mixed>  $content
+     * @return array<string, mixed>
+     */
+    private function normalizedOfficeContent(array $content, string $locale): array
+    {
+        $council = is_array($content['council'] ?? null) ? $content['council'] : [];
+        $members = $this->arrayList($council['members'] ?? []);
+        if (! array_key_exists('members', $council) && is_array($content['leadership'] ?? null)) {
+            $council['title'] = $council['title'] ?? ($content['leadership']['title'] ?? '');
+            $members = array_map(static fn (array $leader): array => [
+                'role' => 'member',
+                'isStaff' => false,
+                'name' => (string) ($leader['name'] ?? ''),
+                'position' => (string) ($leader['role'] ?? ''),
+                'image' => $leader['image'] ?? null,
+            ], $this->arrayList($content['leadership']['items'] ?? []));
+        }
+
+        $functions = is_array($content['functions'] ?? null) ? $content['functions'] : [];
+        if (! array_key_exists('items', $functions) && is_array($content['services'] ?? null)) {
+            $functions = [
+                'title' => $content['services']['title'] ?? '',
+                'subtitle' => $content['services']['subtitle'] ?? '',
+                'items' => $this->arrayList($content['services']['items'] ?? []),
+            ];
+        }
+
+        $staffIds = [];
+        foreach ($members as $member) {
+            if (filter_var($member['isStaff'] ?? false, FILTER_VALIDATE_BOOLEAN) && is_numeric($member['staffId'] ?? null)) {
+                $staffIds[] = (int) $member['staffId'];
+            }
+        }
+        $cards = $this->councilStaff->staffCards($staffIds, $locale);
+
+        $heads = [];
+        $others = [];
+        foreach ($members as $member) {
+            $position = trim((string) ($member['position'] ?? ''));
+            if (filter_var($member['isStaff'] ?? false, FILTER_VALIDATE_BOOLEAN)) {
+                $card = $cards[(int) ($member['staffId'] ?? 0)] ?? null;
+                if ($card === null) {
+                    continue;
+                }
+                $shown = [
+                    'name' => $card['name'],
+                    'rank' => $card['rank'],
+                    'position' => $position,
+                    'image' => $card['image'],
+                    'email' => $card['email'],
+                    'url' => $card['url'],
+                ];
+            } else {
+                $name = trim((string) ($member['name'] ?? ''));
+                if ($name === '') {
+                    continue;
+                }
+                $shown = [
+                    'name' => $name,
+                    'rank' => '',
+                    'position' => $position,
+                    'image' => is_string($member['image'] ?? null) && trim($member['image']) !== '' ? $member['image'] : null,
+                    'email' => '',
+                    'url' => null,
+                ];
+            }
+
+            if (($member['role'] ?? 'member') === 'head') {
+                $heads[] = $shown;
+            } else {
+                $others[] = $shown;
+            }
+        }
+
+        unset($content['leadership'], $content['services'], $content['statistics'], $content['contact']);
+        $council['members'] = $members;
+        $content['council'] = $council;
+        $content['functions'] = [
+            ...$functions,
+            'items' => $this->arrayList($functions['items'] ?? []),
+        ];
+        $content['councilHeads'] = $heads;
+        $content['councilMembers'] = $others;
+
+        return $content;
     }
 
     public function policies(string $locale): ResearchPageDTO
