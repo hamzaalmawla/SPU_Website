@@ -927,8 +927,9 @@ final class ResearchPublicPagesTest extends TestCase
             ->assertDontSee('Dr. Unpublished Staff');
 
         // The typed-in member has no profile link: only the head links to a profile.
-        $this->assertSame(1, substr_count((string) $response->getContent(), '/about/profile/'));
+        $this->assertSame(1, substr_count((string) $response->getContent(), 'class="rc-link"'));
     }
+
     public function test_research_policies_use_published_cms_payload(): void
     {
         $user = User::factory()->create(['role_slug' => 'super_admin']);
