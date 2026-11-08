@@ -10,7 +10,6 @@ use App\Filament\Pages\ManageResearch;
 use App\Models\Cms\CmsDraft;
 use App\Models\Legacy\LegacyExactRedirect;
 use App\Models\Media\MediaAsset;
-use App\Models\Person\FacultyMember;
 use App\Models\Research\LegacyResearchFileReference;
 use App\Models\Research\ResearchPublication;
 use App\Models\Research\ResearchPublicationTranslation;
@@ -853,83 +852,6 @@ final class ResearchPublicPagesTest extends TestCase
             ->assertDontSee('PubMed');
     }
 
-    public function test_research_office_uses_published_cms_payload(): void
-    {
-        $user = User::factory()->create(['role_slug' => 'super_admin']);
-        $payload = [
-            'translations' => [
-                'ar' => $this->cmsOfficeContent('مكتب بحث CMS', 'د. قائد CMS', 'خدمة CMS'),
-                'en' => $this->cmsOfficeContent('CMS Research Office', 'Dr. CMS Leader', 'CMS Grant Service'),
-            ],
-        ];
-
-        $workflow = app(CmsWorkflowServiceInterface::class);
-        $workflow->saveDraft('research.office', $payload, (int) $user->getKey());
-        $workflow->publish('research.office', (int) $user->getKey());
-
-        // A page saved before the council layout shows its leaders as members and
-        // its services as the functions; the statistics and contact are gone.
-        $this->get('/en/research/office')
-            ->assertOk()
-            ->assertSee('CMS Research Office')
-            ->assertSee('Dr. CMS Leader')
-            ->assertSee('CMS Grant Service')
-            ->assertDontSee('CMS Publications')
-            ->assertDontSee('cms.research.office@spu.edu.sy')
-            ->assertDontSee('Dr. Arwa Khair');
-    }
-
-    public function test_research_council_shows_head_staff_and_typed_in_members_and_functions(): void
-    {
-        $user = User::factory()->create(['role_slug' => 'super_admin']);
-        $head = $this->councilStaffMember('council-head', 'Dr. Council Head', 'head@spu.edu.sy');
-        $hidden = $this->councilStaffMember('council-hidden', 'Dr. Unpublished Staff', 'hidden@spu.edu.sy', published: false);
-        $content = fn (string $title, string $guestName): array => [
-            'hero' => ['eyebrow' => 'Research', 'title' => $title, 'summary' => 'Council summary.', 'backgroundImage' => '/images/uni-main-place.JPG'],
-            'council' => [
-                'title' => 'Council Members',
-                'subtitle' => '',
-                'headLabel' => 'Council Head Label',
-                'memberLabel' => 'Council Member Label',
-                'profileLabel' => 'View profile',
-                'members' => [
-                    ['id' => 'm1', 'role' => 'head', 'isStaff' => true, 'staffId' => $head->getKey(), 'name' => '', 'position' => 'Vice President', 'image' => null],
-                    ['id' => 'm2', 'role' => 'member', 'isStaff' => false, 'staffId' => null, 'name' => $guestName, 'position' => 'External expert', 'image' => null],
-                    ['id' => 'm3', 'role' => 'member', 'isStaff' => true, 'staffId' => $hidden->getKey(), 'name' => '', 'position' => '', 'image' => null],
-                ],
-            ],
-            'functions' => [
-                'title' => 'Council Functions',
-                'subtitle' => '',
-                'items' => [['title' => 'Review research proposals', 'description' => 'Proposal review text.']],
-            ],
-        ];
-
-        $workflow = app(CmsWorkflowServiceInterface::class);
-        $workflow->saveDraft('research.office', ['translations' => [
-            'ar' => $content('مجلس البحث والنشر العلمي', 'ضيف المجلس'),
-            'en' => $content('Research and Scientific Publication Council', 'Guest Member'),
-        ]], (int) $user->getKey());
-        $workflow->publish('research.office', (int) $user->getKey());
-
-        $response = $this->get('/en/research/office')
-            ->assertOk()
-            ->assertSee('Research and Scientific Publication Council')
-            ->assertSee('Dr. Council Head')
-            ->assertSee('head@spu.edu.sy')
-            ->assertSee('/en/about/profile/council-head', false)
-            ->assertSee('Council Head Label')
-            ->assertSee('Vice President')
-            ->assertSee('Guest Member')
-            ->assertSee('External expert')
-            ->assertSee('Council Member Label')
-            ->assertSee('Review research proposals')
-            ->assertDontSee('Dr. Unpublished Staff');
-
-        // The typed-in member has no profile link: only the head links to a profile.
-        $this->assertSame(1, substr_count((string) $response->getContent(), 'class="rc-link"'));
-    }
-
     public function test_research_policies_use_published_cms_payload(): void
     {
         $user = User::factory()->create(['role_slug' => 'super_admin']);
@@ -1231,67 +1153,6 @@ final class ResearchPublicPagesTest extends TestCase
                 'phone' => '+963 11 0000 000',
             ],
         ];
-    }
-
-    /** @return array<string, mixed> */
-    private function cmsOfficeContent(string $title, string $leaderName, string $serviceTitle): array
-    {
-        return [
-            'hero' => [
-                'eyebrow' => 'CMS Research Administration',
-                'title' => $title,
-                'summary' => 'CMS managed research office.',
-                'backgroundImage' => '/images/uni-main-place.JPG',
-            ],
-            'leadership' => [
-                'title' => 'CMS Research Leadership',
-                'items' => [[
-                    'name' => $leaderName,
-                    'role' => 'CMS Research Director',
-                    'email' => 'cms.leader@spu.edu.sy',
-                    'image' => '/images/uni-main-place.JPG',
-                ]],
-            ],
-            'services' => [
-                'title' => 'CMS Office Services',
-                'subtitle' => 'CMS office service subtitle.',
-                'items' => [[
-                    'title' => $serviceTitle,
-                    'description' => 'CMS service description.',
-                ]],
-            ],
-            'statistics' => [
-                'title' => 'CMS Research at a Glance',
-                'items' => [[
-                    'value' => '88',
-                    'label' => 'CMS Publications',
-                ]],
-            ],
-            'contact' => [
-                'title' => 'CMS Contact Research Office',
-                'address' => 'CMS SPU Campus',
-                'addressDetail' => 'CMS research office address.',
-                'email' => 'cms.research.office@spu.edu.sy',
-                'phone' => '+963 11 1111 111',
-                'hours' => 'Sun-Thu: 9:00 AM - 3:00 PM',
-            ],
-        ];
-    }
-
-    private function councilStaffMember(string $slug, string $name, string $email, bool $published = true): FacultyMember
-    {
-        $member = FacultyMember::query()->create([
-            'slug' => $slug,
-            'email' => $email,
-            'is_enabled' => true,
-            'publication_status' => $published ? 'published' : 'draft',
-            'published_at' => $published ? now()->subDay() : null,
-        ]);
-        foreach (['ar', 'en'] as $locale) {
-            $member->translations()->create(['locale' => $locale, 'full_name' => $name]);
-        }
-
-        return $member;
     }
 
     /** @return array<string, mixed> */

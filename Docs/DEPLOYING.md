@@ -615,6 +615,27 @@ migration=2026_11_04_000002_rename_academic_staff_to_teaching_staff
 The new academic programs page of every faculty needs no data: until an editor publishes it, it lists
 the study plan programs and the master's program.
 
+### About › Councils (2026-11-08)
+
+Every council is a page made from one template (`/about/councils/<slug>`), listed on About › Councils.
+This release has three migrations:
+
+- `2026_11_08_000003_create_university_councils_table` (schema only).
+- `2026_11_08_000004_move_research_council_into_councils` (**data**): adds the council `research-council`,
+  copies the research council page (`research.office`: the published version as it is, and any open draft)
+  to it, points menu links to `/research/office` at `/about/councils/research-council` (the old address
+  301-redirects there), and adds Councils under About in the header menu and as an About card.
+- `2026_11_08_000005_grant_councils_permissions` (**data**): editors get `councils.*`.
+
+The deploy refuses them until `data-migrations.approved` lists every pending migration, as the deploy log
+prints them, for example:
+
+```
+migration=2026_11_08_000003_create_university_councils_table
+migration=2026_11_08_000004_move_research_council_into_councils
+migration=2026_11_08_000005_grant_councils_permissions
+```
+
 ### Faculty positions typed on profiles (faculty:match-positions)
 
 Faculty positions are picked on each faculty's council page from the faculty's own positions list (dean,

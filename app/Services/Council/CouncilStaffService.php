@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace App\Services\Research;
+namespace App\Services\Council;
 
-use App\Contracts\Research\ResearchCouncilStaffServiceInterface;
+use App\Contracts\Council\CouncilStaffServiceInterface;
 use App\Enums\PublicationStatus;
 use App\Models\Media\MediaAsset;
 use App\Models\Person\FacultyMember;
@@ -17,7 +17,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * Reads only the columns the council needs from the staff profiles: these tables
  * are wide (bios, social links, legacy paths), so nothing here selects *.
  */
-final class ResearchCouncilStaffService implements ResearchCouncilStaffServiceInterface
+final class CouncilStaffService implements CouncilStaffServiceInterface
 {
     public function staffOptions(string $locale): array
     {

@@ -104,7 +104,7 @@ final class AboutPageService implements AboutPageServiceInterface
 
     public function getEditablePayload(string $targetKey): array
     {
-        if (! in_array($targetKey, ['about.landing', 'about.vision-mission', 'about.history', 'about.leadership', 'about.directorates', 'about.partnerships', 'about.directorates_staff', 'about.quality-policy', 'about.ethical-charter', 'about.organizational-structure', 'about.accreditation', 'about.why-spu'], true)) {
+        if (! in_array($targetKey, ['about.landing', 'about.vision-mission', 'about.history', 'about.leadership', 'about.directorates', 'about.partnerships', 'about.councils', 'about.directorates_staff', 'about.quality-policy', 'about.ethical-charter', 'about.organizational-structure', 'about.accreditation', 'about.why-spu'], true)) {
             throw new \InvalidArgumentException('Unsupported about target.');
         }
 
@@ -885,6 +885,7 @@ final class AboutPageService implements AboutPageServiceInterface
             'directorates' => 'directorates',
             'directorates_staff' => 'directorates_staff',
             'partnerships' => 'partnerships',
+            'councils' => 'councils',
             'quality-policy' => 'quality-policy',
             'ethical-charter' => 'ethical-charter',
             'organizational-structure' => 'organizational-structure',
@@ -898,6 +899,16 @@ final class AboutPageService implements AboutPageServiceInterface
     private function importedContentPayload(string $slug): ?array
     {
         return match ($slug) {
+            // The Councils page until an editor publishes its own text (About › Councils).
+            'councils' => [
+                'titleEn' => __('councils.listing.title', [], 'en'),
+                'titleAr' => __('councils.listing.title', [], 'ar'),
+                'headlineEn' => __('councils.listing.title', [], 'en'),
+                'headlineAr' => __('councils.listing.title', [], 'ar'),
+                'summaryEn' => __('councils.listing.summary', [], 'en'),
+                'summaryAr' => __('councils.listing.summary', [], 'ar'),
+                'heroImage' => '/images/about-hero-2.webp',
+            ],
             'quality-policy' => [
                 'titleEn' => 'Quality Policy at SPU',
                 'titleAr' => 'سياسة الجودة في الجامعة السورية الخاصة',

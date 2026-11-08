@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace App\Contracts\Research;
+namespace App\Contracts\Council;
 
 /**
- * The teaching staff a research council member can be picked from, and what the
+ * The teaching staff a council member can be picked from, and what the
  * council page shows for a picked member (read live from their profile).
  */
-interface ResearchCouncilStaffServiceInterface
+interface CouncilStaffServiceInterface
 {
     /**
      * Every teaching staff profile, by id, named in the given language.

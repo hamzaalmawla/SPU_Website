@@ -241,6 +241,10 @@ Route::prefix('{locale}')
                 Route::get('/directorates/{directorate}', 'directorateDetail')->name('directorates.show');
                 Route::get('/partnership', 'redirectPartnershipAlias')->name('partnership.redirect');
                 Route::get('/partnerships', 'partnerships')->name('partnerships');
+                Route::get('/councils', 'councils')->name('councils');
+                Route::get('/councils/{council}', 'council')
+                    ->where(['council' => '[a-z0-9]+(?:-[a-z0-9]+)*'])
+                    ->name('councils.show');
                 Route::get('/profile', 'redirectLegacyProfile')->name('profile.legacy');
                 Route::get('/{section}', 'content')
                     ->where(['section' => 'quality-policy|ethical-charter|organizational-structure|accreditation|why-spu'])

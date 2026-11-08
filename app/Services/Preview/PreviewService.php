@@ -218,6 +218,10 @@ final class PreviewService implements PreviewServiceInterface
             return $locale.'/e-services/'.substr($targetKey, strlen('e_services.'));
         }
 
+        if (is_string($targetKey) && str_starts_with($targetKey, 'entity.council.')) {
+            return $locale.'/about/councils';
+        }
+
         return match ($targetKey) {
             'contact' => $locale.'/contact',
             'e_services' => $locale.'/e-services',
@@ -235,7 +239,6 @@ final class PreviewService implements PreviewServiceInterface
             'research.experts' => $locale.'/research/expert-finder',
             'research.conferences' => $locale.'/research/conferences',
             'research.library' => $locale.'/research/library',
-            'research.office' => $locale.'/research/office',
             'research.policies' => $locale.'/research/policies',
             default => $locale,
         };

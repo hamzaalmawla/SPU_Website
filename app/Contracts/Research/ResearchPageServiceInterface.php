@@ -126,8 +126,6 @@ interface ResearchPageServiceInterface
 
     public function library(string $locale): ResearchPageDTO;
 
-    public function office(string $locale): ResearchPageDTO;
-
     public function policies(string $locale): ResearchPageDTO;
 
     public function publicationSlugForLegacyId(string $id): ?string;

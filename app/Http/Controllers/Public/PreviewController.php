@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Public;
 
 use App\Contracts\Center\CenterPageServiceInterface;
 use App\Contracts\Cms\AboutEntityCmsServiceInterface;
+use App\Contracts\Council\CouncilPageServiceInterface;
 use App\Contracts\Navigation\NavigationServiceInterface;
 use App\Contracts\News\NewsArticleCmsServiceInterface;
 use App\Contracts\News\NewsRelatedLinkServiceInterface;
@@ -55,6 +56,7 @@ final class PreviewController extends Controller
         private readonly NewsArticleCmsServiceInterface $newsArticleCmsService,
         private readonly NewsRelatedLinkServiceInterface $relatedLinks,
         private readonly CenterPageServiceInterface $centerPageService,
+        private readonly CouncilPageServiceInterface $councilPageService,
     ) {}
 
     public function __invoke(Request $request, string $locale): View
@@ -145,6 +147,10 @@ final class PreviewController extends Controller
             return $this->renderResearchDetailPreview($locale, $preview, $page, 'public.research.publications.show', '/research/publications/'.$page->slug, []);
         }
 
+        if (is_string($targetKey) && str_starts_with($targetKey, 'entity.council.')) {
+            return $this->renderCouncilPreview($locale, $preview, $targetKey, $payload);
+        }
+
         if (is_string($targetKey) && str_starts_with($targetKey, 'entity.')) {
             return $this->renderAboutEntityPreview($locale, $preview, $targetKey, $payload);
         }
@@ -219,10 +225,6 @@ final class PreviewController extends Controller
 
         if ($targetKey === 'research.library') {
             return $this->renderResearchTargetPreview($locale, $preview, $targetKey, $localizedContent, 'public.research.library', '/research/library');
-        }
-
-        if ($targetKey === 'research.office') {
-            return $this->renderResearchTargetPreview($locale, $preview, $targetKey, $localizedContent, 'public.research.office', '/research/office');
         }
 
         if ($targetKey === 'research.policies') {
@@ -1282,6 +1284,30 @@ final class PreviewController extends Controller
             ]);
         }
 
+        if ($page->slug === 'councils') {
+            return view('public.about.councils', [
+                'locale' => $locale,
+                'direction' => $page->direction,
+                'navigation' => $preview->payload->navigation ?? $this->navigationService->getFullNavigationPayload($locale, $locale.'/about/councils'),
+                'settings' => $this->settingsService->getPublicSettings($locale),
+                'languageSwitch' => $this->cmsLanguageSwitchLinks($preview->token, $locale),
+                'isPreview' => true,
+                'seo' => $this->seoMetadataService->buildFallback($locale, [
+                    'path' => '/'.$locale.'/about/councils',
+                    'locale_paths' => ['ar' => '/ar/about/councils', 'en' => '/en/about/councils'],
+                    'title' => $page->title,
+                    'meta_description' => $page->summary,
+                    'og_title' => $page->title,
+                    'og_description' => $page->summary,
+                    'og_image' => $page->heroImage,
+                ]),
+                'page' => $page,
+                'councils' => $this->councilPageService->councils($locale),
+                'aboutNavigationCards' => $this->aboutPageService->getAboutSubPages($locale, 'about.councils'),
+                'preview' => $preview,
+            ]);
+        }
+
         if ($page->slug === 'partnerships') {
             return view('public.about.partnerships', [
                 'locale' => $locale,
@@ -1324,6 +1350,41 @@ final class PreviewController extends Controller
             ]),
             'page' => $page,
             'aboutNavigationCards' => $this->aboutPageService->getAboutSubPages($locale),
+            'preview' => $preview,
+        ]);
+    }
+
+    /**
+     * A draft of one council's page (About › Councils › {council}).
+     *
+     * @param  array<string, mixed>  $payload
+     */
+    private function renderCouncilPreview(string $locale, PreviewDTO $preview, string $targetKey, array $payload): View
+    {
+        $council = $this->councilPageService->previewCouncil($targetKey, $payload, $locale);
+        abort_if($council === null, 404);
+        $path = '/about/councils/'.$council->slug;
+        $councils = $this->aboutPageService->getContentPage('councils', $locale);
+
+        return view('public.about.council', [
+            'locale' => $locale,
+            'direction' => $council->direction,
+            'navigation' => $preview->payload->navigation ?? $this->navigationService->getFullNavigationPayload($locale, $locale.$path),
+            'settings' => $this->settingsService->getPublicSettings($locale),
+            'languageSwitch' => $this->cmsLanguageSwitchLinks($preview->token, $locale),
+            'isPreview' => true,
+            'seo' => $this->seoMetadataService->buildFallback($locale, [
+                'path' => '/'.$locale.$path,
+                'locale_paths' => ['ar' => '/ar'.$path, 'en' => '/en'.$path],
+                'title' => $council->title,
+                'meta_description' => $council->summary,
+                'og_title' => $council->title,
+                'og_description' => $council->summary,
+                'og_image' => $council->heroImage,
+            ]),
+            'council' => $council,
+            'councilsTitle' => $councils?->title ?? __('councils.breadcrumb', [], $locale),
+            'aboutNavigationCards' => $this->aboutPageService->getAboutSubPages($locale, 'about.councils'),
             'preview' => $preview,
         ]);
     }

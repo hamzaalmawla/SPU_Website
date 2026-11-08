@@ -143,7 +143,7 @@ class ManageAbout extends Page implements HasForms
     {
         $this->assertAboutTarget($targetKey);
 
-        if (! in_array($targetKey, ['about.landing', 'about.vision-mission', 'about.history', 'about.leadership', 'about.directorates', 'about.directorates_staff', 'about.partnerships', 'about.quality-policy', 'about.ethical-charter', 'about.organizational-structure', 'about.accreditation', 'about.why-spu'], true)) {
+        if (! in_array($targetKey, ['about.landing', 'about.vision-mission', 'about.history', 'about.leadership', 'about.directorates', 'about.directorates_staff', 'about.partnerships', 'about.councils', 'about.quality-policy', 'about.ethical-charter', 'about.organizational-structure', 'about.accreditation', 'about.why-spu'], true)) {
             $this->draftVersion = $this->cmsWorkflowService->latestEditableDraftVersion($targetKey, (int) auth()->id());
             $this->form->fill([
                 'target_key' => $targetKey,
@@ -161,6 +161,8 @@ class ManageAbout extends Page implements HasForms
                 'en_directorates_staff' => [],
                 'ar_partnerships' => [],
                 'en_partnerships' => [],
+                'ar_councils' => [],
+                'en_councils' => [],
                 'ar_quality_policy' => [],
                 'en_quality_policy' => [],
                 'ar_ethical_charter' => [],
@@ -196,6 +198,8 @@ class ManageAbout extends Page implements HasForms
             'en_directorates_staff' => $targetKey === 'about.directorates_staff' && is_array($payload['translations']['en'] ?? null) ? $this->contentShellFormData($payload['translations']['en']) : [],
             'ar_partnerships' => $targetKey === 'about.partnerships' && is_array($payload['translations']['ar'] ?? null) ? $this->contentShellFormData($payload['translations']['ar']) : [],
             'en_partnerships' => $targetKey === 'about.partnerships' && is_array($payload['translations']['en'] ?? null) ? $this->contentShellFormData($payload['translations']['en']) : [],
+            'ar_councils' => $targetKey === 'about.councils' && is_array($payload['translations']['ar'] ?? null) ? $this->contentShellFormData($payload['translations']['ar']) : [],
+            'en_councils' => $targetKey === 'about.councils' && is_array($payload['translations']['en'] ?? null) ? $this->contentShellFormData($payload['translations']['en']) : [],
             'ar_quality_policy' => $targetKey === 'about.quality-policy' && is_array($payload['translations']['ar'] ?? null) ? $this->importedContentFormData($payload['translations']['ar']) : [],
             'en_quality_policy' => $targetKey === 'about.quality-policy' && is_array($payload['translations']['en'] ?? null) ? $this->importedContentFormData($payload['translations']['en']) : [],
             'ar_ethical_charter' => $targetKey === 'about.ethical-charter' && is_array($payload['translations']['ar'] ?? null) ? $this->importedContentFormData($payload['translations']['ar']) : [],
@@ -390,6 +394,15 @@ class ManageAbout extends Page implements HasForms
             ];
         }
 
+        if (($state['target_key'] ?? null) === 'about.councils') {
+            return [
+                'translations' => [
+                    'ar' => $this->contentShellPayloadFromForm(is_array($state['ar_councils'] ?? null) ? $state['ar_councils'] : []),
+                    'en' => $this->contentShellPayloadFromForm(is_array($state['en_councils'] ?? null) ? $state['en_councils'] : []),
+                ],
+            ];
+        }
+
         if (in_array($state['target_key'] ?? null, ['about.quality-policy', 'about.ethical-charter', 'about.organizational-structure', 'about.accreditation', 'about.why-spu'], true)) {
             $stateKey = $this->importedContentStateKey((string) $state['target_key']);
 
@@ -435,6 +448,11 @@ class ManageAbout extends Page implements HasForms
 
         if ($this->targetKeyForSchema() === 'about.partnerships') {
             return $this->contentShellFields($locale, 'partnerships');
+        }
+
+        // The councils themselves are edited under Councils; this is the page's heading.
+        if ($this->targetKeyForSchema() === 'about.councils') {
+            return $this->contentShellFields($locale, 'councils');
         }
 
         if (in_array($this->targetKeyForSchema(), ['about.quality-policy', 'about.ethical-charter', 'about.organizational-structure', 'about.accreditation', 'about.why-spu'], true)) {

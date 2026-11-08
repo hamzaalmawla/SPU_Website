@@ -171,6 +171,7 @@ class NavigationSeeder extends Seeder
             ['label' => 'المديريات المركزية', 'target_kind' => 'url', 'url' => '/ar/about/directorates'],
             ['label' => 'دليل الهيئة التدريسية', 'target_kind' => 'url', 'url' => '/ar/about/directorates/staff'],
             ['label' => 'الشراكات', 'target_kind' => 'url', 'url' => '/ar/about/partnerships'],
+            ['label' => 'المجالس', 'target_kind' => 'url', 'url' => '/ar/about/councils'],
             ['label' => 'سياسة الجودة', 'target_kind' => 'url', 'url' => '/ar/about/quality-policy'],
             ['label' => 'الميثاق الأخلاقي', 'target_kind' => 'url', 'url' => '/ar/about/ethical-charter'],
             ['label' => 'الهيكل التنظيمي', 'target_kind' => 'url', 'url' => '/ar/about/organizational-structure'],
@@ -184,6 +185,7 @@ class NavigationSeeder extends Seeder
             ['label' => 'Central Directorates', 'target_kind' => 'url', 'url' => '/en/about/directorates'],
             ['label' => 'Teaching Staff Directory', 'target_kind' => 'url', 'url' => '/en/about/directorates/staff'],
             ['label' => 'Partnerships', 'target_kind' => 'url', 'url' => '/en/about/partnerships'],
+            ['label' => 'Councils', 'target_kind' => 'url', 'url' => '/en/about/councils'],
             ['label' => 'Quality Policy', 'target_kind' => 'url', 'url' => '/en/about/quality-policy'],
             ['label' => 'Ethical Charter', 'target_kind' => 'url', 'url' => '/en/about/ethical-charter'],
             ['label' => 'Organizational Structure', 'target_kind' => 'url', 'url' => '/en/about/organizational-structure'],
@@ -361,7 +363,7 @@ class NavigationSeeder extends Seeder
                 ['label' => 'المؤتمرات والندوات', 'target_kind' => 'url', 'url' => '/ar/research/conferences'],
                 ['label' => 'مكتبة البحث', 'target_kind' => 'url', 'url' => '/ar/research/library'],
                 ['label' => 'السياسات والأخلاقيات', 'target_kind' => 'url', 'url' => '/ar/research/policies'],
-                ['label' => 'مجلس البحث والنشر العلمي', 'target_kind' => 'url', 'url' => '/ar/research/office'],
+                ['label' => 'مجلس البحث والنشر العلمي', 'target_kind' => 'url', 'url' => '/ar/about/councils/research-council'],
             ];
         }
 
@@ -393,7 +395,7 @@ class NavigationSeeder extends Seeder
             ['label' => 'Conferences & Seminars', 'target_kind' => 'url', 'url' => '/en/research/conferences'],
             ['label' => 'Research Library', 'target_kind' => 'url', 'url' => '/en/research/library'],
             ['label' => 'Policies & Ethics', 'target_kind' => 'url', 'url' => '/en/research/policies'],
-            ['label' => 'Research and Scientific Publication Council', 'target_kind' => 'url', 'url' => '/en/research/office'],
+            ['label' => 'Research and Scientific Publication Council', 'target_kind' => 'url', 'url' => '/en/about/councils/research-council'],
         ];
     }
 
