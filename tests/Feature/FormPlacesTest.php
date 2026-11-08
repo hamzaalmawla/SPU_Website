@@ -8,6 +8,7 @@ use App\Contracts\Cms\CmsWorkflowServiceInterface;
 use App\Contracts\Form\FormDefinitionServiceInterface;
 use App\Contracts\Page\AdmissionsPageServiceInterface;
 use App\Contracts\Page\CampusLifePageServiceInterface;
+use App\Contracts\Page\EServicesPageServiceInterface;
 use App\Contracts\Research\ResearchPageServiceInterface;
 use App\Filament\Pages\ManageAdmissions;
 use App\Filament\Support\FormPicker;
@@ -159,7 +160,12 @@ final class FormPlacesTest extends TestCase
         $this->assertSame('external', $draft->payload_json['translations']['en']['applicationFormSource'] ?? null);
         $this->assertSame('https://forms.example.org/apply', $draft->payload_json['translations']['ar']['applicationFormUrl'] ?? null);
 
-        $this->publish('admissions.how-to-apply', $draft->payload_json);
+        $payload = app(AdmissionsPageServiceInterface::class)->getEditablePayload('admissions.how-to-apply');
+        foreach (['ar', 'en'] as $locale) {
+            $payload['translations'][$locale]['applicationFormSource'] = 'external';
+            $payload['translations'][$locale]['applicationFormUrl'] = 'https://forms.example.org/apply';
+        }
+        $this->publish('admissions.how-to-apply', $payload);
 
         $this->get('/en/admissions/how-to-apply')->assertOk()
             ->assertSee('href="https://forms.example.org/apply"', false)
@@ -176,13 +182,17 @@ final class FormPlacesTest extends TestCase
             ->call('loadTarget', 'admissions.how-to-apply')
             ->set('data.application_form_source', 'external')
             ->set('data.application_form_url', 'http://forms.example.org/apply')
-            ->call('save')
-            ->assertHasErrors(['data.application_form_url']);
+            ->call('publish');
+
+        // Publishing reports the error and leaves our own form on the page.
+        $this->get('/en/admissions/how-to-apply')->assertOk()
+            ->assertSee('data-form-id="admissions-application"', false)
+            ->assertDontSee('http://forms.example.org/apply', false);
     }
 
     public function test_the_suggestions_page_can_show_a_form_on_another_site(): void
     {
-        $payload = app(\App\Contracts\Page\EServicesPageServiceInterface::class)->getSuggestionsComplaintsEditablePayload();
+        $payload = app(EServicesPageServiceInterface::class)->getSuggestionsComplaintsEditablePayload();
         foreach (['ar', 'en'] as $locale) {
             $payload['translations'][$locale]['form']['formSource'] = 'external';
             $payload['translations'][$locale]['form']['formUrl'] = 'https://forms.example.org/feedback';

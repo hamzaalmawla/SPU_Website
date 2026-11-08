@@ -7,7 +7,6 @@ namespace App\Filament\Support;
 use App\Contracts\Media\MediaServiceInterface;
 use App\DTOs\Media\MediaUploadResultDTO;
 use App\Filament\Components\FocalPointPicker;
-use App\Filament\Support\ImageDimensionGuide;
 use App\Support\MediaUploadFailure;
 use App\Support\MediaUrlResolver;
 use Filament\Forms\Components\Actions\Action as FormAction;
