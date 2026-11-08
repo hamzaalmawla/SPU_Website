@@ -25,6 +25,7 @@ final class LegacyImageDerivativeService implements LegacyImageDerivativeService
     private const IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp'];
 
     private const MANIFEST_VERSION = 2;
+
     public function __construct(
         private readonly ImageConversionServiceInterface $imageConversionService,
         private readonly HomepageSectionServiceInterface $homepageSectionService,

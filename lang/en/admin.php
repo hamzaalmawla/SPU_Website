@@ -2258,6 +2258,8 @@ return [
             'submissions_count' => 'Submissions',
             'form' => 'Form',
             'application_form' => 'Application form',
+            'form_source' => 'Where is the form?',
+            'external_url' => 'Form link',
         ],
         'types' => [
             'text' => 'Short text',
@@ -2270,6 +2272,10 @@ return [
             'checkbox' => 'Checkbox',
             'file' => 'File upload',
         ],
+        'sources' => [
+            'internal' => 'A form from our site',
+            'external' => 'A form on another site',
+        ],
         'help' => [
             'key' => 'Auto-generated from the form name, or you can customize it. Lowercase letters, numbers and dashes, e.g. open-day-registration.',
             'inbox' => 'Where submissions of this form appear in the admin.',
@@ -2280,6 +2286,10 @@ return [
             'option_value' => 'Auto-generated from the label, or you can customize it. English letters or numbers, no commas.',
             'delete' => 'A form that is used on a page or already has submissions cannot be deleted; disable it instead.',
             'select_form' => 'Forms are managed under Contact → Forms.',
+            'external_url' => 'The full address of the form, starting with https:// (for example a Google or Microsoft form). The page\'s button opens this link.',
+        ],
+        'validation' => [
+            'external_url' => 'Enter a full form address starting with https://.',
         ],
         'actions' => [
             'auto_generate' => 'Auto-generate from label',

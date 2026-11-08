@@ -76,6 +76,43 @@ final class NewsArticleEventPublicTest extends TestCase
             ->assertSee('المدرج الرئيسي');
     }
 
+    public function test_an_event_with_a_form_on_another_site_links_its_register_button_there(): void
+    {
+        $articleId = $this->publishEvent('Open Day', 'events', [
+            'kind' => 'event',
+            'requires_registration' => true,
+            'formSource' => 'external',
+            'formUrl' => 'https://forms.example.org/open-day',
+            'capacity' => 1,
+            'sessions' => [['date' => '2030-02-01', 'starts_at' => '10:00', 'ends_at' => '12:00']],
+        ]);
+
+        $this->assertDatabaseHas('news_article_events', ['news_article_id' => $articleId, 'form_source' => 'external', 'form_url' => 'https://forms.example.org/open-day', 'form_key' => null]);
+
+        $this->get('/en/news/'.$articleId)->assertOk()
+            ->assertSee('href="https://forms.example.org/open-day"', false)
+            ->assertSee('target="_blank"', false)
+            ->assertDontSee('/en/news/'.$articleId.'/register', false)
+            ->assertDontSee('seats left');
+
+        $this->get('/en/news/'.$articleId.'/register')->assertRedirect('https://forms.example.org/open-day');
+    }
+
+    public function test_an_event_with_a_form_on_another_site_needs_a_safe_address(): void
+    {
+        $prepared = $this->prepare('Open Day', 'events', [
+            'kind' => 'event',
+            'requires_registration' => true,
+            'formSource' => 'external',
+            'formUrl' => 'javascript:alert(1)',
+            'sessions' => [['date' => '2030-02-01', 'starts_at' => '10:00']],
+        ]);
+
+        $errors = app(CmsWorkflowServiceInterface::class)->readiness((string) $prepared->targetKey, $prepared->payload)->errors;
+
+        $this->assertStringContainsString('https://', json_encode($errors, JSON_UNESCAPED_SLASHES));
+    }
+
     public function test_registration_counts_seats_and_closes_when_full(): void
     {
         Mail::fake();

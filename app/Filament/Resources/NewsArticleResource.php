@@ -16,6 +16,7 @@ use App\Filament\Support\StatusBadge;
 use App\Models\News\NewsArticle;
 use App\Models\News\NewsCategory;
 use App\Models\User\User;
+use App\Support\FormLink;
 use Closure;
 use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\Component;
@@ -599,16 +600,16 @@ class NewsArticleResource extends Resource
                 ->description(__('admin.news_article.event.help.registration'))
                 ->visible($needsRegistration)
                 ->schema([
-                    FormPicker::make('formId')
-                        ->label(__('admin.news_article.event.fields.form'))
-                        ->required($needsRegistration),
+                    ...FormPicker::withSource(required: $needsRegistration, label: __('admin.news_article.event.fields.form')),
                     TextInput::make('capacity')
+                        ->visible(fn (Get $get): bool => $get('formSource') !== FormLink::EXTERNAL)
                         ->label(__('admin.news_article.event.fields.capacity'))
                         ->helperText(__('admin.news_article.event.help.capacity'))
                         ->numeric()
                         ->integer()
                         ->minValue(1),
                     TextInput::make('prior_registrations')
+                        ->visible(fn (Get $get): bool => $get('formSource') !== FormLink::EXTERNAL)
                         ->label(__('admin.news_article.event.fields.prior_registrations'))
                         ->helperText(__('admin.news_article.event.help.prior_registrations'))
                         ->numeric()

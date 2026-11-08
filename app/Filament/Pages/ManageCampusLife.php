@@ -15,6 +15,7 @@ use App\Filament\Concerns\LimitsCmsTargetsToGrants;
 use App\Filament\Support\FormPicker;
 use App\Filament\Support\MediaPicker;
 use App\Models\User\User;
+use App\Support\FormLink;
 use Filament\Actions\Action;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\DateTimePicker;
@@ -131,7 +132,7 @@ class ManageCampusLife extends Page implements HasForms
                     ->visible(fn (): bool => $this->targetKeyForSchema() === 'campus_life.jobs'),
                 Section::make(__('admin.forms.fields.form'))
                     ->schema([
-                        FormPicker::make('application_form_id')->label(__('admin.forms.fields.application_form'))->required(fn (): bool => $this->targetKeyForSchema() === 'campus_life.jobs'),
+                        ...FormPicker::withSource('application_form_id', 'application_form_source', 'application_form_url', fn (): bool => $this->targetKeyForSchema() === 'campus_life.jobs', __('admin.forms.fields.application_form')),
                     ])
                     ->visible(fn (): bool => $this->targetKeyForSchema() === 'campus_life.jobs'),
                 Tabs::make('campus_life_locales')
@@ -268,6 +269,8 @@ class ManageCampusLife extends Page implements HasForms
                 )
                 : [],
             'application_form_id' => $targetKey === 'campus_life.jobs' ? (string) ($payload['translations']['ar']['applicationFormId'] ?? 'job-application') : null,
+            'application_form_source' => $targetKey === 'campus_life.jobs' ? ($payload['translations']['ar']['applicationFormSource'] ?? null) : null,
+            'application_form_url' => $targetKey === 'campus_life.jobs' ? ($payload['translations']['ar']['applicationFormUrl'] ?? null) : null,
             'ar_dental' => $targetKey === 'campus_life.dental' && is_array($payload['translations']['ar'] ?? null) ? $payload['translations']['ar'] : [],
             'en_dental' => $targetKey === 'campus_life.dental' && is_array($payload['translations']['en'] ?? null) ? $payload['translations']['en'] : [],
             'ar_hospital' => $targetKey === 'campus_life.hospital' && is_array($payload['translations']['ar'] ?? null) ? $payload['translations']['ar'] : [],
@@ -506,7 +509,12 @@ class ManageCampusLife extends Page implements HasForms
         if (($state['target_key'] ?? null) === 'campus_life.jobs') {
             $workspace = is_array($state['jobs_workspace'] ?? null) ? $state['jobs_workspace'] : [];
             // The application form is one choice for both languages, kept in each.
-            $form = ['applicationFormId' => (string) ($state['application_form_id'] ?? 'job-application')];
+            $link = FormLink::normalize($state['application_form_source'] ?? null, $state['application_form_url'] ?? null);
+            $form = [
+                'applicationFormId' => (string) ($state['application_form_id'] ?? 'job-application'),
+                'applicationFormSource' => $link['source'],
+                'applicationFormUrl' => $link['url'],
+            ];
 
             return [
                 'translations' => [

@@ -15,6 +15,7 @@ use App\Filament\Resources\NewsArticleResource;
 use App\Filament\Support\FormPicker;
 use App\Filament\Support\MediaPicker;
 use App\Models\User\User;
+use App\Support\FormLink;
 use Filament\Actions\Action;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Hidden;
@@ -32,6 +33,7 @@ use Filament\Forms\Components\Toggle;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
+use Filament\Forms\Get;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Illuminate\Support\Facades\Gate;
@@ -673,8 +675,9 @@ class ManageNews extends Page implements HasForms
         if (! $past) {
             array_splice($fields, 1, 0, [
                 Section::make(__('admin.editorial_workspace.events.sections.registration'))->schema([
-                    FormPicker::make()->label(__('admin.editorial_workspace.fields.registration_form'))->required(),
-                    TextInput::make('capacity')->label(__('admin.editorial_workspace.fields.capacity'))->helperText(__('admin.editorial_workspace.fields.capacity_help'))->numeric()->minValue(0)->required(),
+                    ...FormPicker::withSource(label: __('admin.editorial_workspace.fields.registration_form')),
+                    TextInput::make('capacity')->label(__('admin.editorial_workspace.fields.capacity'))->helperText(__('admin.editorial_workspace.fields.capacity_help'))->numeric()->minValue(0)->required()
+                        ->visible(fn (Get $get): bool => $get('formSource') !== FormLink::EXTERNAL),
                     Hidden::make('registered')->default(0),
                     Toggle::make('featured')->label(__('admin.editorial_workspace.fields.featured')),
                 ])->columns(2),
@@ -768,6 +771,8 @@ class ManageNews extends Page implements HasForms
                     'categoryId' => (string) ($shared['categoryId'] ?? ''),
                     'image' => (string) ($shared['image'] ?? ''),
                     'formId' => $past ? null : (string) ($shared['formId'] ?? ''),
+                    'formSource' => $past ? null : ($shared['formSource'] ?? null),
+                    'formUrl' => $past ? null : ($shared['formUrl'] ?? null),
                     'capacity' => $past ? null : ($shared['capacity'] ?? 0),
                     'registered' => $past ? 0 : ($shared['registered'] ?? 0),
                     'featured' => ! $past && (bool) ($shared['featured'] ?? false),
@@ -839,9 +844,13 @@ class ManageNews extends Page implements HasForms
             ];
 
             if (! $past) {
+                $link = FormLink::normalize($event['formSource'] ?? null, $event['formUrl'] ?? null);
+
                 return [
                     ...$translated,
                     'formId' => (string) ($event['formId'] ?? ''),
+                    'formSource' => $link['source'],
+                    'formUrl' => $link['url'],
                     'capacity' => (int) ($event['capacity'] ?? 0),
                     'registered' => (int) ($event['registered'] ?? 0),
                     'featured' => (bool) ($event['featured'] ?? false),
@@ -964,8 +973,8 @@ class ManageNews extends Page implements HasForms
         ];
 
         if (! $past) {
-            $fields[] = FormPicker::make()->required();
-            $fields[] = TextInput::make('capacity')->numeric()->minValue(0)->required();
+            array_push($fields, ...FormPicker::withSource());
+            $fields[] = TextInput::make('capacity')->numeric()->minValue(0)->required()->visible(fn (Get $get): bool => $get('formSource') !== FormLink::EXTERNAL);
             $fields[] = TextInput::make('registered')->numeric()->minValue(0)->required();
             $fields[] = Select::make('featured')->options(['0' => __('admin_pages.news.no'), '1' => __('admin_pages.news.yes')])->required();
 

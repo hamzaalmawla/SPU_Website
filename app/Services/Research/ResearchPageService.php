@@ -24,6 +24,7 @@ use App\Models\Research\Researcher;
 use App\Models\Research\ResearchPublication;
 use App\Models\Research\ResearchPublicationTranslation;
 use App\Models\Shared\MigrationLog;
+use App\Support\FormLink;
 use App\Support\LegacyPublicationMetadata;
 use App\Support\LenientSearch;
 use App\Support\MediaUrlResolver;
@@ -732,9 +733,12 @@ final class ResearchPageService implements ResearchPageServiceInterface
                 // A wrong end date must not flood the calendar.
                 $last = $last->lessThan($first) || $first->diffInDays($last) > 30 ? $first : $last;
                 $isPast = $list === 'past' || $last->lessThan($today);
-                $registrationUrl = ! $isPast && is_string($conference['registrationUrl'] ?? null) && str_starts_with($conference['registrationUrl'], '/research/')
-                    ? '/'.$locale.$conference['registrationUrl']
-                    : null;
+                $registrationUrl = match (true) {
+                    $isPast => null,
+                    is_string($conference['registrationUrl'] ?? null) && str_starts_with($conference['registrationUrl'], '/research/') => '/'.$locale.$conference['registrationUrl'],
+                    // A registration form on another site.
+                    default => FormLink::sanitizeUrl($conference['registrationUrl'] ?? null),
+                };
                 $id = trim((string) ($conference['id'] ?? '')) ?: Str::slug($title);
 
                 for ($day = $first; $day->lessThanOrEqualTo($last); $day = $day->addDay()) {

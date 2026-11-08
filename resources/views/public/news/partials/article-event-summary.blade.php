@@ -103,7 +103,7 @@
     @if ($event->requiresRegistration || $event->calendarUrl)
         <div class="mt-6 flex flex-wrap items-center gap-3 border-t border-slate-200 pt-5">
             @if ($event->registrationUrl)
-                <a href="{{ $event->registrationUrl }}" class="rounded-[4px] bg-spu-red px-6 py-3 text-[13px] font-bold text-white transition hover:bg-spu-blue focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-spu-red">{{ __('public.article_event.register') }}</a>
+                <a href="{{ $event->registrationUrl }}" @if (str_starts_with((string) $event->registrationUrl, 'https://')) target="_blank" rel="noopener noreferrer" @endif class="rounded-[4px] bg-spu-red px-6 py-3 text-[13px] font-bold text-white transition hover:bg-spu-blue focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-spu-red">{{ __('public.article_event.register') }}</a>
             @elseif ($event->requiresRegistration && ! empty($isPreview))
                 <span class="text-[13px] font-bold text-slate-500">{{ __('public.article_event.preview_note') }}</span>
             @elseif ($event->registrationState === 'full')

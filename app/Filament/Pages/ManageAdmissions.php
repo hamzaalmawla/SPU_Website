@@ -14,6 +14,7 @@ use App\Filament\Concerns\LimitsCmsTargetsToGrants;
 use App\Filament\Support\FormPicker;
 use App\Filament\Support\MediaPicker;
 use App\Models\User\User;
+use App\Support\FormLink;
 use Filament\Actions\Action;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Repeater;
@@ -105,7 +106,7 @@ class ManageAdmissions extends Page implements HasForms
                 ...($this->targetKeyForSchema() === 'admissions.tuition' ? [$this->tuitionFeeRowsSection()] : []),
                 ...($this->targetKeyForSchema() === 'admissions.how-to-apply' ? [
                     Section::make(__('admin.forms.fields.form'))->schema([
-                        FormPicker::make('application_form_id')->label(__('admin.forms.fields.application_form'))->required(),
+                        ...FormPicker::withSource('application_form_id', 'application_form_source', 'application_form_url', true, __('admin.forms.fields.application_form')),
                     ]),
                 ] : []),
                 Tabs::make('admissions_locales')
@@ -194,6 +195,8 @@ class ManageAdmissions extends Page implements HasForms
             'ar_how_to_apply' => $targetKey === 'admissions.how-to-apply' && is_array($payload['translations']['ar'] ?? null) ? $this->howToApplyFormData($payload['translations']['ar']) : [],
             'en_how_to_apply' => $targetKey === 'admissions.how-to-apply' && is_array($payload['translations']['en'] ?? null) ? $this->howToApplyFormData($payload['translations']['en']) : [],
             'application_form_id' => $targetKey === 'admissions.how-to-apply' ? (string) ($payload['translations']['ar']['applicationFormId'] ?? 'admissions-application') : null,
+            'application_form_source' => $targetKey === 'admissions.how-to-apply' ? ($payload['translations']['ar']['applicationFormSource'] ?? null) : null,
+            'application_form_url' => $targetKey === 'admissions.how-to-apply' ? ($payload['translations']['ar']['applicationFormUrl'] ?? null) : null,
             'ar_faq' => $targetKey === 'admissions.faq' && is_array($payload['translations']['ar'] ?? null) ? $this->faqFormData($payload['translations']['ar']) : [],
             'en_faq' => $targetKey === 'admissions.faq' && is_array($payload['translations']['en'] ?? null) ? $this->faqFormData($payload['translations']['en']) : [],
             'ar_calendar' => $targetKey === 'admissions.calendar' && is_array($payload['translations']['ar'] ?? null) ? $this->calendarFormData($payload['translations']['ar']) : [],
@@ -364,7 +367,12 @@ class ManageAdmissions extends Page implements HasForms
 
         if (($state['target_key'] ?? null) === 'admissions.how-to-apply') {
             // One form for both languages, kept in each so the public page reads it with its section.
-            $form = ['applicationFormId' => (string) ($state['application_form_id'] ?? 'admissions-application')];
+            $link = FormLink::normalize($state['application_form_source'] ?? null, $state['application_form_url'] ?? null);
+            $form = [
+                'applicationFormId' => (string) ($state['application_form_id'] ?? 'admissions-application'),
+                'applicationFormSource' => $link['source'],
+                'applicationFormUrl' => $link['url'],
+            ];
 
             return [
                 'translations' => [

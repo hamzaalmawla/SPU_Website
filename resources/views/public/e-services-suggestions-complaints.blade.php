@@ -27,10 +27,17 @@
     <section class="bg-white py-12 font-hacen md:py-16">
         <div class="container mx-auto px-6">
             <div class="mx-auto grid max-w-[1120px] gap-8 lg:grid-cols-[minmax(0,1fr)_360px]">
-                <div class="rounded-2xl bg-gray-50 p-6 shadow-sm sm:p-8" x-data="dynamicFormShell()" data-form-id="{{ $form['formId'] ?? 'suggestions-complaints' }}" data-locale="{{ $locale }}" data-preview="{{ !empty($isPreview) ? '1' : '0' }}">
-                    <h2 class="mb-6 text-2xl font-black text-spu-blue">{{ $form['formTitle'] ?? '' }}</h2>
-                    @include('public.forms.dynamic-form', ['formKey' => $form['formId'] ?? 'suggestions-complaints'])
-                </div>
+                @if (! empty($form['formUrl']))
+                    <div class="rounded-2xl bg-gray-50 p-6 shadow-sm sm:p-8">
+                        <h2 class="mb-6 text-2xl font-black text-spu-blue">{{ $form['formTitle'] ?? '' }}</h2>
+                        @include('public.forms.external-form', ['url' => $form['formUrl']])
+                    </div>
+                @else
+                    <div class="rounded-2xl bg-gray-50 p-6 shadow-sm sm:p-8" x-data="dynamicFormShell()" data-form-id="{{ $form['formId'] ?? 'suggestions-complaints' }}" data-locale="{{ $locale }}" data-preview="{{ !empty($isPreview) ? '1' : '0' }}">
+                        <h2 class="mb-6 text-2xl font-black text-spu-blue">{{ $form['formTitle'] ?? '' }}</h2>
+                        @include('public.forms.dynamic-form', ['formKey' => $form['formId'] ?? 'suggestions-complaints'])
+                    </div>
+                @endif
 
                 <aside class="space-y-4 lg:sticky lg:top-24 lg:self-start">
                     <div class="rounded-2xl border border-spu-blue/10 bg-white p-6 shadow-sm">

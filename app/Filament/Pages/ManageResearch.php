@@ -15,6 +15,7 @@ use App\Filament\Resources\ResearchPublicationResource;
 use App\Filament\Support\FormPicker;
 use App\Filament\Support\MediaPicker;
 use App\Models\User\User;
+use App\Support\FormLink;
 use App\Support\HtmlSanitizer;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Checkbox;
@@ -1364,10 +1365,8 @@ class ManageResearch extends Page implements HasForms
 
         if ($upcoming) {
             $fields[] = TextInput::make('eventType')->label($this->fieldLabel('event_type'))->required()->maxLength(160);
-            $fields[] = FormPicker::make()->label($this->fieldLabel('registration_form'))->placeholder(__('admin.research_workspace.options.registration_forms.none'));
-            $fields[] = Section::make($this->sectionLabel('advanced'))->schema([
-                TextInput::make('registrationUrl')->label($this->fieldLabel('external_registration_url'))->maxLength(255)->helperText(__('admin.research_workspace.help.registration_url'))->columnSpanFull(),
-            ])->collapsible()->collapsed()->columnSpanFull();
+            // The conference keeps its address in registrationUrl, so a form on another site is stored there.
+            array_push($fields, ...FormPicker::withSource('formId', 'formSource', 'registrationUrl', false, $this->fieldLabel('registration_form'), __('admin.research_workspace.options.registration_forms.none')));
 
             return $fields;
         }
@@ -1558,9 +1557,15 @@ class ManageResearch extends Page implements HasForms
             $formId = trim((string) ($event['formId'] ?? ''));
             $eventId = trim((string) ($event['id'] ?? ''));
 
-            if ($formId !== '' && app(FormDefinitionServiceInterface::class)->find($formId) !== null && $eventId !== '') {
+            $link = FormLink::normalize($event['formSource'] ?? null, $event['registrationUrl'] ?? null);
+            $event['formSource'] = $link['source'];
+
+            if ($link['source'] === FormLink::EXTERNAL) {
+                $event['formId'] = '';
+                $event['registrationUrl'] = $link['url'];
+            } elseif ($formId !== '' && app(FormDefinitionServiceInterface::class)->find($formId) !== null && $eventId !== '') {
                 $event['registrationUrl'] = '/research/conferences/register?event='.rawurlencode($eventId);
-            } elseif (($event['registrationUrl'] ?? null) === '#') {
+            } else {
                 $event['registrationUrl'] = null;
             }
 

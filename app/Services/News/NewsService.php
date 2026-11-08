@@ -27,6 +27,7 @@ use App\Models\News\NewsArticleSeoMeta;
 use App\Models\News\NewsArticleTranslation;
 use App\Models\News\NewsCategory;
 use App\Models\News\NewsCategoryTranslation;
+use App\Support\FormLink;
 use App\Support\MediaUrlResolver;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
@@ -1169,6 +1170,8 @@ final class NewsService implements NewsServiceInterface
 
             $seen[$id] = true;
             $formId = is_string($record['formId'] ?? null) && in_array($record['formId'], $allowedForms, true) ? $record['formId'] : null;
+            // A form on another site replaces ours; an unsafe address falls back to ours.
+            $formUrl = $past ? null : FormLink::externalUrl($record, 'form');
             // The editor saves a blank capacity as 0, which means "no limit", not "full".
             $capacity = is_numeric($record['capacity'] ?? null) && (int) $record['capacity'] > 0 ? (int) $record['capacity'] : null;
             $registered = is_numeric($record['registered'] ?? null) ? max(0, (int) $record['registered']) : 0;
@@ -1178,6 +1181,8 @@ final class NewsService implements NewsServiceInterface
                 'title' => $title,
                 'startsAt' => $startsAt,
                 'formId' => $past ? null : $formId,
+                'formSource' => $formUrl !== null ? FormLink::EXTERNAL : FormLink::INTERNAL,
+                'formUrl' => $formUrl,
                 'capacity' => $capacity,
                 'registered' => $capacity === null ? $registered : min($capacity, $registered),
             ]);
@@ -1206,7 +1211,7 @@ final class NewsService implements NewsServiceInterface
             if (! $this->eventEndsAt($event)->lessThan($now)) {
                 $stillUpcoming[] = $event;
             } elseif (! isset($pastIds[(string) $event['id']])) {
-                $finished[] = array_merge($event, ['formId' => null]);
+                $finished[] = array_merge($event, ['formId' => null, 'formUrl' => null]);
             }
         }
 
@@ -1236,7 +1241,9 @@ final class NewsService implements NewsServiceInterface
         $capacity = is_int($event['capacity'] ?? null) ? $event['capacity'] : null;
         $registered = (int) ($event['registered'] ?? 0);
         $remainingCapacity = $capacity === null ? null : max(0, $capacity - $registered);
-        $isRegisterable = ! $past && $formId !== null && ($remainingCapacity === null || $remainingCapacity > 0);
+        $externalUrl = $past ? null : FormLink::externalUrl($event, 'form');
+        // Seats are only counted for our own forms.
+        $isRegisterable = ! $past && ($externalUrl !== null || ($formId !== null && ($remainingCapacity === null || $remainingCapacity > 0)));
         $id = (string) $event['id'];
 
         return new NewsEventDTO(
@@ -1259,7 +1266,7 @@ final class NewsService implements NewsServiceInterface
             registered: $registered,
             remainingCapacity: $remainingCapacity,
             isRegisterable: $isRegisterable,
-            registrationUrl: $isRegisterable ? '/'.$locale.'/news/events-list/register?event='.rawurlencode($id) : null,
+            registrationUrl: $externalUrl ?? ($isRegisterable ? '/'.$locale.'/news/events-list/register?event='.rawurlencode($id) : null),
             detailUrl: '/'.$locale.'/news/events-list/'.rawurlencode($id),
             participants: is_string($event['participants'] ?? null) ? $event['participants'] : null,
             highlights: array_values(array_filter(is_array($event['highlights'] ?? null) ? $event['highlights'] : [], 'is_string')),

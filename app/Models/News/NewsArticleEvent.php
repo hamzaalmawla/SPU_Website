@@ -17,6 +17,8 @@ class NewsArticleEvent extends Model
         'requires_registration',
         'show_on_calendar',
         'form_key',
+        'form_source',
+        'form_url',
         'capacity',
         'prior_registrations',
         'registration_closes_at',
