@@ -1640,6 +1640,43 @@ if [[ -f "${PAGE_COVERAGE_APPROVAL}" ]]; then
     mv "${PAGE_COVERAGE_APPROVAL}" "${PAGE_COVERAGE_APPROVAL}.consumed-$(date -u +%Y%m%d-%H%M%S)"
 fi
 
+# ── AI assistant: documents waiting to be added ─────────────────────────────
+# Adds the files placed in storage/app/private/chatbot/import/ to the AI
+# assistant exactly as Administration › AI assistant › Upload would, for when
+# no one can sign in. Inert unless a human places an approval file:
+#
+#     storage/app/private/legacy-imports/chatbot-documents.approved
+#         actor=auto        (or a user id)
+#
+# Each file handled moves to import/done/; duplicates are skipped. Long scans
+# keep reading in the background (chatbot:continue-indexing). Disarms itself.
+CHATBOT_DOCS_APPROVAL="${IMPORT_DIR}/chatbot-documents.approved"
+
+if [[ -f "${CHATBOT_DOCS_APPROVAL}" ]]; then
+    log "AI assistant: documents waiting to be added"
+
+    CD_ACTOR="$(grep -E '^actor=' "${CHATBOT_DOCS_APPROVAL}" | head -n 1 | cut -d= -f2- | tr -d '\r' | tr -d ' ')"
+    if [[ "${CD_ACTOR}" == "auto" ]]; then
+        CD_ACTOR="$(cd "${APP}" && "${PHP}" artisan tinker --execute='
+            echo (string) (\DB::table("users")
+                ->where("role_slug", "super_admin")
+                ->where(function ($q) { $q->whereNull("locked_at")->orWhere("locked_at", ""); })
+                ->orderBy("id")
+                ->value("id") ?? "");
+        ' 2>/dev/null | grep -Eo '^[0-9]+$' | head -n 1 || true)"
+    fi
+
+    if [[ "${CD_ACTOR}" =~ ^[0-9]+$ ]]; then
+        (cd "${APP}" && "${PHP}" artisan chatbot:import-documents --user="${CD_ACTOR}" --no-ansi) || true
+        (cd "${APP}" && timeout 900 "${PHP}" -d memory_limit=512M artisan chatbot:import-documents --user="${CD_ACTOR}" --write --no-ansi) \
+            || printf '  some documents could not be added; they stay in chatbot/import for another run\n'
+    else
+        printf '  the chatbot documents approval has no usable actor= line; nothing was added\n'
+    fi
+
+    mv "${CHATBOT_DOCS_APPROVAL}" "${CHATBOT_DOCS_APPROVAL}.consumed-$(date -u +%Y%m%d-%H%M%S)"
+fi
+
 # ── AI assistant: website knowledge ──────────────────────────────────────────
 # Indexes the published pages (About, Admissions, Faculties, Centers, Campus
 # Life, E-Services, Contact; both languages) so the assistant answers from what
