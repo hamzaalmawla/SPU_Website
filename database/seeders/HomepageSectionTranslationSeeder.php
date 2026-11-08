@@ -222,7 +222,7 @@ class HomepageSectionTranslationSeeder extends Seeder
                     actionUrl: '/'.$l.'/faculties',
                 ),
                 $this->facultyItem(
-                    title: $l === 'ar' ? 'كلية إدارة الأعمال' : 'Business Administration',
+                    title: $l === 'ar' ? 'كلية الأعمال' : 'Business Faculty',
                     imageUrl: '/images/faculty-business-logo.png',
                     accent: '#caa949',
                     metric: $l === 'ar' ? '5 سنوات' : '5 Years',

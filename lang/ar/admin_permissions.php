@@ -33,7 +33,7 @@ return [
         'faculties_hub' => 'صفحة الكليات الرئيسية',
         'faculty_artificial_intelligence' => 'كلية الذكاء الاصطناعي',
         'faculty_building_construction_engineering' => 'كلية هندسة البناء والتشييد',
-        'faculty_business_administration' => 'كلية إدارة الأعمال',
+        'faculty_business_administration' => 'كلية الأعمال',
         'faculty_dentistry' => 'كلية طب الأسنان',
         'faculty_medicine' => 'كلية الطب',
         'faculty_members' => 'أعضاء الهيئة التدريسية',

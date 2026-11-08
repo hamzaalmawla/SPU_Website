@@ -570,7 +570,7 @@ return [
         'bio' => 'نبذة',
         'biography' => 'السيرة الذاتية',
         'building_and_construction_engineering' => 'هندسة البناء والتشييد',
-        'business_administration' => 'إدارة الأعمال',
+        'business_administration' => 'كلية الأعمال',
         'contact_details' => 'بيانات التواصل',
         'council_member' => 'عضو مجلس',
         'council_member_leadership_profile' => 'عضو مجلس - ملف قيادي',

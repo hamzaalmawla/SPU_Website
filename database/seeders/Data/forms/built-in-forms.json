@@ -415,8 +415,8 @@
                             },
                             {
                                 "value": "business-administration",
-                                "labelAr": "كلية إدارة الأعمال",
-                                "labelEn": "Faculty of Business Administration"
+                                "labelAr": "كلية الأعمال",
+                                "labelEn": "Business Faculty"
                             }
                         ]
                     },
@@ -715,8 +715,8 @@
                             },
                             {
                                 "value": "business",
-                                "labelAr": "كلية إدارة الأعمال",
-                                "labelEn": "Faculty of Business Administration"
+                                "labelAr": "كلية الأعمال",
+                                "labelEn": "Business Faculty"
                             },
                             {
                                 "value": "construction",

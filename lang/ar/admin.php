@@ -242,7 +242,7 @@ return [
             'faculty_artificial_intelligence' => 'كلية الذكاء الاصطناعي',
             'faculty_building_construction_engineering' => 'كلية هندسة التشييد والبناء',
             'faculty_petroleum' => 'كلية هندسة البترول',
-            'faculty_business_administration' => 'كلية إدارة الأعمال',
+            'faculty_business_administration' => 'كلية الأعمال',
             'news_articles' => 'المقالات الإخبارية',
             'news_categories' => 'تصنيفات الأخبار',
             'about_pages' => 'صفحات عن الجامعة',
@@ -268,7 +268,7 @@ return [
         'manage_artificial_intelligence_faculty' => 'إدارة كلية الذكاء الاصطناعي',
         'manage_building_construction_engineering_faculty' => 'إدارة كلية هندسة التشييد والبناء',
         'manage_petroleum_faculty' => 'إدارة كلية هندسة البترول',
-        'manage_business_administration_faculty' => 'إدارة كلية إدارة الأعمال',
+        'manage_business_administration_faculty' => 'إدارة كلية الأعمال',
         'manage_about' => 'إدارة عن الجامعة',
         'manage_news' => 'إدارة الأخبار',
         'manage_announcements' => 'إدارة الإعلانات',
@@ -1131,7 +1131,7 @@ return [
             'faculties' => [
                 'medicine' => 'كلية الطب البشري', 'dentistry' => 'كلية طب الأسنان', 'pharmacy' => 'كلية الصيدلة',
                 'artificial-intelligence' => 'كلية هندسة الذكاء الاصطناعي', 'building-construction-engineering' => 'كلية هندسة البناء والتشييد',
-                'petroleum' => 'كلية هندسة البترول', 'business-administration' => 'كلية إدارة الأعمال', 'university' => 'على مستوى الجامعة',
+                'petroleum' => 'كلية هندسة البترول', 'business-administration' => 'كلية الأعمال', 'university' => 'على مستوى الجامعة',
             ],
             'themes' => [
                 'ai-ml' => 'الذكاء الاصطناعي وتعلم الآلة', 'pharmaceutical-sciences' => 'العلوم الصيدلانية', 'clinical-medicine' => 'الطب السريري',

@@ -14322,12 +14322,12 @@
         ]
       },
       "business": {
-        "facultyEn": "Business Administration",
-        "facultyAr": "إدارة الأعمال",
+        "facultyEn": "Business Faculty",
+        "facultyAr": "كلية الأعمال",
         "accent": "#caa949",
         "heroImage": "/images/about/campus-career.webp",
-        "summaryEn": "Dynamic study plans for Business Administration departments.",
-        "summaryAr": "خطط دراسية ديناميكية لأقسام كلية إدارة الأعمال.",
+        "summaryEn": "Dynamic study plans for the Business Faculty programs.",
+        "summaryAr": "خطط دراسية ديناميكية لأقسام كلية الأعمال.",
         "departments": [
           {
             "id": "management",
@@ -18702,7 +18702,7 @@
     {
       "name": "faculty-business-administration-study-plan",
       "route": "/faculties/business-administration/study-plan/",
-      "title": "Business Administration Study Plan | SPU",
+      "title": "Business Faculty Study Plan | SPU",
       "description": "View the comprehensive business curriculum including finance, marketing, management, and entrepreneurship with clear prerequisite pathways.",
       "ogImage": "/images/about/campus-career.webp",
       "keywords": [

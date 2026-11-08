@@ -3216,9 +3216,9 @@ final class ResearchPageService implements ResearchPageServiceInterface
             ],
             'samar-habib' => [
                 'scholarUrl' => 'https://scholar.google.com',
-                'office' => ['fullAddressEn' => 'Faculty of Business Administration Dean Office', 'fullAddressAr' => 'مكتب عميد كلية إدارة الأعمال'],
+                'office' => ['fullAddressEn' => 'Business Faculty Dean Office', 'fullAddressAr' => 'مكتب عميد كلية الأعمال'],
                 'biographyEn' => [
-                    'Dr. Samar Habib leads the Faculty of Business Administration, supporting management education, entrepreneurship, and career-oriented academic experiences.',
+                    'Dr. Samar Habib leads the Business Faculty, supporting management education, entrepreneurship, and career-oriented academic experiences.',
                     'Her office helps connect classroom learning with organizational analysis, project work, and professional readiness.',
                 ],
                 'educationEn' => $this->educationItems([

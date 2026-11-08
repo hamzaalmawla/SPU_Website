@@ -33,7 +33,7 @@ return [
         'faculties_hub' => 'Faculties hub page',
         'faculty_artificial_intelligence' => 'Faculty of Artificial Intelligence',
         'faculty_building_construction_engineering' => 'Faculty of Building & Construction Engineering',
-        'faculty_business_administration' => 'Faculty of Business Administration',
+        'faculty_business_administration' => 'Business Faculty',
         'faculty_dentistry' => 'Faculty of Dentistry',
         'faculty_medicine' => 'Faculty of Medicine',
         'faculty_members' => 'Faculty members',

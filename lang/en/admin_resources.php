@@ -570,7 +570,7 @@ return [
         'bio' => 'Bio',
         'biography' => 'Biography',
         'building_and_construction_engineering' => 'Building and Construction Engineering',
-        'business_administration' => 'Business Administration',
+        'business_administration' => 'Business Faculty',
         'contact_details' => 'Contact details',
         'council_member' => 'Council Member',
         'council_member_leadership_profile' => 'Council Member - leadership profile',

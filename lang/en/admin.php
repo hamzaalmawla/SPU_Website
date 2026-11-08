@@ -1131,7 +1131,7 @@ return [
             'faculties' => [
                 'medicine' => 'Faculty of Medicine', 'dentistry' => 'Faculty of Dentistry', 'pharmacy' => 'Faculty of Pharmacy',
                 'artificial-intelligence' => 'Faculty of Artificial Intelligence', 'building-construction-engineering' => 'Faculty of Building and Construction Engineering',
-                'petroleum' => 'Faculty of Petroleum Engineering', 'business-administration' => 'Faculty of Business Administration', 'university' => 'University-wide',
+                'petroleum' => 'Faculty of Petroleum Engineering', 'business-administration' => 'Business Faculty', 'university' => 'University-wide',
             ],
             'themes' => [
                 'ai-ml' => 'Artificial Intelligence and Machine Learning', 'pharmaceutical-sciences' => 'Pharmaceutical Sciences', 'clinical-medicine' => 'Clinical Medicine',
