@@ -9,6 +9,7 @@ use App\Contracts\Page\AdmissionsPageServiceInterface;
 use App\Filament\Pages\ManageAdmissions;
 use App\Models\Cms\CmsDraft;
 use App\Models\User\User;
+use App\Support\Chatbot\HtmlPageText;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
@@ -147,20 +148,58 @@ final class AdmissionsTuitionFeesTest extends TestCase
 
         $this->get('/ar/admissions/tuition')
             ->assertOk()
-            ->assertSeeInOrder(['الطب', '80%', '251', '18,000 ل.س.ج', '350 $'])
-            ->assertSeeInOrder(['هندسة البترول', 'الفرع العلمي', '65%', 'الفرع المهني', '75%', '180', '10,000 ل.س.ج', '200 $'])
-            ->assertSeeInOrder(['إدارة الأعمال', '55%', '55%', '50%', '134', '7,000 ل.س.ج', '150 $'])
-            ->assertSee('رسوم مفاضلة العام الدراسي 2026 - 2027');
+            ->assertSeeInOrder(['الطب', '80%', '251', '13,000 ل.س.ج', '350 $'])
+            ->assertSeeInOrder(['هندسة البترول', 'الفرع العلمي', '65%', 'الفرع المهني', '75%', '180', '9,000 ل.س.ج', '200 $'])
+            ->assertSeeInOrder(['إدارة الأعمال', '55%', '55%', '50%', '134', '6,000 ل.س.ج', '150 $'])
+            ->assertSee('رسوم مفاضلة العام الدراسي 2026 - 2027')
+            ->assertSee('بعد تخفيضها بحسب قرار مجلس التعليم العالي');
 
         $this->get('/en/admissions/tuition')
             ->assertOk()
-            ->assertSeeInOrder(['Dentistry', '75%', '185', '16,000 new SYP', '300 USD'])
-            ->assertSeeInOrder(['Building and Construction Technology Engineering', '65%', '180', '10,000 new SYP', '200 USD'])
+            ->assertSeeInOrder(['Dentistry', '75%', '185', '12,000 new SYP', '300 USD'])
+            ->assertSeeInOrder(['Building and Construction Technology Engineering', '65%', '180', '9,000 new SYP', '200 USD'])
             ->assertSee('per credit hour');
 
         $this->artisan('admissions:import-tuition-fees', ['file' => base_path(self::FEE_FILE), '--user' => $user, '--publish' => true])
             ->expectsOutputToContain('UNCHANGED')
             ->assertSuccessful();
+    }
+
+    public function test_a_revised_fee_table_replaces_the_published_one(): void
+    {
+        $user = (string) $this->superAdmin()->id;
+        $source = json_decode((string) file_get_contents(base_path(self::FEE_FILE)), true, 512, JSON_THROW_ON_ERROR);
+
+        // The table published before the Council of Higher Education reduced the fees.
+        $before = $source;
+        $before['rows'][0]['syrianFee'] = 18000;
+        $oldFile = tempnam(sys_get_temp_dir(), 'fees');
+        file_put_contents($oldFile, json_encode($before, JSON_THROW_ON_ERROR));
+
+        $this->artisan('admissions:import-tuition-fees', ['file' => $oldFile, '--user' => $user, '--publish' => true])
+            ->expectsOutputToContain('Published the tuition page')
+            ->assertSuccessful();
+        $this->get('/ar/admissions/tuition')->assertSee('18,000 ل.س.ج');
+
+        $this->artisan('admissions:import-tuition-fees', ['file' => base_path(self::FEE_FILE), '--user' => $user, '--publish' => true])
+            ->expectsOutputToContain('Published the tuition page with 7 fee row(s).')
+            ->assertSuccessful();
+
+        $html = $this->get('/ar/admissions/tuition')
+            ->assertOk()
+            ->assertSeeInOrder(['الطب', '251', '13,000 ل.س.ج'])
+            ->assertDontSee('18,000 ل.س.ج')
+            ->getContent();
+
+        // The AI assistant's website sync reads the page this way: the new fees
+        // must reach its knowledge, the old ones must not.
+        $assistantText = HtmlPageText::parse((string) $html)['text'];
+        $this->assertStringContainsString('13,000 ل.س.ج', $assistantText);
+        $this->assertStringContainsString('6,000 ل.س.ج', $assistantText);
+        $this->assertStringContainsString('بعد تخفيضها بحسب قرار مجلس التعليم العالي', $assistantText);
+        $this->assertStringNotContainsString('18,000', $assistantText);
+
+        unlink($oldFile);
     }
 
     public function test_the_import_leaves_an_editors_unpublished_draft_alone(): void
