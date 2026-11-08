@@ -9,6 +9,7 @@ use App\Contracts\Media\MediaServiceInterface;
 use App\Contracts\Page\AdmissionsPageServiceInterface;
 use App\DTOs\Admissions\AdmissionsPageDTO;
 use App\DTOs\Admissions\AdmissionsSectionDTO;
+use App\Support\FormLink;
 
 final class AdmissionsPageService implements AdmissionsPageServiceInterface
 {
@@ -829,9 +830,17 @@ final class AdmissionsPageService implements AdmissionsPageServiceInterface
         }
 
         if ($slug === 'how-to-apply') {
+            // A form on another site: the steps' button opens it directly.
+            $externalForm = FormLink::externalUrl($section, 'applicationForm');
+            $section['applicationFormUrl'] = $externalForm;
             foreach (($section['steps'] ?? []) as $index => $step) {
-                if (is_array($step) && $this->isHowToApplySelfLoop($step['href'] ?? null, $locale)) {
-                    $section['steps'][$index]['href'] = '/'.$locale.'/admissions/how-to-apply#application';
+                if (! is_array($step)) {
+                    continue;
+                }
+                if ($externalForm !== null && $this->isApplicationFormLink($step['href'] ?? null, $locale)) {
+                    $section['steps'][$index]['href'] = $externalForm;
+                } elseif ($this->isHowToApplySelfLoop($step['href'] ?? null, $locale)) {
+                    $section['steps'][$index]['href'] = $externalForm ?? '/'.$locale.'/admissions/how-to-apply#application';
                 }
             }
             $section['applicationTitle'] ??= $locale === 'ar' ? 'طلب القبول' : 'Admissions Application';
@@ -925,6 +934,17 @@ final class AdmissionsPageService implements AdmissionsPageServiceInterface
         return $mediaId > 0 && $href !== '' && $href !== '#' && $this->mediaService->publicDocumentsArePublishable([$mediaId])
             ? $download
             : [];
+    }
+
+    private function isApplicationFormLink(mixed $url, string $locale): bool
+    {
+        if (! is_string($url) || parse_url($url, PHP_URL_FRAGMENT) !== 'application') {
+            return false;
+        }
+
+        $path = parse_url($url, PHP_URL_PATH);
+
+        return in_array($path, [null, '', '/admissions/how-to-apply', '/admissions/how-to-apply/', '/'.$locale.'/admissions/how-to-apply', '/'.$locale.'/admissions/how-to-apply/'], true);
     }
 
     private function isHowToApplySelfLoop(mixed $url, string $locale): bool

@@ -170,6 +170,8 @@ return [
     'subject' => 'الموضوع',
     'message_label' => 'الرسالة',
     'required_fields_note' => 'الحقول المشار إليها بعلامة * مطلوبة.',
+    'external_form_button' => 'افتح النموذج',
+    'external_form_note' => 'هذا النموذج على موقع آخر ويفتح في نافذة جديدة.',
     'error_review_fields' => 'يرجى تصحيح الحقول المشار إليها.',
     'reattach_file' => 'إذا كنت قد أرفقت ملفاً، يرجى إرفاقه مرة أخرى.',
     'submit_request' => 'إرسال الطلب',

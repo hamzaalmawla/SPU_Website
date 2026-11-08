@@ -10,6 +10,7 @@ use App\DTOs\CampusLife\CampusLifeJobDTO;
 use App\DTOs\CampusLife\CampusLifePageDTO;
 use App\DTOs\CampusLife\CampusLifeSectionDTO;
 use App\Support\ExternalSignupUrl;
+use App\Support\FormLink;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Str;
 
@@ -196,6 +197,8 @@ final class CampusLifePageService implements CampusLifePageServiceInterface
         // The job board editor picks the form; the built-in job application otherwise.
         $board = $this->publishedLocalizedPayload('campus_life.jobs', $locale) ?? [];
         $payload['applicationFormId'] = is_string($board['applicationFormId'] ?? null) && $board['applicationFormId'] !== '' ? $board['applicationFormId'] : 'job-application';
+        // A form on another site: the apply page sends visitors there.
+        $payload['applicationFormUrl'] = FormLink::externalUrl($board, 'applicationForm');
         $payload['selectedJob'] = [
             'id' => $job->id,
             'slug' => $job->slug,

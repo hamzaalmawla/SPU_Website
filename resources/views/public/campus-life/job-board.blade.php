@@ -5,6 +5,7 @@
         $section = $page->section;
         $hero = $section['hero'] ?? [];
         $labels = $section['labels'] ?? [];
+        $externalApplyUrl = \App\Support\FormLink::externalUrl($section, 'applicationForm');
         $jobs = array_values(array_filter($section['jobs'] ?? [], 'is_array'));
         $categories = array_values(array_filter($section['categories'] ?? [], 'is_array'));
         $types = array_values(array_filter($section['types'] ?? [], 'is_array'));
@@ -87,7 +88,7 @@
                             <div class="mt-auto flex flex-wrap gap-2 pt-5">
                                 <a href="{{ $previewToken ? '/'.$locale.'/preview?token='.$previewToken.'&job='.urlencode((string) ($job['slug'] ?? '')) : $boardPath.'/'.($job['slug'] ?? '') }}" class="inline-flex h-9 items-center justify-center rounded-md bg-spu-blue px-4 text-[11px] font-bold text-white transition hover:bg-spu-red">{{ $labels['learnMore'] ?? '' }}</a>
                                 @if (! ($isPreview ?? false) && ($job['applicationEligible'] ?? false))
-                                    <a href="/{{ $locale }}/campus-life/career-development/jobs/apply?job={{ urlencode((string) ($job['slug'] ?? '')) }}" class="inline-flex h-9 items-center justify-center rounded-md border border-spu-red px-4 text-[11px] font-bold text-spu-red transition hover:bg-spu-red hover:text-white">{{ $labels['apply'] ?? '' }}</a>
+                                    <a href="{{ $externalApplyUrl ?? '/'.$locale.'/campus-life/career-development/jobs/apply?job='.urlencode((string) ($job['slug'] ?? '')) }}" @if ($externalApplyUrl) target="_blank" rel="noopener noreferrer" @endif class="inline-flex h-9 items-center justify-center rounded-md border border-spu-red px-4 text-[11px] font-bold text-spu-red transition hover:bg-spu-red hover:text-white">{{ $labels['apply'] ?? '' }}</a>
                                 @endif
                             </div>
                         </div>

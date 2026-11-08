@@ -15,6 +15,7 @@ use App\Filament\Concerns\LimitsCmsTargetsToGrants;
 use App\Filament\Support\FormPicker;
 use App\Filament\Support\MediaPicker;
 use App\Models\User\User;
+use App\Support\FormLink;
 use Filament\Actions\Action;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Repeater;
@@ -103,7 +104,7 @@ class ManageEServicesPage extends Page implements HasForms
                         ->afterStateUpdated(fn (?string $state): mixed => is_string($state) && $state !== '' ? $this->loadTarget($state) : null),
                 ]),
                 Section::make(__('admin.forms.fields.form'))
-                    ->schema([FormPicker::make('suggestions_form_id')->label(__('admin.forms.fields.form'))->required(fn (): bool => $this->isSuggestionsTarget())])
+                    ->schema(FormPicker::withSource('suggestions_form_id', 'suggestions_form_source', 'suggestions_form_url', fn (): bool => $this->isSuggestionsTarget(), __('admin.forms.fields.form')))
                     ->visible(fn (): bool => $this->isSuggestionsTarget()),
                 Tabs::make('e_services_page_locales')
                     ->tabs([
@@ -154,6 +155,8 @@ class ManageEServicesPage extends Page implements HasForms
             'ar_suggestions' => [],
             'en_suggestions' => [],
             'suggestions_form_id' => null,
+            'suggestions_form_source' => null,
+            'suggestions_form_url' => null,
         ];
 
         if ($isSuggestions) {
@@ -161,6 +164,8 @@ class ManageEServicesPage extends Page implements HasForms
             $state['ar_suggestions'] = is_array($payload['translations']['ar'] ?? null) ? $payload['translations']['ar'] : [];
             $state['en_suggestions'] = is_array($payload['translations']['en'] ?? null) ? $payload['translations']['en'] : [];
             $state['suggestions_form_id'] = (string) ($payload['translations']['ar']['form']['formId'] ?? 'suggestions-complaints');
+            $state['suggestions_form_source'] = $payload['translations']['ar']['form']['formSource'] ?? null;
+            $state['suggestions_form_url'] = $payload['translations']['ar']['form']['formUrl'] ?? null;
             $this->form->fill($state);
 
             return;
@@ -481,12 +486,17 @@ class ManageEServicesPage extends Page implements HasForms
         if ($targetKey === 'e_services.suggestions-complaints') {
             // The fields (request types, consent, attachment) belong to the picked form.
             $translations = [];
+            $link = FormLink::normalize($state['suggestions_form_source'] ?? null, $state['suggestions_form_url'] ?? null);
 
             foreach (['ar', 'en'] as $locale) {
                 $translation = is_array($state[$locale.'_suggestions'] ?? null) ? $state[$locale.'_suggestions'] : [];
                 $form = is_array($translation['form'] ?? null) ? $translation['form'] : [];
                 unset($form['consentLabel'], $form['attachmentHelp'], $form['requestTypes']);
-                $translation['form'] = ['formId' => (string) ($state['suggestions_form_id'] ?? 'suggestions-complaints')] + $form;
+                $translation['form'] = [
+                    'formId' => (string) ($state['suggestions_form_id'] ?? 'suggestions-complaints'),
+                    'formSource' => $link['source'],
+                    'formUrl' => $link['url'],
+                ] + $form;
                 $translations[$locale] = $translation;
             }
 

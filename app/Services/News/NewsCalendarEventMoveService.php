@@ -17,6 +17,7 @@ use App\Models\News\NewsArticle;
 use App\Models\News\NewsArticleEvent;
 use App\Models\News\NewsCategory;
 use App\Models\User\User;
+use App\Support\FormLink;
 use App\Support\MediaUrlResolver;
 use App\Support\News\SampleCalendarEvents;
 use Carbon\CarbonImmutable;
@@ -178,7 +179,8 @@ final class NewsCalendarEventMoveService implements NewsCalendarEventMoveService
 
         $base = $event['en'] ?? $event['ar'] ?? [];
         $formId = is_string($base['formId'] ?? null) ? trim($base['formId']) : '';
-        $registration = ! $event['past'] && $formId !== '' && $this->forms->isEnabled($formId);
+        $formUrl = $event['past'] ? null : FormLink::externalUrl($base, 'form');
+        $registration = ! $event['past'] && ($formUrl !== null || ($formId !== '' && $this->forms->isEnabled($formId)));
         $capacity = is_numeric($base['capacity'] ?? null) && (int) $base['capacity'] > 0 ? (int) $base['capacity'] : null;
         $registered = is_numeric($base['registered'] ?? null) ? max(0, (int) $base['registered']) : 0;
         $image = $this->image(is_string($base['image'] ?? null) ? $base['image'] : null);
@@ -212,7 +214,9 @@ final class NewsCalendarEventMoveService implements NewsCalendarEventMoveService
                 'kind' => $this->kind($base),
                 'requires_registration' => $registration,
                 'show_on_calendar' => true,
-                'formId' => $registration ? $formId : null,
+                'formId' => $registration && $formUrl === null ? $formId : null,
+                'formSource' => $formUrl !== null ? FormLink::EXTERNAL : FormLink::INTERNAL,
+                'formUrl' => $formUrl,
                 'capacity' => $registration ? $capacity : null,
                 'prior_registrations' => $registration ? ($capacity === null ? $registered : min($capacity, $registered)) : 0,
                 'location_ar' => $this->text($event['ar'] ?? null, 'location') ?? $this->text($base, 'location'),

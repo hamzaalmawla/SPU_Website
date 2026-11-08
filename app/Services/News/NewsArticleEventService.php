@@ -21,6 +21,7 @@ use App\Models\Person\FacultyMember;
 use App\Models\Person\FacultyMemberTranslation;
 use App\Models\Person\Person;
 use App\Models\Person\PersonTranslation;
+use App\Support\FormLink;
 use App\Support\MediaUrlResolver;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
@@ -290,17 +291,20 @@ final class NewsArticleEventService implements NewsArticleEventServiceInterface
         $now = CarbonImmutable::now();
         $isPast = $endsAt !== null && $endsAt->lessThan($now);
         $requiresRegistration = (bool) ($event['requires_registration'] ?? false);
-        $formId = $requiresRegistration && is_string($event['formId'] ?? null) && $event['formId'] !== '' ? $event['formId'] : null;
+        // A form on another site takes the place of ours; seats are then counted there.
+        $externalUrl = $requiresRegistration ? FormLink::externalUrl($event, 'form') : null;
+        $formId = $requiresRegistration && $externalUrl === null && is_string($event['formId'] ?? null) && $event['formId'] !== '' ? $event['formId'] : null;
         $capacity = $requiresRegistration && is_numeric($event['capacity'] ?? null) ? (int) $event['capacity'] : null;
         $closesAt = $requiresRegistration && is_string($event['registration_closes_at'] ?? null) && strtotime($event['registration_closes_at']) !== false
             ? CarbonImmutable::parse($event['registration_closes_at'], (string) config('app.timezone', 'UTC'))
             : null;
         $taken = $requiresRegistration ? max(0, (int) ($event['prior_registrations'] ?? 0)) + $this->registrationCount($articleId) : 0;
-        $seatsLeft = $capacity === null ? null : max(0, $capacity - $taken);
+        $seatsLeft = $capacity === null || $externalUrl !== null ? null : max(0, $capacity - $taken);
 
         $state = match (true) {
-            ! $requiresRegistration || $formId === null => 'none',
-            $isPast || ($closesAt !== null && $closesAt->lessThanOrEqualTo($now)) || ! $this->forms->isEnabled($formId) => 'closed',
+            ! $requiresRegistration || ($formId === null && $externalUrl === null) => 'none',
+            $isPast || ($closesAt !== null && $closesAt->lessThanOrEqualTo($now)) => 'closed',
+            $externalUrl === null && ! $this->forms->isEnabled((string) $formId) => 'closed',
             $seatsLeft === 0 => 'full',
             default => 'open',
         };
@@ -321,7 +325,7 @@ final class NewsArticleEventService implements NewsArticleEventServiceInterface
             capacity: $capacity,
             seatsLeft: $seatsLeft,
             registrationClosesAt: $closesAt?->setTimezone($timezone)->toIso8601String(),
-            registrationUrl: $state === 'open' && ! $preview ? $articleUrl.'/register' : null,
+            registrationUrl: $state === 'open' && ! $preview ? ($externalUrl ?? $articleUrl.'/register') : null,
             calendarUrl: $sessions !== [] && ! $isPast && ! $preview ? $articleUrl.'/calendar.ics' : null,
             startsAt: $startsAt?->toIso8601String(),
             endsAt: $endsAt?->toIso8601String(),

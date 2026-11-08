@@ -16,6 +16,7 @@ use App\Models\Person\FacultyMember;
 use App\Models\Person\FacultyMemberTranslation;
 use App\Models\Person\Person;
 use App\Models\Person\PersonTranslation;
+use App\Support\FormLink;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 
@@ -59,6 +60,8 @@ final class NewsArticleEventCmsService implements NewsArticleEventCmsServiceInte
             'requires_registration' => ! $society && (bool) ($event['requires_registration'] ?? false),
             'show_on_calendar' => (bool) ($event['show_on_calendar'] ?? false),
             'formId' => $this->nullableString($event['formId'] ?? null),
+            'formSource' => FormLink::source($event['formSource'] ?? null),
+            'formUrl' => $this->nullableString($event['formUrl'] ?? null),
             'capacity' => $this->nullableInt($event['capacity'] ?? null),
             'prior_registrations' => max(0, (int) ($this->nullableInt($event['prior_registrations'] ?? null) ?? 0)),
             'registration_closes_at' => $this->nullableString($event['registration_closes_at'] ?? null),
@@ -109,6 +112,8 @@ final class NewsArticleEventCmsService implements NewsArticleEventCmsServiceInte
             'requires_registration' => (bool) $event->requires_registration,
             'show_on_calendar' => (bool) $event->show_on_calendar,
             'formId' => $event->form_key,
+            'formSource' => FormLink::source($event->form_source),
+            'formUrl' => $event->form_url,
             'capacity' => $event->capacity,
             'prior_registrations' => (int) $event->prior_registrations,
             'registration_closes_at' => $event->registration_closes_at?->format('Y-m-d H:i:s'),
@@ -182,9 +187,15 @@ final class NewsArticleEventCmsService implements NewsArticleEventCmsServiceInte
         $this->appendSpeakerErrors($errors, 'event.speakers', $event['speakers'] ?? null);
 
         if (($event['requires_registration'] ?? false) === true) {
-            $formKey = $this->stringValue($event['formId'] ?? null);
-            if ($formKey === '' || $this->forms->find($formKey) === null || ! $this->forms->isEnabled($formKey)) {
-                $errors['event.formId'][] = 'An event with registration needs an enabled registration form.';
+            if (FormLink::source($event['formSource'] ?? null) === FormLink::EXTERNAL) {
+                if (FormLink::sanitizeUrl($event['formUrl'] ?? null) === null) {
+                    $errors['event.formUrl'][] = 'Enter the full address of the registration form, starting with https://.';
+                }
+            } else {
+                $formKey = $this->stringValue($event['formId'] ?? null);
+                if ($formKey === '' || $this->forms->find($formKey) === null || ! $this->forms->isEnabled($formKey)) {
+                    $errors['event.formId'][] = 'An event with registration needs an enabled registration form.';
+                }
             }
 
             $capacity = $event['capacity'] ?? null;
@@ -227,12 +238,16 @@ final class NewsArticleEventCmsService implements NewsArticleEventCmsServiceInte
             $registration = (bool) ($event['requires_registration'] ?? false);
             $sessions = $this->sortedSessions($this->records($event['sessions'] ?? null));
             [$startsAt, $endsAt] = $this->eventBounds($sessions);
+            $link = FormLink::normalize($registration ? ($event['formSource'] ?? null) : null, $event['formUrl'] ?? null);
+            $external = $link['source'] === FormLink::EXTERNAL;
 
             $record = NewsArticleEvent::query()->updateOrCreate(['news_article_id' => $articleId], [
                 'kind' => $this->stringValue($event['kind'] ?? null) ?: 'event',
                 'requires_registration' => $registration,
                 'show_on_calendar' => (bool) ($event['show_on_calendar'] ?? false),
-                'form_key' => $registration ? $this->nullableString($event['formId'] ?? null) : null,
+                'form_key' => $registration && ! $external ? $this->nullableString($event['formId'] ?? null) : null,
+                'form_source' => $link['source'],
+                'form_url' => $link['url'],
                 'capacity' => $registration ? $this->nullableInt($event['capacity'] ?? null) : null,
                 'prior_registrations' => $registration ? max(0, (int) ($event['prior_registrations'] ?? 0)) : 0,
                 'registration_closes_at' => $registration ? $this->nullableString($event['registration_closes_at'] ?? null) : null,

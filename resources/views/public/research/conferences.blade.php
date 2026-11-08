@@ -33,7 +33,7 @@
                                 <h3 class="card-title mb-2 text-lg font-bold text-spu-blue" dir="auto">{{ $event['title'] ?? '' }}</h3>
                                 <x-public.rich-text class="mb-5 text-sm text-spu-blue/70" :text="$event['description'] ?? ''" />
                                 @if (! empty($event['registrationUrl']) && $event['registrationUrl'] !== '#')
-                                    <a href="{{ $event['registrationUrl'] }}" class="inline-flex h-10 items-center justify-center rounded-lg bg-spu-red px-6 text-xs font-bold text-white transition hover:bg-spu-blue">
+                                    <a href="{{ $event['registrationUrl'] }}" @if (str_starts_with((string) $event['registrationUrl'], 'https://')) target="_blank" rel="noopener noreferrer" @endif class="inline-flex h-10 items-center justify-center rounded-lg bg-spu-red px-6 text-xs font-bold text-white transition hover:bg-spu-blue">
                                         {{ $event['registrationLabel'] ?? ($locale === 'ar' ? 'سجل الآن' : 'Register Now') }}
                                     </a>
                                 @endif

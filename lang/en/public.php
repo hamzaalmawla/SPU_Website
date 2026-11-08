@@ -170,6 +170,8 @@ return [
     'subject' => 'Subject',
     'message_label' => 'Message',
     'required_fields_note' => 'Fields marked with * are required.',
+    'external_form_button' => 'Open the form',
+    'external_form_note' => 'This form is hosted on another site and opens in a new tab.',
     'error_review_fields' => 'Please correct the highlighted fields.',
     'reattach_file' => 'If you attached a file, please attach it again.',
     'submit_request' => 'Submit Request',

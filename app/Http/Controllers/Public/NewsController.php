@@ -12,6 +12,7 @@ use App\Contracts\Seo\StructuredDataServiceInterface;
 use App\Contracts\Settings\SettingsServiceInterface;
 use App\DTOs\Navigation\LanguageSwitchLinkDTO;
 use App\Http\Controllers\Controller;
+use App\Support\FormLink;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -185,6 +186,10 @@ final class NewsController extends Controller
         $page = $this->newsService->getEventsPageContent($locale);
         $event = $this->newsService->findNewsEvent($eventId, $locale, false);
         $event = $event?->isRegisterable === true ? $event : null;
+        // A form on another site: send visitors straight to it.
+        if ($event !== null && FormLink::sanitizeUrl($event->registrationUrl) !== null) {
+            return redirect()->away((string) $event->registrationUrl);
+        }
         $switchPath = '/news/events-list/register'.($eventId !== '' ? '?event='.rawurlencode($eventId) : '');
 
         return view('public.news.event-registration', $this->sharedPayload($request, $locale, $switchPath, [
@@ -270,12 +275,15 @@ final class NewsController extends Controller
         ], $trail));
     }
 
-    public function articleRegistration(Request $request, string $locale, string $article): View
+    public function articleRegistration(Request $request, string $locale, string $article): View|RedirectResponse
     {
         $newsArticle = $this->newsService->getPublicArticle($article, $locale);
         // Seats and registration state are read fresh; the article may be cached.
         $event = $newsArticle !== null ? $this->articleEvents->forArticle($newsArticle->id, $locale) : null;
         abort_if($newsArticle === null || $event === null || ! $event->requiresRegistration, 404);
+        if (FormLink::sanitizeUrl($event->registrationUrl) !== null) {
+            return redirect()->away((string) $event->registrationUrl);
+        }
         $path = '/news/'.$article.'/register';
 
         return view('public.news.article-registration', $this->sharedPayload($request, $locale, $path, [

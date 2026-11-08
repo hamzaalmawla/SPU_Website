@@ -125,6 +125,98 @@ final class FormPlacesTest extends TestCase
         $this->get('/en/admissions/how-to-apply')->assertOk()->assertSee('data-form-id="open-day"', false)->assertSee('"name":"visitorName"', false);
     }
 
+    public function test_the_job_board_can_send_applicants_to_a_form_on_another_site(): void
+    {
+        $payload = app(CampusLifePageServiceInterface::class)->getEditablePayload('campus_life.jobs');
+        foreach (['ar', 'en'] as $locale) {
+            $payload['translations'][$locale]['applicationFormSource'] = 'external';
+            $payload['translations'][$locale]['applicationFormUrl'] = 'https://forms.example.org/jobs';
+        }
+        $this->publish('campus_life.jobs', $payload);
+
+        $this->get('/en/campus-life/career-development/jobs')->assertOk()
+            ->assertSee('href="https://forms.example.org/jobs"', false)
+            ->assertDontSee('/jobs/apply?job=', false);
+        $this->get('/en/campus-life/career-development/jobs/lecturer-computer-science')->assertOk()
+            ->assertSee('href="https://forms.example.org/jobs"', false);
+        $this->get('/en/campus-life/career-development/jobs/apply?job=lecturer-computer-science')
+            ->assertRedirect('https://forms.example.org/jobs');
+    }
+
+    public function test_the_admissions_editor_can_link_a_form_on_another_site(): void
+    {
+        $this->actingAs($this->author, 'web');
+
+        Livewire::test(ManageAdmissions::class)
+            ->set('data.target_key', 'admissions.how-to-apply')
+            ->call('loadTarget', 'admissions.how-to-apply')
+            ->assertSet('data.application_form_source', 'internal')
+            ->set('data.application_form_source', 'external')
+            ->set('data.application_form_url', 'https://forms.example.org/apply')
+            ->call('save');
+
+        $draft = CmsDraft::query()->where('target_key', 'admissions.how-to-apply')->latest('id')->firstOrFail();
+        $this->assertSame('external', $draft->payload_json['translations']['en']['applicationFormSource'] ?? null);
+        $this->assertSame('https://forms.example.org/apply', $draft->payload_json['translations']['ar']['applicationFormUrl'] ?? null);
+
+        $this->publish('admissions.how-to-apply', $draft->payload_json);
+
+        $this->get('/en/admissions/how-to-apply')->assertOk()
+            ->assertSee('href="https://forms.example.org/apply"', false)
+            ->assertDontSee('data-form-id=', false)
+            ->assertSee('Open the form');
+    }
+
+    public function test_the_admissions_editor_rejects_an_unsafe_form_address(): void
+    {
+        $this->actingAs($this->author, 'web');
+
+        Livewire::test(ManageAdmissions::class)
+            ->set('data.target_key', 'admissions.how-to-apply')
+            ->call('loadTarget', 'admissions.how-to-apply')
+            ->set('data.application_form_source', 'external')
+            ->set('data.application_form_url', 'http://forms.example.org/apply')
+            ->call('save')
+            ->assertHasErrors(['data.application_form_url']);
+    }
+
+    public function test_the_suggestions_page_can_show_a_form_on_another_site(): void
+    {
+        $payload = app(\App\Contracts\Page\EServicesPageServiceInterface::class)->getSuggestionsComplaintsEditablePayload();
+        foreach (['ar', 'en'] as $locale) {
+            $payload['translations'][$locale]['form']['formSource'] = 'external';
+            $payload['translations'][$locale]['form']['formUrl'] = 'https://forms.example.org/feedback';
+        }
+        $this->publish('e_services.suggestions-complaints', $payload);
+
+        $this->get('/en/e-services/suggestions-complaints')->assertOk()
+            ->assertSee('href="https://forms.example.org/feedback"', false)
+            ->assertDontSee('data-form-id=', false);
+    }
+
+    public function test_a_research_event_can_register_on_another_site(): void
+    {
+        $payload = app(ResearchPageServiceInterface::class)->getEditablePayload('research.conferences');
+        foreach (['ar', 'en'] as $locale) {
+            foreach ($payload['translations'][$locale]['past'] as &$pastEvent) {
+                $pastEvent['hasProceedings'] = false;
+                unset($pastEvent['proceedingsUrl']);
+            }
+            unset($pastEvent);
+            foreach ($payload['translations'][$locale]['upcoming'] as &$event) {
+                if (($event['id'] ?? null) === 'conf-001') {
+                    $event['formId'] = '';
+                    $event['formSource'] = 'external';
+                    $event['registrationUrl'] = 'https://forms.example.org/conference';
+                }
+            }
+            unset($event);
+        }
+        $this->publish('research.conferences', $payload);
+
+        $this->get('/en/research/conferences')->assertOk()->assertSee('href="https://forms.example.org/conference"', false);
+    }
+
     public function test_a_form_picked_by_a_page_cannot_be_deleted(): void
     {
         $this->publishConferencesWithForm('conf-001', 'open-day');

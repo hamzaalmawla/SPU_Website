@@ -5,6 +5,7 @@
         $section = $page->section;
         $job = is_array($section['job'] ?? null) ? $section['job'] : [];
         $labels = $section['labels'] ?? [];
+        $externalApplyUrl = \App\Support\FormLink::externalUrl($section, 'applicationForm');
         $relatedJobs = array_values(array_filter($section['relatedJobs'] ?? [], 'is_array'));
         $typeLabels = collect(array_values(array_filter($section['types'] ?? [], 'is_array')))->pluck('label', 'id');
         $canonicalUrl = url('/'.$locale.'/campus-life/career-development/jobs/'.($job['slug'] ?? ''));
@@ -64,7 +65,7 @@
                             <div class="flex justify-between gap-4"><dt class="font-bold text-slate-500">{{ $labels['status'] ?? '' }}</dt><dd class="font-bold text-emerald-700">{{ $labels['openStatus'] ?? '' }}</dd></div>
                         </dl>
                         @if (! ($isPreview ?? false) && ($job['applicationEligible'] ?? false))
-                            <a href="/{{ $locale }}/campus-life/career-development/jobs/apply?job={{ urlencode((string) ($job['slug'] ?? '')) }}" class="flex w-full items-center justify-center rounded-lg bg-spu-red px-5 py-3 text-sm font-bold text-white transition hover:bg-spu-blue">{{ $labels['apply'] ?? '' }}</a>
+                            <a href="{{ $externalApplyUrl ?? '/'.$locale.'/campus-life/career-development/jobs/apply?job='.urlencode((string) ($job['slug'] ?? '')) }}" @if ($externalApplyUrl) target="_blank" rel="noopener noreferrer" @endif class="flex w-full items-center justify-center rounded-lg bg-spu-red px-5 py-3 text-sm font-bold text-white transition hover:bg-spu-blue">{{ $labels['apply'] ?? '' }}</a>
                         @else
                             <span class="flex w-full cursor-not-allowed items-center justify-center rounded-lg bg-slate-200 px-5 py-3 text-sm font-bold text-slate-500">{{ $labels['applicationsClosed'] ?? '' }}</span>
                         @endif

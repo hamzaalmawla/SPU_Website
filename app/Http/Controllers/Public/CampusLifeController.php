@@ -122,11 +122,15 @@ final class CampusLifeController extends Controller
         ]);
     }
 
-    public function careerJobApplication(Request $request, string $locale): View
+    public function careerJobApplication(Request $request, string $locale): View|RedirectResponse
     {
         $job = is_string($request->query('job')) ? trim((string) $request->query('job')) : null;
         $page = $this->campusLifePageService->getCareerJobApplication($locale, $job);
         abort_if($page === null, 404);
+
+        if (is_string($page->section['applicationFormUrl'] ?? null)) {
+            return redirect()->away($page->section['applicationFormUrl']);
+        }
         $query = ['job' => (string) ($page->section['selectedJob']['slug'] ?? '')];
 
         return view('public.campus-life.job-application', [

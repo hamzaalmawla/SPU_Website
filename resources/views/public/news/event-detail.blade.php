@@ -23,7 +23,7 @@
 
                     @if ($event->registrationUrl)
                         <div class="mt-8 flex flex-wrap items-center gap-4">
-                            <a href="{{ $event->registrationUrl }}" class="rounded bg-spu-red px-6 py-3 text-sm font-bold text-white transition hover:bg-spu-blue focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-spu-red">{{ $page['registerLabel'] }}</a>
+                            <a href="{{ $event->registrationUrl }}" @if (str_starts_with((string) $event->registrationUrl, 'https://')) target="_blank" rel="noopener noreferrer" @endif class="rounded bg-spu-red px-6 py-3 text-sm font-bold text-white transition hover:bg-spu-blue focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-spu-red">{{ $page['registerLabel'] }}</a>
                             @if ($event->remainingCapacity !== null)
                                 <span class="text-sm font-semibold text-slate-500">{{ $event->remainingCapacity }} {{ $page['spotsLeftLabel'] }}</span>
                             @endif

@@ -13,6 +13,7 @@ use App\DTOs\EServices\EServicesPageDTO;
 use App\DTOs\Settings\SettingsDTO;
 use App\DTOs\Settings\SettingValueDTO;
 use App\Models\Cms\CmsTargetContent;
+use App\Support\FormLink;
 
 final class EServicesPageService implements EServicesPageServiceInterface
 {
@@ -76,6 +77,8 @@ final class EServicesPageService implements EServicesPageServiceInterface
                 'formTitle' => $this->stringValue($form, 'title'),
                 // Picked on the page editor from the forms built under Forms.
                 'formId' => $this->stringValue($form, 'formId') ?: 'suggestions-complaints',
+                // A form on another site, shown as a button in the form's place.
+                'formUrl' => FormLink::externalUrl($form, 'form'),
                 'infoTitle' => $this->stringValue($form, 'infoTitle'),
                 'infoBody' => $this->stringValue($form, 'infoBody'),
                 'cards' => array_values(array_filter(is_array($form['cards'] ?? null) ? $form['cards'] : [], 'is_array')),
