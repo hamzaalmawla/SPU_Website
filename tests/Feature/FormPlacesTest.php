@@ -15,6 +15,7 @@ use App\Filament\Support\FormPicker;
 use App\Models\Cms\CmsDraft;
 use App\Models\Form\DynamicFormSubmission;
 use App\Models\User\User;
+use App\Support\FormLink;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Validation\ValidationException;
@@ -173,21 +174,20 @@ final class FormPlacesTest extends TestCase
             ->assertSee('Open the form');
     }
 
-    public function test_the_admissions_editor_rejects_an_unsafe_form_address(): void
+    public function test_an_unsafe_form_address_falls_back_to_our_own_form(): void
     {
-        $this->actingAs($this->author, 'web');
+        $payload = app(AdmissionsPageServiceInterface::class)->getEditablePayload('admissions.how-to-apply');
+        foreach (['ar', 'en'] as $locale) {
+            $payload['translations'][$locale]['applicationFormSource'] = 'external';
+            $payload['translations'][$locale]['applicationFormUrl'] = 'http://forms.example.org/apply';
+        }
+        $this->publish('admissions.how-to-apply', $payload);
 
-        Livewire::test(ManageAdmissions::class)
-            ->set('data.target_key', 'admissions.how-to-apply')
-            ->call('loadTarget', 'admissions.how-to-apply')
-            ->set('data.application_form_source', 'external')
-            ->set('data.application_form_url', 'http://forms.example.org/apply')
-            ->call('publish');
-
-        // Publishing reports the error and leaves our own form on the page.
         $this->get('/en/admissions/how-to-apply')->assertOk()
             ->assertSee('data-form-id="admissions-application"', false)
             ->assertDontSee('http://forms.example.org/apply', false);
+        $this->assertNull(FormLink::sanitizeUrl('http://forms.example.org/apply'));
+        $this->assertSame('https://forms.example.org/apply', FormLink::sanitizeUrl('https://forms.example.org/apply'));
     }
 
     public function test_the_suggestions_page_can_show_a_form_on_another_site(): void
