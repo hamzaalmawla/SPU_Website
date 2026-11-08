@@ -154,6 +154,7 @@ use App\Contracts\Page\PageServiceInterface;
 use App\Contracts\Page\ProfilePageServiceInterface;
 use App\Contracts\Page\VirtualTourPageServiceInterface;
 use App\Contracts\Research\ResearcherAdminServiceInterface;
+use App\Contracts\Research\ResearchCouncilStaffServiceInterface;
 use App\Contracts\Research\ResearchPageServiceInterface;
 use App\Contracts\Research\ResearchPublicationCmsServiceInterface;
 use App\Contracts\Research\ResearchRegisterImportServiceInterface;
@@ -384,6 +385,7 @@ use App\Services\Page\VirtualTourPageService;
 use App\Services\Preview\PreviewService;
 use App\Services\Preview\PreviewTokenStore;
 use App\Services\Research\ResearcherAdminService;
+use App\Services\Research\ResearchCouncilStaffService;
 use App\Services\Research\ResearchPageService;
 use App\Services\Research\ResearchPublicationCmsService;
 use App\Services\Research\ResearchRegisterImportService;
@@ -932,6 +934,7 @@ class AppServiceProvider extends ServiceProvider
             PersonIdentityServiceInterface::class => PersonIdentityService::class,
             PeopleUnifyServiceInterface::class => PeopleUnifyService::class,
             ResearchPageServiceInterface::class => ResearchPageService::class,
+            ResearchCouncilStaffServiceInterface::class => ResearchCouncilStaffService::class,
             SearchIndexServiceInterface::class => SearchIndexService::class,
             SiteSearchServiceInterface::class => SiteSearchService::class,
             SettingsServiceInterface::class => SettingsService::class,

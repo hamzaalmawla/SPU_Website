@@ -2344,12 +2344,12 @@
   },
   "office": {
     "hero": {
-      "titleEn": "Research Office",
-      "titleAr": "مكتب البحث",
-      "eyebrowEn": "Research Administration",
-      "eyebrowAr": "إدارة البحث",
-      "summaryEn": "SPU Research Office supports and coordinates research activities across all faculties, fostering innovation and academic excellence.",
-      "summaryAr": "يدعم مكتب البحث في SPU وينسق الأنشطة البحثية عبر جميع الكليات، ويعزز الابتكار والتميز الأكاديمي.",
+      "titleEn": "Research and Scientific Publication Council",
+      "titleAr": "مجلس البحث والنشر العلمي",
+      "eyebrowEn": "Research at SPU",
+      "eyebrowAr": "البحث العلمي في الجامعة",
+      "summaryEn": "The council plans, supports and oversees research and scientific publication across all faculties of Syrian Private University.",
+      "summaryAr": "يخطط المجلس للبحث العلمي والنشر العلمي في جميع كليات الجامعة السورية الخاصة ويدعمهما ويشرف عليهما.",
       "backgroundImage": "/images/uni-main-place.JPG",
       "breadcrumbs": [
         {
@@ -2363,135 +2363,113 @@
           "url": "/research/"
         },
         {
-          "labelEn": "Office",
-          "labelAr": "المكتب",
+          "labelEn": "Research and Scientific Publication Council",
+          "labelAr": "مجلس البحث والنشر العلمي",
           "url": "/research/office/"
         }
       ]
     },
-    "leadership": {
-      "titleEn": "Research Leadership",
-      "titleAr": "قيادة البحث",
-      "items": [
+    "council": {
+      "titleEn": "Council Members",
+      "titleAr": "أعضاء المجلس",
+      "subtitleEn": "The council head and members",
+      "subtitleAr": "رئيس المجلس وأعضاؤه",
+      "headLabelEn": "Council Head",
+      "headLabelAr": "رئيس المجلس",
+      "memberLabelEn": "Council Member",
+      "memberLabelAr": "عضو المجلس",
+      "profileLabelEn": "View profile",
+      "profileLabelAr": "عرض الملف الشخصي",
+      "members": [
         {
+          "id": "member-legacy-1",
+          "role": "member",
+          "isStaff": false,
+          "staffId": null,
           "nameEn": "Dr. Arwa Khair",
           "nameAr": "د. أروى خير",
-          "roleEn": "VP for Academic Affairs",
-          "roleAr": "نائب رئيس الجامعة للشؤون العلمية",
-          "email": "arwa.khair@spu.edu.sy",
+          "positionEn": "VP for Academic Affairs",
+          "positionAr": "نائب رئيس الجامعة للشؤون العلمية",
           "image": "/images/about/leadership/pre-presendent.jpg"
         },
         {
+          "id": "member-legacy-2",
+          "role": "member",
+          "isStaff": false,
+          "staffId": null,
           "nameEn": "Dr. Ayman Ali",
           "nameAr": "د. أيمن علي",
-          "roleEn": "Research Director",
-          "roleAr": "مدير البحث",
-          "email": "ayman.ali@spu.edu.sy",
+          "positionEn": "Research Director",
+          "positionAr": "مدير البحث",
           "image": "/images/about/leadership/medicine-dean.jpg"
         },
         {
+          "id": "member-legacy-3",
+          "role": "member",
+          "isStaff": false,
+          "staffId": null,
           "nameEn": "Dr. Mouhib Alnoukari",
           "nameAr": "د. محيب النقري",
-          "roleEn": "Director of Innovation",
-          "roleAr": "مدير الابتكار",
-          "email": "mouhib.alnoukari@spu.edu.sy",
+          "positionEn": "Director of Innovation",
+          "positionAr": "مدير الابتكار",
           "image": "/images/about/leadership/Ai-dean.jpg"
         },
         {
+          "id": "member-legacy-4",
+          "role": "member",
+          "isStaff": false,
+          "staffId": null,
           "nameEn": "Dr. Hossam Shahrour",
           "nameAr": "د. حسام شحرور",
-          "roleEn": "Research Ethics Chair",
-          "roleAr": "رئيس لجنة أخلاقيات البحث",
-          "email": "hossam.shahrour@spu.edu.sy",
+          "positionEn": "Research Ethics Chair",
+          "positionAr": "رئيس لجنة أخلاقيات البحث",
           "image": "/images/about/leadership/pharmacy-dean.jpg"
         }
       ]
     },
-    "services": {
-      "titleEn": "Our Services",
-      "titleAr": "خدماتنا",
-      "subtitleEn": "How we support your research journey",
-      "subtitleAr": "كيف ندعم رحلتك البحثية",
+    "functions": {
+      "titleEn": "Council Functions",
+      "titleAr": "مهام المجلس",
+      "subtitleEn": "What the council does",
+      "subtitleAr": "ما يقوم به المجلس",
       "items": [
         {
-          "titleEn": "Grant Support",
-          "titleAr": "دعم المنح",
-          "descriptionEn": "Assistance identifying funding opportunities and preparing competitive grant proposals.",
-          "descriptionAr": "المساعدة في تحديد فرص التمويل وإعداد مقترحات المنح التنافسية."
+          "titleEn": "Research plan",
+          "titleAr": "الخطة البحثية",
+          "descriptionEn": "Set the university's research plan and priorities in line with its strategy and the needs of society.",
+          "descriptionAr": "وضع الخطة البحثية للجامعة وأولوياتها بما ينسجم مع استراتيجيتها واحتياجات المجتمع."
         },
         {
-          "titleEn": "Ethics Review",
-          "titleAr": "المراجعة الأخلاقية",
-          "descriptionEn": "Institutional review board services for human and animal research protocols.",
-          "descriptionAr": "خدمات مجلس المراجعة المؤسسي لبروتوكولات البحث على البشر والحيوانات."
+          "titleEn": "Research proposals",
+          "titleAr": "المقترحات البحثية",
+          "descriptionEn": "Review research proposals from the faculties and recommend the ones to approve and fund.",
+          "descriptionAr": "دراسة المقترحات البحثية الواردة من الكليات والتوصية باعتمادها وتمويلها."
         },
         {
-          "titleEn": "Publication Support",
-          "titleAr": "دعم النشر",
-          "descriptionEn": "Guidance on journal selection, manuscript preparation, and open-access compliance.",
-          "descriptionAr": "إرشادات حول اختيار المجلات وإعداد المخطوطات والامتثال للوصول المفتوح."
+          "titleEn": "Scientific publication",
+          "titleAr": "النشر العلمي",
+          "descriptionEn": "Encourage publication in peer-reviewed journals and set the rules for supporting it.",
+          "descriptionAr": "تشجيع النشر في المجلات العلمية المحكّمة ووضع قواعد دعمه."
         },
         {
-          "titleEn": "Research Training",
-          "titleAr": "تدريب البحث",
-          "descriptionEn": "Workshops on research methods, data analysis, academic writing, and research integrity.",
-          "descriptionAr": "ورش عمل حول منهجيات البحث وتحليل البيانات والكتابة الأكاديمية ونزاهة البحث."
+          "titleEn": "Research ethics",
+          "titleAr": "أخلاقيات البحث",
+          "descriptionEn": "Make sure research follows the rules of scientific integrity and research ethics.",
+          "descriptionAr": "التأكد من التزام الأبحاث بقواعد النزاهة العلمية وأخلاقيات البحث."
         },
         {
-          "titleEn": "Industry Partnerships",
-          "titleAr": "شراكات الصناعة",
-          "descriptionEn": "Connecting faculty with industry partners for applied research and technology transfer.",
-          "descriptionAr": "ربط أعضاء هيئة التدريس بشركاء الصناعة للبحث التطبيقي ونقل التكنولوجيا."
+          "titleEn": "Conferences and seminars",
+          "titleAr": "المؤتمرات والندوات",
+          "descriptionEn": "Plan the university's scientific conferences and seminars and support participation in them.",
+          "descriptionAr": "التخطيط للمؤتمرات والندوات العلمية في الجامعة ودعم المشاركة فيها."
         },
         {
-          "titleEn": "IP & Commercialization",
-          "titleAr": "الملكية الفكرية والتسويق",
-          "descriptionEn": "Support for patent applications, licensing, and commercialization of research outputs.",
-          "descriptionAr": "الدعم لطلبات براءات الاختراع والترخيص وتسويق مخرجات البحث."
+          "titleEn": "Follow-up and evaluation",
+          "titleAr": "المتابعة والتقييم",
+          "descriptionEn": "Follow research progress and evaluate the university's research output each year.",
+          "descriptionAr": "متابعة سير الأبحاث وتقييم النتاج البحثي للجامعة سنوياً."
         }
       ]
-    },
-    "statistics": {
-      "titleEn": "Research at a Glance",
-      "titleAr": "البحث في نظرة",
-      "items": [
-        {
-          "value": "250+",
-          "valueAr": "250+",
-          "labelEn": "Publications",
-          "labelAr": "منشور"
-        },
-        {
-          "value": "45",
-          "valueAr": "45",
-          "labelEn": "Active Projects",
-          "labelAr": "مشروع نشط"
-        },
-        {
-          "value": "120+",
-          "valueAr": "120+",
-          "labelEn": "Researchers",
-          "labelAr": "باحث"
-        },
-        {
-          "value": "15",
-          "valueAr": "15",
-          "labelEn": "Industry Partners",
-          "labelAr": "شريك صناعي"
-        }
-      ]
-    },
-    "contact": {
-      "titleEn": "Contact Research Office",
-      "titleAr": "تواصل مع مكتب البحث",
-      "addressEn": "Syrian Private University",
-      "addressAr": "الجامعة السورية الخاصة",
-      "addressDetailEn": "Main Campus, Damascus-Daraa Highway, Damascus, Syria",
-      "addressDetailAr": "الحرم الرئيسي، طريق دمشق-درعا، دمشق، سوريا",
-      "email": "research.office@spu.edu.sy",
-      "phone": "+963 11 539 7777",
-      "hoursEn": "Sun-Thu: 8:30 AM - 3:30 PM",
-      "hoursAr": "الأحد-الخميس: 8:30 صباحاً - 3:30 مساءً"
     }
   },
   "policies": {
