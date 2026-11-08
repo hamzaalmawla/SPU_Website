@@ -28,6 +28,7 @@ return [
         'contact_messages' => 'رسائل التواصل',
         'contact_page' => 'صفحة التواصل',
         'directorates' => 'المديريات',
+        'councils' => 'المجالس',
         'e_services' => 'الخدمات الإلكترونية',
         'events' => 'الفعاليات',
         'faculties_hub' => 'صفحة الكليات الرئيسية',

@@ -7,6 +7,10 @@
             <span aria-hidden="true">›</span>
             <a href="/{{ $locale }}/about" class="transition hover:text-white">{{ $locale === 'ar' ? 'عن الجامعة' : 'About' }}</a>
             <span aria-hidden="true">›</span>
+            @if (! empty($parent['url'] ?? null) && ! empty($parent['label'] ?? null))
+                <a href="{{ $parent['url'] }}" class="transition hover:text-white">{{ $parent['label'] }}</a>
+                <span aria-hidden="true">›</span>
+            @endif
             <span>{{ $title }}</span>
         </nav>
 

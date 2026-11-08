@@ -37,6 +37,10 @@ use App\Contracts\Content\PeopleUnifyServiceInterface;
 use App\Contracts\Content\PersonIdentityServiceInterface;
 use App\Contracts\Content\PersonServiceInterface;
 use App\Contracts\Content\ProfileAdminServiceInterface;
+use App\Contracts\Council\CouncilAdminServiceInterface;
+use App\Contracts\Council\CouncilCatalogServiceInterface;
+use App\Contracts\Council\CouncilPageServiceInterface;
+use App\Contracts\Council\CouncilStaffServiceInterface;
 use App\Contracts\Dashboard\AdminDashboardServiceInterface;
 use App\Contracts\ErrorPage\ErrorPageRendererInterface;
 use App\Contracts\ErrorPage\ErrorPageServiceInterface;
@@ -154,7 +158,6 @@ use App\Contracts\Page\PageServiceInterface;
 use App\Contracts\Page\ProfilePageServiceInterface;
 use App\Contracts\Page\VirtualTourPageServiceInterface;
 use App\Contracts\Research\ResearcherAdminServiceInterface;
-use App\Contracts\Research\ResearchCouncilStaffServiceInterface;
 use App\Contracts\Research\ResearchPageServiceInterface;
 use App\Contracts\Research\ResearchPublicationCmsServiceInterface;
 use App\Contracts\Research\ResearchRegisterImportServiceInterface;
@@ -259,6 +262,10 @@ use App\Services\Content\PeopleUnifyService;
 use App\Services\Content\PersonIdentityService;
 use App\Services\Content\PersonService;
 use App\Services\Content\ProfileAdminService;
+use App\Services\Council\CouncilAdminService;
+use App\Services\Council\CouncilCatalogService;
+use App\Services\Council\CouncilPageService;
+use App\Services\Council\CouncilStaffService;
 use App\Services\Dashboard\AdminDashboardService;
 use App\Services\ErrorPage\ErrorPageRenderer;
 use App\Services\ErrorPage\ErrorPageService;
@@ -385,7 +392,6 @@ use App\Services\Page\VirtualTourPageService;
 use App\Services\Preview\PreviewService;
 use App\Services\Preview\PreviewTokenStore;
 use App\Services\Research\ResearcherAdminService;
-use App\Services\Research\ResearchCouncilStaffService;
 use App\Services\Research\ResearchPageService;
 use App\Services\Research\ResearchPublicationCmsService;
 use App\Services\Research\ResearchRegisterImportService;
@@ -934,7 +940,10 @@ class AppServiceProvider extends ServiceProvider
             PersonIdentityServiceInterface::class => PersonIdentityService::class,
             PeopleUnifyServiceInterface::class => PeopleUnifyService::class,
             ResearchPageServiceInterface::class => ResearchPageService::class,
-            ResearchCouncilStaffServiceInterface::class => ResearchCouncilStaffService::class,
+            CouncilStaffServiceInterface::class => CouncilStaffService::class,
+            CouncilCatalogServiceInterface::class => CouncilCatalogService::class,
+            CouncilAdminServiceInterface::class => CouncilAdminService::class,
+            CouncilPageServiceInterface::class => CouncilPageService::class,
             SearchIndexServiceInterface::class => SearchIndexService::class,
             SiteSearchServiceInterface::class => SiteSearchService::class,
             SettingsServiceInterface::class => SettingsService::class,

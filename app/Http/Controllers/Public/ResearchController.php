@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Public;
 
+use App\Contracts\Council\CouncilPageServiceInterface;
 use App\Contracts\Navigation\NavigationServiceInterface;
 use App\Contracts\Page\ProfilePageServiceInterface;
 use App\Contracts\Research\ResearchPageServiceInterface;
@@ -25,6 +26,7 @@ final class ResearchController extends Controller
         private readonly NavigationServiceInterface $navigationService,
         private readonly SettingsServiceInterface $settingsService,
         private readonly SeoMetadataServiceInterface $seoMetadataService,
+        private readonly CouncilPageServiceInterface $councilPageService,
     ) {}
 
     public function index(Request $request, string $locale): View|RedirectResponse
@@ -167,9 +169,16 @@ final class ResearchController extends Controller
         return $this->renderRetirableSection($request, $locale, $this->researchPageService->library($locale), 'public.research.library', '/research/library');
     }
 
-    public function office(Request $request, string $locale): View
+    /**
+     * The research office page became the Research and Scientific Publication
+     * Council, which now lives with the other councils under About › Councils.
+     */
+    public function office(string $locale): RedirectResponse
     {
-        return $this->renderRetirableSection($request, $locale, $this->researchPageService->office($locale), 'public.research.office', '/research/office');
+        $url = $this->councilPageService->urlForFormerPath('/research/office', $locale);
+        abort_if($url === null, 404);
+
+        return redirect($url, 301);
     }
 
     public function policies(Request $request, string $locale): View

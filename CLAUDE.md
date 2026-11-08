@@ -37,6 +37,12 @@ The imported `AGENTS.MD` is the authoritative project rulebook (scope, architect
 - Site search: source `centers` (`SearchIndexService::rebuildCenters` from `CenterPageServiceInterface::searchEntries`): each page and each course (linked to `#course-{id}`), in both languages; rebuilt after commit when a `centers.*` page is published or unpublished or a center staff profile is saved (`SearchIndexObserver`), and on every deploy. Test: `CentersSearchTest`.
 - Header: Centers is the ninth top-level item, after Faculties, a plain link (migration `2026_11_02_000003_add_centers_to_header_menu`, `NavigationSeeder`). Nine labels fit from 1280px only because `navigation.css` shrinks them on a 1280-1535px ramp; a tenth item needs another layout change.
 
+## About › Councils
+- One template for every council: `/{locale}/about/councils` lists each enabled council with published content (in `sort_order`), and `/{locale}/about/councils/<slug>` is its page (intro, heads and members, functions). Adding a council in the admin (Site sections › Councils, `CouncilResource`, permission `councils.*`) is all it takes for it to appear once published.
+- `university_councils` (slug, sort_order, is_enabled, former_path) holds the list; each council's content is the CMS target `entity.council.<id>` (resolved by `CouncilCatalogServiceInterface::resolveTarget`, draft/preview/publish like any page). The list page's own text is the About content page `about.councils`.
+- Members are per council like the research council of PR #77: `role` head/member, `isStaff` + `staffId` (a faculty profile; unpublished ones are hidden) or a typed-in name, position and photo; the same member ids in both languages. `CouncilEditor` is the shared admin form; `CouncilPageServiceInterface` builds the public DTOs (cached under tags `cms`, `councils`).
+- The research council moved in as `research-council` (migration `2026_11_08_000004`); `/research/office` 301s to its page while it is published (`former_path`). The old `research.office` target is no longer edited. Test: `CouncilsPagesTest`.
+
 ## Faculty projects
 - Supervisors are faculty profiles: `facilities.<faculty>.projects` items carry `supervisorMemberIds` (picked per language in the admin; a language with none uses the other's). The project list and detail pages link each to its profile (`FacultyPageService::withProjectSupervisors`). The imported free-text `supervisor` shows only while no profile is picked, and its admin field only while it has text.
 

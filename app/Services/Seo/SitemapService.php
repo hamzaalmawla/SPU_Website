@@ -7,6 +7,7 @@ namespace App\Services\Seo;
 use App\Contracts\Career\AlumniDirectoryServiceInterface;
 use App\Contracts\Center\CenterCatalogServiceInterface;
 use App\Contracts\Content\PersonIdentityServiceInterface;
+use App\Contracts\Council\CouncilPageServiceInterface;
 use App\Contracts\Page\FacultyPageServiceInterface;
 use App\Contracts\Page\PageServiceInterface;
 use App\Contracts\Research\ResearchPageServiceInterface;
@@ -60,6 +61,7 @@ final class SitemapService implements SitemapServiceInterface
         private readonly PersonIdentityServiceInterface $identityService,
         private readonly FacultyPageServiceInterface $facultyPageService,
         private readonly CenterCatalogServiceInterface $centerCatalog,
+        private readonly CouncilPageServiceInterface $councilPages,
     ) {}
 
     public function generateEntries(): Collection
@@ -761,6 +763,7 @@ final class SitemapService implements SitemapServiceInterface
             '/about/directorates',
             '/about/directorates/staff',
             '/about/partnerships',
+            '/about/councils',
             '/about/accreditation',
             '/about/why-spu',
             '/about/quality-policy',
@@ -787,6 +790,10 @@ final class SitemapService implements SitemapServiceInterface
 
         foreach (Directorate::query()->public()->pluck('slug') as $slug) {
             $paths[] = '/about/directorates/'.$slug;
+        }
+        // Only shown councils published in both languages.
+        foreach ($this->councilPages->councils('en') as $council) {
+            $paths[] = '/about/councils/'.$council->slug;
         }
         // Publishing a URL that 404s or redirects is worse than omitting it:
         // it spends crawl budget and teaches search engines the site is

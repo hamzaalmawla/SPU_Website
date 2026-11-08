@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Public;
 
+use App\Contracts\Council\CouncilPageServiceInterface;
 use App\Contracts\Navigation\NavigationServiceInterface;
 use App\Contracts\Page\AboutPageServiceInterface;
 use App\Contracts\Page\ProfilePageServiceInterface;
@@ -23,6 +24,7 @@ final class AboutController extends Controller
         private readonly NavigationServiceInterface $navigationService,
         private readonly SettingsServiceInterface $settingsService,
         private readonly SeoMetadataServiceInterface $seoMetadataService,
+        private readonly CouncilPageServiceInterface $councilPageService,
     ) {}
 
     public function landing(Request $request, string $locale): View
@@ -108,6 +110,36 @@ final class AboutController extends Controller
             'directorate' => $item,
             'aboutNavigationCards' => $this->aboutPageService->getAboutSubPages($locale, 'about.directorates'),
             'seo' => $this->seo($locale, '/about/directorates/'.$directorate, $item->title, $item->summary),
+        ]));
+    }
+
+    /** Every shown council with published content, each linking to its page. */
+    public function councils(Request $request, string $locale): View
+    {
+        $page = $this->aboutPageService->getContentPage('councils', $locale);
+        abort_if($page === null, 404);
+
+        return view('public.about.councils', $this->sharedPayload($request, $locale, '/about/councils', [
+            'page' => $page,
+            'councils' => $this->councilPageService->councils($locale),
+            'aboutNavigationCards' => $this->aboutPageService->getAboutSubPages($locale, 'about.councils'),
+            'seo' => $this->seo($locale, '/about/councils', $page->title, $page->summary),
+        ]));
+    }
+
+    /** One council's page, from the council template. */
+    public function council(Request $request, string $locale, string $council): View
+    {
+        $page = $this->councilPageService->council($council, $locale);
+        abort_if($page === null, 404);
+        $path = '/about/councils/'.$page->slug;
+        $councils = $this->aboutPageService->getContentPage('councils', $locale);
+
+        return view('public.about.council', $this->sharedPayload($request, $locale, $path, [
+            'council' => $page,
+            'councilsTitle' => $councils?->title ?? __('councils.breadcrumb', [], $locale),
+            'aboutNavigationCards' => $this->aboutPageService->getAboutSubPages($locale, 'about.councils'),
+            'seo' => $this->seo($locale, $path, $page->title, $page->summary, $page->heroImage),
         ]));
     }
 

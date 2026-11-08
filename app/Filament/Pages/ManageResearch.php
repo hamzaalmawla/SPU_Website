@@ -6,7 +6,6 @@ namespace App\Filament\Pages;
 
 use App\Contracts\Cms\CmsWorkflowServiceInterface;
 use App\Contracts\Form\FormDefinitionServiceInterface;
-use App\Contracts\Research\ResearchCouncilStaffServiceInterface;
 use App\Contracts\Research\ResearchPageServiceInterface;
 use App\Exceptions\ConflictException;
 use App\Filament\Components\PageUrlSelect;
@@ -18,7 +17,6 @@ use App\Models\User\User;
 use App\Support\FormLink;
 use App\Support\HtmlSanitizer;
 use Filament\Actions\Action;
-use Filament\Forms\Components\Checkbox;
 use Filament\Forms\Components\Component;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\DateTimePicker;
@@ -71,9 +69,6 @@ class ManageResearch extends Page implements HasForms
     private CmsWorkflowServiceInterface $cmsWorkflowService;
 
     private HtmlSanitizer $htmlSanitizer;
-
-    /** @var array<int, string>|null The staff list, read once per request. */
-    private ?array $councilStaffOptions = null;
 
     public function boot(
         ResearchPageServiceInterface $researchPageService,
@@ -133,7 +128,6 @@ class ManageResearch extends Page implements HasForms
                     ])
                     ->persistTabInQueryString('locale')
                     ->columnSpanFull(),
-                $this->councilMembersSection(),
             ])
             ->statePath('data');
     }
@@ -164,7 +158,6 @@ class ManageResearch extends Page implements HasForms
             'research.experts' => $this->expertFields($locale),
             'research.conferences' => $this->conferenceFields($locale),
             'research.library' => $this->libraryFields($locale),
-            'research.office' => $this->officeFields($locale),
             'research.policies' => $this->policyFields($locale),
             default => [],
         };
@@ -180,13 +173,8 @@ class ManageResearch extends Page implements HasForms
         $this->sourcePayload = $payload;
         $this->draftVersion = $this->cmsWorkflowService->latestEditableDraftVersion($targetKey, (int) auth()->id());
 
-        if ($targetKey === 'research.office') {
-            $payload = $this->officePayloadForEditor($payload);
-        }
-
         $this->form->fill([
             'target_key' => $targetKey,
-            'office_members' => $targetKey === 'research.office' ? $this->councilMembersForForm($payload) : [],
             'ar_landing' => $targetKey === 'research.index' && is_array($payload['translations']['ar'] ?? null) ? $payload['translations']['ar'] : [],
             'en_landing' => $targetKey === 'research.index' && is_array($payload['translations']['en'] ?? null) ? $payload['translations']['en'] : [],
             'ar_publications' => $targetKey === 'research.publications' && is_array($payload['translations']['ar'] ?? null) ? $payload['translations']['ar'] : [],
@@ -203,8 +191,6 @@ class ManageResearch extends Page implements HasForms
             'en_conferences' => $targetKey === 'research.conferences' && is_array($payload['translations']['en'] ?? null) ? $payload['translations']['en'] : [],
             'ar_library' => $targetKey === 'research.library' && is_array($payload['translations']['ar'] ?? null) ? $payload['translations']['ar'] : [],
             'en_library' => $targetKey === 'research.library' && is_array($payload['translations']['en'] ?? null) ? $payload['translations']['en'] : [],
-            'ar_office' => $targetKey === 'research.office' && is_array($payload['translations']['ar'] ?? null) ? $payload['translations']['ar'] : [],
-            'en_office' => $targetKey === 'research.office' && is_array($payload['translations']['en'] ?? null) ? $payload['translations']['en'] : [],
             'ar_policies' => $targetKey === 'research.policies' && is_array($payload['translations']['ar'] ?? null) ? $payload['translations']['ar'] : [],
             'en_policies' => $targetKey === 'research.policies' && is_array($payload['translations']['en'] ?? null) ? $payload['translations']['en'] : [],
         ]);
@@ -415,7 +401,6 @@ class ManageResearch extends Page implements HasForms
             'research.experts' => __('admin.cms.targets.research.experts'),
             'research.conferences' => __('admin.cms.targets.research.conferences'),
             'research.library' => __('admin.cms.targets.research.library'),
-            'research.office' => __('admin.cms.targets.research.office'),
             'research.policies' => __('admin.cms.targets.research.policies'),
         ]);
     }
@@ -430,7 +415,7 @@ class ManageResearch extends Page implements HasForms
 
     private function assertResearchTarget(string $targetKey): void
     {
-        if (! in_array($targetKey, ['research.index', 'research.publications', 'research.centers', 'research.projects', 'research.themes', 'research.experts', 'research.conferences', 'research.library', 'research.office', 'research.policies'], true)) {
+        if (! in_array($targetKey, ['research.index', 'research.publications', 'research.centers', 'research.projects', 'research.themes', 'research.experts', 'research.conferences', 'research.library', 'research.policies'], true)) {
             throw new \InvalidArgumentException('Unsupported research target.');
         }
     }
@@ -838,281 +823,6 @@ class ManageResearch extends Page implements HasForms
         return $this->targetSections($sections, 'research.library', $locale);
     }
 
-    /**
-     * The research and scientific publication council page: its introduction, the
-     * headings around the members, and the council's functions, in each language.
-     * The members themselves are one list for both languages (councilMembersSection).
-     *
-     * @return array<int, Section>
-     */
-    private function officeFields(string $locale): array
-    {
-        $prefix = $locale.'_office';
-        $sections = [
-            Section::make($this->sectionLabel('office_hero'))->schema([
-                TextInput::make($prefix.'.hero.eyebrow')->label($this->fieldLabel('eyebrow'))->required()->maxLength(160),
-                TextInput::make($prefix.'.hero.title')->label($this->fieldLabel('title'))->required()->maxLength(180),
-                MediaPicker::image($prefix.'.hero.backgroundImage', $this->fieldLabel('background_image'), true),
-                Textarea::make($prefix.'.hero.summary')->label($this->fieldLabel('summary'))->required()->rows(2)->columnSpanFull(),
-            ])->columns(2),
-            Section::make($this->sectionLabel('council_headings'))
-                ->description(__('admin.research_workspace.help.council_headings'))
-                ->schema([
-                    TextInput::make($prefix.'.council.title')->label($this->fieldLabel('title'))->required()->maxLength(180),
-                    TextInput::make($prefix.'.council.subtitle')->label($this->fieldLabel('subtitle'))->maxLength(255),
-                    TextInput::make($prefix.'.council.headLabel')->label($this->fieldLabel('council_head_label'))->required()->maxLength(80),
-                    TextInput::make($prefix.'.council.memberLabel')->label($this->fieldLabel('council_member_label'))->required()->maxLength(80),
-                    TextInput::make($prefix.'.council.profileLabel')->label($this->fieldLabel('council_profile_label'))->required()->maxLength(80),
-                ])->columns(2)->collapsible(),
-            Section::make($this->sectionLabel('council_functions'))->schema([
-                TextInput::make($prefix.'.functions.title')->label($this->fieldLabel('title'))->required()->maxLength(180),
-                TextInput::make($prefix.'.functions.subtitle')->label($this->fieldLabel('subtitle'))->maxLength(255),
-                Repeater::make($prefix.'.functions.items')
-                    ->label($this->fieldLabel('council_functions'))
-                    ->schema($this->titleDescriptionFields())
-                    ->columns(2)
-                    ->defaultItems(0)
-                    ->reorderable()
-                    ->cloneable()
-                    ->collapsible()
-                    ->itemLabel(fn (array $state): ?string => $state['title'] ?? null)
-                    ->addActionLabel(__('admin.research_workspace.actions.add_council_function'))
-                    ->columnSpanFull(),
-            ])->columns(2)->collapsible(),
-        ];
-
-        return $this->targetSections($sections, 'research.office', $locale);
-    }
-
-    /**
-     * The council members, one row for both languages. Each member is the council
-     * head or a member. A teaching staff member is picked from the staff list and
-     * the page shows their profile (name, rank, photo, email, profile link); anyone
-     * else is typed in by name, with an optional position and photo, and has no
-     * profile link.
-     */
-    private function councilMembersSection(): Section
-    {
-        $isStaff = static fn (Get $get): bool => (bool) $get('isStaff');
-
-        return Section::make($this->sectionLabel('council_members'))
-            ->description(__('admin.research_workspace.help.council_members'))
-            ->schema([
-                Repeater::make('office_members')
-                    ->hiddenLabel()
-                    ->schema([
-                        Hidden::make('id')->default(fn (): string => 'member-'.Str::lower(Str::random(8))),
-                        Select::make('role')
-                            ->label($this->fieldLabel('council_role'))
-                            ->options([
-                                'head' => __('admin.research_workspace.options.council_roles.head'),
-                                'member' => __('admin.research_workspace.options.council_roles.member'),
-                            ])
-                            ->default('member')
-                            ->selectablePlaceholder(false)
-                            ->required(),
-                        Checkbox::make('isStaff')
-                            ->label($this->fieldLabel('council_is_staff'))
-                            ->helperText(__('admin.research_workspace.help.council_is_staff'))
-                            ->default(false)
-                            ->live(),
-                        Select::make('staffId')
-                            ->label($this->fieldLabel('council_staff_member'))
-                            ->options(fn (): array => $this->councilStaffOptions())
-                            ->searchable()
-                            ->live()
-                            ->required($isStaff)
-                            ->visible($isStaff)
-                            ->columnSpanFull(),
-                        Placeholder::make('staffPreview')
-                            ->hiddenLabel()
-                            ->content(fn (Get $get): HtmlString => $this->staffPreview($get('staffId')))
-                            ->visible(fn (Get $get): bool => (bool) $get('isStaff') && is_numeric($get('staffId')))
-                            ->columnSpanFull(),
-                        TextInput::make('nameAr')
-                            ->label($this->fieldLabel('council_name_ar'))
-                            ->required(fn (Get $get): bool => ! $get('isStaff'))
-                            ->visible(fn (Get $get): bool => ! $get('isStaff'))
-                            ->maxLength(180),
-                        TextInput::make('nameEn')
-                            ->label($this->fieldLabel('council_name_en'))
-                            ->helperText(__('admin.research_workspace.help.council_name_en'))
-                            ->visible(fn (Get $get): bool => ! $get('isStaff'))
-                            ->maxLength(180),
-                        TextInput::make('positionAr')
-                            ->label($this->fieldLabel('council_position_ar'))
-                            ->helperText(__('admin.research_workspace.help.council_position'))
-                            ->maxLength(180),
-                        TextInput::make('positionEn')
-                            ->label($this->fieldLabel('council_position_en'))
-                            ->maxLength(180),
-                        MediaPicker::image('image', $this->fieldLabel('profile_image'))
-                            ->visible(fn (Get $get): bool => ! $get('isStaff'))
-                            ->columnSpanFull(),
-                    ])
-                    ->columns(2)
-                    ->defaultItems(0)
-                    ->reorderable()
-                    ->collapsible()
-                    ->itemLabel(fn (array $state): ?string => $this->councilMemberLabel($state))
-                    ->addActionLabel(__('admin.research_workspace.actions.add_council_member'))
-                    ->columnSpanFull(),
-            ])
-            ->visible(fn (Get $get): bool => $get('target_key') === 'research.office')
-            ->columnSpanFull();
-    }
-
-    /** @return array<int, string> */
-    private function councilStaffOptions(): array
-    {
-        return $this->councilStaffOptions ??= app(ResearchCouncilStaffServiceInterface::class)->staffOptions(app()->getLocale());
-    }
-
-    /** What the picked staff member's profile shows, so the editor sees who they picked. */
-    private function staffPreview(mixed $staffId): HtmlString
-    {
-        $id = is_numeric($staffId) ? (int) $staffId : 0;
-        $card = app(ResearchCouncilStaffServiceInterface::class)->staffCards([$id], app()->getLocale() === 'ar' ? 'ar' : 'en', false)[$id] ?? null;
-        if ($card === null) {
-            return new HtmlString('<p class="text-sm text-danger-600">'.e(__('admin.research_workspace.help.council_staff_missing')).'</p>');
-        }
-
-        $photo = is_string($card['image']) && $card['image'] !== ''
-            ? '<img src="'.e($card['image']).'" alt="" style="width:56px;height:56px;border-radius:9999px;object-fit:cover">'
-            : '<span style="display:inline-flex;width:56px;height:56px;border-radius:9999px;background:#e5e7eb"></span>';
-        $lines = array_filter([
-            '<strong>'.e($card['name']).'</strong>',
-            $card['rank'] !== '' ? e($card['rank']) : null,
-            $card['email'] !== '' ? e($card['email']) : null,
-            '<a href="'.e($card['url']).'" target="_blank" rel="noopener" class="text-primary-600 underline">'.e(__('admin.research_workspace.help.council_staff_profile')).'</a>',
-            $card['isPublic'] ? null : '<span class="text-warning-600">'.e(__('admin.research_workspace.help.council_staff_not_public')).'</span>',
-        ]);
-
-        return new HtmlString('<div style="display:flex;gap:12px;align-items:center">'.$photo.'<div class="text-sm" style="display:flex;flex-direction:column;gap:2px">'.implode('', array_map(static fn (string $line): string => '<span>'.$line.'</span>', $lines)).'</div></div>');
-    }
-
-    /** @param array<string, mixed> $state */
-    private function councilMemberLabel(array $state): ?string
-    {
-        $role = ($state['role'] ?? 'member') === 'head'
-            ? __('admin.research_workspace.options.council_roles.head')
-            : __('admin.research_workspace.options.council_roles.member');
-        $name = null;
-        if ((bool) ($state['isStaff'] ?? false)) {
-            $id = is_numeric($state['staffId'] ?? null) ? (int) $state['staffId'] : 0;
-            $name = $id > 0 ? ($this->councilStaffOptions()[$id] ?? null) : null;
-        } else {
-            $name = trim((string) ($state['nameAr'] ?? '')) ?: (trim((string) ($state['nameEn'] ?? '')) ?: null);
-        }
-
-        return trim(implode(' · ', array_filter([$role, $name]))) ?: null;
-    }
-
-    /**
-     * Content saved before the council layout: its leadership becomes the members
-     * (typed in, as members) and its services become the functions. The old
-     * statistics and contact are not part of the page any more.
-     *
-     * @param  array<string, mixed>  $payload
-     * @return array<string, mixed>
-     */
-    private function officePayloadForEditor(array $payload): array
-    {
-        foreach (['ar', 'en'] as $locale) {
-            $content = is_array($payload['translations'][$locale] ?? null) ? $payload['translations'][$locale] : [];
-            if (! is_array($content['council']['members'] ?? null) && is_array($content['leadership'] ?? null)) {
-                $content['council'] = [
-                    ...(is_array($content['council'] ?? null) ? $content['council'] : []),
-                    'title' => $content['council']['title'] ?? ($content['leadership']['title'] ?? ''),
-                    'members' => array_map(static fn (array $leader, int $index): array => [
-                        'id' => 'member-legacy-'.($index + 1),
-                        'role' => 'member',
-                        'isStaff' => false,
-                        'staffId' => null,
-                        'name' => (string) ($leader['name'] ?? ''),
-                        'position' => (string) ($leader['role'] ?? ''),
-                        'image' => $leader['image'] ?? null,
-                    ], $this->listOfArrays($content['leadership']['items'] ?? []), array_keys($this->listOfArrays($content['leadership']['items'] ?? []))),
-                ];
-            }
-            if (! is_array($content['functions'] ?? null) && is_array($content['services'] ?? null)) {
-                $content['functions'] = [
-                    'title' => $content['services']['title'] ?? '',
-                    'subtitle' => $content['services']['subtitle'] ?? '',
-                    'items' => $this->listOfArrays($content['services']['items'] ?? []),
-                ];
-            }
-            unset($content['leadership'], $content['services'], $content['statistics'], $content['contact']);
-            $payload['translations'][$locale] = $content;
-        }
-
-        return $payload;
-    }
-
-    /**
-     * The members as editor rows: the Arabic and English lists hold the same
-     * members in the same order, so each row joins the two by position.
-     *
-     * @param  array<string, mixed>  $payload
-     * @return array<int, array<string, mixed>>
-     */
-    private function councilMembersForForm(array $payload): array
-    {
-        $ar = $this->listOfArrays($payload['translations']['ar']['council']['members'] ?? []);
-        $en = $this->listOfArrays($payload['translations']['en']['council']['members'] ?? []);
-        $rows = [];
-
-        foreach ($ar === [] ? $en : $ar as $index => $member) {
-            $english = $en[$index] ?? [];
-            $id = trim((string) ($member['id'] ?? ''));
-            $rows[] = [
-                'id' => $id !== '' ? $id : 'member-'.Str::lower(Str::random(8)),
-                'role' => ($member['role'] ?? 'member') === 'head' ? 'head' : 'member',
-                'isStaff' => filter_var($member['isStaff'] ?? false, FILTER_VALIDATE_BOOLEAN),
-                'staffId' => is_numeric($member['staffId'] ?? null) ? (int) $member['staffId'] : null,
-                'nameAr' => $ar === [] ? '' : (string) ($member['name'] ?? ''),
-                'nameEn' => (string) ($english['name'] ?? ''),
-                'positionAr' => $ar === [] ? '' : (string) ($member['position'] ?? ''),
-                'positionEn' => (string) ($english['position'] ?? ''),
-                'image' => is_string($member['image'] ?? null) ? $member['image'] : null,
-            ];
-        }
-
-        return $rows;
-    }
-
-    /**
-     * The editor rows as each language's members. An English name left empty
-     * shows the Arabic one.
-     *
-     * @param  array<int, mixed>  $rows
-     * @return array{ar: array<int, array<string, mixed>>, en: array<int, array<string, mixed>>}
-     */
-    private function councilMembersFromForm(array $rows): array
-    {
-        $members = ['ar' => [], 'en' => []];
-
-        foreach ($this->listOfArrays($rows) as $row) {
-            $isStaff = (bool) ($row['isStaff'] ?? false);
-            $id = trim((string) ($row['id'] ?? ''));
-            $nameAr = $isStaff ? '' : trim((string) ($row['nameAr'] ?? ''));
-            $nameEn = $isStaff ? '' : trim((string) ($row['nameEn'] ?? ''));
-            $image = $isStaff ? null : (is_string($row['image'] ?? null) && trim($row['image']) !== '' ? trim($row['image']) : null);
-            $shared = [
-                'id' => $id !== '' ? $id : 'member-'.Str::lower(Str::random(8)),
-                'role' => ($row['role'] ?? 'member') === 'head' ? 'head' : 'member',
-                'isStaff' => $isStaff,
-                'staffId' => $isStaff && is_numeric($row['staffId'] ?? null) ? (int) $row['staffId'] : null,
-                'image' => $image,
-            ];
-
-            $members['ar'][] = [...$shared, 'name' => $nameAr, 'position' => trim((string) ($row['positionAr'] ?? ''))];
-            $members['en'][] = [...$shared, 'name' => $nameEn !== '' ? $nameEn : $nameAr, 'position' => trim((string) ($row['positionEn'] ?? ''))];
-        }
-
-        return $members;
-    }
-
     /** @return array<int, Section> */
     private function policyFields(string $locale): array
     {
@@ -1396,7 +1106,6 @@ class ManageResearch extends Page implements HasForms
             'research.experts' => ['experts', 'normalizeExpertContent'],
             'research.conferences' => ['conferences', 'normalizeConferenceContent'],
             'research.library' => ['library', 'normalizeLibraryContent'],
-            'research.office' => ['office', 'normalizeOfficeContent'],
             'research.policies' => ['policies', 'normalizePolicyContent'],
             default => ['publications', 'normalizePublicationContent'],
         };
@@ -1407,30 +1116,9 @@ class ManageResearch extends Page implements HasForms
             ],
         ];
 
-        if ($targetKey === 'research.office') {
-            $members = $this->councilMembersFromForm(is_array($state['office_members'] ?? null) ? $state['office_members'] : []);
-            foreach (['ar', 'en'] as $locale) {
-                $payload['translations'][$locale]['council']['members'] = $members[$locale];
-            }
-        }
-
         $payload = $this->synchronizeGeneratedIdentity($targetKey, $payload);
-        $merged = $this->mergePreservingLegacy($this->sourcePayload, $payload);
 
-        if ($targetKey === 'research.office') {
-            // The council page has no statistics or contact sections; its members
-            // and functions replaced the old leadership and services.
-            foreach (['ar', 'en'] as $locale) {
-                unset(
-                    $merged['translations'][$locale]['leadership'],
-                    $merged['translations'][$locale]['services'],
-                    $merged['translations'][$locale]['statistics'],
-                    $merged['translations'][$locale]['contact'],
-                );
-            }
-        }
-
-        return $merged;
+        return $this->mergePreservingLegacy($this->sourcePayload, $payload);
     }
 
     /** @param array<string, mixed> $content @return array<string, mixed> */
@@ -1592,17 +1280,6 @@ class ManageResearch extends Page implements HasForms
         $content['databases'] = $this->listOfArrays($content['databases'] ?? []);
         $content['borrowingSection']['rules'] = $this->listOfArrays($content['borrowingSection']['rules'] ?? []);
         $content['specialCollections']['items'] = $this->listOfArrays($content['specialCollections']['items'] ?? []);
-
-        return $content;
-    }
-
-    /** @param array<string, mixed> $content @return array<string, mixed> */
-    private function normalizeOfficeContent(array $content): array
-    {
-        $content['council'] = is_array($content['council'] ?? null) ? $content['council'] : [];
-        $content['council']['members'] = $this->listOfArrays($content['council']['members'] ?? []);
-        $content['functions'] = is_array($content['functions'] ?? null) ? $content['functions'] : [];
-        $content['functions']['items'] = $this->listOfArrays($content['functions']['items'] ?? []);
 
         return $content;
     }

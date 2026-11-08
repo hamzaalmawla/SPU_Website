@@ -28,6 +28,7 @@ return [
         'contact_messages' => 'Contact messages',
         'contact_page' => 'Contact page',
         'directorates' => 'Directorates',
+        'councils' => 'Councils',
         'e_services' => 'E-services',
         'events' => 'Events',
         'faculties_hub' => 'Faculties hub page',

@@ -76,6 +76,11 @@ final class InvalidateCmsCache implements ShouldQueue
             array_push($tags, 'centers', 'facilities');
         }
 
+        // A council shows on its own page and on the Councils list under About.
+        if (str_starts_with($targetKey, 'entity.council.') || $targetKey === 'about.councils') {
+            array_push($tags, 'about', 'councils');
+        }
+
         if (str_starts_with($targetKey, 'research.')) {
             $tags[] = 'research';
         }

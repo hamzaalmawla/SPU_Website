@@ -7,6 +7,7 @@ namespace App\Services\Cms;
 use App\Contracts\Center\CenterCatalogServiceInterface;
 use App\Contracts\Cms\AboutEntityCmsServiceInterface;
 use App\Contracts\Cms\CmsTargetRegistryInterface;
+use App\Contracts\Council\CouncilCatalogServiceInterface;
 use App\Contracts\News\NewsArticleCmsServiceInterface;
 use App\Contracts\Research\ResearchPublicationCmsServiceInterface;
 use App\DTOs\Cms\CmsTargetDTO;
@@ -19,6 +20,7 @@ final class CmsTargetRegistry implements CmsTargetRegistryInterface
         private readonly NewsArticleCmsServiceInterface $newsArticleCmsService,
         private readonly ResearchPublicationCmsServiceInterface $researchPublicationCmsService,
         private readonly CenterCatalogServiceInterface $centerCatalog,
+        private readonly CouncilCatalogServiceInterface $councilCatalog,
     ) {}
 
     /** @return Collection<int, CmsTargetDTO> */
@@ -50,7 +52,8 @@ final class CmsTargetRegistry implements CmsTargetRegistryInterface
         return $this->all()->first(fn (CmsTargetDTO $target): bool => $target->key === $key)
             ?? $this->aboutEntityCmsService->resolveTarget($key)
             ?? $this->newsArticleCmsService->resolveTarget($key)
-            ?? $this->researchPublicationCmsService->resolveTarget($key);
+            ?? $this->researchPublicationCmsService->resolveTarget($key)
+            ?? $this->councilCatalog->resolveTarget($key);
     }
 
     /** @return Collection<int, CmsTargetDTO> */
@@ -82,6 +85,8 @@ final class CmsTargetRegistry implements CmsTargetRegistryInterface
             $this->target('about.directorates', 'about', 'admin.cms.targets.about.directorates', '/about/directorates', 'public.about.directorates', 'about.landing'),
             $this->target('about.directorates_staff', 'about', 'admin.cms.targets.about.directorates_staff', '/about/directorates/staff', 'public.about.directorates.staff', 'about.directorates'),
             $this->target('about.partnerships', 'about', 'admin.cms.targets.about.partnerships', '/about/partnerships', 'public.about.partnerships', 'about.landing'),
+            // The Councils page; each council is its own record (entity.council.{id}).
+            $this->target('about.councils', 'about', 'admin.cms.targets.about.councils', '/about/councils', 'public.about.councils', 'about.landing'),
             $this->target('about.quality-policy', 'about', 'admin.cms.targets.about.quality-policy', '/about/quality-policy', 'public.about.content', 'about.landing'),
             $this->target('about.ethical-charter', 'about', 'admin.cms.targets.about.ethical-charter', '/about/ethical-charter', 'public.about.content', 'about.landing'),
             $this->target('about.organizational-structure', 'about', 'admin.cms.targets.about.organizational-structure', '/about/organizational-structure', 'public.about.content', 'about.landing'),
@@ -197,7 +202,6 @@ final class CmsTargetRegistry implements CmsTargetRegistryInterface
             $this->target('research.expert_profile', 'research', 'admin.cms.targets.research.expert_profile', null, 'public.research.researchers.show', 'research.experts'),
             $this->target('research.conferences', 'research', 'admin.cms.targets.research.conferences', '/research/conferences', 'public.research.conferences', 'research.index'),
             $this->target('research.library', 'research', 'admin.cms.targets.research.library', '/research/library', 'public.research.library', 'research.index'),
-            $this->target('research.office', 'research', 'admin.cms.targets.research.office', '/research/office', 'public.research.office', 'research.index'),
             $this->target('research.policies', 'research', 'admin.cms.targets.research.policies', '/research/policies', 'public.research.policies', 'research.index'),
         ];
     }

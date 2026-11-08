@@ -9,6 +9,7 @@ use App\Contracts\Center\CenterCatalogServiceInterface;
 use App\Contracts\Cms\AboutEntityCmsServiceInterface;
 use App\Contracts\Cms\CmsTargetRegistryInterface;
 use App\Contracts\Cms\CmsWorkflowServiceInterface;
+use App\Contracts\Council\CouncilCatalogServiceInterface;
 use App\Contracts\Faculty\FacultyLeadershipServiceInterface;
 use App\Contracts\Faculty\FacultyMasterProgramServiceInterface;
 use App\Contracts\Faculty\FacultyProgramServiceInterface;
@@ -64,6 +65,7 @@ final class CmsWorkflowService implements CmsWorkflowServiceInterface
         private readonly FormDefinitionServiceInterface $formDefinitions,
         private readonly AdminAccessServiceInterface $access,
         private readonly CenterCatalogServiceInterface $centerCatalog,
+        private readonly CouncilCatalogServiceInterface $councilCatalog,
     ) {}
 
     /** @param array<string, mixed> $payload */
@@ -470,6 +472,15 @@ final class CmsWorkflowService implements CmsWorkflowServiceInterface
                 ...($errors[$field] ?? []),
                 ...$messages,
             ]));
+        }
+
+        if ($this->councilCatalog->councilIdFromTarget($target->key) !== null) {
+            foreach ($this->councilCatalog->validationErrors($payload) as $field => $messages) {
+                $errors[$field] = array_values(array_unique([
+                    ...($errors[$field] ?? []),
+                    ...$messages,
+                ]));
+            }
         }
 
         return new CmsPublishReadinessDTO($errors === [], $errors);
