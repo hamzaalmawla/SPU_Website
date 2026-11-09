@@ -28,20 +28,4 @@ final readonly class ChatbotCompletionRequestDTO
          */
         public ?float $temperature = null,
     ) {}
-
-    public function withoutTemperature(): self
-    {
-        return new self(
-            $this->apiKey,
-            $this->model,
-            $this->instructions,
-            $this->messages,
-            $this->maxOutputTokens,
-            $this->reasoningEffort,
-            $this->cacheKey,
-            $this->jsonSchema,
-            $this->timeout,
-            null,
-        );
-    }
 }

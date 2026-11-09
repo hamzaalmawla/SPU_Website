@@ -97,7 +97,7 @@ final class OpenAiClient implements OpenAiClientInterface
     private function temperatureAllowed(ChatbotCompletionRequestDTO $request): ChatbotCompletionRequestDTO
     {
         if ($request->temperature !== null && Cache::has(self::NO_TEMPERATURE_KEY.$request->model)) {
-            return $request->withoutTemperature();
+            return self::withoutTemperature($request);
         }
 
         return $request;
@@ -108,7 +108,22 @@ final class OpenAiClient implements OpenAiClientInterface
         Cache::put(self::NO_TEMPERATURE_KEY.$request->model, true, 86_400);
         Log::notice('Chatbot model does not take a temperature; asking without.', ['model' => $request->model]);
 
-        return $request->withoutTemperature();
+        return self::withoutTemperature($request);
+    }
+
+    private static function withoutTemperature(ChatbotCompletionRequestDTO $request): ChatbotCompletionRequestDTO
+    {
+        return new ChatbotCompletionRequestDTO(
+            apiKey: $request->apiKey,
+            model: $request->model,
+            instructions: $request->instructions,
+            messages: $request->messages,
+            maxOutputTokens: $request->maxOutputTokens,
+            reasoningEffort: $request->reasoningEffort,
+            cacheKey: $request->cacheKey,
+            jsonSchema: $request->jsonSchema,
+            timeout: $request->timeout,
+        );
     }
 
     /**
