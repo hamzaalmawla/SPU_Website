@@ -74,7 +74,7 @@ final class ChatbotAdvancedRetrievalTest extends TestCase
 
     public function test_the_reranker_reorders_the_candidates_and_a_failure_keeps_the_fused_order(): void
     {
-        config(['chatbot.knowledge.chunk_characters' => 120, 'chatbot.knowledge.chunk_overlap' => 0, 'chatbot.retrieval.min_similarity' => 0.0, 'chatbot.retrieval.neighbors' => 0]);
+        config(['chatbot.knowledge.chunk_characters' => 120, 'chatbot.knowledge.chunk_overlap' => 0, 'chatbot.retrieval.min_similarity' => 0.0, 'chatbot.retrieval.neighbors' => 0, 'chatbot.retrieval.rerank' => false]);
         $user = $this->adminUser();
         $this->saveApiKey($user);
         $this->addKnowledge($user, 'قرار 448', $this->decree());

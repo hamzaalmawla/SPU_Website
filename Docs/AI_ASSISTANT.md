@@ -103,12 +103,23 @@ Website pages get none (short, titled). Existing files get contexts by
 re-indexing: `chatbot:reindex-documents --write` (approval file
 `chatbot-contextualize.approved`, `actor=auto`, `evaluate=yes` to score after).
 
-**Reranking (off by default).** `chatbot.retrieval.rerank` (`CHATBOT_RERANK`)
+**Reranking (on).** `chatbot.retrieval.rerank` (`CHATBOT_RERANK`)
 sends the best 24 fused candidates to the main model, which returns the
 passage numbers that answer the question, every part covered, text in force
 first; the fused order fills any slot it skipped, and a failure keeps the fused
-order. One more call per question (about a second). Switch it on only when
-`chatbot:evaluate --rerank=off --rerank=on` shows more answers right.
+order. One more call per question. Re-run
+`chatbot:evaluate --rerank=off --rerank=on` after any change to see whether it still pays.
+
+**Measured on the live knowledge (2026-11-09, 32 golden questions, 21 files, 515 passages):**
+
+| Run | Answers right | Facts found | Right documents | Avg time | Run cost (standard prices) |
+|---|---|---|---|---|---|
+| No contexts, rerank off | 97% | 98% | 97% | 3.1 s | $0.14 |
+| No contexts, rerank on | 97% | 98% | 97% | 3.2 s | $0.26 |
+| Contexts, rerank off | 97% | 96% | 97% | 3.0 s | $0.15 |
+| Contexts, rerank on | 100% | 100% | 100% | 3.2 s | $0.31 |
+
+The one question the others missed was English ("how much of my previous study can be exempted?"): meaning-search preferred English website pages, and the reranker moved decree 448's Arabic passages to the top. Writing the 515 contexts took about 2.5 minutes. With 32 questions a single question is 3 points, so read the table as "no worse, one better", not as a precise rate.
 
 **Not adopted, and why.** Whole knowledge in the prompt (CAG): too many tokens
 per question for the free tier. GraphRAG: better on multi-hop and global

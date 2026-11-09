@@ -214,9 +214,11 @@ return [
         // file, so a rule's cases that run on past a passage stay together.
         'neighbors' => 3,
         // LLM reranking: a model reorders the best `rerank_candidates` before
-        // the cut (one call, about a second). Off until chatbot:evaluate shows
-        // it answers more questions right. Empty model: the main one.
-        'rerank' => (bool) env('CHATBOT_RERANK', false),
+        // the cut (one call). On since the 2026-11-09 evaluation: with passage
+        // contexts it answered 32 of 32 golden questions against 31 without,
+        // for +0.2 s on average and about twice the tokens per question.
+        // CHATBOT_RERANK=false switches it off. Empty model: the main one.
+        'rerank' => (bool) env('CHATBOT_RERANK', true),
         'rerank_model' => env('CHATBOT_RERANK_MODEL', ''),
         'rerank_candidates' => 24,
         'rerank_passage_characters' => 700,
