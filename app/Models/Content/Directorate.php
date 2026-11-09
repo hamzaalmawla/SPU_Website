@@ -15,11 +15,13 @@ class Directorate extends Model
 {
     use HasFactory, SoftDeletes;
 
-    protected $fillable = ['slug', 'icon', 'email', 'location', 'manager_email', 'manager_phone', 'manager_photo', 'sort_order', 'is_enabled', 'publication_status', 'published_at'];
+    protected $fillable = ['slug', 'icon', 'email', 'location', 'manager_member_id', 'manager_email', 'manager_phone', 'manager_photo', 'content_blocks_json', 'sort_order', 'is_enabled', 'publication_status', 'published_at'];
 
     protected function casts(): array
     {
         return [
+            'manager_member_id' => 'integer',
+            'content_blocks_json' => 'array',
             'sort_order' => 'integer',
             'is_enabled' => 'boolean',
             'published_at' => 'datetime',

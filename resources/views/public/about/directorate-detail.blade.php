@@ -10,10 +10,78 @@
     <div class="bg-white font-hacen text-spu-blue overflow-x-hidden">
         @include('public.about.partials.hero', ['title' => $directorate->title, 'summary' => $directorate->summary, 'image' => null])
 
+        @if ($manager)
+            {{-- The page's main section: the directorate's manager. --}}
+            <section class="dir-manager-section" aria-labelledby="directorate-manager-heading">
+                <div class="container mx-auto max-w-6xl px-6">
+                    <div class="dir-manager-feature {{ ($manager->email || $manager->phone) ? 'dir-manager-feature-contact' : '' }} reveal reveal-up">
+                        <div class="dir-manager-portrait">
+                            @if ($manager->photo)
+                                <img src="{{ $manager->photo }}" alt="{{ $manager->name }}" class="dir-manager-portrait-img" loading="lazy" decoding="async">
+                            @else
+                                <span class="dir-manager-portrait-img dir-manager-initial" aria-hidden="true">
+                                    <svg class="h-16 w-16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"></circle><path d="M4 21v-1a7 7 0 0 1 14 0v1"></path></svg>
+                                </span>
+                            @endif
+                        </div>
+                        <div class="dir-manager-body">
+                            <p class="dir-manager-role">{{ $isArabic ? 'مدير المديرية' : 'Directorate Manager' }}</p>
+                            <h2 id="directorate-manager-heading" class="dir-manager-feature-name" dir="auto">{{ $manager->name }}</h2>
+                            @if ($manager->rank)
+                                <p class="dir-manager-title" dir="auto">{{ $manager->rank }}</p>
+                            @endif
+
+                            @if ($manager->education !== [])
+                                <h3 class="dir-manager-heading">{{ $isArabic ? 'المؤهلات العلمية' : 'Education' }}</h3>
+                                <ul class="dir-manager-education">
+                                    @foreach ($manager->education as $qualification)
+                                        <li><span class="dir-manager-degree" dir="auto">{{ $qualification }}</span></li>
+                                    @endforeach
+                                </ul>
+                            @endif
+
+                            @if ($manager->profileUrl)
+                                <a href="{{ $manager->profileUrl }}" class="dir-btn dir-btn-outline dir-manager-profile-link">
+                                    {{ $isArabic ? 'عرض الملف الشخصي' : 'View profile' }}
+                                    <svg class="h-4 w-4 rtl:rotate-180" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                                </a>
+                            @endif
+                        </div>
+
+                        @if ($manager->email || $manager->phone)
+                            <div class="dir-manager-contact-panel">
+                                <h3 class="dir-manager-heading dir-manager-contact-title">{{ $isArabic ? 'التواصل مع المدير' : 'Contact the manager' }}</h3>
+                                <ul class="dir-manager-contact">
+                                    @if ($manager->email)
+                                        <li>
+                                            <span class="dir-manager-contact-icon" aria-hidden="true"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"></rect><path d="m3 7 9 6 9-6"></path></svg></span>
+                                            <span class="min-w-0">
+                                                <span class="dir-info-label">{{ $isArabic ? 'البريد الإلكتروني' : 'Email' }}</span>
+                                                <a href="mailto:{{ $manager->email }}" class="dir-info-value dir-info-link" dir="ltr">{{ $manager->email }}</a>
+                                            </span>
+                                        </li>
+                                    @endif
+                                    @if ($manager->phone)
+                                        <li>
+                                            <span class="dir-manager-contact-icon" aria-hidden="true"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"></path></svg></span>
+                                            <span class="min-w-0">
+                                                <span class="dir-info-label">{{ $isArabic ? 'الهاتف' : 'Phone' }}</span>
+                                                <a href="tel:{{ preg_replace('/[^0-9+]/', '', strtr($manager->phone, ['٠' => '0', '١' => '1', '٢' => '2', '٣' => '3', '٤' => '4', '٥' => '5', '٦' => '6', '٧' => '7', '٨' => '8', '٩' => '9'])) }}" class="dir-info-value dir-info-link" dir="ltr">{{ $manager->phone }}</a>
+                                            </span>
+                                        </li>
+                                    @endif
+                                </ul>
+                            </div>
+                        @endif
+                    </div>
+                </div>
+            </section>
+        @endif
+
         <section class="dir-detail-section bg-[#faf9fb] font-hacen overflow-x-hidden" aria-labelledby="directorate-overview-heading">
             <div class="container mx-auto max-w-6xl px-6">
                 <div class="grid gap-10 lg:grid-cols-5">
-                    <div class="lg:col-span-3">
+                    <div class="{{ $hasContact ? 'lg:col-span-3' : 'lg:col-span-5' }}">
                         <div class="dir-overview-head reveal reveal-up">
                             <span class="dir-overview-icon" aria-hidden="true">
                                 <img src="{{ $directorate->icon ?? '/images/icon-university-outline.svg' }}" alt="" class="h-7 w-7">
@@ -38,59 +106,12 @@
                         @endif
                     </div>
 
-                    <aside class="lg:col-span-2 dir-aside" aria-label="{{ $manager ? ($isArabic ? 'مدير المديرية' : 'Directorate manager') : ($isArabic ? 'معلومات التواصل' : 'Contact information') }}">
-                        @if ($manager)
-                            <div class="dir-manager-card reveal reveal-right">
-                                <p class="dir-manager-role">{{ $isArabic ? 'مدير المديرية' : 'Directorate Manager' }}</p>
-                                <div class="dir-manager-head">
-                                    @if ($manager->photo)
-                                        <img src="{{ $manager->photo }}" alt="{{ $manager->name }}" class="dir-manager-photo" loading="lazy" decoding="async">
-                                    @else
-                                        <span class="dir-manager-photo dir-manager-initial" aria-hidden="true">
-                                            <svg class="h-9 w-9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"></circle><path d="M4 21v-1a7 7 0 0 1 14 0v1"></path></svg>
-                                        </span>
-                                    @endif
-                                    <div class="min-w-0">
-                                        <h2 class="dir-manager-name" dir="auto">{{ $manager->name }}</h2>
-                                    </div>
+                    @if ($hasContact)
+                        <aside class="lg:col-span-2 dir-aside" aria-label="{{ $isArabic ? 'معلومات التواصل' : 'Contact information' }}">
+                            <div class="dir-info-card reveal reveal-right">
+                                <div class="dir-info-icon" aria-hidden="true">
+                                    <img src="{{ $directorate->icon ?? '/images/icon-university-outline.svg' }}" alt="" class="h-6 w-6">
                                 </div>
-
-                                @if ($manager->education !== [])
-                                    <h3 class="dir-manager-heading">{{ $isArabic ? 'المؤهلات العلمية' : 'Education' }}</h3>
-                                    <ul class="dir-manager-education">
-                                        @foreach ($manager->education as $qualification)
-                                            <li><span class="dir-manager-degree" dir="auto">{{ $qualification }}</span></li>
-                                        @endforeach
-                                    </ul>
-                                @endif
-
-                                @if ($manager->email || $manager->phone)
-                                    <h3 class="dir-manager-heading">{{ $isArabic ? 'التواصل' : 'Contact' }}</h3>
-                                    <ul class="dir-info-list">
-                                        @if ($manager->email)
-                                            <li>
-                                                <span class="dir-info-label">{{ $isArabic ? 'البريد الإلكتروني' : 'Email' }}</span>
-                                                <a href="mailto:{{ $manager->email }}" class="dir-info-value dir-info-link" dir="ltr">{{ $manager->email }}</a>
-                                            </li>
-                                        @endif
-                                        @if ($manager->phone)
-                                            <li>
-                                                <span class="dir-info-label">{{ $isArabic ? 'الهاتف' : 'Phone' }}</span>
-                                                <a href="tel:{{ preg_replace('/[^0-9+]/', '', strtr($manager->phone, ['٠' => '0', '١' => '1', '٢' => '2', '٣' => '3', '٤' => '4', '٥' => '5', '٦' => '6', '٧' => '7', '٨' => '8', '٩' => '9'])) }}" class="dir-info-value dir-info-link" dir="ltr">{{ $manager->phone }}</a>
-                                            </li>
-                                        @endif
-                                    </ul>
-                                @endif
-                            </div>
-                        @endif
-
-                        @if ($hasContact || ! $manager)
-                            <div class="dir-info-card reveal reveal-right {{ $manager ? 'dir-info-card-compact' : '' }}">
-                                @unless ($manager)
-                                    <div class="dir-info-icon" aria-hidden="true">
-                                        <img src="{{ $directorate->icon ?? '/images/icon-university-outline.svg' }}" alt="" class="h-6 w-6">
-                                    </div>
-                                @endunless
                                 <h2 class="dir-info-title">{{ $isArabic ? 'معلومات التواصل' : 'Contact Information' }}</h2>
                                 <ul class="dir-info-list">
                                     @if ($directorate->email)
@@ -106,15 +127,16 @@
                                         </li>
                                     @endif
                                 </ul>
-                                @unless ($manager)
-                                    <a href="/{{ $locale }}/about/directorates" class="dir-btn dir-btn-primary dir-btn-block">{{ $isArabic ? 'العودة إلى المديريات' : 'Back to Directorates' }}</a>
-                                @endunless
                             </div>
-                        @endif
-                    </aside>
+                        </aside>
+                    @endif
                 </div>
             </div>
         </section>
+
+        @if ($directorate->blocks !== [])
+            @include('public.about.partials.directorate-blocks', ['blocks' => $directorate->blocks, 'locale' => $locale, 'isPreview' => ! empty($isPreview)])
+        @endif
 
         @foreach ($directorate->taskGroups as $groupIndex => $group)
             @php $dark = $groupIndex % 2 === 1; @endphp

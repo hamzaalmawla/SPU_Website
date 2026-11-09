@@ -7,8 +7,10 @@ namespace App\Services\Cms;
 use App\Contracts\Auth\AdminAccessServiceInterface;
 use App\Contracts\Center\CenterCatalogServiceInterface;
 use App\Contracts\Cms\AboutEntityCmsServiceInterface;
+use App\Contracts\Content\DirectoratePageContentServiceInterface;
 use App\Contracts\Content\PersonIdentityServiceInterface;
 use App\Contracts\Faculty\FacultyStudyPlanLinkServiceInterface;
+use App\Contracts\Form\FormDefinitionServiceInterface;
 use App\Contracts\Media\MediaServiceInterface;
 use App\DTOs\Cms\AboutEntityCmsDataDTO;
 use App\DTOs\Cms\CmsTargetDTO;
@@ -34,6 +36,7 @@ use App\Models\Person\PersonEducation;
 use App\Models\Person\PersonTranslation;
 use App\Models\User\User;
 use App\Support\AcademicRank;
+use App\Support\DirectorateContentBlocks;
 use App\Support\DirectorateManagerFields;
 use App\Support\DirectorateTaskGroups;
 use App\Support\MediaUrlResolver;
@@ -54,6 +57,8 @@ final class AboutEntityCmsService implements AboutEntityCmsServiceInterface
         private readonly PersonIdentityServiceInterface $identityService,
         private readonly FacultyStudyPlanLinkServiceInterface $studyPlanLinkService,
         private readonly CenterCatalogServiceInterface $centerCatalog,
+        private readonly DirectoratePageContentServiceInterface $directorateContent,
+        private readonly FormDefinitionServiceInterface $formDefinitions,
     ) {}
 
     public function prepareDraft(AboutEntityCmsDataDTO $data, int $userId): AboutEntityCmsDataDTO
@@ -455,7 +460,16 @@ final class AboutEntityCmsService implements AboutEntityCmsServiceInterface
             email: $this->nullableString($payload['email'] ?? null),
             location: $this->nullableString($payload['location'] ?? null),
             taskGroups: DirectorateTaskGroups::normalize($translation['task_groups_json'] ?? null),
-            manager: DirectorateManagerFields::manager($translation['manager_name'] ?? null, $translation['manager_education_json'] ?? null, $payload['manager_email'] ?? null, $payload['manager_phone'] ?? null, $payload['manager_photo'] ?? null),
+            manager: $this->directorateContent->manager(
+                $this->nullableInt($payload['manager_member_id'] ?? null),
+                array_map(fn (array $item): mixed => $item['manager_name'] ?? null, $payload['translations']),
+                array_map(fn (array $item): mixed => $item['manager_education_json'] ?? null, $payload['translations']),
+                $this->nullableString($payload['manager_email'] ?? null),
+                $this->nullableString($payload['manager_phone'] ?? null),
+                $this->nullableString($payload['manager_photo'] ?? null),
+                $locale,
+            ),
+            blocks: $this->directorateContent->blocks($payload['content_blocks_json'] ?? null, $locale),
         );
     }
 
@@ -733,6 +747,8 @@ final class AboutEntityCmsService implements AboutEntityCmsServiceInterface
             'manager_email' => $this->nullableString($payload['manager_email'] ?? null),
             'manager_phone' => $this->nullableString($payload['manager_phone'] ?? null),
             'manager_photo' => DirectorateManagerFields::photo($payload['manager_photo'] ?? null),
+            'manager_member_id' => $this->nullableInt($payload['manager_member_id'] ?? null),
+            'content_blocks_json' => DirectorateContentBlocks::normalize($payload['content_blocks_json'] ?? null),
             'sort_order' => (int) ($payload['sort_order'] ?? 0),
             'is_enabled' => (bool) ($payload['is_enabled'] ?? false),
             'publication_status' => PublicationStatus::Published->value,
@@ -925,6 +941,8 @@ final class AboutEntityCmsService implements AboutEntityCmsServiceInterface
             'manager_email' => $directorate->manager_email,
             'manager_phone' => $directorate->manager_phone,
             'manager_photo' => $directorate->manager_photo,
+            'manager_member_id' => $directorate->manager_member_id,
+            'content_blocks_json' => DirectorateContentBlocks::normalize($directorate->content_blocks_json),
             'sort_order' => (int) $directorate->sort_order,
             'is_enabled' => (bool) $directorate->is_enabled,
             'translations' => $directorate->translations->mapWithKeys(fn (DirectorateTranslation $translation): array => [(string) $translation->locale => [
@@ -994,10 +1012,14 @@ final class AboutEntityCmsService implements AboutEntityCmsServiceInterface
         }
 
         if ($type === 'directorate') {
-            unset($payload['manager_member_id']);
+            // A linked staff profile is the manager; typed name and photo are for anyone else.
+            $managerMemberId = $this->nullableInt($payload['manager_member_id'] ?? null);
+            $payload['manager_member_id'] = $managerMemberId !== null && $managerMemberId > 0 ? $managerMemberId : null;
+            unset($payload['manager_is_staff']);
             foreach (['manager_email', 'manager_phone', 'manager_photo'] as $field) {
                 $payload[$field] = $this->nullableString($payload[$field] ?? null);
             }
+            $payload['content_blocks_json'] = DirectorateContentBlocks::normalize($payload['content_blocks_json'] ?? null);
             foreach ($payload['translations'] as $locale => $translation) {
                 if (is_array($translation)) {
                     $payload['translations'][$locale]['task_groups_json'] = DirectorateTaskGroups::normalize($translation['task_groups_json'] ?? null);
@@ -1090,6 +1112,18 @@ final class AboutEntityCmsService implements AboutEntityCmsServiceInterface
             $managerPhone = $this->nullableString($payload['manager_phone'] ?? null);
             if ($managerPhone !== null && preg_match('/^[0-9+()\-\s\x{0660}-\x{0669}]{3,50}$/u', $managerPhone) !== 1) {
                 $errors['manager_phone'][] = 'A valid phone number is required.';
+            }
+            $managerMemberId = $this->nullableInt($payload['manager_member_id'] ?? null);
+            if ($managerMemberId !== null && ! FacultyMember::query()->whereKey($managerMemberId)->exists()) {
+                $errors['manager_member_id'][] = 'The linked staff profile no longer exists.';
+            }
+            foreach (DirectorateContentBlocks::errors($payload['content_blocks_json'] ?? null) as $message) {
+                $errors['content_blocks_json'][] = $message;
+            }
+            foreach (DirectorateContentBlocks::formKeys($payload['content_blocks_json'] ?? null) as $formKey) {
+                if (! $this->formDefinitions->isEnabled($formKey)) {
+                    $errors['content_blocks_json'][] = "The form \"{$formKey}\" does not exist or is switched off.";
+                }
             }
         }
         if ($type === 'partnership') {

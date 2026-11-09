@@ -32,6 +32,7 @@ use App\Contracts\Cms\AboutEntityCmsServiceInterface;
 use App\Contracts\Cms\CmsPageTextImportServiceInterface;
 use App\Contracts\Cms\CmsTargetRegistryInterface;
 use App\Contracts\Cms\CmsWorkflowServiceInterface;
+use App\Contracts\Content\DirectoratePageContentServiceInterface;
 use App\Contracts\Content\FacultyMemberActivityReportServiceInterface;
 use App\Contracts\Content\PeopleDuplicateReportServiceInterface;
 use App\Contracts\Content\PeopleMergeServiceInterface;
@@ -259,6 +260,7 @@ use App\Services\Cms\AboutEntityCmsService;
 use App\Services\Cms\CmsPageTextImportService;
 use App\Services\Cms\CmsTargetRegistry;
 use App\Services\Cms\CmsWorkflowService;
+use App\Services\Content\DirectoratePageContentService;
 use App\Services\Content\FacultyMemberActivityReportService;
 use App\Services\Content\PeopleDuplicateReportService;
 use App\Services\Content\PeopleMergeService;
@@ -947,6 +949,7 @@ class AppServiceProvider extends ServiceProvider
             PeopleUnifyServiceInterface::class => PeopleUnifyService::class,
             ResearchPageServiceInterface::class => ResearchPageService::class,
             CouncilStaffServiceInterface::class => CouncilStaffService::class,
+            DirectoratePageContentServiceInterface::class => DirectoratePageContentService::class,
             CouncilCatalogServiceInterface::class => CouncilCatalogService::class,
             CouncilAdminServiceInterface::class => CouncilAdminService::class,
             CouncilPageServiceInterface::class => CouncilPageService::class,

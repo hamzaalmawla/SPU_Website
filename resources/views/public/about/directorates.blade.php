@@ -6,17 +6,53 @@
 
         <section id="directorates-section" class="relative bg-white font-hacen">
             <div class="directorates-content-wrapper relative z-10">
-                <div class="directorates-list">
-                @foreach ($directorates as $index => $directorate)
-                    <a href="/{{ $locale }}/about/directorates/{{ $directorate->slug }}" class="directorate-item reveal reveal-up">
-                        <div class="directorate-number">{{ str_pad((string) ($index + 1), 2, '0', STR_PAD_LEFT) }}</div>
-                        <div class="directorate-info">
-                            <h2 class="card-title directorate-title" dir="auto">{{ $directorate->title }}</h2>
-                            <x-public.rich-text class="directorate-desc" :text="$directorate->summary" />
-                        </div>
-                    </a>
-                @endforeach
+                <div class="dirs-intro reveal reveal-up">
+                    <p class="dir-eyebrow">{{ $locale === 'ar' ? 'المديريات المركزية' : 'Central Directorates' }}</p>
+                    <p class="dirs-count">
+                        {{ $locale === 'ar' ? 'عدد المديريات: ' : 'Directorates: ' }}<span>{{ $directorates->count() }}</span>
+                    </p>
                 </div>
+
+                <ul class="dirs-grid" role="list">
+                    @foreach ($directorates as $index => $directorate)
+                        <li class="reveal reveal-up">
+                            <a href="/{{ $locale }}/about/directorates/{{ $directorate->slug }}" class="dirs-card">
+                                <span class="dirs-card-top">
+                                    <span class="dirs-card-icon" aria-hidden="true">
+                                        <img src="{{ $directorate->icon ?? '/images/icon-university-outline.svg' }}" alt="" class="h-7 w-7">
+                                    </span>
+                                    <span class="dirs-card-number" aria-hidden="true">{{ str_pad((string) ($index + 1), 2, '0', STR_PAD_LEFT) }}</span>
+                                </span>
+                                <h2 class="card-title dirs-card-title" dir="auto">{{ $directorate->title }}</h2>
+                                @if (filled($directorate->summary))
+                                    <p class="dirs-card-summary" dir="auto">{{ $directorate->summary }}</p>
+                                @endif
+                                <span class="dirs-card-footer">
+                                    @if ($directorate->manager)
+                                        <span class="dirs-card-manager">
+                                            @if ($directorate->manager->photo)
+                                                <img src="{{ $directorate->manager->photo }}" alt="" class="dirs-card-avatar" loading="lazy" decoding="async">
+                                            @else
+                                                <span class="dirs-card-avatar dirs-card-avatar-empty" aria-hidden="true">
+                                                    <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"></circle><path d="M4 21v-1a7 7 0 0 1 14 0v1"></path></svg>
+                                                </span>
+                                            @endif
+                                            <span class="min-w-0">
+                                                <span class="dirs-card-manager-role">{{ $locale === 'ar' ? 'مدير المديرية' : 'Directorate Manager' }}</span>
+                                                <span class="dirs-card-manager-name" dir="auto">{{ $directorate->manager->name }}</span>
+                                            </span>
+                                        </span>
+                                    @else
+                                        <span class="dirs-card-more">{{ $locale === 'ar' ? 'صفحة المديرية' : 'Directorate page' }}</span>
+                                    @endif
+                                    <span class="dirs-card-arrow" aria-hidden="true">
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="rtl:rotate-180"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                                    </span>
+                                </span>
+                            </a>
+                        </li>
+                    @endforeach
+                </ul>
 
                 <div class="correspondence-box reveal reveal-up reveal-delay-2">
                     <div class="text-spu-red">
