@@ -26,7 +26,8 @@
             .rc-sub { color: rgba(32, 39, 89, .65); font-size: .8rem; }
             .rc-email { color: rgba(32, 39, 89, .6); font-size: .75rem; word-break: break-all; }
             .rc-email:hover { color: var(--rc-red); }
-            .rc-link { display: inline-flex; align-items: center; gap: .35rem; margin-top: .6rem; padding: .45rem 1rem; border-radius: .5rem; background: var(--rc-blue); color: #fff; font-size: .75rem; font-weight: 700; transition: background .2s; }
+            .rc-actions { margin-top: auto; padding-top: .95rem; }
+            .rc-link { display: inline-flex; align-items: center; gap: .35rem; padding: .45rem 1rem; border-radius: .5rem; background: var(--rc-blue); color: #fff; font-size: .75rem; font-weight: 700; transition: background .2s; }
             .rc-link:hover, .rc-link:focus-visible { background: var(--rc-red); }
             .rc-functions { background: rgba(32, 39, 89, .03); }
             .rc-grid { display: grid; gap: 1.25rem; margin: 0 auto; max-width: 1200px; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); }
@@ -81,10 +82,13 @@
                                     <a href="mailto:{{ $person->email }}" class="rc-email">{{ $person->email }}</a>
                                 @endif
                                 @if ($person->url)
-                                    <a href="{{ $person->url }}" class="rc-link">
-                                        {{ $council->profileLabel }}
-                                        <img src="/images/icon-arrow-right-outline.svg" alt="" class="h-3 w-3 brightness-0 invert rtl:rotate-180" aria-hidden="true">
-                                    </a>
+                                    {{-- margin-top:auto pins the button to the card's bottom, so buttons line up across a row whatever details a member has. --}}
+                                    <div class="rc-actions">
+                                        <a href="{{ $person->url }}" class="rc-link">
+                                            {{ $council->profileLabel }}
+                                            <img src="/images/icon-arrow-right-outline.svg" alt="" class="h-3 w-3 brightness-0 invert rtl:rotate-180" aria-hidden="true">
+                                        </a>
+                                    </div>
                                 @endif
                             </article>
                         @endforeach
