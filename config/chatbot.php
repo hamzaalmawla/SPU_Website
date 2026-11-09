@@ -160,6 +160,17 @@ return [
         'card_tail_characters' => 8000,
         'card_retry_ms' => 4000,
         'card_model' => env('CHATBOT_CARD_MODEL', ''),
+        // Contextual retrieval (ChatbotPassageContextWriter): each passage of
+        // an uploaded file or typed text gets one or two sentences saying
+        // where it sits in its document, written once when it is indexed
+        // (from the card and the text around the passage), cached a year,
+        // and searched with it. Empty model: the main one.
+        'contextual' => (bool) env('CHATBOT_CONTEXTUAL', true),
+        'context_sources' => ['upload', 'text'],
+        'context_model' => env('CHATBOT_CONTEXT_MODEL', ''),
+        'context_concurrency' => 8,
+        'context_before_characters' => 1200,
+        'context_after_characters' => 500,
     ],
 
     /*
@@ -202,6 +213,14 @@ return [
         // The best few passages also bring the passage after them in their
         // file, so a rule's cases that run on past a passage stay together.
         'neighbors' => 3,
+        // LLM reranking: a model reorders the best `rerank_candidates` before
+        // the cut (one call, about a second). Off until chatbot:evaluate shows
+        // it answers more questions right. Empty model: the main one.
+        'rerank' => (bool) env('CHATBOT_RERANK', false),
+        'rerank_model' => env('CHATBOT_RERANK_MODEL', ''),
+        'rerank_candidates' => 24,
+        'rerank_passage_characters' => 700,
+        'rerank_timeout' => 10,
         // Candidates per search: the best by meaning (vector), plus the best
         // by rare words (names, numbers; BM25-style weights), ranked together.
         'candidates' => 40,

@@ -173,6 +173,10 @@ final class ChatbotPrompt
                 $label .= ' — '.self::oneLine($passage->heading);
             }
 
+            if ($passage->context !== null && $passage->context !== '') {
+                $label .= "\n(Where it sits: ".self::oneLine($passage->context).')';
+            }
+
             $blocks[] = $label."\n".self::fence(mb_substr($passage->content, 0, $maxPassageCharacters));
         }
 

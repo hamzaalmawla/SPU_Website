@@ -779,7 +779,7 @@ final class ChatbotService implements ChatbotServiceInterface
      * Bumped when the rules or the retrieval change, so answers cached
      * before are not served again.
      */
-    private const ANSWER_VERSION = 'v3';
+    private const ANSWER_VERSION = 'v4';
 
     /**
      * @param  list<ChatbotPassageDTO>  $passages

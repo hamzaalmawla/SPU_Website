@@ -72,6 +72,52 @@ are given to the model once. Corrected files go in with `chatbot:import-document
 --replace` (approval line `replace=yes`), which stops using older uploads of
 the same title.
 
+## Evaluation, contextual retrieval and reranking (2026-11-09)
+
+Checked against the 2025–2026 literature (surveys in Springer and MDPI 2026,
+"Reconstructing Context" 2025, "RAG vs. GraphRAG" 2025, CAG 2025, reranker
+studies); the report for the university is linked from the session notes.
+
+**Evaluation (`chatbot:evaluate`).** 32 golden questions in
+`database/seeders/Data/chatbot/evaluation-questions.json`, Arabic and English,
+single- and multi-part, each with the facts its answer must contain (checked
+by hand against `Docs/assistant-knowledge`) and the documents they come from.
+The command asks them of the live assistant as an admin test (whole pipeline,
+no cache, no limits) and prints, per question and in total: answers right (every
+fact present), facts found, right documents found, average time and the cost of
+the run. `--rerank=off --rerank=on` runs both and compares them. Reports are
+saved under `storage/app/private/chatbot/evaluations`. Scoring is plain string
+matching (`EvaluationScorer`: folded spellings, whole numbers), so runs are
+comparable. On the host: approval file `chatbot-evaluate.approved` (`rerank=off,on`,
+`label=`). Add a question whenever a visitor finds a wrong answer.
+
+**Contextual retrieval.** When an uploaded file or typed text is indexed, each
+passage gets one or two sentences saying where it sits (document, article,
+subject, "continues clause د"), written by the main model from the document
+card and the text around the passage (`ChatbotPassageContextWriter`,
+temperature 0, 8 at a time). The context is embedded and word-indexed with the
+passage (Anthropic's "contextual embeddings" and "contextual BM25") and shown
+to the answering model as "Where it sits". Stored in `chatbot_chunks.context`,
+cached a year per passage, so re-indexing pays only for changed passages.
+Website pages get none (short, titled). Existing files get contexts by
+re-indexing: `chatbot:reindex-documents --write` (approval file
+`chatbot-contextualize.approved`, `actor=auto`, `evaluate=yes` to score after).
+
+**Reranking (off by default).** `chatbot.retrieval.rerank` (`CHATBOT_RERANK`)
+sends the best 24 fused candidates to the main model, which returns the
+passage numbers that answer the question, every part covered, text in force
+first; the fused order fills any slot it skipped, and a failure keeps the fused
+order. One more call per question (about a second). Switch it on only when
+`chatbot:evaluate --rerank=off --rerank=on` shows more answers right.
+
+**Not adopted, and why.** Whole knowledge in the prompt (CAG): too many tokens
+per question for the free tier. GraphRAG: better on multi-hop and global
+questions, worse on exact-detail lookups, which are most of ours, and it needs
+graph storage the host lacks. A larger or Arabic-specific embedding model:
+slower search on PHP or a GPU server. Claim-level verification: an extra call
+per answer; revisit when the evaluation shows wrong facts the passages do not
+support.
+
 ## The university at a glance
 
 Retrieval hands the model the few passages closest to a question. A question

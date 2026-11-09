@@ -71,9 +71,10 @@ final class ChatbotScanTest extends TestCase
         $this->assertSame('ready', app(ChatbotKnowledgeServiceInterface::class)->reindex($document->id, (int) $user->id)->status);
         $this->assertCount($calls, $this->openAi->responseRequests);
 
-        // Reading the pages is counted in the day's usage and cost.
+        // Reading the pages (and writing each passage's context, once) is
+        // counted in the day's usage and cost.
         $day = ChatbotUsageDay::query()->firstOrFail();
-        $this->assertSame(3 * 1200, (int) $day->input_tokens);
+        $this->assertSame(3 * 1200 + count($this->openAi->contextRequests) * 500, (int) $day->input_tokens);
         $this->assertGreaterThan(0, (int) $day->cost_micro_usd);
         $this->assertSame(0, app(ChatbotUsageServiceInterface::class)->questionsToday());
 

@@ -17,6 +17,7 @@ class ChatbotChunk extends Model
         'position',
         'page',
         'heading',
+        'context',
         'content',
         'content_normalized',
         'embedding',

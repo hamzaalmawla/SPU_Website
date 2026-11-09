@@ -19,5 +19,8 @@ final readonly class ChatbotPassageDTO
         public float $score,
         // Website pages: the page's path, linked under the answer.
         public ?string $url = null,
+        // Where the passage sits in its document, written at index time
+        // (contextual retrieval); null for passages without one.
+        public ?string $context = null,
     ) {}
 }

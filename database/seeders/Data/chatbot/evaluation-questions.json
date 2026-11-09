@@ -1,0 +1,262 @@
+{
+    "about": "Golden questions for the AI assistant (chatbot:evaluate). Every expected fact is checked by hand against Docs/assistant-knowledge (the file is named in 'note'). 'sources': groups of document-title fragments; each group must match one passage given to the model (one group per part of the question). 'facts': groups of accepted spellings; each group must appear in the answer. Numbers match whole numbers only (30 does not match 300).",
+    "version": 1,
+    "cases": [
+        {
+            "id": "degree-exemption-a",
+            "locale": "ar",
+            "question": "ما هو الحد الأعظم لمعادلة المواد لطالب حصل على إجازة جامعية؟",
+            "sources": [["قرار 448", "قرار 167", "إعلان مفاضلة النقل"]],
+            "facts": [["30"], ["50"]],
+            "note": "08, 07: 30% from another faculty or university, 50% same faculty other specialization"
+        },
+        {
+            "id": "degree-exemption-b",
+            "locale": "ar",
+            "question": "ما هو الحد الأعظمي الذي يمكن معادلته لطالب حاصل على إجازة جامعية؟",
+            "sources": [["قرار 448", "قرار 167", "إعلان مفاضلة النقل"]],
+            "facts": [["30"], ["50"]],
+            "note": "same as degree-exemption-a, the second visitor's wording"
+        },
+        {
+            "id": "transfer-and-gpa",
+            "locale": "ar",
+            "question": "أنا طالب في جامعة حكومية سورية وأريد التحويل المماثل إلى الصيدلة في الجامعة السورية الخاصة هذه السنة، كم ساعة يجب أن أكون قد أنجزت؟ وكم يحسب المعدل المئوي لمعدل نقطي 3.1 وما تقديره؟",
+            "sources": [["إعلان مفاضلة النقل", "قرار 579", "قرار 167", "معدلات القبول"], ["قرار 230", "قرار 21 لعام 2014"]],
+            "facts": [["26"], ["82"], ["جيد جدا"]],
+            "note": "12/04: 26 credit hours; 01: (3.1x20)+20 = 82%, very good 2.75-3.24"
+        },
+        {
+            "id": "person-amer-khorsheed",
+            "locale": "ar",
+            "question": "من هو عامر خورشيد؟",
+            "sources": [["دليل"]],
+            "facts": [["1801"], ["ذكاء اصطناعي", "الذكاء الاصطناعي"]],
+            "note": "15 and the named directory: AI engineer, extension 1801"
+        },
+        {
+            "id": "person-amer-rajeh",
+            "locale": "ar",
+            "question": "ما رقم تحويلة عامر راجح؟",
+            "sources": [["دليل"]],
+            "facts": [["1225"]],
+            "note": "named directory: logistics assistant, 1225 (same first name as another staff member)"
+        },
+        {
+            "id": "ext-admissions",
+            "locale": "ar",
+            "question": "ما رقم تحويلة القبول والتسجيل؟",
+            "sources": [["دليل"]],
+            "facts": [["1360"]],
+            "note": "15: admissions director 1360"
+        },
+        {
+            "id": "main-phone",
+            "locale": "ar",
+            "question": "ما هو رقم هاتف الجامعة الرئيسي؟",
+            "sources": [["دليل"]],
+            "facts": [["6990251"]],
+            "note": "15: 011 6990251"
+        },
+        {
+            "id": "medicine-average",
+            "locale": "ar",
+            "question": "ما هو معدل القبول في كلية الطب البشري؟",
+            "sources": [["معدلات القبول", "إعلان رقم 7", "جداول مفاضلة"]],
+            "facts": [["80"], ["92.55"]],
+            "note": "18: general 80%, change of enrolment (Syria) 92.55%"
+        },
+        {
+            "id": "pharmacy-average",
+            "locale": "ar",
+            "question": "كم معدل القبول في كلية الصيدلة؟",
+            "sources": [["معدلات القبول", "إعلان رقم 7", "جداول مفاضلة"]],
+            "facts": [["75"]],
+            "note": "18: 75%"
+        },
+        {
+            "id": "pharmacy-change-enrolment-syria",
+            "locale": "ar",
+            "question": "ما معدل تغيير القيد إلى الصيدلة لطالب يحمل ثانوية سورية؟",
+            "sources": [["معدلات القبول", "جداول مفاضلة"]],
+            "facts": [["89.09"]],
+            "note": "18: 89.09%"
+        },
+        {
+            "id": "literary-branch",
+            "locale": "ar",
+            "question": "هل يمكن لطالب الفرع الأدبي التسجيل في الجامعة؟ وفي أي اختصاص؟",
+            "sources": [["إعلان رقم 7", "معدلات القبول"]],
+            "facts": [["العلوم الإدارية", "الأعمال", "إدارة الأعمال"], ["50"]],
+            "note": "13: administrative sciences only, 50%"
+        },
+        {
+            "id": "medicine-seats",
+            "locale": "ar",
+            "question": "كم عدد الطلاب الذين يمكن قبولهم في الطب البشري في الجامعات الخاصة للعام 2026-2027؟",
+            "sources": [["قرار 579"]],
+            "facts": [["240"]],
+            "note": "04: 240"
+        },
+        {
+            "id": "transfer-conditions",
+            "locale": "ar",
+            "question": "ما شروط التحويل المماثل إلى الجامعة للعام 2026-2027؟",
+            "sources": [["إعلان مفاضلة النقل", "قرار 579", "قرار 167"]],
+            "facts": [["26"]],
+            "note": "12: 26 credit hours or passed to second year"
+        },
+        {
+            "id": "change-enrolment-exemption",
+            "locale": "ar",
+            "question": "ما شروط تغيير القيد وكم نسبة الإعفاء من المقررات؟",
+            "sources": [["إعلان مفاضلة النقل", "قرار 167", "معدلات القبول"]],
+            "facts": [["50"]],
+            "note": "12: exemption at most 50% of the plan's courses"
+        },
+        {
+            "id": "institute-exemption",
+            "locale": "ar",
+            "question": "ما نسبة الإعفاء من الساعات للطالب المقبول على أساس شهادة المعهد؟",
+            "sources": [["إعلان مفاضلة النقل", "قرار 167"]],
+            "facts": [["20"]],
+            "note": "12: up to 20%"
+        },
+        {
+            "id": "absence-limit",
+            "locale": "ar",
+            "question": "ما هي نسبة الغياب المسموح بها في المقرر؟",
+            "sources": [["قرار 21 لعام 2014"]],
+            "facts": [["15"]],
+            "note": "02: 15%"
+        },
+        {
+            "id": "summer-term",
+            "locale": "ar",
+            "question": "كم مدة الفصل الصيفي؟",
+            "sources": [["قرار 21 لعام 2014"]],
+            "facts": [["8", "ثمانية"]],
+            "note": "02: 8 weeks"
+        },
+        {
+            "id": "gpa-3-5",
+            "locale": "ar",
+            "question": "كم يعادل المعدل النقطي 3.5 بالنسبة المئوية وما تقديره؟",
+            "sources": [["قرار 230", "قرار 21 لعام 2014"]],
+            "facts": [["90"], ["امتياز"]],
+            "note": "01: (3.5x20)+20 = 90%, excellent 3.25-3.74"
+        },
+        {
+            "id": "grade-honours",
+            "locale": "ar",
+            "question": "ما تقدير الطالب الذي معدله التراكمي 3.8؟",
+            "sources": [["قرار 230", "قرار 21 لعام 2014"]],
+            "facts": [["شرف"]],
+            "note": "01: honours 3.75-4"
+        },
+        {
+            "id": "top-students-conditions",
+            "locale": "ar",
+            "question": "ما شروط دخول منافسة الطلاب الأوائل ومنحة التفوق؟",
+            "sources": [["قرارات مجلس الجامعة"]],
+            "facts": [["15"], ["70"]],
+            "note": "10: at least 15 credit hours and 70%"
+        },
+        {
+            "id": "top-students-reward",
+            "locale": "ar",
+            "question": "كم حسم منحة التفوق للأول والثاني والثالث؟",
+            "sources": [["قرارات مجلس الجامعة"]],
+            "facts": [["100"], ["60"], ["30"]],
+            "note": "10: 100%, 60%, 30%"
+        },
+        {
+            "id": "medicine-second-year-hours",
+            "locale": "ar",
+            "question": "كم ساعة معتمدة يحتاج طالب الطب البشري المستجد لينتقل إلى السنة الثانية؟",
+            "sources": [["قرار 34"]],
+            "facts": [["27"]],
+            "note": "11: 27 hours"
+        },
+        {
+            "id": "licence-decree",
+            "locale": "ar",
+            "question": "متى وبأي مرسوم رخصت الجامعة؟",
+            "sources": [["الوثائق القانونية"]],
+            "facts": [["339"], ["2005"]],
+            "note": "09: decree 339 of 7/8/2005"
+        },
+        {
+            "id": "location",
+            "locale": "ar",
+            "question": "أين يقع مقر الجامعة؟",
+            "sources": [["الوثائق القانونية", "الهيكل التنظيمي", "النظام الداخلي"]],
+            "facts": [["خيارة دنون", "الكسوة", "طريق درعا", "ريف دمشق"]],
+            "note": "09: Khiyarat Dannun, al-Kiswah, Rif Dimashq"
+        },
+        {
+            "id": "turkey-yos",
+            "locale": "ar",
+            "question": "أنا طالب سوري أدرس في جامعة تركية، هل يعتمد اختبار اليوس للتحويل؟",
+            "sources": [["قرار 765", "إعلان مفاضلة النقل", "قرار 167"]],
+            "facts": [["اليوس", "YOS", "YÖS"]],
+            "note": "05: TR-YOS accepted instead of the secondary average"
+        },
+        {
+            "id": "documents-syrian",
+            "locale": "ar",
+            "question": "ما الأوراق المطلوبة للتسجيل لطالب يحمل ثانوية سورية؟",
+            "sources": [["الأوراق المطلوبة"]],
+            "facts": [["أربع صور", "4 صور"], ["الهوية"]],
+            "note": "06: four certified copies, identity copy, passport, 4 photos"
+        },
+        {
+            "id": "two-parts-average-and-finance",
+            "locale": "ar",
+            "question": "كم معدل القبول في كلية الصيدلة؟ وما رقم تحويلة المديرية المالية؟",
+            "sources": [["معدلات القبول", "إعلان رقم 7", "جداول مفاضلة"], ["دليل"]],
+            "facts": [["75"], ["1380"]],
+            "note": "18: 75%; 15: finance 1380"
+        },
+        {
+            "id": "en-medicine-average",
+            "locale": "en",
+            "question": "What is the minimum average to study Medicine at SPU?",
+            "sources": [["معدلات القبول", "إعلان رقم 7", "جداول مفاضلة"]],
+            "facts": [["80"]],
+            "note": "18: 80%"
+        },
+        {
+            "id": "en-admissions-extension",
+            "locale": "en",
+            "question": "What is the phone extension of the admissions office?",
+            "sources": [["دليل"]],
+            "facts": [["1360"]],
+            "note": "15: 1360"
+        },
+        {
+            "id": "en-absence",
+            "locale": "en",
+            "question": "How many absences are allowed in a course?",
+            "sources": [["قرار 21 لعام 2014"]],
+            "facts": [["15"]],
+            "note": "02: 15%"
+        },
+        {
+            "id": "en-transfer-and-grade",
+            "locale": "en",
+            "question": "How many credit hours must I have finished to transfer to SPU, and what grade is a GPA of 3.1?",
+            "sources": [["إعلان مفاضلة النقل", "قرار 579", "قرار 167", "معدلات القبول"], ["قرار 230", "قرار 21 لعام 2014"]],
+            "facts": [["26"], ["very good"]],
+            "note": "12: 26 hours; 01: very good"
+        },
+        {
+            "id": "en-degree-exemption",
+            "locale": "en",
+            "question": "I already have a university degree. How much of my previous study can be exempted if I enrol at SPU?",
+            "sources": [["قرار 448", "قرار 167", "إعلان مفاضلة النقل"]],
+            "facts": [["30"], ["50"]],
+            "note": "08: 30% / 50%"
+        }
+    ]
+}

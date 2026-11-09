@@ -1694,6 +1694,74 @@ log "AI assistant: website knowledge"
 (cd "${APP}" && timeout 900 "${PHP}" -d memory_limit=512M artisan chatbot:sync-website --no-ansi) \
     || printf '  the website sync did not finish; the assistant keeps its existing knowledge\n'
 
+# ── AI assistant: contextual retrieval and evaluation ───────────────────────
+# Both inert unless a human places an approval file in IMPORT_DIR; each
+# disarms itself. Docs/AI_ASSISTANT.md, "Evaluation" and "Contextual retrieval".
+#
+#   chatbot-evaluate.approved      rerank=off,on   (optional; default: as configured)
+#                                  label=<name>    (optional)
+#       Asks the golden questions (database/seeders/Data/chatbot/
+#       evaluation-questions.json) and prints the scores; reports are saved
+#       under storage/app/private/chatbot/evaluations.
+#
+#   chatbot-contextualize.approved actor=auto      (or a user id)
+#                                  evaluate=yes    (optional: score before and after)
+#       Re-indexes the uploaded files and typed texts in use so every passage
+#       gets its context. Cards, scanned pages and contexts already written
+#       are reused.
+spu_chatbot_actor() {
+    local actor
+    actor="$(grep -E '^actor=' "$1" | head -n 1 | cut -d= -f2- | tr -d '\r' | tr -d ' ')"
+    if [[ "${actor}" == "auto" || -z "${actor}" ]]; then
+        actor="$(cd "${APP}" && "${PHP}" artisan tinker --execute='
+            echo (string) (\DB::table("users")
+                ->where("role_slug", "super_admin")
+                ->where(function ($q) { $q->whereNull("locked_at")->orWhere("locked_at", ""); })
+                ->orderBy("id")
+                ->value("id") ?? "");
+        ' 2>/dev/null | grep -Eo '^[0-9]+$' | head -n 1 || true)"
+    fi
+    printf '%s' "${actor}"
+}
+
+spu_chatbot_evaluate() {
+    local label="$1" reruns="$2" args=()
+    IFS=',' read -r -a variants <<< "${reruns}"
+    for variant in ${variants[@]+"${variants[@]}"}; do
+        variant="$(printf '%s' "${variant}" | tr -d '\r ')"
+        [[ "${variant}" == "on" || "${variant}" == "off" ]] && args+=("--rerank=${variant}")
+    done
+    (cd "${APP}" && timeout 1500 "${PHP}" -d memory_limit=512M artisan chatbot:evaluate --label="${label}" ${args[@]+"${args[@]}"} --no-ansi) \
+        || printf '  the evaluation did not finish\n'
+}
+
+CHATBOT_EVAL_APPROVAL="${IMPORT_DIR}/chatbot-evaluate.approved"
+if [[ -f "${CHATBOT_EVAL_APPROVAL}" ]]; then
+    log "AI assistant: evaluation"
+    CE_RERANK="$(grep -E '^rerank=' "${CHATBOT_EVAL_APPROVAL}" | head -n 1 | cut -d= -f2- | tr -d '\r ')"
+    CE_LABEL="$(grep -E '^label=' "${CHATBOT_EVAL_APPROVAL}" | head -n 1 | cut -d= -f2- | tr -d '\r ' | tr -cd 'a-zA-Z0-9-')"
+    spu_chatbot_evaluate "${CE_LABEL:-run}" "${CE_RERANK}"
+    mv "${CHATBOT_EVAL_APPROVAL}" "${CHATBOT_EVAL_APPROVAL}.consumed-$(date -u +%Y%m%d-%H%M%S)"
+fi
+
+CHATBOT_CONTEXT_APPROVAL="${IMPORT_DIR}/chatbot-contextualize.approved"
+if [[ -f "${CHATBOT_CONTEXT_APPROVAL}" ]]; then
+    log "AI assistant: contextual retrieval (re-index)"
+    CX_ACTOR="$(spu_chatbot_actor "${CHATBOT_CONTEXT_APPROVAL}")"
+    if [[ "${CX_ACTOR}" =~ ^[0-9]+$ ]]; then
+        (cd "${APP}" && "${PHP}" artisan chatbot:reindex-documents --user="${CX_ACTOR}" --no-ansi) || true
+        (cd "${APP}" && timeout 1500 "${PHP}" -d memory_limit=512M artisan chatbot:reindex-documents --user="${CX_ACTOR}" --write --no-ansi) \
+            || printf '  some files could not be re-indexed; they keep their previous passages\n'
+        if grep -qE '^evaluate=yes' "${CHATBOT_CONTEXT_APPROVAL}"; then
+            log "AI assistant: evaluation after contextual retrieval"
+            spu_chatbot_evaluate "with-context" "off,on"
+        fi
+    else
+        printf '  the contextual retrieval approval has no usable actor= line; nothing was re-indexed\n'
+    fi
+    mv "${CHATBOT_CONTEXT_APPROVAL}" "${CHATBOT_CONTEXT_APPROVAL}.consumed-$(date -u +%Y%m%d-%H%M%S)"
+fi
+
 # ── Verify ───────────────────────────────────────────────────────────────────
 # A deploy that reports success while the site is down is worse than one that
 # fails, so end by proving the application still boots.

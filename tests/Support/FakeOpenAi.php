@@ -4,8 +4,11 @@ declare(strict_types=1);
 
 namespace Tests\Support;
 
+use App\Services\Chatbot\ChatbotKnowledgeService;
+use App\Services\Chatbot\ChatbotPassageContextWriter;
 use App\Support\Chatbot\KeywordScorer;
 use App\Support\Chatbot\SearchRewrite;
+use GuzzleHttp\Promise\PromiseInterface;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
 
@@ -38,6 +41,20 @@ final class FakeOpenAi
     public $answerWith = null;
 
     public int $responsesStatus = 200;
+
+    /** @var list<array<string, mixed>> passage contexts asked for (contextual retrieval) */
+    public array $contextRequests = [];
+
+    /** @var (callable(string): string)|null the context for a request's content; default: a dash */
+    public $contextWith = null;
+
+    /** @var list<array<string, mixed>> reranking calls */
+    public array $rerankRequests = [];
+
+    /** @var (callable(string): list<int>)|null passage numbers the reranker returns; default: none (fused order kept) */
+    public $rerankWith = null;
+
+    public int $rerankStatus = 200;
 
     /** Answer calls carrying a temperature fail as a model that takes none would (400). */
     public bool $rejectTemperature = false;
@@ -134,6 +151,25 @@ final class FakeOpenAi
                 }
 
                 return Http::response(['id' => 'modr-1', 'model' => 'omni-moderation-latest', 'results' => [['flagged' => $fake->flagged, 'categories' => []]]]);
+            }
+
+            // Passage contexts written at index time (contextual retrieval).
+            if (str_ends_with($request->url(), '/responses') && ($payload['instructions'] ?? null) === ChatbotPassageContextWriter::INSTRUCTIONS) {
+                $fake->contextRequests[] = $payload;
+                $content = (string) ($payload['input'][0]['content'] ?? '');
+
+                return self::text($fake->contextWith !== null ? ($fake->contextWith)($content) : '—');
+            }
+
+            // LLM reranking of the search candidates.
+            if (str_ends_with($request->url(), '/responses') && ($payload['instructions'] ?? null) === ChatbotKnowledgeService::RERANK_INSTRUCTIONS) {
+                $fake->rerankRequests[] = $payload;
+                if ($fake->rerankStatus !== 200) {
+                    return Http::response(['error' => ['message' => 'failure']], $fake->rerankStatus);
+                }
+                $content = (string) ($payload['input'][0]['content'] ?? '');
+
+                return self::text((string) json_encode(['passages' => $fake->rerankWith !== null ? ($fake->rerankWith)($content) : []]));
             }
 
             if (str_ends_with($request->url(), '/responses') && ($payload['instructions'] ?? null) === SearchRewrite::INSTRUCTIONS) {
@@ -257,6 +293,20 @@ final class FakeOpenAi
         });
 
         return $fake;
+    }
+
+    /**
+     * A completed Responses reply carrying one text.
+     */
+    private static function text(string $text): PromiseInterface
+    {
+        return Http::response([
+            'id' => 'resp_aux',
+            'object' => 'response',
+            'status' => 'completed',
+            'output' => [['type' => 'message', 'id' => 'msg_a', 'role' => 'assistant', 'content' => [['type' => 'output_text', 'text' => $text, 'annotations' => []]]]],
+            'usage' => ['input_tokens' => 500, 'input_tokens_details' => ['cached_tokens' => 100], 'output_tokens' => 30, 'total_tokens' => 530],
+        ]);
     }
 
     /**

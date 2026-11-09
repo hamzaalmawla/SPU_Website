@@ -17,8 +17,10 @@ use App\Contracts\Center\CenterCatalogServiceInterface;
 use App\Contracts\Center\CenterPageServiceInterface;
 use App\Contracts\Chatbot\ChatbotDirectoryServiceInterface;
 use App\Contracts\Chatbot\ChatbotDocumentCardWriterInterface;
+use App\Contracts\Chatbot\ChatbotEvaluationServiceInterface;
 use App\Contracts\Chatbot\ChatbotFairUseServiceInterface;
 use App\Contracts\Chatbot\ChatbotKnowledgeServiceInterface;
+use App\Contracts\Chatbot\ChatbotPassageContextWriterInterface;
 use App\Contracts\Chatbot\ChatbotScanReaderInterface;
 use App\Contracts\Chatbot\ChatbotServiceInterface;
 use App\Contracts\Chatbot\ChatbotSettingsServiceInterface;
@@ -242,8 +244,10 @@ use App\Services\Center\CenterCatalogService;
 use App\Services\Center\CenterPageService;
 use App\Services\Chatbot\ChatbotDirectoryService;
 use App\Services\Chatbot\ChatbotDocumentCardWriter;
+use App\Services\Chatbot\ChatbotEvaluationService;
 use App\Services\Chatbot\ChatbotFairUseService;
 use App\Services\Chatbot\ChatbotKnowledgeService;
+use App\Services\Chatbot\ChatbotPassageContextWriter;
 use App\Services\Chatbot\ChatbotScanReader;
 use App\Services\Chatbot\ChatbotService;
 use App\Services\Chatbot\ChatbotSettingsService;
@@ -784,6 +788,8 @@ class AppServiceProvider extends ServiceProvider
             ChatbotUsageServiceInterface::class => ChatbotUsageService::class,
             ChatbotScanReaderInterface::class => ChatbotScanReader::class,
             ChatbotDocumentCardWriterInterface::class => ChatbotDocumentCardWriter::class,
+            ChatbotPassageContextWriterInterface::class => ChatbotPassageContextWriter::class,
+            ChatbotEvaluationServiceInterface::class => ChatbotEvaluationService::class,
             ChatbotKnowledgeServiceInterface::class => ChatbotKnowledgeService::class,
             ChatbotFairUseServiceInterface::class => ChatbotFairUseService::class,
             ChatbotDirectoryServiceInterface::class => ChatbotDirectoryService::class,
