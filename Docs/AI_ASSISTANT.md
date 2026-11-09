@@ -118,8 +118,10 @@ order. One more call per question. Re-run
 | No contexts, rerank on | 97% | 98% | 97% | 3.2 s | $0.26 |
 | Contexts, rerank off | 97% | 96% | 97% | 3.0 s | $0.15 |
 | Contexts, rerank on | 100% | 100% | 100% | 3.2 s | $0.31 |
+| Final, 34 questions, fresh rewrites: contexts, rerank off | 88% | 92% | 100% | 3.4 s | $0.15 |
+| Final, 34 questions, fresh rewrites: contexts, rerank on | 97% | 98% | 100% | 3.3 s | $0.32 |
 
-The one question the others missed was English ("how much of my previous study can be exempted?"): meaning-search preferred English website pages, and the reranker moved decree 448's Arabic passages to the top. Writing the 515 contexts took about 2.5 minutes. With 32 questions a single question is 3 points, so read the table as "no worse, one better", not as a precise rate.
+The one question the others missed was English ("how much of my previous study can be exempted?"): meaning-search preferred English website pages, and the reranker moved decree 448's Arabic passages to the top. Writing the 515 contexts took about 2.5 minutes. The final runs discarded the cached search rewrites (cache v3, with the term glossary), so they show unseen wording: reranking answered 33 of 34 against 30. Its one miss (Medicine second-year hours, 28 read from the wrong row) was fixed in decree 34's file. One question is about 3 points, so read the rates as a direction.
 
 **Not adopted, and why.** Whole knowledge in the prompt (CAG): too many tokens
 per question for the free tier. GraphRAG: better on multi-hop and global
