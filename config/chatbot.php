@@ -199,6 +199,9 @@ return [
         'top_k' => 6,
         'top_k_multi' => 10,
         'top_k_retry' => 14,
+        // The best few passages also bring the passage after them in their
+        // file, so a rule's cases that run on past a passage stay together.
+        'neighbors' => 3,
         // Candidates per search: the best by meaning (vector), plus the best
         // by rare words (names, numbers; BM25-style weights), ranked together.
         'candidates' => 40,

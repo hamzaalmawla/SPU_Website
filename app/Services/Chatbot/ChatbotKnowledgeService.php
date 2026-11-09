@@ -567,7 +567,58 @@ final class ChatbotKnowledgeService implements ChatbotKnowledgeServiceInterface
             }
         }
 
-        return new ChatbotRetrievalDTO($passages, $tokens);
+        return new ChatbotRetrievalDTO($this->withNextPassages($passages, $seen), $tokens);
+    }
+
+    /**
+     * The best few passages bring the passage that follows them in their
+     * file ("sentence window" retrieval): a rule's cases often run on past
+     * a passage's end (30% in one case, then 50% in another), and a search
+     * that finds the first must not lose the second.
+     *
+     * @param  list<ChatbotPassageDTO>  $passages
+     * @param  array<int|string, bool>  $seen  chunk ids and content keys already given
+     * @return list<ChatbotPassageDTO>
+     */
+    private function withNextPassages(array $passages, array $seen): array
+    {
+        $count = max(0, (int) config('chatbot.retrieval.neighbors', 3));
+        if ($count === 0 || $passages === []) {
+            return $passages;
+        }
+
+        $leaders = array_slice($passages, 0, $count);
+        $next = ChatbotChunk::query()
+            ->with('document:id,title,source_url,locale')
+            ->whereIn('id', array_map(static fn (ChatbotPassageDTO $passage): int => $passage->chunkId + 1, $leaders))
+            ->get(['id', 'chatbot_document_id', 'page', 'heading', 'content', 'content_normalized'])
+            ->keyBy('id');
+
+        $expanded = [];
+        foreach ($passages as $index => $passage) {
+            $expanded[] = $passage;
+            $chunk = $index < $count ? $next->get($passage->chunkId + 1) : null;
+            if ($chunk === null || (int) $chunk->chatbot_document_id !== $passage->documentId) {
+                continue;
+            }
+            $copy = 'c'.sha1(mb_substr((string) $chunk->content_normalized, 0, 600));
+            if (isset($seen[(int) $chunk->id]) || isset($seen[$copy])) {
+                continue;
+            }
+            $seen[(int) $chunk->id] = $seen[$copy] = true;
+            $expanded[] = new ChatbotPassageDTO(
+                chunkId: (int) $chunk->id,
+                documentId: (int) $chunk->chatbot_document_id,
+                documentTitle: (string) ($chunk->document?->title ?? ''),
+                page: $chunk->page,
+                heading: $chunk->heading,
+                content: (string) $chunk->content,
+                score: $passage->score,
+                url: $chunk->document?->source_url,
+            );
+        }
+
+        return $expanded;
     }
 
     public function syncWebsite(int $actorId): ChatbotWebsiteSyncDTO

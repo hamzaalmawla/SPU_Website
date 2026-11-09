@@ -64,6 +64,9 @@ a minute earlier "not known" in a new chat. The causes and what fixed each:
 | A document held a decree's original text next to the amended one; a passage cut from the original read as the rule (decree 167's 50% exemption, replaced by 30% / 50% in decree 448) | The superseded text was taken out of `Docs/assistant-knowledge/07-…`; the rules say to answer from the text in force and to give every case with its condition |
 | When the passages missed, the answer was simply "not known" | Corrective retrieval (after CRAG, Yan et al. 2024): coverage "none" or "partial" searches again wider and keeps the better answer |
 
+| A rule's cases run past a passage's end (30% in one passage, 50% in the next), so a search found one case | The best 3 passages bring the passage after them in their file ("sentence window" retrieval, `chatbot.retrieval.neighbors`) |
+| The rule "never carry a fact from one procedure's document to another" made the model refuse the exam regulation's GPA formula for a transfer question | Rules for every student (grading scale, GPA to percentage and grade, attendance) may answer any part, named by their regulation |
+
 Copies of the same passage in several uploads (an old and a new directory)
 are given to the model once. Corrected files go in with `chatbot:import-documents
 --replace` (approval line `replace=yes`), which stops using older uploads of

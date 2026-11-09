@@ -40,6 +40,27 @@ final class ChatbotConsistencyTest extends TestCase
         $this->assertSame(["موعد التقدم\nApplication dates"], SearchRewrite::parts(SearchRewrite::parse("Arabic: موعد التقدم\nEnglish: Application dates", 'q')));
         $this->assertCount(SearchRewrite::MAX_PARTS, SearchRewrite::parts("a || A\nb || B\nc || C\nd || D"));
         $this->assertSame([], SearchRewrite::parts(null));
+
+        // A model that leaves "||" out still gives one search per part.
+        $this->assertSame([
+            "الساعات المنجزة للتحويل\nhours for transfer",
+            "المعدل المئوي المكافئ\nequivalent percentage",
+        ], SearchRewrite::parts(SearchRewrite::parse("الساعات المنجزة للتحويل\nhours for transfer\nالمعدل المئوي المكافئ\nequivalent percentage", 'q')));
+    }
+
+    public function test_the_best_passages_bring_the_passage_after_them(): void
+    {
+        config(['chatbot.knowledge.chunk_characters' => 200, 'chatbot.knowledge.chunk_overlap' => 0]);
+        $user = $this->adminUser();
+        $this->saveApiKey($user);
+        $this->addKnowledge($user, 'قرار 448', "# المادة 16\nد-1- الإعفاء من الساعات المعتمدة لحامل الإجازة لا يزيد على 30% إذا كانت الإجازة من كلية أخرى أو من جامعة أخرى منسجمة مع الاختصاص الذي يرغب القيد فيه في الجامعة الخاصة.\n\nد-2- وفي حال القبول ضمن القسم ذاته في اختصاص ثان يصل الحد إلى خمسين بالمئة من مجموع الساعات.");
+
+        $contents = array_map(
+            static fn ($passage): string => $passage->content,
+            app(ChatbotKnowledgeServiceInterface::class)->retrieve('الإعفاء لحامل الإجازة الجامعية من كلية أخرى', 'sk-test', 'ar')->passages,
+        );
+
+        $this->assertNotEmpty(array_filter($contents, static fn (string $content): bool => str_contains($content, 'خمسين')));
     }
 
     public function test_every_part_of_a_question_gets_its_own_passages(): void
@@ -63,7 +84,7 @@ final class ChatbotConsistencyTest extends TestCase
 
         $this->assertContains('قرار 230 نظام التقويم', $titles);
         $this->assertContains('إعلان التحويل المماثل', $titles);
-        $this->assertLessThanOrEqual((int) config('chatbot.retrieval.top_k_multi'), count($titles));
+        $this->assertLessThanOrEqual((int) config('chatbot.retrieval.top_k_multi') + (int) config('chatbot.retrieval.neighbors'), count($titles));
     }
 
     public function test_the_rules_ask_for_every_part_and_the_text_in_force(): void

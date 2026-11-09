@@ -77,9 +77,21 @@ TEXT;
             explode("\n", trim($output)),
         ), static fn (string $line): bool => $line !== ''));
 
-        // The older two-line form (an Arabic line, then an English one) is one search.
-        if (count($lines) === 2 && ! str_contains($lines[0].$lines[1], '||')) {
-            $lines = [$lines[0].' || '.$lines[1]];
+        // Lines without "||" come as an Arabic line then its English one
+        // (the older two-line form, or a model that left the separator out):
+        // each such pair is one search.
+        if (! str_contains(implode('', $lines), '||')) {
+            $pairs = [];
+            foreach ($lines as $line) {
+                $last = count($pairs) - 1;
+                $latin = preg_match('/\p{Arabic}/u', $line) !== 1;
+                if ($latin && $last >= 0 && ! str_contains($pairs[$last], ' || ')) {
+                    $pairs[$last] .= ' || '.$line;
+                } else {
+                    $pairs[] = $line;
+                }
+            }
+            $lines = $pairs;
         }
 
         $lines = array_map(static fn (string $line): string => mb_substr($line, 0, 500), array_slice($lines, 0, self::MAX_PARTS));
