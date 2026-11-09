@@ -1291,7 +1291,10 @@ final class CampusLifePageService implements CampusLifePageServiceInterface
             return $url;
         }
 
-        if (str_starts_with($url, '/images/') || $url === '/sitemap.xml') {
+        // Files are served from one place for both languages: /ar/downloads/... is a 404.
+        $url = preg_replace('~^/(?:ar|en)(?=/(?:downloads|storage)/)~', '', $url) ?? $url;
+
+        if (str_starts_with($url, '/images/') || str_starts_with($url, '/downloads/') || str_starts_with($url, '/storage/') || $url === '/sitemap.xml') {
             return $url;
         }
 
