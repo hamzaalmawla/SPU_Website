@@ -7,6 +7,7 @@ namespace App\Services\Staff;
 use App\Contracts\Center\CenterCatalogServiceInterface;
 use App\Contracts\Staff\StaffIntakeServiceInterface;
 use App\DTOs\Staff\StaffIntakeFormDTO;
+use App\DTOs\Staff\StaffIntakeHeldFileDTO;
 use App\DTOs\Staff\StaffIntakeLinkDTO;
 use App\DTOs\Staff\StaffIntakeSubmissionDTO;
 use App\DTOs\Staff\StaffIntakeSubmitResultDTO;
@@ -28,6 +29,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Throwable;
@@ -52,6 +54,9 @@ final class StaffIntakeService implements StaffIntakeServiceInterface
 
     /** How long a form opened from a reference may still be sent. */
     private const REF_LIFETIME_SECONDS = 86400;
+
+    /** Photos and CVs of tries that came back, kept until the teacher sends again (holdUploads). */
+    private const HELD_DIRECTORY = 'staff-intake/held';
 
     public function __construct(
         private readonly CenterCatalogServiceInterface $centers,
@@ -185,8 +190,9 @@ final class StaffIntakeService implements StaffIntakeServiceInterface
             // A center has no departments: whatever was sent is dropped.
             $submission = $this->withFields($submission, ['department_id' => null] + $submission->fields);
         }
+        $held = $this->heldUploads($link, $submission);
         $this->requireLinkFields($submission, $required);
-        $this->requireFiles($submission, $claimed, $isUpdate, $required);
+        $this->requireFiles($submission, $claimed, $isUpdate, $required, $held);
         $fields = $this->cleanFields(
             $submission->fields,
             (int) $link->faculty_id,
@@ -206,7 +212,7 @@ final class StaffIntakeService implements StaffIntakeServiceInterface
             );
         }
 
-        $uploads = $this->storeUploads($submission);
+        $uploads = $this->storeUploads($submission, $held);
         $snapshot = $isUpdate ? StaffIntakeFields::fromMember($claimed) : null;
         $snapshotEducations = $isUpdate ? StaffIntakeFields::educationsFromMember($claimed) : [];
         $changed = StaffIntakeFields::changedKeys($snapshot ?? StaffIntakeFields::blank(), $fields, $snapshotEducations, $educations, $uploads);
@@ -490,12 +496,15 @@ final class StaffIntakeService implements StaffIntakeServiceInterface
      * updated keeps the ones it has; a new profile started from one in another
      * faculty reuses its media library files. Anything else must send them.
      *
+     * A file kept from an earlier try ($held) counts as sent.
+     *
      * @param  list<string>  $required
+     * @param  array<string, array{path: string, name: string, mime: string, size: int}>  $held
      */
-    private function requireFiles(StaffIntakeSubmissionDTO $submission, ?FacultyMember $claimed, bool $isUpdate, array $required): void
+    private function requireFiles(StaffIntakeSubmissionDTO $submission, ?FacultyMember $claimed, bool $isUpdate, array $required, array $held): void
     {
-        $hasPhoto = $claimed instanceof FacultyMember && ($isUpdate ? $this->photoUrl($claimed) !== null : $claimed->photo_media_id !== null);
-        $hasCv = $claimed instanceof FacultyMember && ($isUpdate ? $this->cvUrl($claimed) !== null : $claimed->cv_media_id !== null);
+        $hasPhoto = isset($held['photo']) || ($claimed instanceof FacultyMember && ($isUpdate ? $this->photoUrl($claimed) !== null : $claimed->photo_media_id !== null));
+        $hasCv = isset($held['cv']) || ($claimed instanceof FacultyMember && ($isUpdate ? $this->cvUrl($claimed) !== null : $claimed->cv_media_id !== null));
 
         $errors = [];
         if (in_array('photo', $required, true) && ! $submission->photo instanceof UploadedFile && ! $hasPhoto) {
@@ -510,12 +519,27 @@ final class StaffIntakeService implements StaffIntakeServiceInterface
         }
     }
 
-    /** @return array<string, array{path: string, name: string, mime: string, size: int}> */
-    private function storeUploads(StaffIntakeSubmissionDTO $submission): array
+    /**
+     * A file sent now wins over one kept from an earlier try; a kept one moves
+     * next to the others.
+     *
+     * @param  array<string, array{path: string, name: string, mime: string, size: int}>  $held
+     * @return array<string, array{path: string, name: string, mime: string, size: int}>
+     */
+    private function storeUploads(StaffIntakeSubmissionDTO $submission, array $held): array
     {
         $uploads = [];
+        $disk = Storage::disk('local');
         foreach (['photo' => $submission->photo, 'cv' => $submission->cv] as $kind => $file) {
             if (! $file instanceof UploadedFile) {
+                if (isset($held[$kind])) {
+                    $path = 'staff-intake/'.now()->format('Y/m').'/'.basename($held[$kind]['path']);
+                    if (! $disk->move($held[$kind]['path'], $path)) {
+                        throw ValidationException::withMessages([$kind => __('staff_intake.public.errors.upload', [], $submission->locale)]);
+                    }
+                    $uploads[$kind] = ['path' => $path] + $held[$kind];
+                }
+
                 continue;
             }
 
@@ -524,15 +548,125 @@ final class StaffIntakeService implements StaffIntakeServiceInterface
                 throw ValidationException::withMessages([$kind => __('staff_intake.public.errors.upload', [], $submission->locale)]);
             }
 
-            $uploads[$kind] = [
-                'path' => $path,
-                'name' => mb_substr((string) preg_replace('/[^\p{L}\p{N}._ -]+/u', '', $file->getClientOriginalName()), 0, 150) ?: $kind,
-                'mime' => (string) ($file->getMimeType() ?? 'application/octet-stream'),
-                'size' => (int) $file->getSize(),
-            ];
+            $uploads[$kind] = ['path' => $path, ...$this->fileMeta($file, $kind)];
         }
 
         return $uploads;
+    }
+
+    /** @return array{name: string, mime: string, size: int} */
+    private function fileMeta(UploadedFile $file, string $kind): array
+    {
+        return [
+            'name' => mb_substr((string) preg_replace('/[^\p{L}\p{N}._ -]+/u', '', $file->getClientOriginalName()), 0, 150) ?: $kind,
+            'mime' => (string) ($file->getMimeType() ?? 'application/octet-stream'),
+            'size' => (int) $file->getSize(),
+        ];
+    }
+
+    public function holdUploads(string $token, ?UploadedFile $photo, ?UploadedFile $cv, array $previous = []): array
+    {
+        $link = $this->activeLink($token);
+        if (! $link instanceof StaffIntakeLink) {
+            return [];
+        }
+
+        $this->pruneHeldFiles();
+        $handles = [];
+        foreach (['photo' => $photo, 'cv' => $cv] as $kind => $file) {
+            if ($file instanceof UploadedFile && $file->isValid()) {
+                $extension = $kind === 'cv' ? 'pdf' : (strtolower((string) ($file->guessExtension() ?: $file->getClientOriginalExtension())) ?: 'jpg');
+                $path = $file->storeAs(self::HELD_DIRECTORY.'/'.now()->format('Y-m-d'), Str::random(40).'.'.$extension, 'local');
+                if (is_string($path) && $path !== '') {
+                    $handles[$kind.'_held'] = Crypt::encryptString((string) json_encode([
+                        'l' => (int) $link->getKey(), 'k' => $kind, 'p' => $path, 't' => time(), ...$this->fileMeta($file, $kind),
+                    ]));
+
+                    continue;
+                }
+            }
+
+            $earlier = $previous[$kind.'_held'] ?? null;
+            if (is_string($earlier) && $this->decodeHeld($link, $kind, $earlier) !== null) {
+                $handles[$kind.'_held'] = $earlier;
+            }
+        }
+
+        return $handles;
+    }
+
+    public function heldFiles(string $token, array $handles): array
+    {
+        $link = $this->activeLink($token);
+        if (! $link instanceof StaffIntakeLink) {
+            return [];
+        }
+
+        $files = [];
+        foreach (['photo', 'cv'] as $kind) {
+            $handle = $handles[$kind.'_held'] ?? null;
+            $held = is_string($handle) ? $this->decodeHeld($link, $kind, $handle) : null;
+            if ($held !== null && is_string($handle)) {
+                $files[$kind] = new StaffIntakeHeldFileDTO(kind: $kind, handle: $handle, name: $held['name']);
+            }
+        }
+
+        return $files;
+    }
+
+    /** @return array<string, array{path: string, name: string, mime: string, size: int}> */
+    private function heldUploads(StaffIntakeLink $link, StaffIntakeSubmissionDTO $submission): array
+    {
+        $held = [];
+        foreach (['photo' => $submission->heldPhoto, 'cv' => $submission->heldCv] as $kind => $handle) {
+            $file = is_string($handle) ? $this->decodeHeld($link, $kind, $handle) : null;
+            if ($file !== null) {
+                $held[$kind] = $file;
+            }
+        }
+
+        return $held;
+    }
+
+    /** @return array{path: string, name: string, mime: string, size: int}|null */
+    private function decodeHeld(StaffIntakeLink $link, string $kind, string $handle): ?array
+    {
+        try {
+            $data = json_decode(Crypt::decryptString($handle), true);
+        } catch (DecryptException) {
+            return null;
+        }
+
+        if (! is_array($data) || (int) ($data['l'] ?? 0) !== (int) $link->getKey() || ($data['k'] ?? null) !== $kind
+            || ! is_int($data['t'] ?? null) || $data['t'] < time() - self::REF_LIFETIME_SECONDS
+            || ! is_string($data['p'] ?? null) || ! str_starts_with($data['p'], self::HELD_DIRECTORY.'/') || str_contains($data['p'], '..')
+            || ! Storage::disk('local')->exists($data['p'])) {
+            return null;
+        }
+
+        return [
+            'path' => $data['p'],
+            'name' => is_string($data['name'] ?? null) && $data['name'] !== '' ? $data['name'] : $kind,
+            'mime' => is_string($data['mime'] ?? null) ? $data['mime'] : 'application/octet-stream',
+            'size' => is_int($data['size'] ?? null) ? $data['size'] : 0,
+        ];
+    }
+
+    /** Kept files nobody came back for: their day folders go after two days. */
+    private function pruneHeldFiles(): void
+    {
+        try {
+            $disk = Storage::disk('local');
+            $cutoff = now()->subDays(2)->format('Y-m-d');
+            foreach ($disk->directories(self::HELD_DIRECTORY) as $directory) {
+                $day = basename($directory);
+                if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $day) === 1 && $day < $cutoff) {
+                    $disk->deleteDirectory($directory);
+                }
+            }
+        } catch (Throwable) {
+            // Tidying up must never stop a teacher's form.
+        }
     }
 
     /**
@@ -702,6 +836,8 @@ final class StaffIntakeService implements StaffIntakeServiceInterface
             confirmedNotDuplicate: $submission->confirmedNotDuplicate,
             ipAddress: $submission->ipAddress,
             userAgent: $submission->userAgent,
+            heldPhoto: $submission->heldPhoto,
+            heldCv: $submission->heldCv,
         );
     }
 

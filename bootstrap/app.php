@@ -47,6 +47,12 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->validateCsrfTokens(except: [
             'webhook/*',
+            // The staff intake form: teachers fill it on phones for longer than
+            // a session lives, and a lost session turned their whole form into
+            // "page expired" (2026-11-09, dentistry). The session grants nothing
+            // here; what authorizes a submission is the link's secret token and
+            // the form's encrypted, day-long ref, which a CSRF token adds nothing to.
+            '*/staff-intake/*/form',
         ]);
 
         $middleware->alias([

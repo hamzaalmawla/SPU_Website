@@ -4,9 +4,13 @@ declare(strict_types=1);
 
 namespace App\Http\Requests;
 
+use App\Contracts\Staff\StaffIntakeServiceInterface;
 use App\DTOs\Staff\StaffIntakeSubmissionDTO;
 use App\Services\Staff\StaffIntakeFields;
+use Illuminate\Contracts\Validation\Validator as ValidatorContract;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Http\Exceptions\HttpResponseException;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Validation\Validator;
 
@@ -74,6 +78,9 @@ final class StaffIntakeSubmitRequest extends FormRequest
             'educations.*.year_end' => ['nullable', 'integer', 'between:1950,'.$year],
             'photo' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp', 'mimetypes:image/jpeg,image/png,image/webp', 'max:2048'],
             'cv' => ['nullable', 'file', 'mimes:pdf', 'mimetypes:application/pdf', 'max:5120'],
+            // Handles of files kept from a try that came back (holdUploads).
+            'photo_held' => ['nullable', 'string', 'max:4000'],
+            'cv_held' => ['nullable', 'string', 'max:4000'],
         ];
 
         foreach (['ar', 'en'] as $locale) {
@@ -136,7 +143,49 @@ final class StaffIntakeSubmitRequest extends FormRequest
             confirmedNotDuplicate: $this->boolean('confirm_not_duplicate'),
             ipAddress: $this->ip(),
             userAgent: $this->userAgent(),
+            heldPhoto: is_string($validated['photo_held'] ?? null) ? $validated['photo_held'] : null,
+            heldCv: is_string($validated['cv_held'] ?? null) ? $validated['cv_held'] : null,
         );
+    }
+
+    /**
+     * The form comes back with the errors and what was typed. A browser
+     * cannot refill a file field, so the photo and CV that passed their own
+     * checks are kept aside and the form shows them as attached; without
+     * this, every return (a missing field, "we may already have your
+     * profile") asked the teacher to pick both files again.
+     *
+     * @param  array<string, mixed>  $errors
+     */
+    public function backWithErrors(StaffIntakeServiceInterface $intake, string $token, array $errors, ?string $redirectTo = null): RedirectResponse
+    {
+        // A file that failed its own check (too large, not a PDF) is dropped,
+        // and so is the one it was meant to replace.
+        $keep = fn (string $kind): ?UploadedFile => ! array_key_exists($kind, $errors) && $this->file($kind) instanceof UploadedFile ? $this->file($kind) : null;
+        $previous = [
+            'photo_held' => $this->file('photo') instanceof UploadedFile ? null : $this->input('photo_held'),
+            'cv_held' => $this->file('cv') instanceof UploadedFile ? null : $this->input('cv_held'),
+        ];
+        $held = $intake->holdUploads($token, $keep('photo'), $keep('cv'), $previous);
+
+        return redirect()->to($redirectTo ?? url()->previous())
+            ->withInput([...$this->except(['photo', 'cv', 'photo_held', 'cv_held']), ...$held])
+            ->withErrors($errors);
+    }
+
+    protected function failedValidation(ValidatorContract $validator): void
+    {
+        $token = $this->route('token');
+        if (! is_string($token)) {
+            parent::failedValidation($validator);
+        }
+
+        throw new HttpResponseException($this->backWithErrors(
+            $this->container->make(StaffIntakeServiceInterface::class),
+            (string) $token,
+            $validator->errors()->toArray(),
+            $this->getRedirectUrl(),
+        ));
     }
 
     private function locale(): string

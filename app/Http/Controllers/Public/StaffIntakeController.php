@@ -12,6 +12,7 @@ use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 
 /**
  * The link a faculty sends its academic staff (or a center its staff): find
@@ -77,16 +78,23 @@ final class StaffIntakeController extends Controller
             'form' => $form,
             'isCenter' => $form->isCenter,
             'duplicates' => $request->session()->get('staff_intake_duplicates', []),
+            'heldFiles' => $this->intake->heldFiles($token, [
+                'photo_held' => $request->old('photo_held'),
+                'cv_held' => $request->old('cv_held'),
+            ]),
         ]);
     }
 
     public function submit(StaffIntakeSubmitRequest $request, string $locale, string $token): RedirectResponse
     {
-        $result = $this->intake->submit($request->toDto($token, $locale));
+        try {
+            $result = $this->intake->submit($request->toDto($token, $locale));
+        } catch (ValidationException $exception) {
+            return $request->backWithErrors($this->intake, $token, $exception->errors());
+        }
 
         if ($result->reference === null) {
-            return back()
-                ->withInput($request->except(['photo', 'cv', 'confirm_not_duplicate']))
+            return $request->backWithErrors($this->intake, $token, [])
                 ->with('staff_intake_duplicates', array_map(fn (StaffMatchSuggestionDTO $candidate): array => [
                     'url' => route('public.staff-intake.form', ['locale' => $locale, 'token' => $token, 'ref' => $candidate->ref]),
                     'name' => $locale === 'ar' ? ($candidate->nameAr ?: $candidate->nameEn) : ($candidate->nameEn ?: $candidate->nameAr),

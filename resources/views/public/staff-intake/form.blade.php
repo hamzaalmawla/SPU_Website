@@ -119,7 +119,11 @@
                         @if ($form->photoUrl)
                             <img src="{{ $form->photoUrl }}" alt="{{ __('staff_intake.public.current_photo', [], $locale) }}" class="h-24 w-24 rounded-full object-cover">
                         @endif
-                        <input id="si-photo" name="photo" type="file" accept="image/jpeg,image/png,image/webp" aria-describedby="si-photo-hint" class="block w-full text-sm" @if (in_array('photo', $form->requiredFields, true) && ! $form->photoUrl) required aria-required="true" @endif>
+                        <input id="si-photo" name="photo" type="file" accept="image/jpeg,image/png,image/webp" aria-describedby="si-photo-hint" class="block w-full text-sm" @if (in_array('photo', $form->requiredFields, true) && ! $form->photoUrl && ! isset($heldFiles['photo'])) required aria-required="true" @endif>
+                        @if (isset($heldFiles['photo']))
+                            <input type="hidden" name="photo_held" value="{{ $heldFiles['photo']->handle }}">
+                            <p class="rounded-lg bg-emerald-50 px-3 py-2 text-sm font-bold text-emerald-800" role="status">{{ __('staff_intake.public.held_file', ['name' => $heldFiles['photo']->name], $locale) }}</p>
+                        @endif
                         <p id="si-photo-hint" class="text-xs text-slate-500">{{ __('staff_intake.public.photo_hint', [], $locale) }}</p>
                         @error('photo')<p class="text-xs font-bold text-spu-red" role="alert">{{ $message }}</p>@enderror
                     </div>
@@ -128,13 +132,21 @@
                         @if ($form->cvUrl)
                             <a href="{{ $form->cvUrl }}" target="_blank" rel="noopener noreferrer" class="block text-sm font-bold text-spu-blue underline">{{ __('staff_intake.public.current_cv', [], $locale) }}</a>
                         @endif
-                        <input id="si-cv" name="cv" type="file" accept="application/pdf" aria-describedby="si-cv-hint" class="block w-full text-sm" @if (in_array('cv', $form->requiredFields, true) && ! $form->cvUrl) required aria-required="true" @endif>
+                        <input id="si-cv" name="cv" type="file" accept="application/pdf" aria-describedby="si-cv-hint" class="block w-full text-sm" @if (in_array('cv', $form->requiredFields, true) && ! $form->cvUrl && ! isset($heldFiles['cv'])) required aria-required="true" @endif>
+                        @if (isset($heldFiles['cv']))
+                            <input type="hidden" name="cv_held" value="{{ $heldFiles['cv']->handle }}">
+                            <p class="rounded-lg bg-emerald-50 px-3 py-2 text-sm font-bold text-emerald-800" role="status">{{ __('staff_intake.public.held_file', ['name' => $heldFiles['cv']->name], $locale) }}</p>
+                        @endif
                         <p id="si-cv-hint" class="text-xs text-slate-500">{{ __('staff_intake.public.cv_hint', [], $locale) }}</p>
                         @error('cv')<p class="text-xs font-bold text-spu-red" role="alert">{{ $message }}</p>@enderror
                     </div>
                 </div>
             </fieldset>
 
+            @if (empty($duplicates) && old('confirm_not_duplicate'))
+                {{-- Already confirmed on an earlier try: a later return (a missing field) must not ask again. --}}
+                <input type="hidden" name="confirm_not_duplicate" value="1">
+            @endif
             @if (! empty($duplicates))
                 <label class="flex items-start gap-3 rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm font-bold text-amber-900">
                     <input type="checkbox" name="confirm_not_duplicate" value="1" required class="mt-1">

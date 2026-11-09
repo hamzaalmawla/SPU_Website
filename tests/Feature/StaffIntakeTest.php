@@ -212,6 +212,96 @@ final class StaffIntakeTest extends TestCase
         $this->assertCount(1, $request->duplicate_candidates);
     }
 
+    public function test_the_photo_and_cv_are_kept_when_the_form_asks_about_a_similar_profile(): void
+    {
+        $this->member('omar-intake', 'عمر إنتيك', 'Omar Intake', $this->dentistry);
+        $token = $this->token($this->link());
+        $formUrl = '/ar/staff-intake/'.$token.'/form';
+        $ref = $this->newRef($token, 'Omar Intake');
+
+        $this->from($formUrl)
+            ->post($formUrl, $this->formData($ref, ['name_ar' => 'عمر انتيك', 'name_en' => 'Omar Intake']))
+            ->assertRedirect($formUrl)
+            ->assertSessionHas('staff_intake_duplicates');
+        $held = ['photo_held' => session()->getOldInput('photo_held'), 'cv_held' => session()->getOldInput('cv_held')];
+        $this->assertIsString($held['photo_held']);
+        $this->assertIsString($held['cv_held']);
+
+        // The form shows both files as attached, so the browser does not ask for them again.
+        $page = $this->get($formUrl.'?name='.urlencode('Omar Intake'))->assertOk()->getContent();
+        $this->assertStringContainsString('name="photo_held"', $page);
+        $this->assertStringContainsString('name="cv_held"', $page);
+        $this->assertStringContainsString('photo.jpg', $page);
+        $this->assertDoesNotMatchRegularExpression('/id="si-photo"[^>]*required/', $page);
+        $this->assertDoesNotMatchRegularExpression('/id="si-cv"[^>]*required/', $page);
+
+        $data = $this->formData($ref, ['name_ar' => 'عمر انتيك', 'name_en' => 'Omar Intake', 'confirm_not_duplicate' => '1', ...$held]);
+        unset($data['photo'], $data['cv']);
+        $this->post($formUrl, $data)->assertRedirect('/ar/staff-intake/'.$token.'/sent');
+
+        $uploads = StaffIntakeRequest::query()->sole()->payload['uploads'];
+        $this->assertSame('photo.jpg', $uploads['photo']['name']);
+        $this->assertSame('cv.pdf', $uploads['cv']['name']);
+        Storage::disk('local')->assertExists([$uploads['photo']['path'], $uploads['cv']['path']]);
+        $this->assertStringNotContainsString('held', $uploads['photo']['path']);
+    }
+
+    public function test_a_missing_field_keeps_the_files_and_the_not_a_duplicate_answer(): void
+    {
+        $this->member('omar-intake', 'عمر إنتيك', 'Omar Intake', $this->dentistry);
+        $token = $this->token($this->link());
+        $formUrl = '/ar/staff-intake/'.$token.'/form';
+        $ref = $this->newRef($token, 'Omar Intake');
+
+        // Confirmed "not me", but the biography is empty: the service sends it back.
+        $this->from($formUrl)
+            ->post($formUrl, $this->formData($ref, ['name_ar' => 'عمر انتيك', 'name_en' => 'Omar Intake', 'confirm_not_duplicate' => '1', 'bio_ar' => '']))
+            ->assertRedirect($formUrl)
+            ->assertSessionHasErrors('bio_ar');
+        $held = ['photo_held' => session()->getOldInput('photo_held'), 'cv_held' => session()->getOldInput('cv_held')];
+
+        $page = $this->get($formUrl.'?name='.urlencode('Omar Intake'))->assertOk()->getContent();
+        $this->assertMatchesRegularExpression('/type="hidden" name="confirm_not_duplicate" value="1"/', $page);
+
+        $data = $this->formData($ref, ['name_ar' => 'عمر انتيك', 'name_en' => 'Omar Intake', 'confirm_not_duplicate' => '1', ...$held]);
+        unset($data['photo'], $data['cv']);
+        $this->post($formUrl, $data)->assertRedirect('/ar/staff-intake/'.$token.'/sent');
+        $this->assertSame(['photo', 'cv'], array_keys(StaffIntakeRequest::query()->sole()->payload['uploads']));
+    }
+
+    public function test_a_file_that_fails_its_check_is_not_kept_but_the_other_one_is(): void
+    {
+        $token = $this->token($this->link());
+        $formUrl = '/ar/staff-intake/'.$token.'/form';
+        $ref = $this->newRef($token, 'New Teacher');
+
+        $this->from($formUrl)
+            ->post($formUrl, $this->formData($ref, ['name_ar' => 'أستاذ جديد', 'name_en' => 'New Teacher', 'photo' => UploadedFile::fake()->image('big.jpg')->size(4000)]))
+            ->assertRedirect($formUrl)
+            ->assertSessionHasErrors('photo');
+        $this->assertNull(session()->getOldInput('photo_held'));
+        $this->assertIsString(session()->getOldInput('cv_held'));
+        $this->assertSame('أستاذ جديد', session()->getOldInput('name_ar'));
+    }
+
+    public function test_a_kept_file_from_another_link_is_not_accepted(): void
+    {
+        $otherToken = $this->token($this->link());
+        $otherUrl = '/ar/staff-intake/'.$otherToken.'/form';
+        $this->from($otherUrl)
+            ->post($otherUrl, $this->formData($this->newRef($otherToken, 'New Teacher'), ['name_ar' => 'أستاذ جديد', 'name_en' => 'New Teacher', 'bio_ar' => '']))
+            ->assertSessionHasErrors('bio_ar');
+        $foreign = ['photo_held' => session()->getOldInput('photo_held'), 'cv_held' => session()->getOldInput('cv_held')];
+        $this->assertIsString($foreign['photo_held']);
+
+        $token = $this->token($this->link());
+        $formUrl = '/ar/staff-intake/'.$token.'/form';
+        $data = $this->formData($this->newRef($token, 'New Teacher'), ['name_ar' => 'أستاذ جديد', 'name_en' => 'New Teacher', ...$foreign]);
+        unset($data['photo'], $data['cv']);
+        $this->from($formUrl)->post($formUrl, $data)->assertSessionHasErrors(['photo', 'cv']);
+        $this->assertSame(0, StaffIntakeRequest::query()->count());
+    }
+
     public function test_approving_a_new_teacher_by_a_faculty_editor_publishes_the_profile(): void
     {
         $department = Department::query()->create(['faculty_id' => $this->dentistry->getKey(), 'slug' => 'intake-orthodontics']);

@@ -11,6 +11,8 @@ final readonly class StaffIntakeSubmissionDTO
     /**
      * @param  array<string, mixed>  $fields
      * @param  list<array<string, mixed>>  $educations
+     * @param  ?string  $heldPhoto  handle of a photo kept from an earlier try (StaffIntakeServiceInterface::holdUploads)
+     * @param  ?string  $heldCv  handle of a CV kept from an earlier try
      */
     public function __construct(
         public string $token,
@@ -23,5 +25,7 @@ final readonly class StaffIntakeSubmissionDTO
         public bool $confirmedNotDuplicate,
         public ?string $ipAddress,
         public ?string $userAgent,
+        public ?string $heldPhoto = null,
+        public ?string $heldCv = null,
     ) {}
 }
