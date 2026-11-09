@@ -51,7 +51,7 @@ final class ChatbotSearchRewriteTest extends TestCase
         $this->assertCount(1, $this->openAi->rewriteRequests);
         $this->assertSame('When are you open?', $this->openAi->rewriteRequests[0]['input'][0]['content']);
         $this->assertFalse($this->openAi->rewriteRequests[0]['store']);
-        $this->assertSame("ساعات دوام مكتب القبول\nAdmission office hours", $reply->searchHint);
+        $this->assertSame('ساعات دوام مكتب القبول || Admission office hours', $reply->searchHint);
         // The admin test box sees the passages the answer was given.
         $this->assertSame('Admission guide 2026', $reply->passages[0]->documentTitle);
 
@@ -84,7 +84,8 @@ final class ChatbotSearchRewriteTest extends TestCase
 
     public function test_the_rewrite_output_is_tidied(): void
     {
-        $this->assertSame("موعد التقدم\nApplication dates", SearchRewrite::parse("1. Arabic: موعد التقدم\n2. English: Application dates\nextra", 'q'));
+        $this->assertSame('موعد التقدم || Application dates', SearchRewrite::parse("1. Arabic: موعد التقدم\n2. English: Application dates", 'q'));
+        $this->assertSame("موعد التقدم || Application dates\nالرسوم || Fees", SearchRewrite::parse("موعد التقدم || Application dates\nالرسوم || Fees", 'q'));
         $this->assertNull(SearchRewrite::parse('   ', 'q'));
         $this->assertNull(SearchRewrite::parse('hello', 'hello'));
     }

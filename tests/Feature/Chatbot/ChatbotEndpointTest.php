@@ -77,8 +77,9 @@ final class ChatbotEndpointTest extends TestCase
         $this->assertStringContainsString('Page language: Arabic', $request['instructions']);
         // The unsigned greeting is dropped; the signed pair stays in order before the question.
         $this->assertSame(['user', 'assistant', 'user'], array_column($request['input'], 'role'));
-        // The short follow-up was searched together with the previous question.
-        $this->assertStringContainsString('Pharmacy tuition', (string) end($this->openAi->embeddingRequests)['input'][0]);
+        // The short follow-up was searched with what it refers to: the
+        // rewrite sees the conversation (here it echoes it back).
+        $this->assertStringContainsString('Pharmacy tuition', implode("\n", (array) end($this->openAi->embeddingRequests)['input']));
     }
 
     public function test_the_fallback_model_answers_when_the_main_one_is_rate_limited(): void

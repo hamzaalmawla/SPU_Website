@@ -1647,6 +1647,8 @@ fi
 #
 #     storage/app/private/legacy-imports/chatbot-documents.approved
 #         actor=auto        (or a user id)
+#         replace=yes       (optional: a file added retires older uploads
+#                            with the same title, for corrected copies)
 #
 # Each file handled moves to import/done/; duplicates are skipped. Long scans
 # keep reading in the background (chatbot:continue-indexing). Disarms itself.
@@ -1666,9 +1668,14 @@ if [[ -f "${CHATBOT_DOCS_APPROVAL}" ]]; then
         ' 2>/dev/null | grep -Eo '^[0-9]+$' | head -n 1 || true)"
     fi
 
+    CD_REPLACE=""
+    if grep -qE '^replace=yes' "${CHATBOT_DOCS_APPROVAL}"; then
+        CD_REPLACE="--replace"
+    fi
+
     if [[ "${CD_ACTOR}" =~ ^[0-9]+$ ]]; then
         (cd "${APP}" && "${PHP}" artisan chatbot:import-documents --user="${CD_ACTOR}" --no-ansi) || true
-        (cd "${APP}" && timeout 900 "${PHP}" -d memory_limit=512M artisan chatbot:import-documents --user="${CD_ACTOR}" --write --no-ansi) \
+        (cd "${APP}" && timeout 900 "${PHP}" -d memory_limit=512M artisan chatbot:import-documents --user="${CD_ACTOR}" --write ${CD_REPLACE} --no-ansi) \
             || printf '  some documents could not be added; they stay in chatbot/import for another run\n'
     else
         printf '  the chatbot documents approval has no usable actor= line; nothing was added\n'

@@ -26,22 +26,48 @@ browser ── POST /{locale}/assistant/messages ──▶ ChatbotController (th
   6. site-wide daily cap, answer cache
   7. personal data removed (phones, ID numbers, emails)
   8. OpenAI moderation (free)              ── flagged ─▶ refuse
-  9. search rewrite: a small call (main model, ~300 tokens, cached a week)
-     rewrites the question into the documents' wording in Arabic and
-     English (`SearchRewrite`); skipped on failure
-10. retrieval: question and rewrite embedded (text-embedding-3-small, 512
-     dims); each passage keeps its better cosine and keyword score; top 6
-     above the threshold
-11. model call (Responses API, store:false, structured output
-     {category, answer}); main model, then the fallback model on failure
+  9. search rewrite: a small call (main model, temperature 0, cached a week)
+     rewrites the question into the documents' wording, ONE LINE PER THING
+     ASKED ("Arabic || English", at most 3; `SearchRewrite`); skipped on failure
+10. retrieval (hybrid, one search per part): every passage is scored by
+     meaning (cosine, text-embedding-3-small, 512 dims) and by rare words
+     (BM25-style IDF share); candidates are the best 40 of the first and
+     20 of the second; ranked by cosine + 0.18 × words; parts take turns,
+     copies of a passage count once; top 6 (10 for several parts)
+11. model call (Responses API, store:false, temperature 0, structured
+     output {category, answer, memory, coverage}); main model, then the
+     fallback model on failure
+11b. coverage not "full" ── search again with 14 passages and ask once
+     more; keep the answer that covers more (corrective retrieval)
 12. category not university/greeting   ── refuse (site's own message)
 13. output guard: code, leaked instructions ── refuse; links only to
      university hosts
-14. answer + source titles + signature of the question/answer pair
+14. answer + source titles + signature of the question/answer pair; the
+     answer cache keeps only answers with coverage "full"
 ```
 
 Every refusal shows the same polite message, so probing does not reveal which
 layer stopped it. The admin "Try it" box shows the reason.
+
+## Same question, same answer (2026-11-09)
+
+Visitors saw the same question answered differently, and a question answered
+a minute earlier "not known" in a new chat. The causes and what fixed each:
+
+| Cause | Fix |
+|---|---|
+| The search rewrite and the answer were sampled (no temperature), so each wording of a question drew its own search and its own answer | Temperature 0 on both (GPT-5.4 mini takes it with reasoning "none"; a model that refuses it is asked again without and remembered for a day, `OpenAiClient`) |
+| "I don't have that information" was cached for 12 hours as the first answer to that question, while the same words inside a conversation (not cached) were answered | Only answers whose `coverage` is "full" are cached; the cache key carries a version (`ANSWER_VERSION`) so answers from before a change are not served |
+| Words only re-ranked the 40 best passages by meaning: a name or extension in a long directory list was never a candidate, so "who is X?" depended on how the rewrite happened to be worded | Words are a retrieval channel of their own over every passage, weighted by rarity (BM25 IDF), as in hybrid search; the two scores are combined by a weighted sum, which Bruch et al. (2023, "An Analysis of Fusion Functions for Hybrid Retrieval") found as good or better than rank fusion |
+| A short follow-up was searched glued to the previous question even after the rewrite had already resolved it, so a new subject asked briefly ("من هو عامر خورشيد؟") was searched as the old one | The previous question is added only when there is no rewrite |
+| A question with two parts took all six passages from its main part; the second was "not available" | The rewrite splits the question into parts and each part is searched on its own, taking turns for the slots (query decomposition, as in RAG-Fusion / multi-query retrieval); the rules require an answer per part and applying a source's formula to the visitor's numbers |
+| A document held a decree's original text next to the amended one; a passage cut from the original read as the rule (decree 167's 50% exemption, replaced by 30% / 50% in decree 448) | The superseded text was taken out of `Docs/assistant-knowledge/07-…`; the rules say to answer from the text in force and to give every case with its condition |
+| When the passages missed, the answer was simply "not known" | Corrective retrieval (after CRAG, Yan et al. 2024): coverage "none" or "partial" searches again wider and keeps the better answer |
+
+Copies of the same passage in several uploads (an old and a new directory)
+are given to the model once. Corrected files go in with `chatbot:import-documents
+--replace` (approval line `replace=yes`), which stops using older uploads of
+the same title.
 
 ## The university at a glance
 

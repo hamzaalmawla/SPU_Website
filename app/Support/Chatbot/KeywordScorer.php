@@ -69,6 +69,82 @@ final class KeywordScorer
     }
 
     /**
+     * The written forms each term counts under, as bits: a term from terms()
+     * and the same word with an attached و ف ب ل ك (the article is already
+     * stripped) or an English plural ending. A folded passage
+     * (normalizePassage) is then matched word by word with one lookup each,
+     * whatever the number of terms.
+     *
+     * @param  array<string, int>  $termBits  term => bit
+     * @return array<string, int> form => bits of the terms it stands for
+     */
+    public static function formBits(array $termBits): array
+    {
+        $forms = [];
+        foreach ($termBits as $term => $bit) {
+            $term = (string) $term;
+            foreach (['', 'و', 'ف', 'ب', 'ل', 'ك', 'وب', 'ول', 'فل'] as $prefix) {
+                $forms[$prefix.$term] = ($forms[$prefix.$term] ?? 0) | (1 << $bit);
+            }
+            foreach (['s', 'es'] as $suffix) {
+                $forms[$term.$suffix] = ($forms[$term.$suffix] ?? 0) | (1 << $bit);
+            }
+        }
+
+        return $forms;
+    }
+
+    /**
+     * Bits of the terms a folded passage contains (see formBits()).
+     *
+     * @param  array<string, int>  $formBits
+     */
+    public static function passageBits(string $normalizedPassage, array $formBits): int
+    {
+        $mask = 0;
+        foreach (explode(' ', $normalizedPassage) as $word) {
+            if (isset($formBits[$word])) {
+                $mask |= $formBits[$word];
+            }
+        }
+
+        return $mask;
+    }
+
+    /**
+     * How telling a term is: BM25's inverse document frequency, high for a
+     * term few passages contain (a name, a code), near zero for one most
+     * passages contain ("الطالب").
+     */
+    public static function idf(int $passagesWithTerm, int $passages): float
+    {
+        return log(1 + ($passages - $passagesWithTerm + 0.5) / ($passagesWithTerm + 0.5));
+    }
+
+    /**
+     * Share (0-1) of a search's term weight that a passage contains. Terms
+     * are bits: `$searchMask` the search's, `$passageMask` those found in
+     * the passage; `$weights[bit]` each term's idf().
+     *
+     * @param  array<int, float>  $weights
+     */
+    public static function weightedShare(int $searchMask, int $passageMask, array $weights): float
+    {
+        $all = 0.0;
+        $matched = 0.0;
+        foreach ($weights as $bit => $weight) {
+            if (($searchMask >> $bit) & 1) {
+                $all += $weight;
+                if (($passageMask >> $bit) & 1) {
+                    $matched += $weight;
+                }
+            }
+        }
+
+        return $all > 0.0 ? $matched / $all : 0.0;
+    }
+
+    /**
      * The passage text folded once at index time.
      */
     public static function normalizePassage(string $text): string

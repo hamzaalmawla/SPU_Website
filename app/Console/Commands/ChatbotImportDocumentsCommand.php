@@ -24,7 +24,8 @@ final class ChatbotImportDocumentsCommand extends Command
     protected $signature = 'chatbot:import-documents
         {--dir=chatbot/import : Folder on the knowledge disk holding the files}
         {--user= : Id of the admin user the upload is recorded as}
-        {--write : Add the files (without it nothing is stored)}';
+        {--write : Add the files (without it nothing is stored)}
+        {--replace : A file added stops the use of older uploads with the same title (a corrected copy)}';
 
     protected $description = 'Add the files waiting in a folder to the AI assistant\'s knowledge, as an admin upload would.';
 
@@ -74,6 +75,9 @@ final class ChatbotImportDocumentsCommand extends Command
             try {
                 $document = $this->knowledge->addUpload($staged, $name, null, (int) $user);
                 $this->line(sprintf('ADDED: %s — %s, %d passage(s)%s', $document->title, $document->status, $document->chunkCount, $document->error !== null ? ' ('.$document->error.')' : ''));
+                if ((bool) $this->option('replace') && $document->status !== 'failed') {
+                    $this->retireOlderCopies($document->id, $document->title, (int) $user);
+                }
             } catch (InvalidArgumentException $exception) {
                 $disk->delete($staged);
                 if ($exception->getMessage() !== 'admin_chatbot.errors.duplicate') {
@@ -96,5 +100,19 @@ final class ChatbotImportDocumentsCommand extends Command
         }
 
         return $failed === 0 ? self::SUCCESS : self::FAILURE;
+    }
+
+    /**
+     * Older uploads with the same title stop answering (kept, not deleted:
+     * an editor can use them again in the admin).
+     */
+    private function retireOlderCopies(int $documentId, string $title, int $user): void
+    {
+        foreach ($this->knowledge->documents() as $older) {
+            if ($older->id !== $documentId && $older->isActive && $older->sourceType === 'upload' && $older->title === $title) {
+                $this->knowledge->setActive($older->id, false, $user);
+                $this->line(sprintf('  RETIRED: #%d %s (replaced by #%d)', $older->id, $older->title, $documentId));
+            }
+        }
     }
 }

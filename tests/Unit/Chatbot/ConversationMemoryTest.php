@@ -64,7 +64,7 @@ final class ConversationMemoryTest extends TestCase
         $schema = ChatbotPrompt::schema();
 
         $this->assertContains('memory', $schema['required']);
-        $this->assertSame(['category' => 'university', 'answer' => 'Yes.', 'memory' => 'Wants Pharmacy.'], ChatbotPrompt::parseReply('{"category":"university","answer":" Yes. ","memory":" Wants Pharmacy. "}'));
+        $this->assertSame(['category' => 'university', 'answer' => 'Yes.', 'memory' => 'Wants Pharmacy.', 'coverage' => 'full'], ChatbotPrompt::parseReply('{"category":"university","answer":" Yes. ","memory":" Wants Pharmacy. "}'));
         $this->assertSame('', ChatbotPrompt::parseReply('{"category":"greeting","answer":"Hi"}')['memory'] ?? null);
     }
 

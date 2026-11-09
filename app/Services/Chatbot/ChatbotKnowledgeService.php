@@ -26,6 +26,7 @@ use App\Models\Chatbot\ChatbotDocument;
 use App\Support\Chatbot\DocumentTextExtractor;
 use App\Support\Chatbot\ExecutionTime;
 use App\Support\Chatbot\KeywordScorer;
+use App\Support\Chatbot\SearchRewrite;
 use App\Support\Chatbot\TextChunker;
 use App\Support\Chatbot\VectorMath;
 use App\Support\SearchTextNormalizer;
@@ -351,111 +352,222 @@ final class ChatbotKnowledgeService implements ChatbotKnowledgeServiceInterface
         return $text;
     }
 
-    public function retrieve(string $query, string $apiKey, ?string $locale = null, ?string $searchHint = null): ChatbotRetrievalDTO
+    /**
+     * Hybrid retrieval, one search ("channel") per thing the visitor asked.
+     *
+     * - A question that asks one thing is one channel: its own words and the
+     *   rewrite (the better match counts), as before.
+     * - A question the rewrite split into parts ("hours to transfer" and
+     *   "GPA 3.1 as a percentage") gets a channel per part plus one for the
+     *   whole question, and the passages are taken from each in turn, so no
+     *   part is crowded out by another (query decomposition).
+     *
+     * Every channel scores every passage two ways in one pass: meaning
+     * (cosine of the embeddings) and words (the share of the search's terms
+     * the passage contains, each term weighted by how rare it is in the
+     * knowledge base, as BM25's IDF does). Candidates are the best of each,
+     * so a passage naming a person or a number is found even when its
+     * meaning scores low (a phone directory line), then ranked by the
+     * weighted sum of both scores (convex combination). Nothing here is
+     * random: the same question over the same knowledge gives the same
+     * passages.
+     */
+    public function retrieve(string $query, string $apiKey, ?string $locale = null, ?string $searchHint = null, ?int $limit = null): ChatbotRetrievalDTO
     {
         $query = trim($query);
         if ($query === '' || ! $this->hasSearchable()) {
             return new ChatbotRetrievalDTO([], 0);
         }
 
-        [$queryVector, $tokens] = $this->queryVector($query, $apiKey);
-        if ($queryVector === []) {
+        $parts = array_values(array_filter(SearchRewrite::parts($searchHint), static fn (string $part): bool => $part !== $query));
+        $channels = count($parts) <= 1
+            ? [[$query, ...$parts]]
+            : [...array_map(static fn (string $part): array => [$part], $parts), [$query]];
+
+        [$vectors, $tokens] = $this->queryVectors(array_values(array_unique(array_merge(...$channels))), $apiKey);
+        if (($vectors[$query] ?? []) === []) {
             return new ChatbotRetrievalDTO([], $tokens);
         }
 
-        $searchHint = trim((string) $searchHint);
-        $hintVector = [];
-        if ($searchHint !== '' && $searchHint !== $query) {
-            [$hintVector, $hintTokens] = $this->queryVector($searchHint, $apiKey);
-            $tokens += $hintTokens;
+        // Each search's terms, as bits of one mask (at most 62 terms in all).
+        $terms = [];
+        $masks = [];
+        foreach (array_merge(...$channels) as $text) {
+            $mask = 0;
+            foreach (KeywordScorer::terms($text) as $term) {
+                if (! isset($terms[$term])) {
+                    if (count($terms) >= 62) {
+                        continue;
+                    }
+                    $terms[$term] = count($terms);
+                }
+                $mask |= 1 << $terms[$term];
+            }
+            $masks[$text] = $mask;
         }
 
-        $candidateCount = max(1, (int) config('chatbot.retrieval.candidates', 40));
-        $scores = [];
+        $channelVectors = array_map(
+            static fn (array $texts): array => array_values(array_filter(array_map(static fn (string $text): array => $vectors[$text] ?? [], $texts))),
+            $channels,
+        );
+
+        $similarities = array_fill(0, count($channels), []);
+        $found = [];
+        $frequency = array_fill(0, count($terms), 0);
+        $total = 0;
+        $formBits = KeywordScorer::formBits($terms);
 
         ChatbotChunk::query()
-            ->select(['chatbot_chunks.id', 'chatbot_chunks.embedding'])
+            ->select(['chatbot_chunks.id', 'chatbot_chunks.embedding', 'chatbot_chunks.content_normalized'])
             ->join('chatbot_documents', 'chatbot_documents.id', '=', 'chatbot_chunks.chatbot_document_id')
             ->where('chatbot_documents.status', ChatbotDocument::STATUS_READY)
             ->where('chatbot_documents.is_active', true)
             ->where('chatbot_documents.embedding_model', (string) config('chatbot.embedding.model'))
             ->where('chatbot_documents.embedding_dimensions', (int) config('chatbot.embedding.dimensions'))
             ->orderBy('chatbot_chunks.id')
-            ->chunk(500, function (Collection $rows) use (&$scores, $queryVector, $hintVector, $candidateCount): void {
+            ->chunk(500, function (Collection $rows) use (&$similarities, &$found, &$frequency, &$total, $channelVectors, $terms, $formBits): void {
                 foreach ($rows as $row) {
                     $vector = VectorMath::unpack((string) base64_decode((string) $row->embedding, true));
-                    if ($vector !== []) {
-                        $similarity = VectorMath::dot($queryVector, $vector);
-                        if ($hintVector !== []) {
-                            $similarity = max($similarity, VectorMath::dot($hintVector, $vector));
-                        }
-                        $scores[(int) $row->id] = $similarity;
+                    if ($vector === []) {
+                        continue;
                     }
-                }
+                    $id = (int) $row->id;
+                    $total++;
 
-                // Keep memory flat on a large knowledge base.
-                if (count($scores) > $candidateCount * 4) {
-                    arsort($scores);
-                    $scores = array_slice($scores, 0, $candidateCount, true);
+                    foreach ($channelVectors as $channel => $searchVectors) {
+                        $best = -1.0;
+                        foreach ($searchVectors as $searchVector) {
+                            $best = max($best, VectorMath::dot($searchVector, $vector));
+                        }
+                        $similarities[$channel][$id] = $best;
+                    }
+
+                    $mask = KeywordScorer::passageBits((string) $row->content_normalized, $formBits);
+                    if ($mask !== 0) {
+                        $found[$id] = $mask;
+                        foreach ($terms as $bit) {
+                            if (($mask >> $bit) & 1) {
+                                $frequency[$bit]++;
+                            }
+                        }
+                    }
                 }
             });
 
-        arsort($scores);
-        $scores = array_slice($scores, 0, $candidateCount, true);
-        if ($scores === []) {
+        if ($total === 0) {
             return new ChatbotRetrievalDTO([], $tokens);
         }
 
-        $minimum = (float) config('chatbot.retrieval.min_similarity', 0.22);
-        $keywordWeight = (float) config('chatbot.retrieval.keyword_weight', 0.18);
-        $terms = KeywordScorer::terms($query);
-        $hintTerms = $hintVector !== [] ? KeywordScorer::terms($searchHint) : [];
+        $weights = array_map(static fn (int $documents): float => KeywordScorer::idf($documents, $total), $frequency);
+        $lexical = static function (int $chunkMask, array $texts) use ($masks, $weights): float {
+            $best = 0.0;
+            foreach ($texts as $text) {
+                $best = max($best, KeywordScorer::weightedShare($masks[$text] ?? 0, $chunkMask, $weights));
+            }
+
+            return $best;
+        };
+
+        $candidateCount = max(1, (int) config('chatbot.retrieval.candidates', 40));
+        $lexicalCount = max(0, (int) config('chatbot.retrieval.keyword_candidates', 20));
+        $candidates = [];
+        foreach ($channels as $channel => $texts) {
+            $bySimilarity = $similarities[$channel];
+            arsort($bySimilarity);
+            $ids = array_keys(array_slice($bySimilarity, 0, $candidateCount, true));
+
+            $byWords = [];
+            foreach ($found as $id => $mask) {
+                $share = $lexical($mask, $texts);
+                if ($share > 0.0) {
+                    $byWords[$id] = $share;
+                }
+            }
+            arsort($byWords);
+            $candidates[$channel] = array_values(array_unique([...$ids, ...array_keys(array_slice($byWords, 0, $lexicalCount, true))]));
+        }
 
         $chunks = ChatbotChunk::query()
             ->with('document:id,title,source_url,locale')
-            ->whereIn('id', array_keys($scores))
-            ->get(['id', 'chatbot_document_id', 'page', 'heading', 'content', 'content_normalized']);
+            ->whereIn('id', array_values(array_unique(array_merge(...$candidates))))
+            ->get(['id', 'chatbot_document_id', 'page', 'heading', 'content', 'content_normalized'])
+            ->keyBy('id');
 
-        $ranked = [];
-        foreach ($chunks as $chunk) {
-            $similarity = $scores[(int) $chunk->id] ?? 0.0;
-            $keywords = KeywordScorer::score($terms, (string) $chunk->content_normalized);
-            if ($hintTerms !== []) {
-                $keywords = max($keywords, KeywordScorer::score($hintTerms, (string) $chunk->content_normalized));
+        $minimum = (float) config('chatbot.retrieval.min_similarity', 0.22);
+        $keywordWeight = (float) config('chatbot.retrieval.keyword_weight', 0.18);
+        $languageBoost = (float) config('chatbot.retrieval.same_language_boost', 0.03);
+
+        $rankedLists = [];
+        foreach ($candidates as $channel => $ids) {
+            $ranked = [];
+            foreach ($ids as $id) {
+                $chunk = $chunks->get($id);
+                if ($chunk === null) {
+                    continue;
+                }
+                $similarity = $similarities[$channel][$id] ?? 0.0;
+                $keywords = $lexical($found[$id] ?? 0, $channels[$channel]);
+
+                // A passage that names the exact thing asked about (a person,
+                // a number, a rare term) may score below the cut on meaning.
+                if ($similarity < $minimum
+                    && ! ($keywords >= 0.5 && $similarity >= $minimum - 0.06)
+                    && ! ($keywords >= 0.75 && $similarity >= $minimum - 0.12)) {
+                    continue;
+                }
+
+                $sameLanguage = $locale !== null && $chunk->document?->locale === $locale;
+                $ranked[] = [
+                    'score' => $similarity + $keywordWeight * $keywords + ($sameLanguage ? $languageBoost : 0.0),
+                    'id' => $id,
+                    'similarity' => $similarity,
+                ];
             }
-
-            // A passage that names the exact thing asked about may score a
-            // little below the cut on meaning alone.
-            if ($similarity < $minimum && ! ($keywords >= 0.5 && $similarity >= $minimum - 0.06)) {
-                continue;
-            }
-
-            $sameLanguage = $locale !== null && $chunk->document?->locale === $locale;
-
-            $ranked[] = [
-                'score' => $similarity + $keywordWeight * $keywords + ($sameLanguage ? (float) config('chatbot.retrieval.same_language_boost', 0.03) : 0.0),
-                'passage' => new ChatbotPassageDTO(
-                    chunkId: (int) $chunk->id,
-                    documentId: (int) $chunk->chatbot_document_id,
-                    documentTitle: (string) ($chunk->document?->title ?? ''),
-                    page: $chunk->page,
-                    heading: $chunk->heading,
-                    content: (string) $chunk->content,
-                    score: round(max(0.0, min(1.0, $similarity)), 4),
-                    url: $chunk->document?->source_url,
-                ),
-            ];
+            // Equal scores fall back to the passage order, never chance.
+            usort($ranked, static fn (array $a, array $b): int => [$b['score'], $a['id']] <=> [$a['score'], $b['id']]);
+            $rankedLists[] = $ranked;
         }
 
-        usort($ranked, static fn (array $a, array $b): int => $b['score'] <=> $a['score']);
+        $limit = max(1, $limit ?? (count($channels) > 1
+            ? (int) config('chatbot.retrieval.top_k_multi', 10)
+            : (int) config('chatbot.retrieval.top_k', 6)));
 
-        return new ChatbotRetrievalDTO(
-            array_values(array_map(
-                static fn (array $item): ChatbotPassageDTO => $item['passage'],
-                array_slice($ranked, 0, max(1, (int) config('chatbot.retrieval.top_k', 6))),
-            )),
-            $tokens,
-        );
+        // Take from each channel in turn; the same passage (or a copy of it
+        // in another file) is given once.
+        $passages = [];
+        $seen = [];
+        $cursors = array_fill(0, count($rankedLists), 0);
+        while (count($passages) < $limit) {
+            $added = false;
+            foreach ($rankedLists as $channel => $ranked) {
+                while (isset($ranked[$cursors[$channel]]) && count($passages) < $limit) {
+                    $item = $ranked[$cursors[$channel]++];
+                    $chunk = $chunks->get($item['id']);
+                    $copy = 'c'.sha1(mb_substr((string) $chunk->content_normalized, 0, 600));
+                    if (isset($seen[$item['id']]) || isset($seen[$copy])) {
+                        continue;
+                    }
+                    $seen[$item['id']] = $seen[$copy] = true;
+                    $passages[] = new ChatbotPassageDTO(
+                        chunkId: (int) $chunk->id,
+                        documentId: (int) $chunk->chatbot_document_id,
+                        documentTitle: (string) ($chunk->document?->title ?? ''),
+                        page: $chunk->page,
+                        heading: $chunk->heading,
+                        content: (string) $chunk->content,
+                        score: round(max(0.0, min(1.0, $item['similarity'])), 4),
+                        url: $chunk->document?->source_url,
+                    );
+                    $added = true;
+                    break;
+                }
+            }
+            if (! $added) {
+                break;
+            }
+        }
+
+        return new ChatbotRetrievalDTO($passages, $tokens);
     }
 
     public function syncWebsite(int $actorId): ChatbotWebsiteSyncDTO
@@ -891,22 +1003,44 @@ final class ChatbotKnowledgeService implements ChatbotKnowledgeServiceInterface
     }
 
     /**
-     * @return array{0: list<float>, 1: int}
+     * The search texts' vectors (cached a week each); the ones not cached
+     * are embedded in one call.
+     *
+     * @param  list<string>  $texts
+     * @return array{0: array<string, list<float>>, 1: int}
      */
-    private function queryVector(string $query, string $apiKey): array
+    private function queryVectors(array $texts, string $apiKey): array
+    {
+        $vectors = [];
+        $missing = [];
+        foreach ($texts as $text) {
+            $packed = Cache::get($this->queryVectorKey($text));
+            if (is_string($packed)) {
+                $vectors[$text] = VectorMath::unpack((string) base64_decode($packed, true));
+            } else {
+                $missing[] = $text;
+            }
+        }
+
+        $tokens = 0;
+        if ($missing !== []) {
+            $result = $this->openAi->embed($missing, $apiKey);
+            $tokens = $result->tokens;
+            foreach ($missing as $index => $text) {
+                $vector = $result->vectors[$index] ?? [];
+                $vectors[$text] = $vector;
+                Cache::put($this->queryVectorKey($text), base64_encode(VectorMath::pack($vector)), 604_800);
+            }
+        }
+
+        return [$vectors, $tokens];
+    }
+
+    private function queryVectorKey(string $text): string
     {
         // The provider is part of the key: a vector from another endpoint or
         // model lives in another space and would match nothing.
-        $key = 'chatbot.query-vector.'.sha1(config('chatbot.openai.base_url').'|'.config('chatbot.embedding.model').'|'.config('chatbot.embedding.dimensions').'|'.mb_strtolower($query));
-        $tokens = 0;
-        $packed = $this->cache->remember($key, function () use ($query, $apiKey, &$tokens): string {
-            $result = $this->openAi->embed([$query], $apiKey);
-            $tokens = $result->tokens;
-
-            return base64_encode(VectorMath::pack($result->vectors[0] ?? []));
-        }, 604_800);
-
-        return [VectorMath::unpack((string) base64_decode((string) $packed, true)), $tokens];
+        return 'chatbot.query-vector.'.sha1(config('chatbot.openai.base_url').'|'.config('chatbot.embedding.model').'|'.config('chatbot.embedding.dimensions').'|'.mb_strtolower($text));
     }
 
     private function deleteDocument(ChatbotDocument $document): void

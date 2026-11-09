@@ -22,6 +22,9 @@ final class ChatbotProviderException extends RuntimeException
 
     public const INVALID = 'invalid';
 
+    /** The model does not take a sampling temperature (the request is retried without). */
+    public const NO_TEMPERATURE = 'no_temperature';
+
     public function __construct(public readonly string $reason, string $message, public readonly int $status = 0)
     {
         parent::__construct($message);

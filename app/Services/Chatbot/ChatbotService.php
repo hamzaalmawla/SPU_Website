@@ -241,27 +241,30 @@ final class ChatbotService implements ChatbotServiceInterface
                 return $this->refuse($question, $locale, 'unsafe');
             }
 
-            $searchQuery = $this->retrievalQuery($outgoing, $history);
+            // The rewrite already turns a follow-up into a whole search; the
+            // previous question is added only when there is no rewrite.
+            $searchQuery = $searchHint === null ? $this->retrievalQuery($outgoing, $history) : $outgoing;
             $retrieval = $this->timed('search', fn () => $this->knowledge->retrieve($searchQuery, $apiKey, $locale, $searchHint));
             $embeddingTokens = $retrieval->embeddingTokens;
 
             // Layer 3: the model classifies the message before answering
             // (structured output), so an out-of-scope request comes back as a
             // category, never as text shown to the visitor.
-            $request = new ChatbotCompletionRequestDTO(
+            $instructions = ChatbotPrompt::instructions(
+                $locale === 'ar' ? $settings->assistantNameAr : $settings->assistantNameEn,
+                $locale,
+                $this->contacts($locale) + ['website' => (string) config('app.url')],
+                $settings->extraInstructions,
+                now()->toFormattedDateString(),
+                $directory,
+            );
+            $request = fn (array $passages): ChatbotCompletionRequestDTO => new ChatbotCompletionRequestDTO(
                 apiKey: $apiKey,
                 model: $settings->model,
-                instructions: ChatbotPrompt::instructions(
-                    $locale === 'ar' ? $settings->assistantNameAr : $settings->assistantNameEn,
-                    $locale,
-                    $this->contacts($locale) + ['website' => (string) config('app.url')],
-                    $settings->extraInstructions,
-                    now()->toFormattedDateString(),
-                    $directory,
-                ),
+                instructions: $instructions,
                 messages: [
                     ...array_map(static fn (array $turn): array => ['role' => $turn['role'], 'content' => ChatbotGuard::redactPersonalData($turn['content'])], $history),
-                    ['role' => 'user', 'content' => ChatbotPrompt::questionTurn($outgoing, $retrieval->passages, (int) config('chatbot.retrieval.max_passage_characters', 1400), $memory, $question->spoken)],
+                    ['role' => 'user', 'content' => ChatbotPrompt::questionTurn($outgoing, $passages, (int) config('chatbot.retrieval.max_passage_characters', 1400), $memory, $question->spoken)],
                 ],
                 // A spoken answer is read aloud, so it is short: less to write and to say.
                 maxOutputTokens: $question->spoken
@@ -270,8 +273,35 @@ final class ChatbotService implements ChatbotServiceInterface
                 reasoningEffort: $this->reasoningEffort($settings->model),
                 cacheKey: 'spu-assistant-'.$locale,
                 jsonSchema: ChatbotPrompt::schema(),
+                temperature: $this->temperature($settings->model),
             );
-            [$completion, $model] = $this->timed('model', fn (): array => $this->respondWithFallback($request, $settings->fallbackModel));
+            [$completion, $model] = $this->timed('model', fn (): array => $this->respondWithFallback($request($retrieval->passages), $settings->fallbackModel));
+
+            // Corrective retrieval: when the passages did not answer the whole
+            // question, search once more with a wider net (more passages per
+            // part) and keep whichever answer covers more.
+            $first = ChatbotPrompt::parseReply($completion->text);
+            if ($first !== null && $first['category'] === 'university' && $first['coverage'] !== 'full' && $retrieval->passages !== []) {
+                try {
+                    $wider = $this->timed('search_retry', fn () => $this->knowledge->retrieve($searchQuery, $apiKey, $locale, $searchHint, (int) config('chatbot.retrieval.top_k_retry', 14)));
+                    $embeddingTokens += $wider->embeddingTokens;
+                    if ($this->passageIds($wider->passages) !== $this->passageIds($retrieval->passages)) {
+                        [$retry, $retryModel] = $this->timed('model_retry', fn (): array => $this->respondWithFallback($request($wider->passages), $settings->fallbackModel));
+                        $second = ChatbotPrompt::parseReply($retry->text);
+                        $better = $second !== null && in_array($second['category'], ChatbotPrompt::ANSWERABLE, true) && $second['answer'] !== ''
+                            && self::COVERAGE_RANK[$second['coverage']] > self::COVERAGE_RANK[$first['coverage']];
+                        // The call not kept is still paid for.
+                        [$spent, $spentModel] = $better ? [$completion, $model] : [$retry, $retryModel];
+                        $this->usage->recordModelUse($spentModel, $spent->inputTokens, $spent->outputTokens, $spent->cachedInputTokens);
+                        if ($better) {
+                            [$completion, $model, $retrieval] = [$retry, $retryModel, $wider];
+                        }
+                    }
+                } catch (ChatbotProviderException $exception) {
+                    // The first answer stands.
+                    Log::notice('Chatbot wider search skipped.', ['reason' => $exception->reason, 'status' => $exception->status]);
+                }
+            }
         } catch (ChatbotProviderException $exception) {
             $this->usage->recordFailure($embeddingTokens);
             Log::warning('Chatbot provider call failed.', ['reason' => $exception->reason, 'status' => $exception->status]);
@@ -321,7 +351,9 @@ final class ChatbotService implements ChatbotServiceInterface
         $sources = $reply['category'] === 'university' ? $this->sources($retrieval->passages) : [];
         $notes = $this->nextNotes($reply['memory'], $memory);
 
-        if ($cacheKey !== null && ! $completion->truncated) {
+        // Only a complete answer is shared: "I don't have that" must never be
+        // served from cache to the next visitor (it was, for twelve hours).
+        if ($cacheKey !== null && ! $completion->truncated && $reply['coverage'] === 'full') {
             Cache::put($cacheKey, [
                 'answer' => $answer,
                 'sources' => array_map(static fn (ChatbotSourceDTO $source): array => ['title' => $source->title, 'pages' => $source->pages, 'url' => $source->url], $sources),
@@ -397,7 +429,8 @@ final class ChatbotService implements ChatbotServiceInterface
     private function rewritePlan(string $input, string $message, string $apiKey, string $mainModel): array
     {
         $model = trim((string) config('chatbot.retrieval.rewrite_model', '')) ?: $mainModel;
-        $key = 'chatbot.search-hint.'.sha1($model.'|'.SearchTextNormalizer::normalize($input));
+        // v2: one line per part of the question (hints cached before had one).
+        $key = 'chatbot.search-hint.v2.'.sha1($model.'|'.SearchTextNormalizer::normalize($input));
         $plan = ['hint' => null, 'request' => null, 'key' => $key, 'model' => $model];
 
         if (! (bool) config('chatbot.retrieval.rewrite', true) || mb_strlen($message) < 3) {
@@ -414,10 +447,11 @@ final class ChatbotService implements ChatbotServiceInterface
             model: $model,
             instructions: SearchRewrite::INSTRUCTIONS,
             messages: [['role' => 'user', 'content' => $input]],
-            maxOutputTokens: 300,
+            maxOutputTokens: 400,
             reasoningEffort: $this->reasoningEffort($model),
             cacheKey: 'spu-assistant-search',
             timeout: (int) config('chatbot.retrieval.rewrite_timeout', 8),
+            temperature: $this->temperature($model),
         )] + $plan;
     }
 
@@ -556,6 +590,7 @@ final class ChatbotService implements ChatbotServiceInterface
                 reasoningEffort: $this->reasoningEffort($fallback),
                 cacheKey: $request->cacheKey,
                 jsonSchema: $request->jsonSchema,
+                temperature: $this->temperature($fallback),
             )), $fallback];
         }
     }
@@ -724,6 +759,7 @@ final class ChatbotService implements ChatbotServiceInterface
     private function answerCacheKey(ChatbotSettingsDTO $settings, string $locale, string $message, bool $spoken, string $directory): string
     {
         return 'chatbot.answer.'.sha1(implode('|', [
+            self::ANSWER_VERSION,
             $locale,
             // A faculty or center added or renamed changes the answers that list them.
             sha1($directory),
@@ -734,6 +770,42 @@ final class ChatbotService implements ChatbotServiceInterface
             $this->knowledge->version(),
             SearchTextNormalizer::normalize((string) preg_replace('/[^\p{L}\p{N}\s]+/u', ' ', $message)),
         ]));
+    }
+
+    /** How much of a question an answer covered, for comparing two answers. */
+    private const COVERAGE_RANK = ['none' => 0, 'partial' => 1, 'full' => 2];
+
+    /**
+     * Bumped when the rules or the retrieval change, so answers cached
+     * before are not served again.
+     */
+    private const ANSWER_VERSION = 'v2';
+
+    /**
+     * @param  list<ChatbotPassageDTO>  $passages
+     * @return list<int>
+     */
+    private function passageIds(array $passages): array
+    {
+        $ids = array_map(static fn (ChatbotPassageDTO $passage): int => $passage->chunkId, $passages);
+        sort($ids);
+
+        return $ids;
+    }
+
+    /**
+     * Temperature 0 (the same question gets the same wording and the same
+     * search) for every model that takes one: those run without thinking
+     * (reasoning "none") and those without reasoning. Thinking models take
+     * none. A model that refuses it is asked again without (OpenAiClient).
+     */
+    private function temperature(string $model): ?float
+    {
+        if (! (bool) (((array) config('chatbot.models', []))[$model]['reasoning'] ?? false)) {
+            return 0.0;
+        }
+
+        return $this->reasoningEffort($model) === 'none' ? 0.0 : null;
     }
 
     private function reasoningEffort(string $model): ?string

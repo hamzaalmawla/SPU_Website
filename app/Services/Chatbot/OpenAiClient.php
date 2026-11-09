@@ -18,7 +18,9 @@ use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Client\Pool;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Http\Client\Response;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 /**
  * OpenAI's Responses, Embeddings, Moderation and Audio endpoints over
@@ -70,13 +72,73 @@ final class OpenAiClient implements OpenAiClientInterface
 
     public function respond(ChatbotCompletionRequestDTO $request): ChatbotCompletionDTO
     {
-        $response = $this->send(
-            fn (): Response => $this->request($request->apiKey, $request->timeout ?? (int) config('chatbot.openai.timeout', 45))
-                ->post('/responses', $this->responsePayload($request))
-        );
+        $request = $this->temperatureAllowed($request);
+
+        try {
+            $response = $this->send(
+                fn (): Response => $this->request($request->apiKey, $request->timeout ?? (int) config('chatbot.openai.timeout', 45))
+                    ->post('/responses', $this->responsePayload($request))
+            );
+        } catch (ChatbotProviderException $exception) {
+            if ($exception->reason !== ChatbotProviderException::NO_TEMPERATURE || $request->temperature === null) {
+                throw $exception;
+            }
+
+            return $this->respond($this->forgetTemperature($request));
+        }
 
         return $this->completion($response);
     }
+
+    /**
+     * The request as this model takes it: without a temperature once the
+     * model has refused one (remembered for a day).
+     */
+    private function temperatureAllowed(ChatbotCompletionRequestDTO $request): ChatbotCompletionRequestDTO
+    {
+        if ($request->temperature !== null && Cache::has(self::NO_TEMPERATURE_KEY.$request->model)) {
+            return $request->withoutTemperature();
+        }
+
+        return $request;
+    }
+
+    private function forgetTemperature(ChatbotCompletionRequestDTO $request): ChatbotCompletionRequestDTO
+    {
+        Cache::put(self::NO_TEMPERATURE_KEY.$request->model, true, 86_400);
+        Log::notice('Chatbot model does not take a temperature; asking without.', ['model' => $request->model]);
+
+        return $request->withoutTemperature();
+    }
+
+    /**
+     * A pooled outcome; a refused temperature is asked again without it.
+     */
+    private function pooledOutcome(?Response $response, ChatbotCompletionRequestDTO $request): ChatbotCompletionDTO|ChatbotProviderException
+    {
+        try {
+            if (! $response instanceof Response) {
+                throw new ChatbotProviderException(ChatbotProviderException::UNAVAILABLE, 'OpenAI could not be reached.');
+            }
+            if (! $response->successful()) {
+                throw $this->failure($response);
+            }
+
+            return $this->completion($response);
+        } catch (ChatbotProviderException $exception) {
+            if ($exception->reason === ChatbotProviderException::NO_TEMPERATURE && $request->temperature !== null) {
+                try {
+                    return $this->respond($this->forgetTemperature($request));
+                } catch (ChatbotProviderException $retry) {
+                    return $retry;
+                }
+            }
+
+            return $exception;
+        }
+    }
+
+    private const NO_TEMPERATURE_KEY = 'chatbot.no-temperature.';
 
     public function respondMany(array $requests): array
     {
@@ -84,6 +146,7 @@ final class OpenAiClient implements OpenAiClientInterface
             return [];
         }
 
+        $requests = array_map($this->temperatureAllowed(...), $requests);
         $keys = array_keys($requests);
         $responses = Http::pool(function (Pool $pool) use ($requests): array {
             $pending = [];
@@ -98,18 +161,7 @@ final class OpenAiClient implements OpenAiClientInterface
         $results = [];
         foreach ($keys as $key) {
             $response = $responses[(string) $key] ?? null;
-
-            try {
-                if (! $response instanceof Response) {
-                    throw new ChatbotProviderException(ChatbotProviderException::UNAVAILABLE, 'OpenAI could not be reached.');
-                }
-                if (! $response->successful()) {
-                    throw $this->failure($response);
-                }
-                $results[$key] = $this->completion($response);
-            } catch (ChatbotProviderException $exception) {
-                $results[$key] = $exception;
-            }
+            $results[$key] = $this->pooledOutcome($response instanceof Response ? $response : null, $requests[$key]);
         }
 
         return $results;
@@ -133,6 +185,10 @@ final class OpenAiClient implements OpenAiClientInterface
 
         if ($request->reasoningEffort !== null) {
             $payload['reasoning'] = ['effort' => $request->reasoningEffort];
+        }
+
+        if ($request->temperature !== null) {
+            $payload['temperature'] = $request->temperature;
         }
 
         if ($request->cacheKey !== null) {
@@ -193,6 +249,7 @@ final class OpenAiClient implements OpenAiClientInterface
 
     public function moderateAndRespond(string $input, string $apiKey, ChatbotCompletionRequestDTO $request): array
     {
+        $request = $this->temperatureAllowed($request);
         $responses = Http::pool(fn (Pool $pool): array => [
             $this->configure($pool->as('moderation'), $apiKey, 10)->post('/moderations', $this->moderationPayload($input)),
             $this->configure($pool->as('completion'), $request->apiKey, $request->timeout ?? (int) config('chatbot.openai.timeout', 45))
@@ -200,21 +257,20 @@ final class OpenAiClient implements OpenAiClientInterface
         ]);
 
         $results = [];
-        foreach (['moderation', 'completion'] as $key) {
-            $response = $responses[$key] ?? null;
-
-            try {
-                if (! $response instanceof Response) {
-                    throw new ChatbotProviderException(ChatbotProviderException::UNAVAILABLE, 'OpenAI could not be reached.');
-                }
-                if (! $response->successful()) {
-                    throw $this->failure($response);
-                }
-                $results[$key] = $key === 'moderation' ? $this->flagged($response) : $this->completion($response);
-            } catch (ChatbotProviderException $exception) {
-                $results[$key] = $exception;
+        $moderation = $responses['moderation'] ?? null;
+        try {
+            if (! $moderation instanceof Response) {
+                throw new ChatbotProviderException(ChatbotProviderException::UNAVAILABLE, 'OpenAI could not be reached.');
             }
+            if (! $moderation->successful()) {
+                throw $this->failure($moderation);
+            }
+            $results['moderation'] = $this->flagged($moderation);
+        } catch (ChatbotProviderException $exception) {
+            $results['moderation'] = $exception;
         }
+        $completion = $responses['completion'] ?? null;
+        $results['completion'] = $this->pooledOutcome($completion instanceof Response ? $completion : null, $request);
 
         /** @var array{moderation: bool|ChatbotProviderException, completion: ChatbotCompletionDTO|ChatbotProviderException} $results */
         return $results;
@@ -428,8 +484,11 @@ final class OpenAiClient implements OpenAiClientInterface
         $status = $response->status();
         $code = (string) $response->json('error.code', '');
         $type = (string) $response->json('error.type', '');
+        $param = (string) $response->json('error.param', '');
+        $message = strtolower((string) $response->json('error.message', ''));
 
         return match (true) {
+            $status === 400 && ($param === 'temperature' || str_contains($message, 'temperature')) => new ChatbotProviderException(ChatbotProviderException::NO_TEMPERATURE, 'The model does not take a temperature.', $status),
             $status === 401, $status === 403 => new ChatbotProviderException(ChatbotProviderException::AUTH, 'OpenAI rejected the API key.', $status),
             $status === 429 && ($code === 'insufficient_quota' || $type === 'insufficient_quota') => new ChatbotProviderException(ChatbotProviderException::QUOTA, 'The OpenAI account has no credit left.', $status),
             $status === 429 => new ChatbotProviderException(ChatbotProviderException::RATE_LIMITED, 'OpenAI rate limit reached.', $status),

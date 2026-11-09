@@ -96,10 +96,13 @@ interface ChatbotKnowledgeServiceInterface
      * knowledge base is empty or nothing is relevant enough.
      *
      * `$searchHint` is the question rewritten into the documents' wording
-     * (SearchRewrite); each passage is scored against both and keeps the
-     * better match.
+     * (SearchRewrite), one line per thing asked. One line: each passage is
+     * scored against the question and the line and keeps the better match.
+     * Several lines: each is searched on its own and the passages are taken
+     * from each in turn, so every part of the question is covered.
+     * `$limit` overrides how many passages come back.
      */
-    public function retrieve(string $query, string $apiKey, ?string $locale = null, ?string $searchHint = null): ChatbotRetrievalDTO;
+    public function retrieve(string $query, string $apiKey, ?string $locale = null, ?string $searchHint = null, ?int $limit = null): ChatbotRetrievalDTO;
 
     /**
      * Bring the website's published pages into the knowledge base: new pages

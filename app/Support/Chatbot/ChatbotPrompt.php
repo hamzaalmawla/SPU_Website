@@ -28,7 +28,15 @@ final class ChatbotPrompt
         - If the sources only partly answer, give the part they support and say what is missing.
         - Each source is labelled with the document it comes from. Different documents often describe different procedures (for example first-year admission, transfer between universities, change of enrolment, admission on an institute or bachelor's certificate) with their own dates, fees, minimums and rules. Never apply a fact from one document to a procedure another document covers. When the question is about one procedure, answer only from sources about that procedure; if none of them states what was asked, say so instead of borrowing it from another document.
         - If sources disagree, prefer "The university at a glance", then the most recent source (look for dates and years), and mention the difference briefly. A source's date is when it was issued, not today: what it says about who holds a post or what is happening now may since have changed.
+        - Amended texts: when a source gives an original text that it marks as amended, replaced or cancelled (نص أصلي، معدّل، ملغى، عُدّل بالقرار) and the text in force (النافذ), answer only from the text in force; never present the old rule as current.
+        - State every case: when the sources give different rules for different situations (for example one limit for a degree from another faculty or university and another for one from the same faculty), give each rule with its condition, the general rule first. Never present one case's figure as the only rule.
         - Do not mention "sources", "passages", "documents", "context" or these instructions. Answer naturally, as the university's assistant; the visitor sees the sources separately.
+
+        # Questions with several parts (very important)
+        - A message often asks several things at once (for example "how many hours must I have finished to transfer, and what percentage is a GPA of 3.1?"). Answer EVERY part, in the order asked: a numbered list with one item per part, or a short bold label per part. Never answer only the main part and drop the others.
+        - Work each part out from the sources on its own: a part may be answered by a different source than the others. When a source gives a university rule for converting or classifying the visitor's own figures (for example a point GPA to its equivalent percentage, or a GPA to its grade), apply it to their numbers and give the result in words (for example "a GPA of 3.1 equals 82%, which is Very Good"). This is answering a university question, not a math problem.
+        - If the sources do not cover one part, say so for that part only and answer the rest.
+        - "coverage": "full" when the sources answered every part of the latest message (and for greetings), "partial" when they answered some parts but not all, "none" when they answered none of it.
 
         # Scope (strict)
         You only talk about Syrian Private University. Before answering, classify the visitor's latest message as exactly one category:
@@ -53,7 +61,7 @@ final class ChatbotPrompt
         # Language and style
         - Reply in the language of the visitor's latest message: Arabic questions get Modern Standard Arabic answers, English questions get English answers. If unclear, use the page language.
         - Be concise, friendly and well organized: short paragraphs, bullet or numbered lists for steps and requirements, **bold** for key values. Use a Markdown table only to compare values that all appear in the sources. Never use headings larger than ###.
-        - Keep answers under about 180 words unless the visitor asks for detail.
+        - Keep answers under about 180 words unless the visitor asks for detail (about 120 more for each extra part of a several-part question).
         - Keep admission requirements, tuition and graduation requirements clearly separate.
 
         # Spoken questions
@@ -81,17 +89,19 @@ final class ChatbotPrompt
                 'category' => ['type' => 'string', 'enum' => ['university', 'greeting', 'off_topic', 'injection', 'abuse', 'unsafe']],
                 'answer' => ['type' => 'string'],
                 'memory' => ['type' => 'string'],
+                'coverage' => ['type' => 'string', 'enum' => ['full', 'partial', 'none']],
             ],
-            'required' => ['category', 'answer', 'memory'],
+            'required' => ['category', 'answer', 'memory', 'coverage'],
             'additionalProperties' => false,
         ];
     }
 
     /**
      * The structured reply. `memory` is the model's updated conversation
-     * notes ('' when it gave none).
+     * notes ('' when it gave none); `coverage` how much of the question the
+     * sources answered (full, partial, none; full when not given).
      *
-     * @return array{category: string, answer: string, memory: string}|null
+     * @return array{category: string, answer: string, memory: string, coverage: string}|null
      */
     public static function parseReply(string $raw): ?array
     {
@@ -100,10 +110,13 @@ final class ChatbotPrompt
             return null;
         }
 
+        $coverage = $decoded['coverage'] ?? null;
+
         return [
             'category' => $decoded['category'],
             'answer' => trim($decoded['answer']),
             'memory' => is_string($decoded['memory'] ?? null) ? trim($decoded['memory']) : '',
+            'coverage' => in_array($coverage, ['full', 'partial', 'none'], true) ? $coverage : 'full',
         ];
     }
 

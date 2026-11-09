@@ -38,6 +38,19 @@ final class RetrievalMathTest extends TestCase
         $this->assertSame(0.5, KeywordScorer::score(KeywordScorer::terms('أقساط الطب'), $passage));
     }
 
+    public function test_rare_words_weigh_more_than_common_ones(): void
+    {
+        // Of 1000 passages, a name is in 2 and "student" in 900.
+        $weights = [0 => KeywordScorer::idf(2, 1000), 1 => KeywordScorer::idf(900, 1000)];
+        $this->assertGreaterThan(20 * $weights[1], $weights[0]);
+
+        // A passage with the name but not the common word covers most of the search.
+        $this->assertGreaterThan(0.9, KeywordScorer::weightedShare(0b11, 0b01, $weights));
+        $this->assertLessThan(0.1, KeywordScorer::weightedShare(0b11, 0b10, $weights));
+        $this->assertSame(1.0, KeywordScorer::weightedShare(0b11, 0b11, $weights));
+        $this->assertSame(0.0, KeywordScorer::weightedShare(0, 0b11, $weights));
+    }
+
     public function test_prompt_fences_sources_and_carries_contacts(): void
     {
         $instructions = ChatbotPrompt::instructions('SPU Assistant', 'ar', ['phone' => '+963 11 6990200', 'email' => 'info@spu.edu.sy', 'website' => 'https://spu.edu.sy'], 'Mention the autumn deadline.', 'Nov 3, 2026');

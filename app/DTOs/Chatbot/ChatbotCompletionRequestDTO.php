@@ -21,5 +21,27 @@ final readonly class ChatbotCompletionRequestDTO
         public ?array $jsonSchema = null,
         /** Seconds to wait for the reply; null uses chatbot.openai.timeout. */
         public ?int $timeout = null,
+        /**
+         * Sampling temperature; 0 makes the same input give the same output
+         * (as far as the provider allows). Null sends none (reasoning models
+         * that think take none).
+         */
+        public ?float $temperature = null,
     ) {}
+
+    public function withoutTemperature(): self
+    {
+        return new self(
+            $this->apiKey,
+            $this->model,
+            $this->instructions,
+            $this->messages,
+            $this->maxOutputTokens,
+            $this->reasoningEffort,
+            $this->cacheKey,
+            $this->jsonSchema,
+            $this->timeout,
+            null,
+        );
+    }
 }

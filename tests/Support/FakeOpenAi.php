@@ -39,6 +39,9 @@ final class FakeOpenAi
 
     public int $responsesStatus = 200;
 
+    /** Answer calls carrying a temperature fail as a model that takes none would (400). */
+    public bool $rejectTemperature = false;
+
     /** @var array<string, mixed> */
     public array $responsesError = [];
 
@@ -46,6 +49,9 @@ final class FakeOpenAi
 
     /** The category the model claims (structured output). */
     public string $category = 'university';
+
+    /** @var string|(callable(array<string, mixed>): string) how much the sources answered (structured output) */
+    public $coverage = 'full';
 
     /** @var (callable(array<string, mixed>): string)|null the conversation notes the model writes; default: none */
     public $memoryWith = null;
@@ -149,6 +155,9 @@ final class FakeOpenAi
 
             if (str_ends_with($request->url(), '/responses')) {
                 $fake->responseRequests[] = $payload;
+                if ($fake->rejectTemperature && array_key_exists('temperature', $payload)) {
+                    return Http::response(['error' => ['message' => "Unsupported parameter: 'temperature' is not supported with this model.", 'type' => 'invalid_request_error', 'param' => 'temperature', 'code' => 'unsupported_parameter']], 400);
+                }
                 if (isset($fake->failModelsOnce[$payload['model'] ?? ''])) {
                     $status = $fake->failModelsOnce[$payload['model']];
                     unset($fake->failModelsOnce[$payload['model']]);
@@ -169,6 +178,7 @@ final class FakeOpenAi
                         'category' => $fake->category,
                         'answer' => in_array($fake->category, ['university', 'greeting'], true) ? $answer : '',
                         'memory' => $fake->memoryWith !== null ? ($fake->memoryWith)($payload) : '',
+                        'coverage' => is_callable($fake->coverage) ? ($fake->coverage)($payload) : $fake->coverage,
                     ], JSON_UNESCAPED_UNICODE)
                     : $answer);
 

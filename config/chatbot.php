@@ -192,10 +192,17 @@ return [
         'rewrite' => (bool) env('CHATBOT_SEARCH_REWRITE', true),
         'rewrite_model' => env('CHATBOT_REWRITE_MODEL', ''),
         'rewrite_timeout' => 8,
-        // Passages sent to the model with each question.
+        // Passages sent to the model with each question; a question the
+        // rewrite split into several parts gets `top_k_multi`, shared out
+        // between the parts. When the model finds no answer in them, the
+        // question is searched once more with `top_k_retry` passages.
         'top_k' => 6,
-        // Vector candidates re-ranked with keyword overlap before the cut.
+        'top_k_multi' => 10,
+        'top_k_retry' => 14,
+        // Candidates per search: the best by meaning (vector), plus the best
+        // by rare words (names, numbers; BM25-style weights), ranked together.
         'candidates' => 40,
+        'keyword_candidates' => 20,
         // Below this cosine similarity a passage is not considered relevant.
         'min_similarity' => 0.22,
         'keyword_weight' => 0.18,
