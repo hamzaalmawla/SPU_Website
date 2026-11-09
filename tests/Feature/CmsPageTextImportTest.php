@@ -54,6 +54,26 @@ final class CmsPageTextImportTest extends TestCase
         $this->get('/en/about/accreditation')->assertOk()->assertSee('The full local accreditation text');
     }
 
+    public function test_campus_life_file_links_are_not_given_a_language_prefix(): void
+    {
+        $admin = User::factory()->create(['role_slug' => 'super_admin', 'is_locked' => false]);
+        $this->writeTargets(['campus_life.exam-instructions' => [
+            'ar' => ['documents' => [['label' => 'التعليمات الامتحانية (PDF)', 'url' => '/downloads/files/1768418081_fi.pdf']]],
+            'en' => ['documents' => [['label' => 'Exam Instructions (PDF)', 'url' => '/en/downloads/files/1768418081_fi.pdf']]],
+        ]]);
+
+        $result = app(CmsPageTextImportServiceInterface::class)->import($this->path, (string) $admin->getKey(), true);
+
+        self::assertStringStartsWith('published', $result[0]['result']);
+        // /ar/downloads/... is a 404: files are served once, outside the language prefix.
+        $this->get('/ar/campus-life/exam-instructions')->assertOk()
+            ->assertSee('href="/downloads/files/1768418081_fi.pdf"', false)
+            ->assertDontSee('/ar/downloads/', false);
+        $this->get('/en/campus-life/exam-instructions')->assertOk()
+            ->assertSee('href="/downloads/files/1768418081_fi.pdf"', false)
+            ->assertDontSee('/en/downloads/', false);
+    }
+
     public function test_a_page_with_an_editors_unpublished_draft_is_left_alone(): void
     {
         $admin = User::factory()->create(['role_slug' => 'super_admin', 'is_locked' => false]);
