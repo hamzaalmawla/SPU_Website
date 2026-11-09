@@ -289,7 +289,7 @@ final class CouncilEditor
     }
 
     /** @return array<int, string> */
-    private static function staffOptions(): array
+    public static function staffOptions(): array
     {
         // Read once per request: every member row's label asks for it.
         $locale = app()->getLocale() === 'ar' ? 'ar' : 'en';
@@ -304,7 +304,7 @@ final class CouncilEditor
     }
 
     /** What the picked staff member's profile shows, so the editor sees who they picked. */
-    private static function staffPreview(mixed $staffId): HtmlString
+    public static function staffPreview(mixed $staffId): HtmlString
     {
         $id = is_numeric($staffId) ? (int) $staffId : 0;
         $card = app(CouncilStaffServiceInterface::class)->staffCards([$id], app()->getLocale() === 'ar' ? 'ar' : 'en', false)[$id] ?? null;

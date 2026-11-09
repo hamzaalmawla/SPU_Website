@@ -11,6 +11,7 @@ use App\DTOs\Form\FormDefinitionDTO;
 use App\Enums\FormSubmissionInbox;
 use App\Models\Cms\CmsDraft;
 use App\Models\Cms\CmsTargetContent;
+use App\Models\Content\DirectorateTranslation;
 use App\Models\Form\DynamicFormSubmission;
 use App\Models\Form\FormDefinition;
 use App\Models\News\NewsArticle;
@@ -190,6 +191,13 @@ final class FormDefinitionService implements FormDefinitionServiceInterface
                 continue;
             }
 
+            // A directorate page's button opens the form.
+            if (preg_match('/^entity\.directorate\.([1-9][0-9]*)$/', $target, $matches) === 1) {
+                $usage[] = __('admin.forms.usage.page', ['page' => $this->directorateTitle((int) $matches[1], $locale)], $locale);
+
+                continue;
+            }
+
             $labelKey = 'admin.cms.targets.'.$target;
             $label = __($labelKey, [], $locale);
             $usage[] = __('admin.forms.usage.page', ['page' => $label !== $labelKey ? $label : $target], $locale);
@@ -205,6 +213,14 @@ final class FormDefinitionService implements FormDefinitionServiceInterface
             ?? $article?->translations->firstWhere('locale', 'ar')?->title;
 
         return filled($title) ? trim((string) $title) : ($article?->slug ?? 'entity.news-article.'.$articleId);
+    }
+
+    private function directorateTitle(int $directorateId, string $locale): string
+    {
+        $titles = DirectorateTranslation::query()->where('directorate_id', $directorateId)->pluck('title', 'locale');
+        $title = $titles[$locale] ?? $titles['ar'] ?? $titles->first();
+
+        return filled($title) ? trim((string) $title) : 'entity.directorate.'.$directorateId;
     }
 
     public function save(?int $id, array $data, int $userId): FormDefinitionDTO

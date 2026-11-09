@@ -6,6 +6,7 @@ namespace App\Services\Page;
 
 use App\Contracts\Cms\CmsTargetRegistryInterface;
 use App\Contracts\Cms\CmsWorkflowServiceInterface;
+use App\Contracts\Content\DirectoratePageContentServiceInterface;
 use App\Contracts\Content\PersonIdentityServiceInterface;
 use App\Contracts\Faculty\FacultyLeadershipServiceInterface;
 use App\Contracts\Page\AboutNavigationCardServiceInterface;
@@ -37,7 +38,6 @@ use App\Models\Person\PersonAppointment;
 use App\Models\Person\PersonTranslation;
 use App\Models\Shared\MigrationLog;
 use App\Support\AcademicRank;
-use App\Support\DirectorateManagerFields;
 use App\Support\DirectorateTaskGroups;
 use App\Support\MediaUrlResolver;
 use Illuminate\Support\Collection;
@@ -54,6 +54,7 @@ final class AboutPageService implements AboutPageServiceInterface
         private readonly AboutNavigationCardServiceInterface $navigationCardService,
         private readonly PersonIdentityServiceInterface $identityService,
         private readonly FacultyLeadershipServiceInterface $leadershipService,
+        private readonly DirectoratePageContentServiceInterface $directorateContent,
     ) {}
 
     public function getAboutLanding(string $locale): AboutLandingDTO
@@ -461,7 +462,7 @@ final class AboutPageService implements AboutPageServiceInterface
             return null;
         }
 
-        return $this->mapDirectorate($directorate, $locale);
+        return $this->mapDirectorate($directorate, $locale, true);
     }
 
     public function getPartnerships(
@@ -616,10 +617,11 @@ final class AboutPageService implements AboutPageServiceInterface
     /** @param Collection<int, Directorate> $directorates @return Collection<int, DirectorateDTO> */
     private function mapDirectorates(Collection $directorates, string $locale): Collection
     {
-        return $directorates->map(fn (Directorate $directorate): DirectorateDTO => $this->mapDirectorate($directorate, $locale))->values();
+        return $directorates->map(fn (Directorate $directorate): DirectorateDTO => $this->mapDirectorate($directorate, $locale, false))->values();
     }
 
-    private function mapDirectorate(Directorate $directorate, string $locale): DirectorateDTO
+    /** The list page shows each card's title, summary and manager; the blocks are read for the page itself. */
+    private function mapDirectorate(Directorate $directorate, string $locale, bool $withPageContent): DirectorateDTO
     {
         $translation = $this->directorateTranslation($directorate, $locale);
 
@@ -636,6 +638,7 @@ final class AboutPageService implements AboutPageServiceInterface
             location: $directorate->location,
             taskGroups: DirectorateTaskGroups::normalize($translation->task_groups_json),
             manager: $this->directorateManager($directorate, $locale),
+            blocks: $withPageContent ? $this->directorateContent->blocks($directorate->content_blocks_json, $locale) : [],
         );
     }
 
@@ -1245,20 +1248,25 @@ final class AboutPageService implements AboutPageServiceInterface
             ->all();
     }
 
-    /** The manager in this language, or in the other one when this one has no name. */
+    /** The manager: the linked staff profile, or the typed fields in this language (or the other one). */
     private function directorateManager(Directorate $directorate, string $locale): ?DirectorateManagerDTO
     {
-        foreach ([$locale, $locale === 'ar' ? 'en' : 'ar'] as $candidate) {
-            $translation = $directorate->translations->firstWhere('locale', $candidate);
-            $manager = $translation instanceof DirectorateTranslation
-                ? DirectorateManagerFields::manager($translation->manager_name, $translation->manager_education_json, $directorate->manager_email, $directorate->manager_phone, $directorate->manager_photo)
-                : null;
-            if ($manager !== null) {
-                return $manager;
-            }
+        $names = [];
+        $education = [];
+        foreach ($directorate->translations as $translation) {
+            $names[(string) $translation->locale] = $translation->manager_name;
+            $education[(string) $translation->locale] = $translation->manager_education_json;
         }
 
-        return null;
+        return $this->directorateContent->manager(
+            $directorate->manager_member_id !== null ? (int) $directorate->manager_member_id : null,
+            $names,
+            $education,
+            $directorate->manager_email,
+            $directorate->manager_phone,
+            $directorate->manager_photo,
+            $locale,
+        );
     }
 
     private function directorateTranslation(Directorate $directorate, string $locale): DirectorateTranslation

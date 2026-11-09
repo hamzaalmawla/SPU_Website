@@ -8,6 +8,7 @@ namespace App\DTOs\Content;
  * @param  array<int, string>  $services
  * @param  array<int, array{title: string, url: string}>  $links
  * @param  array<int, array{title: string, summary: string, items: array<int, array{title: string, body: string}>}>  $taskGroups
+ * @param  list<DirectorateBlockDTO>  $blocks  The page body the editor built, in order.
  */
 final readonly class DirectorateDTO
 {
@@ -24,5 +25,6 @@ final readonly class DirectorateDTO
         public ?string $location,
         public array $taskGroups = [],
         public ?DirectorateManagerDTO $manager = null,
+        public array $blocks = [],
     ) {}
 }
