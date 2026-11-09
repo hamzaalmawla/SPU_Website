@@ -536,7 +536,9 @@ final class ChatbotKnowledgeService implements ChatbotKnowledgeServiceInterface
             ? (int) config('chatbot.retrieval.top_k_multi', 10)
             : (int) config('chatbot.retrieval.top_k', 6)));
         $rerank = (bool) config('chatbot.retrieval.rerank', false);
-        $pool = $rerank ? max($limit, (int) config('chatbot.retrieval.rerank_candidates', 24)) : $limit;
+        // The reranker reads three times the passages it may keep, at least
+        // `rerank_candidates`: a wider search (top_k_retry) reads a wider pool.
+        $pool = $rerank ? max($limit * 3, (int) config('chatbot.retrieval.rerank_candidates', 24)) : $limit;
 
         // Take from each channel in turn; the same passage (or a copy of it
         // in another file) is given once.

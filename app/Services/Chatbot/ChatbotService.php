@@ -429,8 +429,8 @@ final class ChatbotService implements ChatbotServiceInterface
     private function rewritePlan(string $input, string $message, string $apiKey, string $mainModel): array
     {
         $model = trim((string) config('chatbot.retrieval.rewrite_model', '')) ?: $mainModel;
-        // v2: one line per part of the question (hints cached before had one).
-        $key = 'chatbot.search-hint.v2.'.sha1($model.'|'.SearchTextNormalizer::normalize($input));
+        // v3: one line per part, with the glossary of the documents' terms.
+        $key = 'chatbot.search-hint.v3.'.sha1($model.'|'.SearchTextNormalizer::normalize($input));
         $plan = ['hint' => null, 'request' => null, 'key' => $key, 'model' => $model];
 
         if (! (bool) config('chatbot.retrieval.rewrite', true) || mb_strlen($message) < 3) {
@@ -779,7 +779,7 @@ final class ChatbotService implements ChatbotServiceInterface
      * Bumped when the rules or the retrieval change, so answers cached
      * before are not served again.
      */
-    private const ANSWER_VERSION = 'v4';
+    private const ANSWER_VERSION = 'v5';
 
     /**
      * @param  list<ChatbotPassageDTO>  $passages

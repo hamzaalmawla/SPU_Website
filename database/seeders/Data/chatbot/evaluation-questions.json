@@ -257,6 +257,22 @@
             "sources": [["قرار 448", "قرار 167", "إعلان مفاضلة النقل"]],
             "facts": [["30"], ["50"]],
             "note": "08: 30% / 50%"
+        },
+        {
+            "id": "en-degree-exemption-bachelor",
+            "locale": "en",
+            "question": "I have a bachelor degree. What is the maximum exemption if I join SPU?",
+            "sources": [["قرار 448", "قرار 167", "إعلان مفاضلة النقل"]],
+            "facts": [["30"], ["50"]],
+            "note": "08: 30% / 50%; second English wording, seen live on 2026-11-09"
+        },
+        {
+            "id": "en-graduate-pharmacy",
+            "locale": "en",
+            "question": "I graduated in biology. Can I study pharmacy at SPU, and how many of my courses can count?",
+            "sources": [["قرار 448", "جداول مفاضلة", "إعلان مفاضلة النقل", "قرار 167"]],
+            "facts": [["30"]],
+            "note": "08 table: natural sciences (biology) → pharmacy; 14: exemption up to 30%"
         }
     ]
 }
