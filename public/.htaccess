@@ -26,10 +26,20 @@
     SetEnvIfNoCase Request_URI \.(?:gif|jpe?g|png|webp|avif|ico|zip|gz|bz2|rar|7z|pdf|mp4|webm|mp3|woff2?)$ no-gzip dont-vary
 </IfModule>
 
+# The web app manifest. Without a type Apache sends it with no Content-Type
+# at all (2026-11-08 ZAP scan).
+<IfModule mod_mime.c>
+    AddType application/manifest+json .webmanifest
+</IfModule>
+
 <IfModule mod_headers.c>
     # These also cover physical static and internally rewritten legacy files,
     # which do not pass through Laravel's security-header middleware.
-    <FilesMatch "\.(?:css|js|json|xml|txt|jpe?g|png|gif|webp|avif|svg|ico|pdf|mp4|webm|mp3|woff2?|ttf|otf|eot)$">
+    #
+    # (?i): the old site's uploads keep their original names, and many end in
+    # .JPG, .PNG or .PDF. FilesMatch is case-sensitive, so without it those
+    # went out with no nosniff and no caching (2026-11-08 ZAP scan).
+    <FilesMatch "(?i)\.(?:css|js|json|webmanifest|xml|txt|jpe?g|png|gif|webp|avif|svg|ico|pdf|mp4|webm|mp3|woff2?|ttf|otf|eot)$">
         Header always set X-Content-Type-Options "nosniff"
         Header always set Referrer-Policy "strict-origin-when-cross-origin"
         Header always set X-Frame-Options "SAMEORIGIN"
@@ -60,7 +70,7 @@
 
     # Legacy media keeps its original filename forever, so it is safe to cache
     # for a long time, but not immutable - a file could be replaced in place.
-    <FilesMatch "\.(?:jpe?g|png|gif|webp|avif|svg|ico|pdf|mp4|webm|mp3)$">
+    <FilesMatch "(?i)\.(?:jpe?g|png|gif|webp|avif|svg|ico|pdf|mp4|webm|mp3)$">
         Header set Cache-Control "public, max-age=2592000"
     </FilesMatch>
 

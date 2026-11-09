@@ -56,6 +56,29 @@ final class EdgeRequestTest extends TestCase
         $this->assertStringContainsString('(?:html?|xhtml|xml|svgz?)', $rules);
         $this->assertStringContainsString('(?:php[0-9]?|phtml|phar|cgi', $rules);
         $this->assertMatchesRegularExpression('/<FilesMatch "[^"]*\|txt\|[^"]*">\s*Header always set X-Content-Type-Options "nosniff"/', $rules);
+
+        // Old uploads keep names like photo.JPG; FilesMatch is case-sensitive
+        // unless told otherwise, and the manifest needs a type of its own.
+        $this->assertMatchesRegularExpression('/<FilesMatch "\(\?i\)[^"]*\|webmanifest\|[^"]*">\s*Header always set X-Content-Type-Options "nosniff"/', $rules);
+        $this->assertStringContainsString('AddType application/manifest+json .webmanifest', $rules);
+    }
+
+    /**
+     * Deploys serve a pre-rendered 503 before Laravel boots, so the front
+     * controller sends the security headers for it itself.
+     */
+    public function test_maintenance_page_is_served_with_security_headers(): void
+    {
+        $front = file_get_contents(public_path('app.php'));
+
+        $this->assertIsString($front);
+        $headersAt = strpos($front, "'Content-Security-Policy' =>");
+        $requireAt = strpos($front, 'require $maintenance;');
+        $this->assertNotFalse($headersAt);
+        $this->assertNotFalse($requireAt);
+        $this->assertLessThan($requireAt, $headersAt);
+        $this->assertStringContainsString("'Strict-Transport-Security'] = 'max-age=604800; includeSubDomains'", $front);
+        $this->assertStringContainsString('header_remove($name);', $front);
     }
 
     /**
