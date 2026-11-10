@@ -279,7 +279,7 @@ final class CachePublicPages
         return match ($routeName) {
             'public.alumni.index' => ['q', 'year', 'faculty', 'department', 'page'],
             'public.about.leadership' => ['faculty'],
-            'public.about.directorates.staff' => ['faculty', 'page'],
+            'public.about.directorates.staff' => ['faculty', 'q', 'page'],
             'public.about.partnerships' => ['category', 'q', 'page'],
             'public.about.profile' => ['source'],
             'public.admissions.section' => $request->route('section') === 'documents' ? ['tab'] : [],

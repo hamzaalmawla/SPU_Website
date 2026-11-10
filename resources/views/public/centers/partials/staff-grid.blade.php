@@ -1,7 +1,10 @@
+{{-- $searchable: the cards sit inside the staff page's search (x-data="facultyMembers") and hide when they do not match. --}}
+@php $searchable = (bool) ($searchable ?? false); @endphp
 @if ($members !== [])
     <div class="staff-grid">
         @foreach ($members as $member)
-            <a href="{{ $member['profileUrl'] }}" class="staff-card block transition hover:-translate-y-1 hover:shadow-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-spu-blue">
+            <a href="{{ $member['profileUrl'] }}" class="staff-card block transition hover:-translate-y-1 hover:shadow-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-spu-blue"
+               @if ($searchable) data-member-card data-index="{{ $loop->index }}" data-search="{{ trim(($member['name'] ?? '').' '.($member['position'] ?? '')) }}" x-bind:class="cardClass($el)" @endif>
                 <div class="staff-card-media">
                     @if (! empty($member['image']))
                         <img src="{{ $member['image'] }}" alt="{{ $member['name'] }}" loading="lazy">
