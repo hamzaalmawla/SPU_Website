@@ -27,7 +27,15 @@ interface ResearchPageServiceInterface
     /** Number of projects listed on the public research projects page. */
     public function projectCount(string $locale): int;
 
-    public function facultyPublications(string $facultySlug, string $locale): ResearchPageDTO;
+    /**
+     * One faculty's publications, newest first. `q` (any words, in either
+     * language) and `year` narrow them within that faculty only; `data.years`
+     * lists every year the faculty has publications in, and
+     * `data.activeFilters` the filters that were applied.
+     *
+     * @param  array<string, mixed>  $filters
+     */
+    public function facultyPublications(string $facultySlug, string $locale, array $filters = []): ResearchPageDTO;
 
     /**
      * The publications a faculty page features: published ones picked by slug

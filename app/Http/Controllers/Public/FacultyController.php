@@ -58,7 +58,7 @@ final class FacultyController extends Controller
         $query = match ($page->subpageSlug) {
             'alumni', 'valedictorians' => $this->studentDirectoryQuery($request, $page),
             'projects' => $this->projectSearchQuery($request, $page),
-            'research' => $this->paginationQuery($request, $page),
+            'research' => $this->projectSearchQuery($request, $page),
             'labs' => $this->labQuery($request, $page),
             default => [],
         };
@@ -281,14 +281,22 @@ final class FacultyController extends Controller
         return [...$query, ...$this->paginationQuery($request, $page)];
     }
 
-    /** @return array<string, int|string> */
+    /**
+     * The search and year a project or research list was narrowed by (the
+     * service has already dropped a year the faculty has nothing in).
+     *
+     * @return array<string, int|string>
+     */
     private function projectSearchQuery(Request $request, FacultySubpageDTO $page): array
     {
         $query = [];
-        $search = (string) ($page->filters['q'] ?? '');
 
-        if ($search !== '') {
-            $query['q'] = $search;
+        foreach (['q', 'year'] as $key) {
+            $value = (string) ($page->filters[$key] ?? '');
+
+            if ($value !== '') {
+                $query[$key] = $value;
+            }
         }
 
         return [...$query, ...$this->paginationQuery($request, $page)];

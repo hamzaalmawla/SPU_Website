@@ -287,8 +287,7 @@ final class CachePublicPages
             'public.campus-life.career-development.jobs.apply' => ['job'],
             'public.faculties.subpage' => match ($request->route('subpage')) {
                 'alumni', 'valedictorians' => ['q', 'year', 'department', 'faculty', 'semester', 'academic_phase', 'page'],
-                'projects' => ['q', 'page'],
-                'research' => ['page'],
+                'projects', 'research' => ['q', 'year', 'page'],
                 'labs' => ['lab', 'page'],
                 default => [],
             },
