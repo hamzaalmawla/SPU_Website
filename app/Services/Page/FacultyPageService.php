@@ -2769,6 +2769,12 @@ final class FacultyPageService implements FacultyPageServiceInterface
     /** @param array<string, mixed> $department @return array<string, mixed> */
     private function sanitizedStudyPlanDepartment(array $department, string $facultySlug = '', string $locale = 'ar'): array
     {
+        // A Requirements Unit course is one record: its own data shows here, and
+        // its required courses that list this faculty are added to the program.
+        if ($facultySlug !== '') {
+            $department = $this->centerCatalog->studyPlanDepartment($facultySlug, $department, $locale);
+        }
+
         $department['terms'] = collect(is_array($department['terms'] ?? null) ? $department['terms'] : [])
             ->filter(fn (mixed $term): bool => is_array($term))
             ->map(function (array $term) use ($facultySlug, $locale): array {

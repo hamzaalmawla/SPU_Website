@@ -17,31 +17,38 @@
       "faculties": [
         {
           "faculty": "medicine",
-          "code": "REQU103"
+          "code": "REQU103",
+          "term": 1
         },
         {
           "faculty": "dentistry",
-          "code": "UNRE103"
+          "code": "UNRE103",
+          "term": 1
         },
         {
           "faculty": "pharmacy",
-          "code": "REQU101"
+          "code": "REQU101",
+          "term": 1
         },
         {
           "faculty": "artificial-intelligence",
-          "code": "UR-2-01"
+          "code": "UR-2-01",
+          "term": 7
         },
         {
           "faculty": "building-construction-engineering",
-          "code": "UR-2-01"
+          "code": "UR-2-01",
+          "term": 1
         },
         {
           "faculty": "petroleum",
-          "code": "REQU-1-05"
+          "code": "REQU-1-05",
+          "term": 2
         },
         {
           "faculty": "business-administration",
-          "code": "UR-2-01"
+          "code": "UR-2-01",
+          "term": 4
         }
       ],
       "teachers": {
@@ -74,34 +81,41 @@
       "faculties": [
         {
           "faculty": "medicine",
-          "code": "REQU101"
+          "code": "REQU101",
+          "term": 1
         },
         {
           "faculty": "dentistry",
-          "code": "UNRE105"
+          "code": "UNRE105",
+          "term": 1
         },
         {
           "faculty": "pharmacy",
-          "code": "REQU105"
+          "code": "REQU105",
+          "term": 1
         },
         {
           "faculty": "artificial-intelligence",
           "code": "UR-2-03",
-          "credits": 3
+          "credits": 3,
+          "term": 1
         },
         {
           "faculty": "building-construction-engineering",
           "code": "UR-2-03",
-          "credits": 3
+          "credits": 3,
+          "term": 1
         },
         {
           "faculty": "petroleum",
-          "code": "REQU-1-01"
+          "code": "REQU-1-01",
+          "term": 1
         },
         {
           "faculty": "business-administration",
           "code": "UR-2-03",
-          "credits": 3
+          "credits": 3,
+          "term": 2
         }
       ],
       "teachers": {
@@ -136,34 +150,41 @@
       "faculties": [
         {
           "faculty": "medicine",
-          "code": "REQU204"
+          "code": "REQU204",
+          "term": 2
         },
         {
           "faculty": "dentistry",
-          "code": "UNRE207"
+          "code": "UNRE207",
+          "term": 2
         },
         {
           "faculty": "pharmacy",
-          "code": "REQU207"
+          "code": "REQU207",
+          "term": 2
         },
         {
           "faculty": "artificial-intelligence",
           "code": "UR-2-04",
-          "credits": 3
+          "credits": 3,
+          "term": 2
         },
         {
           "faculty": "building-construction-engineering",
           "code": "UR-2-04",
-          "credits": 3
+          "credits": 3,
+          "term": 2
         },
         {
           "faculty": "petroleum",
-          "code": "REQU-2-07"
+          "code": "REQU-2-07",
+          "term": 2
         },
         {
           "faculty": "business-administration",
           "code": "UR-2-04",
-          "credits": 3
+          "credits": 3,
+          "term": 3
         }
       ],
       "teachers": {
@@ -196,31 +217,38 @@
       "faculties": [
         {
           "faculty": "medicine",
-          "code": "REQU102"
+          "code": "REQU102",
+          "term": 1
         },
         {
           "faculty": "dentistry",
-          "code": "UNRE101"
+          "code": "UNRE101",
+          "term": 1
         },
         {
           "faculty": "pharmacy",
-          "code": "REQU103"
+          "code": "REQU103",
+          "term": 2
         },
         {
           "faculty": "artificial-intelligence",
-          "code": "UR-2-02"
+          "code": "UR-2-02",
+          "term": 1
         },
         {
           "faculty": "building-construction-engineering",
-          "code": "UR-2-02"
+          "code": "UR-2-02",
+          "term": 2
         },
         {
           "faculty": "petroleum",
-          "code": "REQU-1-03"
+          "code": "REQU-1-03",
+          "term": 3
         },
         {
           "faculty": "business-administration",
-          "code": "UR-2-02"
+          "code": "UR-2-02",
+          "term": 1
         }
       ],
       "teachers": {

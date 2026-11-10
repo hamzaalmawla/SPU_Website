@@ -666,6 +666,30 @@ they are. Each saved draft is then also published, except where an editor alread
 page or the page fails the council rules (for example no dean). Those stay as drafts, and the deploy log
 lists them under "Left as a draft".
 
+### University elective boxes in the study plans
+
+University electives are chosen at the Requirements Unit, so each program of a faculty study plan shows three
+"University elective course" boxes that open the unit's elective list instead of listing the electives. Every
+deploy log has a "University elective boxes dry run" section: per program, the listed university electives it
+would remove and the boxes it would add (with their term). Boxes go to the terms that listed electives (one per
+such term first, then where most were listed); a program that listed none gets them in the term with the most
+university requirements. Existing boxes are kept, and a plan that already has three boxes and no listed
+electives is left alone.
+
+After the dry run has been read and approved, place this file on the server, naming the CMS user the drafts are
+saved as:
+
+```
+storage/app/private/legacy-imports/university-elective-boxes.approved
+actor=auto
+```
+
+`cpanel-deploy.sh` then runs `faculty:university-elective-boxes --write` and renames the file to
+`university-elective-boxes.approved.consumed-<time>`. It saves each changed plan as an **unpublished draft**
+(built on an editor's open draft when there is one). Add a `publish=yes` line to also publish each draft, except
+where an editor already had a draft open on that plan; those are listed under "Left as a draft". The previous
+versions stay in `cms_drafts`.
+
 ### One profile per person (people:unify)
 
 Every deploy log has a "People unify dry run" section. It shows the faculty profile each leadership row

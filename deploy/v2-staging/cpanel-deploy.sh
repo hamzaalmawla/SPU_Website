@@ -960,6 +960,55 @@ if [[ -f "${FACULTY_POSITIONS_APPROVAL}" ]]; then
     mv "${FACULTY_POSITIONS_APPROVAL}" "${FACULTY_POSITIONS_APPROVAL}.consumed-$(date -u +%Y%m%d-%H%M%S)"
 fi
 
+# ── University elective boxes in the study plans ───────────────────────────
+# University electives are chosen at the Requirements Unit, so each program of a
+# faculty study plan shows three "University elective course" boxes that open the
+# unit's elective list instead of listing the electives. This removes the listed
+# university electives and adds the boxes, saved as a study plan draft. The dry run
+# is in every deploy log; the write is inert unless a human places an approval file
+# not in git, holding the CMS user the drafts are saved as:
+#
+#     storage/app/private/legacy-imports/university-elective-boxes.approved
+#         actor=<user id>      (or actor=auto: the first unlocked super admin)
+#         publish=yes          (optional: also publish each draft, unless an editor
+#                               already had one open or it fails validation)
+#
+# It disarms itself after one run.
+ELECTIVE_BOXES_APPROVAL="${IMPORT_DIR}/university-elective-boxes.approved"
+
+log "University elective boxes dry run"
+(cd "${APP}" && "${PHP}" artisan faculty:university-elective-boxes --no-ansi) \
+    || printf '  The university elective boxes dry run failed; nothing was changed.\n'
+
+if [[ -f "${ELECTIVE_BOXES_APPROVAL}" ]]; then
+    log "University elective boxes"
+
+    EB_ACTOR="$(grep -E '^actor=' "${ELECTIVE_BOXES_APPROVAL}" | head -n 1 | cut -d= -f2- | tr -d '\r' | tr -d ' ')"
+    [[ -n "${EB_ACTOR}" ]] || fail "The university elective boxes approval file has no actor= line."
+
+    if [[ "${EB_ACTOR}" == "auto" ]]; then
+        EB_ACTOR="$(cd "${APP}" && "${PHP}" artisan tinker --execute='
+            echo (string) (\DB::table("users")
+                ->where("role_slug", "super_admin")
+                ->where(function ($q) { $q->whereNull("locked_at")->orWhere("locked_at", ""); })
+                ->orderBy("id")
+                ->value("id") ?? "");
+        ' 2>/dev/null | grep -Eo '^[0-9]+$' | head -n 1 || true)"
+        [[ -n "${EB_ACTOR}" ]] || fail "actor=auto found no unlocked super_admin to save the drafts as."
+    fi
+    [[ "${EB_ACTOR}" =~ ^[0-9]+$ ]] || fail "The university elective boxes actor must be a numeric user id or 'auto'."
+
+    EB_PUBLISH=()
+    if grep -qE '^publish=yes[[:space:]]*$' "${ELECTIVE_BOXES_APPROVAL}"; then
+        EB_PUBLISH=(--publish)
+    fi
+
+    (cd "${APP}" && "${PHP}" artisan faculty:university-elective-boxes --write ${EB_PUBLISH[@]+"${EB_PUBLISH[@]}"} --user="${EB_ACTOR}" --no-ansi) \
+        || fail "Saving the university elective boxes failed."
+
+    mv "${ELECTIVE_BOXES_APPROVAL}" "${ELECTIVE_BOXES_APPROVAL}.consumed-$(date -u +%Y%m%d-%H%M%S)"
+fi
+
 # ── Approved researcher ↔ staff links ───────────────────────────────────────
 # Links every researcher whose name matches exactly one staff member, so their
 # papers show on that staff profile. Looser matches are left as suggestions in

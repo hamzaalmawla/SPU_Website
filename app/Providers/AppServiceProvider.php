@@ -58,6 +58,7 @@ use App\Contracts\Faculty\FacultyStudyPlanEditorServiceInterface;
 use App\Contracts\Faculty\FacultyStudyPlanGuideServiceInterface;
 use App\Contracts\Faculty\FacultyStudyPlanImportServiceInterface;
 use App\Contracts\Faculty\FacultyStudyPlanLinkServiceInterface;
+use App\Contracts\Faculty\FacultyStudyPlanUniversityElectivesServiceInterface;
 use App\Contracts\Faculty\LegacyCourseSpecificationImportServiceInterface;
 use App\Contracts\Faculty\ProjectFieldBlockParserInterface;
 use App\Contracts\Form\ContactMessageReviewServiceInterface;
@@ -286,6 +287,7 @@ use App\Services\Faculty\FacultyStudyPlanEditorService;
 use App\Services\Faculty\FacultyStudyPlanGuideService;
 use App\Services\Faculty\FacultyStudyPlanImportService;
 use App\Services\Faculty\FacultyStudyPlanLinkService;
+use App\Services\Faculty\FacultyStudyPlanUniversityElectivesService;
 use App\Services\Faculty\LegacyCourseSpecificationImportService;
 use App\Services\Faculty\ProjectFieldBlockParser;
 use App\Services\Form\ContactMessageReviewService;
@@ -840,6 +842,7 @@ class AppServiceProvider extends ServiceProvider
             FacultyLeadershipServiceInterface::class => FacultyLeadershipService::class,
             FacultyPositionServiceInterface::class => FacultyPositionService::class,
             FacultyPositionMatchServiceInterface::class => FacultyPositionMatchService::class,
+            FacultyStudyPlanUniversityElectivesServiceInterface::class => FacultyStudyPlanUniversityElectivesService::class,
             FacultyMasterProgramServiceInterface::class => FacultyMasterProgramService::class,
             FacultyProgramServiceInterface::class => FacultyProgramService::class,
             ProjectFieldBlockParserInterface::class => ProjectFieldBlockParser::class,

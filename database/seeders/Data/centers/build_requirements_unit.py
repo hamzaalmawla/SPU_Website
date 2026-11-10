@@ -137,7 +137,11 @@ def build() -> list[dict]:
                 credits.append(number(source.get("credits")))
                 theory.append(number(hours.get("theory")))
                 practical.append(number(hours.get("practical")))
-                links.append({"faculty": faculty, "code": code, "credits": number(source.get("credits"))})
+                link = {"faculty": faculty, "code": code, "credits": number(source.get("credits"))}
+                # A required course is placed in the faculty's study plan at this term.
+                if required and str(source.get("term", "")).isdigit():
+                    link["term"] = int(source["term"])
+                links.append(link)
 
         default_credits = most_common(credits)
         for link in links:

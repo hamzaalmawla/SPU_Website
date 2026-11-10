@@ -353,9 +353,23 @@ final class FacultyStudyPlanBoardServiceTest extends TestCase
         $this->assertSame([], $this->courseOf($payload, 'en', 'cs', 'cs-201')['prerequisites']);
         $this->assertSame([], $this->courseOf($payload, 'ar', 'cs', 'cs-201')['prerequisites']);
 
-        // Switched off again, it is an ordinary course and needs its code back.
-        $payload = $this->service->saveCourse($payload, 'cs', $this->form($payload, 'cs-101', ['electiveSlot' => false]));
+        // Made required again, it is an ordinary course and needs its code back.
+        $payload = $this->service->saveCourse($payload, 'cs', $this->form($payload, 'cs-101', ['required' => true, 'code' => 'CS-101']));
         $this->assertArrayNotHasKey('electiveSlot', $this->courseOf($payload, 'en', 'cs', 'cs-101'));
+        $this->assertSame('CS-101', $this->courseOf($payload, 'en', 'cs', 'cs-101')['code']);
+    }
+
+    public function test_an_elective_university_requirement_is_always_an_elective_box(): void
+    {
+        // University electives are picked at the Requirements Unit: the plan never lists one.
+        $payload = $this->service->saveCourse($this->payload(), 'cs', $this->form($this->payload(), 'cs-101', [
+            'type' => 'university', 'required' => false, 'electiveSlot' => false,
+        ]));
+
+        $course = $this->courseOf($payload, 'en', 'cs', 'cs-101');
+        $this->assertTrue($course['electiveSlot']);
+        $this->assertSame('', $course['code']);
+        $this->assertSame([], $this->courseOf($payload, 'en', 'cs', 'cs-201')['prerequisites']);
     }
 
     public function test_only_an_elective_university_requirement_can_be_an_elective_box(): void

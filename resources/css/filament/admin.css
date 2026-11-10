@@ -1389,6 +1389,11 @@
 .spu-board__card-flags span { padding: 0 .35rem; border: 1px solid var(--board-line); border-radius: 999px; }
 .spu-board__card-flags .is-warning { color: var(--board-warning); border-color: var(--board-warning); font-weight: 800; }
 .spu-board__card-flags .is-shared { color: var(--board-accent); font-weight: 700; }
+/* A required Requirements Unit course: shown in every program, edited in the unit. */
+.spu-board__card.is-from-unit { border-style: dashed; border-inline-start-style: solid; background: color-mix(in srgb, #202759 5%, var(--board-surface)); cursor: pointer; text-decoration: none; }
+.spu-board__card-flags .is-unit { color: #202759; border-color: color-mix(in srgb, #202759 35%, transparent); font-weight: 700; }
+.dark .spu-board__card-flags .is-unit { color: #c7cbf0; }
+.spu-board-form__wide { grid-column: 1 / -1; margin: 0; }
 
 .spu-board__add { padding: .45rem; border: 1px dashed var(--board-line); border-radius: .5rem; background: transparent; color: var(--board-muted); font-size: .75rem; font-weight: 600; cursor: pointer; }
 .spu-board__add:hover { color: var(--board-accent); border-color: var(--board-accent); }

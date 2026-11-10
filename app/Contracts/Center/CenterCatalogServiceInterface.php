@@ -65,7 +65,8 @@ interface CenterCatalogServiceInterface
     /**
      * The center's courses in a payload (or its published / default list),
      * cleaned: each has an id, both titles, `required`, credits, hours,
-     * prerequisites, faculties (`faculty`, `code`, optional `credits`),
+     * prerequisites, faculties (`faculty`, `code`, optional `credits` and
+     * `term`: the study plan term a required course is placed in),
      * teachers, a specification URL and lessons.
      *
      * @param  array<string, mixed>|null  $payload  the courses target's payload
@@ -86,6 +87,25 @@ interface CenterCatalogServiceInterface
      * @param  array<string, mixed>  $course  a study plan course
      */
     public function studyPlanCourseUrl(string $facultySlug, array $course, string $locale): ?string;
+
+    /**
+     * One program of a faculty study plan as it is shown, in one locale. A
+     * Requirements Unit course is one record wherever it appears:
+     *
+     * - a university requirement of the plan that opens a unit course (picked on
+     *   the board, else the one listing this faculty and code) shows the unit
+     *   course's titles, description, hours, teachers, specification and
+     *   lectures, with this faculty's code and credits (`sharedFromRequirementsUnit`);
+     * - a required unit course that lists this faculty and is not in the program
+     *   is added at the term its faculty link names, else the first term
+     *   (`fromRequirementsUnit`: it is not stored in the plan).
+     *
+     * The plan's own copy fills a part the unit course leaves empty.
+     *
+     * @param  array<string, mixed>  $department  a plan program (`terms[].courses[]`)
+     * @return array<string, mixed>
+     */
+    public function studyPlanDepartment(string $facultySlug, array $department, string $locale): array;
 
     /**
      * Problems that stop a center target from being published, keyed by field.
