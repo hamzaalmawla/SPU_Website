@@ -273,6 +273,38 @@
             "sources": [["قرار 448", "جداول مفاضلة", "إعلان مفاضلة النقل", "قرار 167"]],
             "facts": [["30"]],
             "note": "08 table: natural sciences (biology) → pharmacy; 14: exemption up to 30%"
+        },
+        {
+            "id": "no-housing",
+            "locale": "ar",
+            "question": "هل يوجد سكن جامعي في الجامعة؟",
+            "sources": [["دليل المصادر", "النظام الداخلي", "القبول", "Admission"]],
+            "facts": [["لا يوجد", "لا تتوفر", "لا توفر", "ليس لدى", "لا تملك"]],
+            "note": "00 section 5 (user, 2026-11-10): SPU has no university housing; the 2016 regulations only regulate it in principle"
+        },
+        {
+            "id": "en-no-housing",
+            "locale": "en",
+            "question": "Does SPU offer student housing or dorms?",
+            "sources": [["دليل المصادر", "النظام الداخلي", "Admission", "القبول"]],
+            "facts": [["does not have", "doesn't have", "does not offer", "doesn't offer", "does not provide", "doesn't provide", "no university housing", "no student housing", "no on-campus housing", "no dorm"]],
+            "note": "same as no-housing"
+        },
+        {
+            "id": "certificate-verification",
+            "locale": "ar",
+            "question": "كيف يمكن التحقق من صحة شهادة صادرة عن الجامعة السورية الخاصة؟",
+            "sources": [["التحقق من صحة الشهادات"]],
+            "facts": [["spu.authentication@spu.edu.sy"], ["كوادرابي", "داتا فلو", "كلين شيت", "QuadraBay", "DataFlow", "CleanSheet"]],
+            "note": "19: approved companies and the verification email"
+        },
+        {
+            "id": "en-certificate-verification",
+            "locale": "en",
+            "question": "Which companies can verify an SPU degree for an employer abroad?",
+            "sources": [["التحقق من صحة الشهادات"]],
+            "facts": [["QuadraBay", "كوادرابي"], ["DataFlow", "Data Flow", "داتا فلو"], ["CleanSheet", "Clean Sheet", "كلين شيت"]],
+            "note": "19: QuadraBay, DataFlow, CleanSheet Group (and Saudi Musadaqa)"
         }
     ]
 }
