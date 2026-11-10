@@ -87,8 +87,8 @@
             "locale": "ar",
             "question": "هل يمكن لطالب الفرع الأدبي التسجيل في الجامعة؟ وفي أي اختصاص؟",
             "sources": [["إعلان رقم 7", "معدلات القبول"]],
-            "facts": [["العلوم الإدارية", "الأعمال", "إدارة الأعمال"], ["50"]],
-            "note": "13: administrative sciences only, 50%"
+            "facts": [["العلوم الإدارية", "الأعمال", "إدارة الأعمال"]],
+            "note": "13: administrative sciences only (the question does not ask the 50% minimum)"
         },
         {
             "id": "medicine-seats",
