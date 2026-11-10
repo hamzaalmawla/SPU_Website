@@ -7,6 +7,7 @@ namespace Tests\Feature;
 use App\Contracts\Cms\AboutEntityCmsServiceInterface;
 use App\Contracts\Cms\CmsWorkflowServiceInterface;
 use App\Contracts\Form\FormDefinitionServiceInterface;
+use App\Filament\Resources\DirectorateResource\Pages\CreateDirectorate;
 use App\Filament\Resources\DirectorateResource\Pages\EditDirectorate;
 use App\Models\Content\Directorate;
 use App\Models\Person\FacultyMember;
@@ -198,6 +199,64 @@ final class DirectoratePageTemplateTest extends TestCase
 
         $this->assertNull(Directorate::query()->whereKey($directorate->getKey())->value('manager_member_id'));
         $this->get('/en/about/directorates/it-services')->assertOk()->assertDontSee('Dr. Omar Saleh');
+    }
+
+    public function test_a_new_directorate_is_published_as_soon_as_it_is_saved(): void
+    {
+        $user = User::query()->where('role_slug', 'super_admin')->firstOrFail();
+        $this->actingAs($user, 'web');
+
+        Livewire::test(CreateDirectorate::class)
+            ->fillForm([
+                'slug' => 'legal-affairs',
+                'is_enabled' => true,
+                'translations' => [
+                    ['locale' => 'ar', 'title' => 'مديرية الشؤون القانونية', 'description' => 'تتابع الشؤون القانونية للجامعة.'],
+                    ['locale' => 'en', 'title' => 'Legal Affairs Directorate', 'description' => 'Handles the university legal affairs.'],
+                ],
+            ])
+            ->call('create')
+            ->assertHasNoFormErrors()
+            ->assertNotified(__('admin_pages.about_entity.entity_published'));
+
+        $directorate = Directorate::query()->where('slug', 'legal-affairs')->firstOrFail();
+        $this->assertSame('published', $directorate->publication_status);
+        $this->assertNull(app(CmsWorkflowServiceInterface::class)->latestEditableDraftPayload(
+            'entity.directorate.'.$directorate->getKey(),
+            (int) $user->getKey(),
+        ));
+
+        $this->get('/en/about/directorates')->assertOk()->assertSee('Legal Affairs Directorate');
+        $this->get('/en/about/directorates/legal-affairs')->assertOk()->assertSee('Legal Affairs Directorate');
+        $this->get('/ar/about/directorates/legal-affairs')->assertOk()->assertSee('مديرية الشؤون القانونية');
+    }
+
+    public function test_a_new_directorate_that_fails_the_publish_checks_stays_a_draft_with_the_reason(): void
+    {
+        $user = User::query()->where('role_slug', 'super_admin')->firstOrFail();
+        $this->actingAs($user, 'web');
+
+        Livewire::test(CreateDirectorate::class)
+            ->fillForm([
+                'slug' => 'title-only',
+                'is_enabled' => true,
+                'translations' => [
+                    ['locale' => 'ar', 'title' => 'مديرية بلا محتوى'],
+                    ['locale' => 'en', 'title' => 'Directorate Without Content'],
+                ],
+            ])
+            ->call('create')
+            ->assertHasNoFormErrors()
+            ->assertNotified(__('admin_pages.about_entity.publish_failed'));
+
+        $directorate = Directorate::query()->where('slug', 'title-only')->firstOrFail();
+        $this->assertSame('draft', $directorate->publication_status);
+        $draft = app(CmsWorkflowServiceInterface::class)->latestEditableDraftPayload(
+            'entity.directorate.'.$directorate->getKey(),
+            (int) $user->getKey(),
+        );
+        $this->assertSame('Directorate Without Content', $draft['translations']['en']['title'] ?? null);
+        $this->get('/en/about/directorates/title-only')->assertNotFound();
     }
 
     /** @param callable(array<string, mixed>): array<string, mixed> $edit */
