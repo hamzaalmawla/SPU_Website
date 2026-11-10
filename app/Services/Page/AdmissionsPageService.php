@@ -522,7 +522,7 @@ final class AdmissionsPageService implements AdmissionsPageServiceInterface
                     ['qEn' => 'Do international documents need translation?', 'qAr' => 'هل تحتاج الوثائق الدولية إلى ترجمة؟', 'aEn' => 'Documents not issued in Arabic may require certified translation and authentication.', 'aAr' => 'قد تحتاج الوثائق غير الصادرة بالعربية إلى ترجمة وتصديق رسميين.'],
                     ['qEn' => 'Does SPU provide visa guidance?', 'qAr' => 'هل تقدم الجامعة إرشاداً للتأشيرة؟', 'aEn' => 'SPU can provide guidance, but applicants should confirm official visa requirements with competent authorities.', 'aAr' => 'يمكن للجامعة تقديم الإرشاد، لكن يجب تأكيد متطلبات التأشيرة الرسمية مع الجهات المختصة.'],
                     ['qEn' => 'Can I apply from outside Syria?', 'qAr' => 'هل يمكنني التقديم من خارج سوريا؟', 'aEn' => 'Yes. Applicants outside Syria should coordinate with admissions regarding document submission and authentication.', 'aAr' => 'نعم. على المتقدمين من خارج سوريا التنسيق مع القبول حول تقديم الوثائق وتصديقها.'],
-                    ['qEn' => 'Is housing support available?', 'qAr' => 'هل يتوفر دعم للسكن؟', 'aEn' => 'Housing support availability may vary. Contact student affairs or admissions for current guidance.', 'aAr' => 'قد يختلف توفر دعم السكن. تواصل مع شؤون الطلاب أو القبول للحصول على المعلومات الحالية.'],
+                    ['qEn' => 'Does SPU have student housing?', 'qAr' => 'هل يوجد سكن جامعي؟', 'aEn' => 'No. SPU does not have university housing. Contact Student Affairs if you have questions about living near the campus.', 'aAr' => 'لا. لا يوجد سكن جامعي في الجامعة السورية الخاصة. تواصل مع شؤون الطلاب إن كان لديك سؤال عن الإقامة قرب الجامعة.'],
                 ]],
             ],
         ];
