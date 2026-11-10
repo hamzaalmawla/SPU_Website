@@ -1,5 +1,7 @@
 // Faculty members page: search, a group (leadership, heads, council, staff) and a
-// department narrow the cards the server already rendered in rank order.
+// department narrow the cards the server already rendered in rank order. A center's
+// staff page uses the same search over its own cards (no groups or departments) and
+// words its count with data-status-all / data-status-some on the root element.
 const GROUPS = ['leadership', 'head', 'council', 'staff'];
 
 function normalize(value) {
@@ -100,6 +102,13 @@ export function createFacultyMembers() {
             const total = this.cards.length;
             const shown = this.visibleCount();
             const isArabic = document.documentElement.lang === 'ar';
+            const { statusAll, statusSome } = this.$root?.dataset || {};
+
+            if (statusAll && statusSome) {
+                return (shown === total ? statusAll : statusSome)
+                    .replace(':shown', String(shown))
+                    .replace(':count', String(total));
+            }
 
             if (shown === total) {
                 return isArabic ? `${total} عضو هيئة تدريسية` : `${total} faculty members`;

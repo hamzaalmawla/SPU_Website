@@ -39,6 +39,7 @@ use App\Models\Person\PersonTranslation;
 use App\Models\Shared\MigrationLog;
 use App\Support\AcademicRank;
 use App\Support\DirectorateTaskGroups;
+use App\Support\LenientSearch;
 use App\Support\MediaUrlResolver;
 use Illuminate\Support\Collection;
 
@@ -224,8 +225,19 @@ final class AboutPageService implements AboutPageServiceInterface
         string $locale,
         ?string $requestedFaculty = null,
         int $requestedPage = 1,
+        ?string $search = null,
     ): StaffDirectoryDTO {
         $facultyLabels = $this->staffFacultyLabels($locale);
+        // Every language's name of each listed person, by slug, so a search finds
+        // them whichever language it is typed in.
+        $namesBySlug = [];
+        $rememberNames = static function (string $slug, iterable $names) use (&$namesBySlug): void {
+            foreach ($names as $name) {
+                if (is_string($name) && trim($name) !== '') {
+                    $namesBySlug[$slug][] = $name;
+                }
+            }
+        };
 
         $people = Person::query()
             ->public()
@@ -262,7 +274,7 @@ final class AboutPageService implements AboutPageServiceInterface
             ->get()
             ->keyBy(fn (FacultyMember $member): int => (int) $member->getKey());
         $allItems = $people
-            ->map(function (Person $person) use ($locale, $facultyLabels, $identities, $positionsOf, $profileRanks): ?StaffDirectoryItemDTO {
+            ->map(function (Person $person) use ($locale, $facultyLabels, $identities, $positionsOf, $profileRanks, $rememberNames): ?StaffDirectoryItemDTO {
                 $translation = $this->personTranslation($person, $locale);
                 $identity = $identities[(int) $person->getKey()] ?? null;
                 $apt = $this->primaryDisplayAppointment($person->appointments);
@@ -294,12 +306,17 @@ final class AboutPageService implements AboutPageServiceInterface
                 }
 
                 $image = $identity?->image ?? $this->personImage($person);
+                $slug = $identity !== null ? $identity->slug : (string) $person->slug;
+                $rememberNames($slug, $person->translations->pluck('name'));
+                if ($profile instanceof FacultyMember) {
+                    $rememberNames($slug, $profile->translations->pluck('full_name'));
+                }
 
                 // A leader with a faculty profile is listed once, under the
                 // profile's address; the profile's own entry is dropped below.
                 return new StaffDirectoryItemDTO(
                     sourceType: $identity !== null ? 'faculty-member' : 'person',
-                    slug: $identity !== null ? $identity->slug : (string) $person->slug,
+                    slug: $slug,
                     name: $identity !== null ? $identity->name : (string) $translation->name,
                     role: implode(' · ', $positions),
                     image: $image,
@@ -320,11 +337,12 @@ final class AboutPageService implements AboutPageServiceInterface
             ->get();
         $legacyMediaByTargetId = $this->legacyMediaByTargetId('faculty_members', $facultyMembers->pluck('id')->all());
         $facultyMemberItems = $facultyMembers
-            ->map(function (FacultyMember $member) use ($locale, $facultyLabels, $legacyMediaByTargetId, $positionsOf): ?StaffDirectoryItemDTO {
+            ->map(function (FacultyMember $member) use ($locale, $facultyLabels, $legacyMediaByTargetId, $positionsOf, $rememberNames): ?StaffDirectoryItemDTO {
                 $translation = $this->facultyMemberTranslation($member, $locale);
                 if (! $translation instanceof FacultyMemberTranslation) {
                     return null;
                 }
+                $rememberNames((string) $member->slug, $member->translations->pluck('full_name'));
 
                 $facultySlug = $member->faculty instanceof Faculty
                     ? (string) ($member->faculty->faculty_scope_slug ?: $member->faculty->public_slug ?: $member->faculty->slug)
@@ -369,9 +387,23 @@ final class AboutPageService implements AboutPageServiceInterface
         $activeFaculty = is_string($requestedFaculty) && $availableFacultySlugs->contains($requestedFaculty)
             ? $requestedFaculty
             : '';
+        $activeSearch = mb_substr(trim((string) $search), 0, 120);
         $filteredItems = $activeFaculty !== ''
             ? $allItems->filter(fn (StaffDirectoryItemDTO $item): bool => $item->facultySlug === $activeFaculty)->values()
             : $allItems;
+
+        // The search looks only through the people this directory lists.
+        if (LenientSearch::terms($activeSearch) !== []) {
+            $filteredItems = $filteredItems
+                ->filter(fn (StaffDirectoryItemDTO $item): bool => LenientSearch::matches(
+                    $activeSearch,
+                    [$item->role, $item->academicRank, $item->facultyName, ...$item->positions],
+                    [$item->name, ...($namesBySlug[$item->slug] ?? [])],
+                ))
+                ->values();
+        } else {
+            $activeSearch = '';
+        }
         $totalItems = $filteredItems->count();
         $totalPages = max(1, (int) ceil($totalItems / self::STAFF_PER_PAGE));
         $currentPage = min(max($requestedPage, 1), $totalPages);
@@ -384,6 +416,7 @@ final class AboutPageService implements AboutPageServiceInterface
             totalPages: $totalPages,
             totalItems: $totalItems,
             perPage: self::STAFF_PER_PAGE,
+            activeSearch: $activeSearch,
         );
     }
 
