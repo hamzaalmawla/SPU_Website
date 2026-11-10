@@ -52,7 +52,7 @@ return [
     |
     */
 
-    'url' => env('APP_URL', 'http://localhost'),
+    'url' => env('APP_URL', env('APP_ENV', 'production') === 'production' ? 'https://spu.edu.sy' : 'http://localhost'),
 
     /*
     |--------------------------------------------------------------------------
@@ -66,6 +66,9 @@ return [
     */
 
     'timezone' => 'UTC',
+
+    // Times editors type into admin date pickers are in this zone; storage stays UTC.
+    'admin_timezone' => env('ADMIN_TIMEZONE', 'Asia/Damascus'),
 
     /*
     |--------------------------------------------------------------------------

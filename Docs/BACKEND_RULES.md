@@ -82,6 +82,19 @@ Required DTOs for this foundation scope:
 
 ---
 
+## Internal Collaborator Rules
+
+- Public service interfaces remain the only dependency used by controllers and Filament workflow code
+- Action-style classes are internal service-layer collaborators only
+- Do not inject Actions into controllers, middleware, views, or Filament pages/resources
+- Use Actions only for cohesive business workflows that are too large to remain readable inside one service method
+- Use `app/Support/` helpers for pure mapping, normalization, and deterministic payload transformations
+- Support helpers must not authorize users, write database rows, invalidate cache, write audit logs, or publish content
+- Add characterization tests before moving existing private service behavior into an Action or support helper
+- Extract one responsibility at a time and keep public service contracts stable unless a separate approved task changes them
+
+---
+
 ## Controller Rules
 
 - Inject interfaces only
@@ -146,12 +159,15 @@ Not acceptable:
 
 - 5 failed attempts → lock account
 - Locked accounts cannot log in even with correct password
+- A lock set by failed attempts lifts itself after `auth.lockout.decay_minutes` (`AUTH_LOCKOUT_DECAY_MINUTES`, default 30; `0` keeps it). A lock set by an administrator never expires. Lifting a lock resets the failure count. `php artisan auth:unlock {email}` lifts one from the console
+- Every rejected sign-in (unknown email, locked, no admin role, wrong password) runs one password hash inside the `auth.timebox_duration` timebox, so response time does not reveal which emails exist
+- `admin-login` throttles per account (5/min) and per client IP (20/min)
 - Role-based access enforced via Gates and Policies
 - 3 roles:
   - super_admin
   - editor
   - faculty_editor
-- `faculty_editor` is scoped according to the ownership field used by this foundation schema, currently `faculty_scope_slug`
+- Access is permission-based (`<component>.<action>`, catalog in `PermissionCatalogInterface`); roles are editable sets of permissions and users may hold several roles, extra permissions and optional faculty/page limits (`users.faculty_scopes`, `users.page_scopes`). Records keep their own `faculty_scope_slug` ownership column, and every check goes through `AdminAccessServiceInterface`
 - MFA is future-phase only, not required in this sprint implementation
 - Passwords use bcrypt / Laravel hashing
 - Sessions use secure framework defaults
@@ -198,6 +214,7 @@ Not acceptable:
   - hero_stats
   - academic_faculties
   - achievements_highlights
+  - choose_your_path
   - university_news
   - research_studies
   - events_activities

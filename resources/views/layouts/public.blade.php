@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="{{ $locale }}" dir="{{ $direction }}">
+    <head>
+        {{-- Allowed by hash in the CSP: SecurityHeadersMiddleware::JS_CLASS_BOOTSTRAP. --}}
+        <script>{!! \App\Http\Middleware\SecurityHeadersMiddleware::JS_CLASS_BOOTSTRAP !!}</script>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="csrf-token" content="{{ csrf_token() }}">
+        <title>{{ $seo->title }}</title>
+        <meta name="robots" content="{{ ($isPreview ?? false) ? 'noindex,nofollow,noarchive' : ($seo->robots ?? 'index,follow') }}">
+        @if (($isPreview ?? false) || ! config('site_stats.enabled'))
+            {{-- Previews are not visits, and switched-off statistics send nothing (resources/js/public/siteStats.js). --}}
+            <meta name="spu-stats" content="off">
+        @endif
+        @if ($seo->metaDescription)
+            <meta name="description" content="{{ $seo->metaDescription }}">
+        @endif
+        <meta property="og:locale" content="{{ $locale }}">
+        <meta property="og:type" content="{{ $ogType ?? 'website' }}">
+        <meta property="og:site_name" content="{{ config('app.name', 'Syrian Private University') }}">
+        @if ($seo->canonicalUrl)<meta property="og:url" content="{{ $seo->canonicalUrl }}">@endif
+        <meta property="og:title" content="{{ $seo->ogTitle ?? $seo->title }}">
+        @if ($seo->ogDescription)
+            <meta property="og:description" content="{{ $seo->ogDescription }}">
+        @endif
+        @if ($seo->ogImage)
+            <meta property="og:image" content="{{ str_starts_with($seo->ogImage, 'http://') || str_starts_with($seo->ogImage, 'https://') ? $seo->ogImage : url($seo->ogImage) }}">
+        @endif
+        <meta name="twitter:card" content="summary_large_image">
+        <meta name="twitter:title" content="{{ $seo->ogTitle ?? $seo->title }}">
+        @if ($seo->ogDescription)<meta name="twitter:description" content="{{ $seo->ogDescription }}">@endif
+        @if ($seo->ogImage)<meta name="twitter:image" content="{{ str_starts_with($seo->ogImage, 'http://') || str_starts_with($seo->ogImage, 'https://') ? $seo->ogImage : url($seo->ogImage) }}">@endif
+        @if ($seo->canonicalUrl)
+            <link rel="canonical" href="{{ $seo->canonicalUrl }}">
+        @endif
+        @foreach ($seo->hreflang as $hreflang)
+            <link rel="alternate" hreflang="{{ $hreflang['locale'] }}" href="{{ $hreflang['url'] }}">
+        @endforeach
+        @if (isset($structuredData) && is_array($structuredData))
+            <script type="application/ld+json">{!! json_encode($structuredData, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) !!}</script>
+        @endif
+        @if (isset($citationMeta) && is_array($citationMeta))
+            @foreach ($citationMeta as $name => $content)
+                @if (is_string($name) && is_scalar($content) && (string) $content !== '')
+                    <meta name="{{ $name }}" content="{{ $content }}">
+                @endif
+            @endforeach
+        @endif
+        {{-- favicon.ico carries 16-64px sizes; single-logo.png is a 99 KB 500px PNG. --}}
+        <link rel="icon" href="{{ asset('favicon.ico') }}" sizes="any">
+        <link rel="apple-touch-icon" href="{{ asset('apple-touch-icon.png') }}">
+        <link rel="manifest" href="{{ asset('site.webmanifest') }}">
+        @stack('head')
+        {{-- Per-image object-fit / focal-point overrides for this page's images.
+             Inline, so they apply at the first paint without a blocking request;
+             otherwise a framed photo shows centred and then jumps. --}}
+        @if (($mediaDisplayStyles ?? '') !== '')
+            <style id="media-display-styles">{!! $mediaDisplayStyles !!}</style>
+        @endif
+        @php
+            $publicViteJsEntries = ['resources/js/app.js'];
+            $requestedPublicViteJsEntries = trim($__env->yieldContent('publicViteJsEntries'));
+
+            if ($requestedPublicViteJsEntries !== '') {
+                $decodedPublicViteJsEntries = json_decode($requestedPublicViteJsEntries, true);
+
+                if (is_array($decodedPublicViteJsEntries)) {
+                    $publicViteJsEntries = array_values(array_filter(
+                        $decodedPublicViteJsEntries,
+                        static fn (mixed $entry): bool => is_string($entry) && $entry !== '',
+                    ));
+                }
+            }
+
+            if (! in_array('resources/js/app.js', $publicViteJsEntries, true)) {
+                $publicViteJsEntries[] = 'resources/js/app.js';
+            }
+
+            $publicViteEntries = array_merge(['resources/css/app.css'], $publicViteJsEntries);
+        @endphp
+        @if (file_exists(public_path('hot')))
+            @vite($publicViteEntries)
+        @elseif (file_exists(public_path('build/manifest.json')))
+            @php($viteManifest = json_decode((string) file_get_contents(public_path('build/manifest.json')), true))
+            @php($cssEntry = $viteManifest['resources/css/app.css'] ?? null)
+            @php($loadedViteCss = [])
+            @if ($locale === 'ar')
+                @foreach (['public/fonts/hacen-tunisia-regular.woff2', 'public/fonts/hacen-tunisia-bold.woff2'] as $arabicFontKey)
+                    @if (! empty($viteManifest[$arabicFontKey]['file']))
+                        <link rel="preload" as="font" type="font/woff2" href="{{ asset('build/'.$viteManifest[$arabicFontKey]['file']) }}" crossorigin>
+                    @endif
+                @endforeach
+            @endif
+            @if (is_array($cssEntry) && ! empty($cssEntry['file']))
+                {{-- The host answers every request slowly (~0.4 s before the first
+                     byte, plus a TLS handshake per HTTP/1.1 connection), and the
+                     stylesheet blocks the first paint. A page that opts in
+                     carries it inline instead. The file is prefetched for the
+                     next page only after this one has loaded and the browser
+                     is idle (resources/js/public/nextPageStylesheet.js): a
+                     <link rel="prefetch"> here took bandwidth from the hero
+                     image and fonts during the first paint. --}}
+                @php($inlineStylesheetPath = public_path('build/'.$cssEntry['file']))
+                @php($inlineStylesheet = trim($__env->yieldContent('inlinePublicStylesheet')) === '1' && is_file($inlineStylesheetPath) ? file_get_contents($inlineStylesheetPath) : false)
+                @if (is_string($inlineStylesheet) && $inlineStylesheet !== '' && ! str_contains(strtolower($inlineStylesheet), '</style'))
+                    <style id="public-stylesheet" data-stylesheet-href="{{ asset('build/'.$cssEntry['file']) }}">{!! $inlineStylesheet !!}</style>
+                @else
+                    <link rel="stylesheet" href="{{ asset('build/'.$cssEntry['file']) }}">
+                @endif
+                @php($loadedViteCss[] = $cssEntry['file'])
+            @endif
+
+            @foreach ($publicViteJsEntries as $publicViteJsEntry)
+                @php($jsEntry = $viteManifest[$publicViteJsEntry] ?? null)
+
+                @if (is_array($jsEntry))
+                    @foreach (($jsEntry['css'] ?? []) as $cssFile)
+                        @continue(in_array($cssFile, $loadedViteCss, true))
+                        <link rel="stylesheet" href="{{ asset('build/'.$cssFile) }}">
+                        @php($loadedViteCss[] = $cssFile)
+                    @endforeach
+
+                    @if (! empty($jsEntry['file']))
+                        <script type="module" src="{{ asset('build/'.$jsEntry['file']) }}"></script>
+                    @endif
+                @endif
+            @endforeach
+        @endif
+        @stack('styles')
+        @include('public.layout.analytics')
+    </head>
+    <body class="min-h-screen antialiased font-hacen">
+        <a class="skip-link" href="#main-content">{{ $locale === 'ar' ? 'انتقل إلى المحتوى الرئيسي' : 'Skip to main content' }}</a>
+        @include('public.layout.preview-banner')
+        @include('public.layout.header')
+
+        <main id="main-content" tabindex="-1">@yield('content')</main>
+
+        @include('public.layout.footer')
+        @unless ($isPreview ?? false)
+            @include('public.layout.chatbot', ['locale' => $locale])
+        @endunless
+        @stack('scripts')
+    </body>
+</html>

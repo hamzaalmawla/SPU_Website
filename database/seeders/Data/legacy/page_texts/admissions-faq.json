@@ -1,0 +1,223 @@
+{
+  "source": "Old site spu.edu.sy, FAQs page (jx_categories 65): its 24 questions on the study system, parsed from the page text in Arabic and English; they replace the invented questions of the redesign.",
+  "targets": {
+    "admissions.faq": {
+      "ar": {
+        "title": "أسئلة متكررة",
+        "sections": [
+          {
+            "id": "study-system",
+            "icon": "/images/icon-file-outline.svg",
+            "title": "أسئلة متكررة حول نظام الدراسة",
+            "items": [
+              {
+                "q": "ماذا يعني الرقم الجامعي؟",
+                "a": "رقم يدل على العام الجامعي والفصل الذي يبدأ الطالب الدراسة فيه إضافة إلى الرقم المتسلسل للطالب في ذلك العام والفصل الدراسي، وهو رقم يلازم الطالب طيلة فترة دراسته ولا يمكن أن يتكرر الرقم بين أي طالبين درسا في الجامعة بغض النظر عن تاريخ التسجيل."
+              },
+              {
+                "q": "ماذا نقصد برقم المقرر؟",
+                "a": "الرقم الذي يسبق اسم المقرر ويمثل الكلية والقسم الأكاديمي ومستوى السنة الدراسية للمقرر."
+              },
+              {
+                "q": "ما تعريف نظام الساعات المعتمدة؟",
+                "a": "يقوم النظام على تحديد الساعات المعتمدة الواجب إتمامها من قبل الطالب والنجاح فيها كشرط للتخرج في أي تخصص من التخصصات الأكاديمية، مع إعطاء الحرية للطالب لاختيار دراسة المقررات المطلوبة منه حسب انجازه للمقررات السابقة لها وتقديره لحاجته لهذه المقررات واستعداده لها بتوجيه المرشد الاكاديمي،، ضمن الحدود الدنيا والعليا من الساعات الدراسية المسموح بتسجيلها في كل فصل."
+              },
+              {
+                "q": "ماهي الساعة المعتمدة؟",
+                "a": "هي وحدة علمية، تسجل للطالب في حالة نجاحه في المادة التي يدرسها، وتحتسب ساعة دراسية أسبوعية نظرية او ساعتين عمليتين على الأقل خلال فصل دراسي اعتيادي، وتكون أساس تحديد العبء الدراسي الذي يأخذه الطالب في كل فصل دراسي."
+              },
+              {
+                "q": "ماذا نعني بالسنة الدراسية؟",
+                "a": "تتكون السنة الدراسية من فصلين دراسيين إجباريين وفصل صيفي اختياري."
+              },
+              {
+                "q": "ما هوالفصل الدراسي؟",
+                "a": "هو فترة زمنية مقدارها ستة عشرة أسبوعاً على الأقل، تشمل ساعات الدراسة وفترة الامتحانات، أما مدة الفصل الدراسي الصيفي فهي 9 أسابيع بمافي ذلك الامتحانات."
+              },
+              {
+                "q": "ماذا تعني الخطة الدراسية؟",
+                "a": "مجموعة من المقررات التي يتوجب على الطالب اجتيازها بنجاح لنيل درجة البكالوريوس"
+              },
+              {
+                "q": "ماهي متطلبات الجامعة؟",
+                "a": "مجموعة من المقررات الدراسية الإجبارية والإختيارية التي يدرسها جميع طلبة الجامعة لتوفير قاعدة ثقافية ومعرفية لهم، وهي مواد تتفق مع أهداف الجامعة."
+              },
+              {
+                "q": "ماهي متطلبات الكلية؟",
+                "a": "مجموعة من المقررات الدراسية (الإجبارية والاختيارية) التي يدرسها جميع طلبة الكلية على اختلاف تخصصاتهم، وذلك لتوفير قاعدة من العلوم الأساسية."
+              },
+              {
+                "q": "ماهي متطلبات التخصص؟",
+                "a": "وتشمل على المقررات الإجبارية التي يدرسها جميع الطلاب المقبولين في تخصص معين، وعلى مقررات اختيارية يختارها الطلبة من بين المقررات التي تحددها الكلية لهذا التخصص."
+              },
+              {
+                "q": "ماذا نعني بالمستوى الدراسي؟",
+                "a": "يحدد المستوى الدراسي للطالب من خلال عدد الساعات التي أنهاها بنجاح بموجب الخطة الدراسية."
+              },
+              {
+                "q": "ما هو العبء الدراسي؟",
+                "a": "مجموع الساعات المعتمدة التي يسجلها الطالب في الفصل الدراسي الاعتيادي، بحيث لاتقل عن 12 ساعة معتمدة ولاتزيد عن 18 ساعة معتمدة إلا بموافقة الجهات المعنية وضمن ضوابط وزارة التعليم العالي، أما في الفصل الصيفي يكون العبء الدراسي 9 ساعات معتمدة كحد أعلى ويمكن زيادة العبء الى 12 ساعة معتمدة للطلاب المتوقع تخرجهم."
+              },
+              {
+                "q": "ماذا نقصد بمصطلح التسجيل؟",
+                "a": "تسجيل المقررات التي يختارها الطالب في كل فصل دراسي بعد اخذ موافقة المرشد الأكاديمي عليها،وذلك ضمن الحدود الدنيا والعليا لعدد الساعات المعتمدة المسموح بتسجيلها خلال الفصل الدراسي وبما يتوافق مع الخطة الإرشادية للكلية."
+              },
+              {
+                "q": "من هو المرشد الأكاديمي؟",
+                "a": "هو عضو الهيئة التعليمية الذي يختاره القسم الأكاديمي في الكلية ليتولى توجيه الطالب في عملية تسجيل مقررات كل فصل دراسي، ويتابع مسيرته العلمية منذ دخوله في الجامعة وحتى تخرجه ويقدم للطالب النصح والتوجيه الدائم."
+              },
+              {
+                "q": "ماذا نقصد بالمتطلب السابق للمقرر؟",
+                "a": "المقرر الذي يجب على الطالب دراسته ليتمكن من تسجيل المتطلب اللاحق له سواء درسه داخل الجامعة أو خارجها وحصل فيه على علامة نجاح أو رسوب."
+              },
+              {
+                "q": "ما معنى السحب والإضافة؟",
+                "a": "عملية حذف أو إضافة أو تغيير شعب أو مواعيد معينة لمقرر أو أكثر وتتم خلال الأسبوع الأول من الفصل الدراسي دون أن يتحمل الطالب أي تكلفة مالية أو أثر أكاديمي."
+              },
+              {
+                "q": "ماهو المعدل الفصلي (GPA)؟",
+                "a": "هو مجموع المكافئات الرقمية التي حصل عليها الطالب في المقررات التي درسها خلال الفصل بعد ضرب كل منها بعدد الساعات المعتمدة للمقرر مقسوماً على مجموع الساعات المعتمدة التي درسها الطالب خلال الفصل."
+              },
+              {
+                "q": "ماهو المعدل التراكمي (AGPA)؟",
+                "a": "يحسب المعدل التراكمي للطالب بنفس طريقة احتساب المعدل الفصلي مع الأخذ بالحسبان جميع المقررات التي درسها الطالب منذ بداية دراسته في الجامعة حتى تاريخ حساب ذلك المعدل، وتدخل المادة المعادة مرة واحدة في الحساب بأعلى علامة حصل عليها الطالب."
+              },
+              {
+                "q": "ماهوالنجاح المشروط؟",
+                "a": "وهي علامة يأخذها الطالب أقل من 60 وأعلى أو تساوي 50. تعتبر المادة ناجحة طالما أن المعدل التراكمي للطالب أعلى أو يساوي 2 من 4 وتصبح راسبة عندما يكون معدل الطالب أقل من 22."
+              },
+              {
+                "q": "ماهي علامة غير المكتمل؟",
+                "a": "وهي عبارة مؤقتة تدخل على النظام الأكاديمي تدل على عدم تقديم الطالب للامتحان في موعده لأسباب وافق عليها مجلس كليته، على الطالب إزلة ذلك خلال أسبوعين كحد أقصى من بداية الفصل التالي، بما في ذلك الفصل الصيفي اذا كان الطالب مسجلاً له وإلا فيعطى الطالب علامة الصفر."
+              },
+              {
+                "q": "ماذا نعني بتأجيل الدراسة؟",
+                "a": "يجوز للطالب أن يؤجل دراسته في الجامعة وذلك قبل انتهاء فترة الحذف والإضافة، مدة لا تزيد عن أربعة فصول دراسية سواءٌ أكانت متقطعة أم متصلة، ولايجوز للطالب أن يؤجل دراسته إلا بعد مضي فصل دراسي واحد على الأقل على دراسته الجامعية، (ولايعتبر الفصل الصيفي فصلاً دراسياً في هذه الحالة)، ولاتحتسب مدةة التأجيل من الحد الأعلى للمدة المسموح بها للحصول على درجة البكالوريوس."
+              },
+              {
+                "q": "ماهو الانسحاب من الفصل؟",
+                "a": "يقوم الطالب بإجراء عملية الانسحاب من الفصل كاملاً في حال وجود عذر يمنعه من الاستمرار بالدراسة ولتفادي الانخفاض في المعدل، ويحتسب هذا الفصل من الحد الأعلى للدراسة."
+              },
+              {
+                "q": "ماذا نعني بالانقطاع عن الدراسة؟",
+                "a": "إذا انتهت فترة الحذف والإضافة ولم يقم الطالب بالتسجيل أو التأجيل يُعد الطالب منقطعا عن الدراسة (ويطوى قيده في حال انقطع أربعه فصول عن الجامعة)، ويحتسب الانقطاع من الحد الأعلى للدراسة."
+              },
+              {
+                "q": "ماهو الانسحاب مع فقدان الرسوم (W)؟",
+                "a": "يحق للطالب سحب مادة سبق وأن سجل فيها خلال مدة أقصاها نهاية الاسبوع الثالث عشر من الفصل العادي ونهاية الاسبوع السادس في الفصل الصيفي، وتثبت كلمة (منسحب) إزاء هذه المادة في سجل الطالب الأكاديمي، ولاتدخل المادة التي قام الطالب بالانسحاب منها في المعدل الفصلي والتراكمي."
+              }
+            ]
+          }
+        ]
+      },
+      "en": {
+        "title": "FAQs",
+        "sections": [
+          {
+            "id": "study-system",
+            "icon": "/images/icon-file-outline.svg",
+            "title": "Study System FAQs",
+            "items": [
+              {
+                "q": "University ID",
+                "a": "refers to the year and semester that the student starts his/her study in the university. It’s a serial number which will be the same for all years of study, and it can’t be in any circumstances the same for any student of the university regardless his/her year of enrollment."
+              },
+              {
+                "q": "Course Number",
+                "a": "A code comes before the course name presentingfaculty’s name,department’s name and course level."
+              },
+              {
+                "q": "Credit hour system",
+                "a": "The system that determines the credit hours that should be completed by the student as a condition to graduate in any academic major. Student is free to choose courses according to his/her accomplishments in the previous courses and upon the guidance and approval of his/her academic supervisor."
+              },
+              {
+                "q": "Credit Hours",
+                "a": "A scientific unit, registered for the student when he/she passes the studied courses. It’s at least one theoretical hour a week or two active hours at a regular semester."
+              },
+              {
+                "q": "Academic Year",
+                "a": "It consists of two obligatory semesters and one optional summer one."
+              },
+              {
+                "q": "The Semester",
+                "a": "It’s 16 weeks at least, contains credit hours and exams, while the summer semester is 9 weeks only including exams."
+              },
+              {
+                "q": "Studying Plan",
+                "a": "It’s the number of courses that the student should pass to get his/her university degree."
+              },
+              {
+                "q": "University requirements",
+                "a": "a set of obligatory and optional courses that all students study to build a cultural and knowledgeable base concordant to the university’s objectives.."
+              },
+              {
+                "q": "Faculty requirements",
+                "a": "a set of courses (obligatory and optional) that all students study in different fields of specialization to build their fundamental scientific base."
+              },
+              {
+                "q": "Specialization requirements",
+                "a": "includes obligatory courses determined by the faculty, that all acceptedstudents in a particular major should study."
+              },
+              {
+                "q": "Studying level",
+                "a": "It’s determined by the number of hours that the student successfully finished under the study plan."
+              },
+              {
+                "q": "Studying Required Hours",
+                "a": "the total registered hours by a student in a regular semester should be not less than 12 hours and not more than 18 hours, only with the approval of the concerned authorities and in accordance with the regulations of the Ministry of Higher Education.Total registered hours in summer semester should not be more than 9 hours and they can exceptionally be 12 hours to studentsexpected to graduate in it."
+              },
+              {
+                "q": "Registration",
+                "a": "Registration ofchosen courses in each semester approval of the academic supervisor within the limits of the allowed credit hours according to the studying plan."
+              },
+              {
+                "q": "Academic advisor",
+                "a": "A member of the education staff chosen by the academic section in the faculty to guide a student in registration courses of each semester, and gives help and offers advice to him steadily till his graduation."
+              },
+              {
+                "q": "Prerequisite course",
+                "a": "A course that the student has to study to be able to register a succeeding course regardless he/she studies it at the university or outside it, passing it or not."
+              },
+              {
+                "q": "Add and drop",
+                "a": "the process of or adding, dropping or changing classes or changing course hours, during the first week of the semester without any extra charge."
+              },
+              {
+                "q": "Semester Grade-Point Average (GPA)",
+                "a": "Total marks achieved by a student in all courses his/her studied in a semester multiplied by course hours and then dividedby total all courses hours in that semester."
+              },
+              {
+                "q": "Cumulative Grade-Point Average (AGPA)",
+                "a": "it’s caculated by the same way of the semester average with taking into consideration all the courses that the student studies from the beginning of his/her study till this average is being done. Repeated course is taken only once and only highest mark is accepted."
+              },
+              {
+                "q": "Conditional success",
+                "a": "A given mark less than 60 and higher or equal to 50. Students pass as long as the cumulative average is higher or equal to 2 out of 4, and students fail when it’s less than 2."
+              },
+              {
+                "q": "Mark isn’t completed",
+                "a": "it’s a temporary situation in the academic system given to a student who does show in the exam on time for reasons determined and accepted by his/ her faculty. Student should remove it within two weeks timeat maximum starts from the beginning of next semester, summer semester inclusively if the student registers courses in it, otherwise he/she will receive 0."
+              },
+              {
+                "q": "Postponing",
+                "a": "student can postpone his/her study before the expiration of the add and drop week, for a period not exceeding 4 continued or discontinued semesters. A student cannot postpone beforeat least one study semester from the date of the beginning of his/her university study ( summer semester isn’t included). Postponement period is not counted in the permitted maximum limit for obtaining the university degree."
+              },
+              {
+                "q": "Quitting semester",
+                "a": "Student can quit a full semester when he has an excuse preventing him/her from studying, and this semester will be counted inmaximum limit for obtaining the university degree."
+              },
+              {
+                "q": "Dropping out",
+                "a": "if add and drop weekis over and a student has not registered or postponed, he /she will be considered as quitted from study (university will cancel his/her registration after four semesters of dropping out) ."
+              },
+              {
+                "q": "Withdrawal without fee reimbursement (W)",
+                "a": "student may withdraw a course he/she has already registered by the end of the 13th week in a regular semester and by the end of the 6th week in a summer semester, Withdraw (W) in that course is shown in the student’s academic record, but it will not be counted neither in his GPA nor AGPA."
+              }
+            ]
+          }
+        ]
+      }
+    }
+  }
+}

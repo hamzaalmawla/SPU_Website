@@ -1,0 +1,25 @@
+/**
+ * Card titles: at most three lines, then "…". Each title takes its reading
+ * direction from its own text (dir="auto"): English reads left to right and
+ * Arabic right to left, on either language's page, and starts at that side
+ * rather than in the middle. [dir] lifts the rule over component styles
+ * such as `.staff-card-name` that set their own alignment.
+ *
+ * Not used on the homepage faculty and "choose your path" cards, which stay
+ * centred by design.
+ */
+.card-title[dir] {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
+    overflow: hidden;
+    overflow-wrap: anywhere;
+    text-align: start;
+}
+
+/* Person cards (photo on top, everything centred) keep the name centred
+   under the photo; it still stops at three lines. */
+.card-title.card-title-center[dir] {
+    text-align: center;
+}

@@ -1,0 +1,53 @@
+# Conversion report
+
+- Group "comm": code AIRC.5.01 is used by both "Signals and Systems" and "Electronic Circuits II" (table 15). Resolve in the source.
+- Group "med": code AIME.0.01 is used by both "Hospital Management" and "Nuclear Medcine and Equipments" (table 18). Resolve in the source.
+- se: 9 courses have no term in the guidance plan and were placed in the earliest term their prerequisites allow: UR-2-02 "Computer Skills" -> term 1; UR-2-10 "English Language-3" -> term 3; UR-2-07 "Scientific Thinking" -> term 1; UR-2-13 "Second Foreign Language" -> term 1; UR-2-14 "Second Foreign Language" -> term 1; UR-2-06 "Social Science" -> term 1; UR-2-05 "Introduction to Law" -> term 1; UR-2-08 "Management Science" -> term 1; UR-2-09 "Environmental Science" -> term 1.
+- se: AIAC.8.02 lists prerequisite AIAC.7.02, which is not a course in this department plan. Dropped from the graph.
+- INFO se: 72 courses, 166 credits from required courses (regulations say 180).
+- ai: AIEC.6.04 is in level 5 of the guidance plan but its code says level 6. Using the guidance plan.
+- ai: AIEC.7.03 is in level 6 of the guidance plan but its code says level 7. Using the guidance plan.
+- ai: AIEC.9.03 is in level 7 of the guidance plan but its code says level 9. Using the guidance plan.
+- ai: AIRC.5.03 is in level 9 of the guidance plan but its code says level 5. Using the guidance plan.
+- ai: 9 courses have no term in the guidance plan and were placed in the earliest term their prerequisites allow: UR-2-02 "Computer Skills" -> term 1; UR-2-10 "English Language-3" -> term 3; UR-2-07 "Scientific Thinking" -> term 1; UR-2-13 "Second Foreign Language" -> term 1; UR-2-14 "Second Foreign Language" -> term 1; UR-2-06 "Social Science" -> term 1; UR-2-05 "Introduction to Law" -> term 1; UR-2-08 "Management Science" -> term 1; UR-2-09 "Environmental Science" -> term 1.
+- ai: AISC.7.04 lists prerequisite AIEC.6.01, which is not a course in this department plan. Dropped from the graph.
+- INFO ai: 72 courses, 166 credits from required courses (regulations say 180).
+- sec: AIEC.5.01 is in level 4 of the guidance plan but its code says level 5. Using the guidance plan.
+- sec: AIEC.5.02 is in level 4 of the guidance plan but its code says level 5. Using the guidance plan.
+- sec: AIEC.6.03 is in level 5 of the guidance plan but its code says level 6. Using the guidance plan.
+- sec: AISC.5.01 is in level 4 of the guidance plan but its code says level 5. Using the guidance plan.
+- sec: AIRC.4.01 is in level 5 of the guidance plan but its code says level 4. Using the guidance plan.
+- sec: AIAC.6.01 is in level 7 of the guidance plan but its code says level 6. Using the guidance plan.
+- sec: AIAC.9.01 is in level 8 of the guidance plan but its code says level 9. Using the guidance plan.
+- sec: AIAC.7.03 is in level 9 of the guidance plan but its code says level 7. Using the guidance plan.
+- sec: 9 courses have no term in the guidance plan and were placed in the earliest term their prerequisites allow: UR-2-02 "Computer Skills" -> term 1; UR-2-10 "English Language-3" -> term 3; UR-2-07 "Scientific Thinking" -> term 1; UR-2-13 "Second Foreign Language" -> term 1; UR-2-14 "Second Foreign Language" -> term 1; UR-2-06 "Social Science" -> term 1; UR-2-05 "Introduction to Law" -> term 1; UR-2-08 "Management Science" -> term 1; UR-2-09 "Environmental Science" -> term 1.
+- sec: AIAC.7.01 lists prerequisite AIFC.6.02, which is not a course in this department plan. Dropped from the graph.
+- INFO sec: 72 courses, 166 credits from required courses (regulations say 180).
+- ctrl: AICC.4.01 is in level 5 of the guidance plan but its code says level 4. Using the guidance plan.
+- ctrl: AIEC.3.01 is in level 6 of the guidance plan but its code says level 3. Using the guidance plan.
+- ctrl: AIAC.7.03 is in level 9 of the guidance plan but its code says level 7. Using the guidance plan.
+- ctrl: AIAC.6.01 is in level 9 of the guidance plan but its code says level 6. Using the guidance plan.
+- ctrl: 9 courses have no term in the guidance plan and were placed in the earliest term their prerequisites allow: UR-2-02 "Computer Skills" -> term 1; UR-2-10 "English Language-3" -> term 3; UR-2-07 "Scientific Thinking" -> term 1; UR-2-13 "Second Foreign Language" -> term 1; UR-2-14 "Second Foreign Language" -> term 1; UR-2-06 "Social Science" -> term 1; UR-2-05 "Introduction to Law" -> term 1; UR-2-08 "Management Science" -> term 1; UR-2-09 "Environmental Science" -> term 1.
+- ctrl: AIEC.6.02 lists prerequisite AIEC.2.02, which is not a course in this department plan. Dropped from the graph.
+- ctrl: AIAC.7.02 lists prerequisite AIEC.5.02, which is not a course in this department plan. Dropped from the graph.
+- ctrl: AIAC.7.01 lists prerequisite AIFC.6.02, which is not a course in this department plan. Dropped from the graph.
+- ctrl: AIAC.7.03 lists prerequisite AIFC.5.04, which is not a course in this department plan. Dropped from the graph.
+- INFO ctrl: 72 courses, 166 credits from required courses (regulations say 180).
+- comm: code AIRC.5.01 is shared by two different courses ("Signals and Systems" and "Electronic Circuits II"); the second keeps the id suffix -2 and prerequisites that cite the code point at the first.
+- comm: AIEC.3.01 is in level 5 of the guidance plan but its code says level 3. Using the guidance plan.
+- comm: AIAC.7.03 is in level 9 of the guidance plan but its code says level 7. Using the guidance plan.
+- comm: AIRC.7.03 is in level 9 of the guidance plan but its code says level 7. Using the guidance plan.
+- comm: AIAC.6.01 is in level 9 of the guidance plan but its code says level 6. Using the guidance plan.
+- comm: 9 courses have no term in the guidance plan and were placed in the earliest term their prerequisites allow: UR-2-02 "Computer Skills" -> term 1; UR-2-10 "English Language-3" -> term 3; UR-2-07 "Scientific Thinking" -> term 1; UR-2-13 "Second Foreign Language" -> term 1; UR-2-14 "Second Foreign Language" -> term 1; UR-2-06 "Social Science" -> term 1; UR-2-05 "Introduction to Law" -> term 1; UR-2-08 "Management Science" -> term 1; UR-2-09 "Environmental Science" -> term 1.
+- comm: AIRC.5.01 lists prerequisite AIFC.4.05, which is not a course in this department plan. Dropped from the graph.
+- comm: AIEC.6.02 lists prerequisite AIEC.2.02, which is not a course in this department plan. Dropped from the graph.
+- comm: AIAC.7.02 lists prerequisite AIEC.5.02, which is not a course in this department plan. Dropped from the graph.
+- comm: AIAC.7.03 lists prerequisite AIFC.5.04, which is not a course in this department plan. Dropped from the graph.
+- INFO comm: 72 courses, 166 credits from required courses (regulations say 180).
+- med: code AIME.0.01 is shared by two different courses ("Hospital Management" and "Nuclear Medcine and Equipments"); the second keeps the id suffix -2 and prerequisites that cite the code point at the first.
+- med: AIMC.5.02 is in level 6 of the guidance plan but its code says level 5. Using the guidance plan.
+- med: AIEC.3.01 is in level 6 of the guidance plan but its code says level 3. Using the guidance plan.
+- med: AIAC.6.01 is in level 9 of the guidance plan but its code says level 6. Using the guidance plan.
+- med: 9 courses have no term in the guidance plan and were placed in the earliest term their prerequisites allow: UR-2-02 "Computer Skills" -> term 1; UR-2-10 "English Language-3" -> term 3; UR-2-07 "Scientific Thinking" -> term 1; UR-2-13 "Second Foreign Language" -> term 1; UR-2-14 "Second Foreign Language" -> term 1; UR-2-06 "Social Science" -> term 1; UR-2-05 "Introduction to Law" -> term 1; UR-2-08 "Management Science" -> term 1; UR-2-09 "Environmental Science" -> term 1.
+- med: AIMC.7.04 lists prerequisite AIFC.3.01, which is not a course in this department plan. Dropped from the graph.
+- INFO med: 72 courses, 166 credits from required courses (regulations say 180).

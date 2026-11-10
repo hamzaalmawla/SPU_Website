@@ -1,0 +1,90 @@
+{
+  "translations": {
+    "en": {
+      "title": "University Events",
+      "headline": "University Events",
+      "summary": "Discover and register for upcoming academic events, workshops, seminars, and campus activities at Syrian Private University.",
+      "heroImage": "/images/uni-main-place.JPG",
+      "calendarTitle": "Events Calendar",
+      "upcomingTitle": "Upcoming Events",
+      "pastTitle": "Past Events",
+      "allCategoriesLabel": "All Events",
+      "registerLabel": "Register Now",
+      "detailsLabel": "View Details",
+      "freeLabel": "Free",
+      "spotsLeftLabel": "spots left",
+      "emptyLabel": "No events match this category.",
+      "registrationTitle": "Event Registration",
+      "registrationInfo": "Please complete the form accurately. Registration confirmation will be sent after review.",
+      "notFoundTitle": "Event Not Found",
+      "notFoundText": "The requested event could not be found or is not open for registration.",
+      "backLabel": "Back to Events",
+      "highlightsLabel": "Event Highlights",
+      "speakersLabel": "Speakers",
+      "resultsLabel": "Results and Achievements",
+      "galleryLabel": "Photo Gallery",
+      "categories": [
+        {"id": "academic", "label": "Academic"},
+        {"id": "workshop", "label": "Workshop"},
+        {"id": "seminar", "label": "Seminar"},
+        {"id": "social", "label": "Social"},
+        {"id": "sports", "label": "Sports"}
+      ],
+      "upcoming": [
+        {"id":"evt-001","title":"Annual Research Symposium & Innovation Showcase","summary":"Annual symposium highlighting SPU research output through faculty presentations, graduate research sessions, and innovation showcases.","startsAt":"2026-11-15T09:00:00+03:00","endsAt":"2026-11-15T17:00:00+03:00","dateLabel":"November 15, 2026","timeLabel":"09:00 AM - 05:00 PM","location":"Main Campus Auditorium","categoryId":"academic","categoryLabel":"Academic","image":"/images/uni-main-place.JPG","formId":"conference-registration","capacity":300,"registered":145,"featured":true},
+        {"id":"evt-002","title":"Workshop on AI Tools for Academic Research","summary":"Hands-on workshop covering practical applications of AI tools in literature review, data analysis, and manuscript preparation.","startsAt":"2026-11-20T10:00:00+03:00","endsAt":"2026-11-20T14:00:00+03:00","dateLabel":"November 20, 2026","timeLabel":"10:00 AM - 02:00 PM","location":"AI Faculty Lab 3","categoryId":"workshop","categoryLabel":"Workshop","image":"/images/research-clinical-simulation.webp","formId":"activity-registration","capacity":40,"registered":32,"featured":false},
+        {"id":"evt-003","title":"Career Fair 2026","summary":"Connect with employers and explore internship and full-time opportunities across multiple sectors.","startsAt":"2026-12-05T09:00:00+03:00","endsAt":"2026-12-05T16:00:00+03:00","dateLabel":"December 5, 2026","timeLabel":"09:00 AM - 04:00 PM","location":"University Plaza","categoryId":"social","categoryLabel":"Social","image":"/images/campus-feature-01.webp","formId":"activity-registration","capacity":500,"registered":210,"featured":false},
+        {"id":"evt-004","title":"Medical Conference on Digital Health","summary":"Two-day conference exploring digital health, telemedicine, electronic records, and AI-driven diagnostics.","startsAt":"2026-12-12T09:00:00+03:00","endsAt":"2026-12-13T17:00:00+03:00","dateLabel":"December 12-13, 2026","timeLabel":"09:00 AM - 05:00 PM","location":"Faculty of Medicine Auditorium","categoryId":"academic","categoryLabel":"Academic","image":"/images/research-digital-dentistry.webp","formId":"conference-registration","capacity":200,"registered":89,"featured":false},
+        {"id":"evt-005","title":"Student Sports Tournament","summary":"Annual inter-faculty basketball, football, and volleyball tournament.","startsAt":"2026-12-20T14:00:00+03:00","endsAt":"2026-12-20T18:00:00+03:00","dateLabel":"December 20, 2026","timeLabel":"02:00 PM - 06:00 PM","location":"University Sports Complex","categoryId":"sports","categoryLabel":"Sports","image":"/images/campus-feature-02.webp","formId":"activity-registration","capacity":150,"registered":67,"featured":false}
+      ],
+      "past": [
+        {"id":"evt-past-001","title":"Open Day Fall 2025","summary":"A comprehensive open day welcoming prospective students and families to explore SPU faculties, laboratories, and campus facilities.","startsAt":"2025-10-15T09:00:00+03:00","endsAt":"2025-10-15T16:00:00+03:00","dateLabel":"October 15, 2025","timeLabel":"09:00 AM - 04:00 PM","location":"Main Campus","categoryId":"social","categoryLabel":"Social","image":"/images/campus-feature-01.webp","participants":"500+ Attendees","highlights":["Faculty presentations across all seven schools","Live laboratory demonstrations","Student campus-life panel","Admission counseling","Guided campus tours"],"gallery":["/images/uni-main-place.JPG","/images/campus-feature-02.webp","/images/research-clinical-simulation.webp","/images/campus-feature-01.webp"]},
+        {"id":"evt-past-002","title":"Workshop on Academic Writing","summary":"An intensive workshop focused on research-paper structure, citation practices, and journal submission strategies.","startsAt":"2025-09-28T10:00:00+03:00","endsAt":"2025-09-28T14:00:00+03:00","dateLabel":"September 28, 2025","timeLabel":"10:00 AM - 02:00 PM","location":"Library Conference Room","categoryId":"workshop","categoryLabel":"Workshop","image":"/images/research-digital-dentistry.webp","participants":"45 Participants","highlights":["Research paper structure and organization","Citation styles","Journal selection and submission","Peer review strategies","Writing exercises with feedback"],"speakers":[{"name":"Dr. Sarah Mitchell","title":"Professor of English Literature"},{"name":"Dr. Ahmad Kassis","title":"Research Methodology Expert"}],"results":"Participants reported improved writing confidence and prepared research papers for journal submission."},
+        {"id":"evt-past-003","title":"Pharmacy Day 2025","summary":"Research presentations, industry lectures, and an exhibition of student pharmaceutical projects.","startsAt":"2025-05-10T09:00:00+03:00","endsAt":"2025-05-10T15:00:00+03:00","dateLabel":"May 10, 2025","timeLabel":"09:00 AM - 03:00 PM","location":"Faculty of Pharmacy","categoryId":"academic","categoryLabel":"Academic","image":"/images/research-clinical-simulation.webp","participants":"200+ Participants","highlights":["Student research posters","Industry guest lectures","Innovation project exhibition","Career networking","Research awards"],"speakers":[{"name":"Dr. Lama Shbib","title":"Dean, Faculty of Pharmacy"},{"name":"Eng. Fadi Al-Halabi","title":"Pharmaceutical Innovation Director"}],"results":"Student projects were selected for national competition and internship opportunities."}
+      ]
+    },
+    "ar": {
+      "title": "فعاليات الجامعة",
+      "headline": "فعاليات الجامعة",
+      "summary": "اكتشف وسجل في الفعاليات الأكاديمية وورش العمل والندوات والأنشطة الجامعية القادمة في الجامعة السورية الخاصة.",
+      "heroImage": "/images/uni-main-place.JPG",
+      "calendarTitle": "تقويم الفعاليات",
+      "upcomingTitle": "الفعاليات القادمة",
+      "pastTitle": "الفعاليات السابقة",
+      "allCategoriesLabel": "جميع الفعاليات",
+      "registerLabel": "سجل الآن",
+      "detailsLabel": "عرض التفاصيل",
+      "freeLabel": "مجاني",
+      "spotsLeftLabel": "أماكن متبقية",
+      "emptyLabel": "لا توجد فعاليات ضمن هذا التصنيف.",
+      "registrationTitle": "التسجيل في الفعالية",
+      "registrationInfo": "يرجى إكمال النموذج بدقة. سيتم إرسال تأكيد التسجيل بعد مراجعة البيانات.",
+      "notFoundTitle": "الفعالية غير موجودة",
+      "notFoundText": "لم يتم العثور على الفعالية المطلوبة أو أن التسجيل فيها غير متاح.",
+      "backLabel": "العودة إلى الفعاليات",
+      "highlightsLabel": "أبرز محاور الفعالية",
+      "speakersLabel": "المتحدثون",
+      "resultsLabel": "النتائج والإنجازات",
+      "galleryLabel": "معرض الصور",
+      "categories": [
+        {"id": "academic", "label": "أكاديمي"},
+        {"id": "workshop", "label": "ورشة عمل"},
+        {"id": "seminar", "label": "ندوة"},
+        {"id": "social", "label": "اجتماعي"},
+        {"id": "sports", "label": "رياضي"}
+      ],
+      "upcoming": [
+        {"id":"evt-001","title":"منتدى البحث السنوي ومعرض الابتكار","summary":"منتدى سنوي يسلط الضوء على الإنتاج البحثي من خلال عروض أعضاء هيئة التدريس وجلسات أبحاث الدراسات العليا.","startsAt":"2026-11-15T09:00:00+03:00","endsAt":"2026-11-15T17:00:00+03:00","dateLabel":"15 تشرين الثاني 2026","timeLabel":"09:00 صباحاً - 05:00 مساءً","location":"قاعة الحرم الجامعي الرئيسية","categoryId":"academic","categoryLabel":"أكاديمي","image":"/images/uni-main-place.JPG","formId":"conference-registration","capacity":300,"registered":145,"featured":true},
+        {"id":"evt-002","title":"ورشة أدوات الذكاء الاصطناعي للبحث الأكاديمي","summary":"ورشة عملية حول تطبيقات الذكاء الاصطناعي في مراجعة الأدبيات وتحليل البيانات وإعداد البحوث.","startsAt":"2026-11-20T10:00:00+03:00","endsAt":"2026-11-20T14:00:00+03:00","dateLabel":"20 تشرين الثاني 2026","timeLabel":"10:00 صباحاً - 02:00 ظهراً","location":"مخبر كلية الذكاء الاصطناعي 3","categoryId":"workshop","categoryLabel":"ورشة عمل","image":"/images/research-clinical-simulation.webp","formId":"activity-registration","capacity":40,"registered":32,"featured":false},
+        {"id":"evt-003","title":"معرض التوظيف 2026","summary":"تواصل مع جهات التوظيف واستكشف فرص التدريب والعمل في قطاعات متعددة.","startsAt":"2026-12-05T09:00:00+03:00","endsAt":"2026-12-05T16:00:00+03:00","dateLabel":"5 كانون الأول 2026","timeLabel":"09:00 صباحاً - 04:00 مساءً","location":"ساحة الجامعة","categoryId":"social","categoryLabel":"اجتماعي","image":"/images/campus-feature-01.webp","formId":"activity-registration","capacity":500,"registered":210,"featured":false},
+        {"id":"evt-004","title":"المؤتمر الطبي حول الصحة الرقمية","summary":"مؤتمر يستعرض أحدث تقنيات الصحة الرقمية والطب عن بعد والسجلات الصحية والتشخيص بالذكاء الاصطناعي.","startsAt":"2026-12-12T09:00:00+03:00","endsAt":"2026-12-13T17:00:00+03:00","dateLabel":"12-13 كانون الأول 2026","timeLabel":"09:00 صباحاً - 05:00 مساءً","location":"قاعة كلية الطب","categoryId":"academic","categoryLabel":"أكاديمي","image":"/images/research-digital-dentistry.webp","formId":"conference-registration","capacity":200,"registered":89,"featured":false},
+        {"id":"evt-005","title":"البطولة الرياضية الطلابية","summary":"بطولة سنوية بين الكليات في كرة السلة وكرة القدم وكرة الطائرة.","startsAt":"2026-12-20T14:00:00+03:00","endsAt":"2026-12-20T18:00:00+03:00","dateLabel":"20 كانون الأول 2026","timeLabel":"02:00 مساءً - 06:00 مساءً","location":"المجمع الرياضي الجامعي","categoryId":"sports","categoryLabel":"رياضي","image":"/images/campus-feature-02.webp","formId":"activity-registration","capacity":150,"registered":67,"featured":false}
+      ],
+      "past": [
+        {"id":"evt-past-001","title":"اليوم المفتوح خريف 2025","summary":"يوم مفتوح لاستقبال الطلاب وعائلاتهم واستكشاف كليات الجامعة ومخابرها ومرافقها.","startsAt":"2025-10-15T09:00:00+03:00","endsAt":"2025-10-15T16:00:00+03:00","dateLabel":"15 تشرين الأول 2025","timeLabel":"09:00 صباحاً - 04:00 مساءً","location":"الحرم الجامعي الرئيسي","categoryId":"social","categoryLabel":"اجتماعي","image":"/images/campus-feature-01.webp","participants":"أكثر من 500 حاضر","highlights":["عروض للكليات السبع","تجارب مخبرية مباشرة","جلسة عن الحياة الجامعية","استشارات قبول","جولات في الحرم الجامعي"],"gallery":["/images/uni-main-place.JPG","/images/campus-feature-02.webp","/images/research-clinical-simulation.webp","/images/campus-feature-01.webp"]},
+        {"id":"evt-past-002","title":"ورشة الكتابة الأكاديمية","summary":"ورشة مكثفة حول هيكلة البحوث وأساليب التوثيق واستراتيجيات النشر في المجلات.","startsAt":"2025-09-28T10:00:00+03:00","endsAt":"2025-09-28T14:00:00+03:00","dateLabel":"28 أيلول 2025","timeLabel":"10:00 صباحاً - 02:00 ظهراً","location":"قاعة اجتماعات المكتبة","categoryId":"workshop","categoryLabel":"ورشة عمل","image":"/images/research-digital-dentistry.webp","participants":"45 مشاركاً","highlights":["هيكلة وتنظيم البحوث","أساليب التوثيق","اختيار المجلة والتقديم","مراجعة الأقران","تمارين كتابة تطبيقية"],"speakers":[{"name":"د. سارة ميتشل","title":"أستاذة الأدب الإنجليزي"},{"name":"د. أحمد قسيس","title":"خبير منهجية البحث"}],"results":"أفاد المشاركون بتحسن الثقة في الكتابة وبدأوا إعداد بحوث للنشر."},
+        {"id":"evt-past-003","title":"يوم الصيدلة 2025","summary":"عروض بحثية ومحاضرات من قطاع الصناعة ومعرض لمشاريع طلاب الصيدلة.","startsAt":"2025-05-10T09:00:00+03:00","endsAt":"2025-05-10T15:00:00+03:00","dateLabel":"10 أيار 2025","timeLabel":"09:00 صباحاً - 03:00 مساءً","location":"كلية الصيدلة","categoryId":"academic","categoryLabel":"أكاديمي","image":"/images/research-clinical-simulation.webp","participants":"أكثر من 200 مشارك","highlights":["ملصقات بحثية طلابية","محاضرات من قطاع الصناعة","معرض مشاريع ابتكارية","تواصل مهني","جوائز بحثية"],"speakers":[{"name":"د. لمى شبيب","title":"عميدة كلية الصيدلة"},{"name":"م. فادي الحلبي","title":"مدير الابتكار الدوائي"}],"results":"اختيرت مشاريع طلابية للمنافسة الوطنية وحصل طلاب على فرص تدريب."}
+      ]
+    }
+  }
+}

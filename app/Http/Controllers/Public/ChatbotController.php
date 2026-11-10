@@ -1,0 +1,46 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Http\Controllers\Public;
+
+use App\Contracts\Chatbot\ChatbotServiceInterface;
+use App\Contracts\SiteStats\SiteStatsRecorderInterface;
+use App\DTOs\Chatbot\ChatbotSourceDTO;
+use App\Http\Controllers\Controller;
+use App\Http\Requests\Public\ChatbotMessageRequest;
+use Illuminate\Http\JsonResponse;
+
+/**
+ * The public assistant's single endpoint: a question in, an answer out.
+ */
+final class ChatbotController extends Controller
+{
+    public function __invoke(ChatbotMessageRequest $request, ChatbotServiceInterface $chatbot, SiteStatsRecorderInterface $siteStats, string $locale): JsonResponse
+    {
+        $reply = $chatbot->ask($request->toDto($locale));
+        // The dashboard counts the people who talked with the assistant today (once each).
+        $siteStats->recordChatbotVisitor((string) $request->ip(), (string) $request->userAgent());
+
+        return response()
+            ->json([
+                'status' => $reply->status,
+                'answer' => $reply->answer,
+                'sources' => array_map(
+                    static fn (ChatbotSourceDTO $source): array => ['title' => $source->title, 'pages' => $source->pages, 'url' => $source->url],
+                    $reply->sources,
+                ),
+                'signature' => $reply->signature,
+                'memory' => $reply->memory,
+                'speech' => $reply->speechSignature,
+            ])
+            ->header('Cache-Control', 'no-store, private')
+            ->header('X-Robots-Tag', 'noindex, nofollow')
+            // How long each stage took (durations only), for measuring latency.
+            ->header('Server-Timing', implode(', ', array_map(
+                static fn (string $stage, int $ms): string => $stage.';dur='.$ms,
+                array_keys($reply->timings),
+                $reply->timings,
+            )));
+    }
+}

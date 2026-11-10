@@ -1,0 +1,99 @@
+{
+  "source": "Transcribed from the files these pages only linked to: the examination instructions PDF (/downloads/files/1768418081_fi.pdf, 3 image-only pages, 21 instructions, first semester 2025/2026) and the two notices on the general rules page (/downloads/files/1768419487_8875037143.jpg, the University President's circular of 13 January 2026 on graduation-project defences; /downloads/files/1769033904_8022623555.jpg, the blood donation certificate notice). Arabic is the documents' wording; English is a faithful translation. The PDF and the original notices stay on the pages.",
+  "targets": {
+    "campus_life.exam-instructions": {
+      "ar": {
+        "overview": {
+          "title": "تعليمات امتحانية",
+          "summary": "نظراً لاقتراب موعد الامتحان النهائي للفصل الأول من العام الدراسي (2025/2026) نذكّر طلابنا الأعزاء بضرورة التقيد بالتعليمات الامتحانية الآتية:"
+        },
+        "items": [
+          {"title": "", "body": "الحضور إلى الامتحان في الوقت المحدد دون تأخير، وعلى جميع الطلاب اصطحاب البطاقة الجامعية والبطاقة الشخصية، مع التأكيد بأنه لن يسمح للطالب بالدخول إلى قاعة الامتحان في حال عدم اصطحابه للبطاقة الجامعية أو ما يثبت شخصيته، وفي حال عدم وجود بطاقة جامعية يتم إنذاره للمرة الأولى فقط، وفي حال التكرار يمنع من دخول قاعة الامتحان وتطبق بحقه العقوبة الامتحانية."},
+          {"title": "", "body": "على جميع الطلاب الالتزام بالقدوم إلى الامتحان في الوقت المحدد، ولا يسمح للطالب المتأخر عن موعد الامتحان بالدخول إلى قاعة الامتحان، وعليه مراجعة رئيس اللجنة الامتحانية في الكلية للنظر في أمره."},
+          {"title": "", "body": "لا يحق للطالب مغادرة قاعة الامتحان قبل مرور نصف ساعة على الأقل من بدء الامتحان، ولا يجوز دخوله إلى قاعة الامتحان بعد مغادرتها لأي سبب كان."},
+          {"title": "", "body": "لا يسمح للطالب أن يخرج من قاعة الامتحان دون أن يسلّم جميع أوراقه حتى ولو كانت بيضاء، كما لا تعاد إليه أوراقه التي سلّمها مهما كان السبب."},
+          {"title": "", "body": "وضع جميع الحاجيات والأغراض من (كتب، دفاتر، ملخصات، حقائب... إلخ) في المكان المخصص لذلك داخل قاعة الامتحان."},
+          {"title": "", "body": "تسليم الهواتف النقالة إلى المراقب قبل بدء الامتحان بعد التأكد من إقفالها."},
+          {"title": "", "body": "يمنع إدخال (الساعات الذكية أو السماعات) إلى القاعة الامتحانية منعاً باتاً."},
+          {"title": "", "body": "التأكد من الدخول إلى القاعة الامتحانية الصحيحة (الوارد اسم الطالب فيها)، وإن أي مخالفة من هذا النوع تعرّض الطالب لإلغاء امتحانه والحصول على علامة الصفر."},
+          {"title": "", "body": "التقيد باستخدام الأدوات المسموح بها، والامتناع عن استخدام الأدوات غير المسموح بها مثل: (القواميس، الآلات الحاسبة المبرمجة... إلخ) إلا في حال السماح بها وتدوين ذلك على (رأسية ورقة الأسئلة ومغلف الأوراق الامتحانية) من قبل مدرس المقرر."},
+          {"title": "", "body": "يمنع استعارة الأدوات والأقلام داخل قاعة الامتحان منعاً قطعياً، وخصوصاً الآلات الحاسبة (في حال السماح باستخدامها)، ويتحمل الطالب مسؤولية عدم إحضارها."},
+          {"title": "", "body": "عدم اصطحاب أو تناول الأطعمة والمشروبات داخل قاعة الامتحان."},
+          {"title": "", "body": "الكتابة بقلم حبر أزرق جاف، وتمنع الكتابة بقلم الرصاص باستثناء الرسوم والأشكال في حال وجودها، وبتوجيه من أستاذ المقرر."},
+          {"title": "", "body": "لا يسمح للطالب بكتابة أي إشارة أو علامة فارقة على الورقة الامتحانية لأن ذلك يعرّضه للحصول على علامة الصفر في المقرر، كما لا يسمح بكتابة أي شيء على ورقة الأسئلة ما عدا اسم الطالب ورقمه الجامعي."},
+          {"title": "", "body": "كتابة الاسم الثلاثي باللغة العربية والرقم الجامعي للطالب ورقم الفئة واسم المقرر في المكان المخصص على ورقة الإجابة وورقة الأسئلة."},
+          {"title": "", "body": "التقيد بالهدوء والانضباط وعدم الكلام داخل قاعة الامتحان، والالتزام بتعليمات رؤساء القاعات والمراقبين بدقة، بما في ذلك تغيير مكان جلوس الطالب في حال طلب منه المراقب ذلك، والتعامل معهم على نحو لائق ومنضبط."},
+          {"title": "", "body": "عدم ارتداء قبعات الرأس داخل قاعة الامتحان."},
+          {"title": "", "body": "لا يسمح للطالب توجيه أي سؤال يتعلق بمادة الامتحان لرئيس القاعة أو المراقب بما فيها ترجمة المفردات."},
+          {"title": "", "body": "الامتناع عن استخدام أي وسيلة من وسائل الغش الامتحاني، وكل طالب يضبط لديه مثل هذه الوسائل (سواء استخدمها أم لم يستخدمها) يعرّض نفسه للعقوبات المعتمدة في الجامعة."},
+          {"title": "", "body": "على الطالب مغادرة قاعة الامتحان فور تسليمه ورقة الإجابة بكل هدوء، وعدم التجمع مع زملائه بقرب القاعات الامتحانية."},
+          {"title": "", "body": "إن وجود أي وسيلة غش بحوزة الطالب (هاتف، سماعة، ساعة ذكية، قصاصة ورقية) تعتبر وسيلة غش امتحانية، وإن لم يستعملها، وتعرّض الطالب للعقوبة الامتحانية المنصوص عليها."},
+          {"title": "", "body": "مسؤولية ضياع الهاتف أو تبديله لا تتحملها إدارة الجامعة."}
+        ],
+        "closing": "مع تمنياتنا للجميع بالتوفيق والنجاح\n\nرئيس الجامعة السورية الخاصة\nأ.د. عبد الرزاق الحسين",
+        "seoDescription": "التعليمات الامتحانية لطلاب الجامعة السورية الخاصة: الحضور والبطاقة الجامعية، الأدوات المسموح بها، الهواتف والساعات الذكية، والسلوك داخل قاعة الامتحان."
+      },
+      "en": {
+        "overview": {
+          "title": "Examination Instructions",
+          "summary": "As the final examinations of the first semester of the 2025/2026 academic year approach, we remind our students to follow these examination instructions:"
+        },
+        "items": [
+          {"title": "", "body": "Arrive at the examination on time. All students must bring their university card and personal ID. A student who does not bring the university card or proof of identity will not be allowed into the examination hall. A student without a university card is warned the first time only; if it happens again, the student is refused entry to the examination hall and the examination penalty applies."},
+          {"title": "", "body": "All students must arrive at the examination on time. A student who arrives late will not be allowed into the examination hall and must see the head of the faculty examination committee, who will decide the case."},
+          {"title": "", "body": "Students may not leave the examination hall until at least half an hour after the examination starts, and may not re-enter the hall for any reason once they have left it."},
+          {"title": "", "body": "Students may not leave the examination hall without handing in all their papers, even blank ones, and papers once handed in are not returned for any reason."},
+          {"title": "", "body": "Place all belongings (books, notebooks, summaries, bags, etc.) in the area set aside for them inside the examination hall."},
+          {"title": "", "body": "Hand mobile phones to the invigilator, switched off, before the examination starts."},
+          {"title": "", "body": "Smart watches and earphones are strictly forbidden in the examination hall."},
+          {"title": "", "body": "Make sure you enter the correct examination hall (the one your name is listed in). Any breach of this kind will result in the cancellation of the examination and a mark of zero."},
+          {"title": "", "body": "Use only permitted tools, and do not use non-permitted ones such as dictionaries or programmable calculators, unless the course instructor has allowed them and recorded this on the header of the question paper and on the examination papers envelope."},
+          {"title": "", "body": "Borrowing tools or pens inside the examination hall is strictly forbidden, especially calculators (where they are allowed); students are responsible for bringing their own."},
+          {"title": "", "body": "Do not bring or consume food or drinks inside the examination hall."},
+          {"title": "", "body": "Write with a blue ballpoint pen. Pencil is not allowed, except for drawings and figures where required, as directed by the course instructor."},
+          {"title": "", "body": "Students may not write any mark or distinguishing sign on the examination paper; doing so results in a mark of zero for the course. Nothing may be written on the question paper except the student's name and university number."},
+          {"title": "", "body": "Write your full three-part name in Arabic, your university number, your group number and the course name in the spaces provided on the answer sheet and the question paper."},
+          {"title": "", "body": "Keep quiet and disciplined and do not talk inside the examination hall. Follow the instructions of the hall supervisors and invigilators precisely, including changing seats when an invigilator asks, and treat them courteously."},
+          {"title": "", "body": "Do not wear caps or hats inside the examination hall."},
+          {"title": "", "body": "Students may not ask the hall supervisor or invigilator any question about the examination material, including the translation of words."},
+          {"title": "", "body": "Do not use any means of cheating. Any student found with such means, whether used or not, is subject to the university's approved penalties."},
+          {"title": "", "body": "Leave the examination hall quietly as soon as you hand in your answer sheet, and do not gather with other students near the examination halls."},
+          {"title": "", "body": "Any means of cheating in a student's possession (phone, earphone, smart watch, slip of paper) counts as an examination cheating device even if it is not used, and makes the student liable to the prescribed examination penalty."},
+          {"title": "", "body": "The university administration is not responsible for lost or swapped phones."}
+        ],
+        "closing": "We wish you all success.\n\nPresident of the Syrian Private University\nProf. Dr. Abdulrazzak Al-Hussein",
+        "seoDescription": "Examination instructions for Syrian Private University students: attendance and the university card, permitted tools, phones and smart watches, and conduct in the examination hall."
+      }
+    },
+    "campus_life.general-rules": {
+      "ar": {
+        "overview": {
+          "title": "قواعد وتعليمات عامة",
+          "summary": "قواعد مناقشة مشاريع التخرج، وحالات طلب وثيقة التبرع بالدم."
+        },
+        "items": [
+          {"title": "قواعد مناقشة مشاريع التخرج", "body": "تعميم صادر عن رئاسة الجامعة بتاريخ 13 كانون الثاني 2026:\n\nحفاظاً على مدرجات الجامعة التي خصصت لتلبية الأهداف التعليمية وللنشاطات العلمية، تُمنع كافة أشكال الضيافة ومظاهر الاحتفال المرافقة لجلسات المناقشة العلنية لمشاريع التخرج من:\n- استخدام الألعاب النارية\n- الدخان الملون\n- العراضات\n- فرش الزهور في المدرجات\n\nونهيب بطلابنا الالتزام التام والتقيد بذلك تحت طائلة تطبيق المخالفات المسلكية.\n\nرئيس الجامعة السورية الخاصة، أ.د. عبد الرزاق الحسين"},
+          {"title": "حالات طلب وثيقة التبرع بالدم", "body": "استناداً إلى تعميم وزارة التعليم العالي والبحث العلمي، تُطلب وثيقة تبرع بالدم من كل طالب في الحالات الآتية:\n1. عند طلب أي وثيقة جامعية: (كشف علامات، حياة جامعية، بيان وضع).\n2. عند التخرج: (وثيقة تخرج، شهادة تخرج، كشف علامات).\n\nيرجى من الطلبة الأعزاء التقيد بمضمونه."}
+        ],
+        "images": [
+          {"url": "/downloads/files/1768419487_8875037143.jpg", "caption": "تعميم قواعد مناقشة مشاريع التخرج"},
+          {"url": "/downloads/files/1769033904_8022623555.jpg", "caption": "إعلان حالات طلب وثيقة التبرع بالدم"}
+        ]
+      },
+      "en": {
+        "overview": {
+          "title": "General Rules and Instructions",
+          "summary": "Rules for graduation project defences, and the cases that require a blood donation certificate."
+        },
+        "items": [
+          {"title": "Rules for graduation project defences", "body": "Circular issued by the University Presidency on 13 January 2026:\n\nTo preserve the university's lecture halls, which are dedicated to teaching and scientific activities, all forms of hospitality and celebration accompanying public graduation project defences are prohibited, including:\n- fireworks\n- coloured smoke\n- celebratory parades\n- laying flowers in the halls\n\nWe urge our students to comply fully, or disciplinary penalties will apply.\n\nPresident of the Syrian Private University, Prof. Dr. Abdulrazzak Al-Hussein"},
+          {"title": "When a blood donation certificate is required", "body": "Under a circular of the Ministry of Higher Education and Scientific Research, every student must present a blood donation certificate in the following cases:\n1. When requesting any university document (transcript, university record, enrolment statement).\n2. On graduation (graduation document, graduation certificate, transcript).\n\nStudents are kindly asked to comply."}
+        ],
+        "images": [
+          {"url": "/downloads/files/1768419487_8875037143.jpg", "caption": "Circular on graduation project defences (Arabic)"},
+          {"url": "/downloads/files/1769033904_8022623555.jpg", "caption": "Notice on the blood donation certificate (Arabic)"}
+        ]
+      }
+    }
+  }
+}

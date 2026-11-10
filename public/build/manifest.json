@@ -1,0 +1,147 @@
+{
+  "_chatAudio.CC9zETTE.js": {
+    "file": "js/chatAudio.CC9zETTE.js",
+    "name": "chatAudio"
+  },
+  "_studyPlanEdges.1FnRr4zh.js": {
+    "file": "js/studyPlanEdges.1FnRr4zh.js",
+    "name": "studyPlanEdges"
+  },
+  "public/fonts/hacen-tunisia-bold.woff2": {
+    "file": "assets/hacen-tunisia-bold.-tHYp-N3.woff2",
+    "src": "public/fonts/hacen-tunisia-bold.woff2"
+  },
+  "public/fonts/hacen-tunisia-regular.woff2": {
+    "file": "assets/hacen-tunisia-regular.W4gm26eG.woff2",
+    "src": "public/fonts/hacen-tunisia-regular.woff2"
+  },
+  "public/images/icon-chevron-down-outline.svg": {
+    "file": "assets/icon-chevron-down-outline.DpdqcSdb.svg",
+    "src": "public/images/icon-chevron-down-outline.svg"
+  },
+  "resources/css/app.css": {
+    "file": "assets/app.BIqT5k4h.css",
+    "name": "app",
+    "names": [
+      "app.css"
+    ],
+    "src": "resources/css/app.css",
+    "isEntry": true,
+    "assets": [
+      "assets/icon-chevron-down-outline.DpdqcSdb.svg",
+      "assets/hacen-tunisia-regular.W4gm26eG.woff2",
+      "assets/hacen-tunisia-bold.-tHYp-N3.woff2"
+    ]
+  },
+  "resources/css/filament/admin.css": {
+    "file": "assets/admin.CbA81xM7.css",
+    "name": "admin",
+    "names": [
+      "admin.css"
+    ],
+    "src": "resources/css/filament/admin.css",
+    "isEntry": true
+  },
+  "resources/js/alpine/examSchedule.js": {
+    "file": "js/examSchedule.D9t9PHBl.js",
+    "name": "examSchedule",
+    "src": "resources/js/alpine/examSchedule.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "_studyPlanEdges.1FnRr4zh.js"
+    ]
+  },
+  "resources/js/alpine/masterProgram.js": {
+    "file": "js/masterProgram.QqgtTu3n.js",
+    "name": "masterProgram",
+    "src": "resources/js/alpine/masterProgram.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "_studyPlanEdges.1FnRr4zh.js"
+    ]
+  },
+  "resources/js/alpine/studyPlan.js": {
+    "file": "js/studyPlan.CmN5HW6l.js",
+    "name": "studyPlan",
+    "src": "resources/js/alpine/studyPlan.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "_studyPlanEdges.1FnRr4zh.js"
+    ]
+  },
+  "resources/js/app.js": {
+    "file": "js/app.BdfyTBmi.js",
+    "name": "app",
+    "src": "resources/js/app.js",
+    "isEntry": true,
+    "dynamicImports": [
+      "resources/js/chatbot/chatbotWidget.js",
+      "resources/js/alpine/studyPlan.js",
+      "resources/js/alpine/masterProgram.js",
+      "resources/js/alpine/examSchedule.js"
+    ]
+  },
+  "resources/js/chatbot/characterScene.js": {
+    "file": "js/characterScene.CrNh22HQ.js",
+    "name": "characterScene",
+    "src": "resources/js/chatbot/characterScene.js",
+    "isDynamicEntry": true
+  },
+  "resources/js/chatbot/chatLive.js": {
+    "file": "js/chatLive.xy8Oj5jG.js",
+    "name": "chatLive",
+    "src": "resources/js/chatbot/chatLive.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "_chatAudio.CC9zETTE.js"
+    ],
+    "assets": [
+      "assets/pcmCapture.worklet.DGe6Dxnu.js"
+    ]
+  },
+  "resources/js/chatbot/chatVoice.js": {
+    "file": "js/chatVoice.oE-BAjVB.js",
+    "name": "chatVoice",
+    "src": "resources/js/chatbot/chatVoice.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "_chatAudio.CC9zETTE.js"
+    ]
+  },
+  "resources/js/chatbot/chatbotWidget.js": {
+    "file": "js/chatbotWidget.DEFZkmn9.js",
+    "name": "chatbotWidget",
+    "src": "resources/js/chatbot/chatbotWidget.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "resources/js/app.js"
+    ],
+    "dynamicImports": [
+      "resources/js/chatbot/chatVoice.js",
+      "resources/js/chatbot/chatLive.js",
+      "resources/js/chatbot/characterScene.js"
+    ],
+    "css": [
+      "assets/chatbotWidget.BxWGPkW8.css"
+    ]
+  },
+  "resources/js/chatbot/pcmCapture.worklet.js": {
+    "file": "assets/pcmCapture.worklet.DGe6Dxnu.js",
+    "src": "resources/js/chatbot/pcmCapture.worklet.js"
+  },
+  "resources/js/filament/admin.js": {
+    "file": "js/admin.4hnq60fq.js",
+    "name": "admin",
+    "src": "resources/js/filament/admin.js",
+    "isEntry": true,
+    "imports": [
+      "_studyPlanEdges.1FnRr4zh.js"
+    ]
+  },
+  "resources/js/staffIntake.js": {
+    "file": "js/staffIntake.BFYjHpfb.js",
+    "name": "staffIntake",
+    "src": "resources/js/staffIntake.js",
+    "isEntry": true
+  }
+}

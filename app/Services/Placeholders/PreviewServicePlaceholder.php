@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Services\Placeholders;
 
-use App\Contracts\PreviewServiceInterface;
-use App\DTOs\PreviewDTO;
+use App\Contracts\Shared\PreviewServiceInterface;
+use App\DTOs\Preview\PreviewDTO;
 use BadMethodCallException;
 
 /**
@@ -13,12 +13,12 @@ use BadMethodCallException;
  */
 final class PreviewServicePlaceholder implements PreviewServiceInterface
 {
-    public function createToken(string $targetType, int $targetId, string $locale, string $device, int $userId): PreviewDTO
+    public function createToken(string $targetType, ?int $targetId, string $locale, int $userId, ?string $device = null): PreviewDTO
     {
         throw new BadMethodCallException(__METHOD__.' is not implemented.');
     }
 
-    public function resolveToken(string $token): ?PreviewDTO
+    public function resolveToken(string $token, ?string $locale = null): ?PreviewDTO
     {
         throw new BadMethodCallException(__METHOD__.' is not implemented.');
     }

@@ -1,0 +1,424 @@
+/**
+ * Faculty Hero — premium cinematic styles.
+ */
+
+@layer components {
+
+    /* ── Ken Burns slow zoom on the background image ── */
+    @keyframes faculty-hero-zoom {
+        0% {
+            transform: scale(1);
+        }
+
+        100% {
+            transform: scale(1.08);
+        }
+    }
+
+    .faculty-hero__image {
+        animation: faculty-hero-zoom 18s ease-out forwards;
+        will-change: transform;
+    }
+
+    .faculty-hero__image--loading {
+        animation: none;
+        transform: scale(1.12);
+        filter: blur(8px);
+        transition: transform 1.6s cubic-bezier(0.22, 1, 0.36, 1),
+            filter 1.2s ease-out;
+    }
+
+    .faculty-hero__image--ready {
+        transform: scale(1);
+        filter: blur(0);
+    }
+
+    /* ── Subtle animated grain overlay for cinematic depth ── */
+    @keyframes faculty-hero-grain {
+
+        0%,
+        100% {
+            transform: translate(0, 0);
+        }
+
+        10% {
+            transform: translate(-2%, -2%);
+        }
+
+        30% {
+            transform: translate(1%, -1%);
+        }
+
+        50% {
+            transform: translate(-1%, 2%);
+        }
+
+        70% {
+            transform: translate(2%, 1%);
+        }
+
+        90% {
+            transform: translate(-2%, 1%);
+        }
+    }
+
+    .faculty-hero__grain {
+        position: absolute;
+        inset: -50%;
+        width: 200%;
+        height: 200%;
+        background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+        opacity: 0.03;
+        pointer-events: none;
+        animation: faculty-hero-grain 8s steps(10) infinite;
+        mix-blend-mode: overlay;
+    }
+
+    /* ── Staggered text entrance ── */
+    @keyframes faculty-hero-text-up {
+        from {
+            opacity: 0;
+            transform: translateY(28px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .faculty-hero__reveal {
+        opacity: 0;
+        animation: faculty-hero-text-up 0.9s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    }
+
+    .faculty-hero__reveal--d1 {
+        animation-delay: 0.15s;
+    }
+
+    .faculty-hero__reveal--d2 {
+        animation-delay: 0.35s;
+    }
+
+    .faculty-hero__reveal--d3 {
+        animation-delay: 0.55s;
+    }
+
+    .faculty-hero__reveal--d4 {
+        animation-delay: 0.75s;
+    }
+
+    /* ── Accent line that draws in ── */
+    @keyframes faculty-hero-line-draw {
+        from {
+            width: 0;
+        }
+
+        to {
+            width: 4.5rem;
+        }
+    }
+
+    .faculty-hero__accent-line {
+        display: block;
+        height: 3px;
+        width: 0;
+        border-radius: 9999px;
+        animation: faculty-hero-line-draw 0.8s cubic-bezier(0.22, 1, 0.36, 1) 0.6s forwards;
+    }
+
+    /* ── Logo glow pulse ── */
+    @keyframes faculty-hero-glow {
+
+        0%,
+        100% {
+            box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.4), 0 20px 60px rgba(0, 0, 0, 0.15);
+        }
+
+        50% {
+            box-shadow: 0 0 0 8px rgba(255, 255, 255, 0.08), 0 20px 60px rgba(0, 0, 0, 0.15);
+        }
+    }
+
+    .faculty-hero__logo-ring {
+        animation: faculty-hero-glow 3s ease-in-out infinite;
+    }
+
+    /* ── Floating stats bar glassmorphism ── */
+    .faculty-hero__stats-bar {
+        background: rgba(255, 255, 255, 0.12);
+        backdrop-filter: blur(20px) saturate(180%);
+        -webkit-backdrop-filter: blur(20px) saturate(180%);
+        border: 1px solid rgba(255, 255, 255, 0.18);
+    }
+
+    /* ── Scroll indicator bounce ── */
+    @keyframes faculty-hero-bounce {
+
+        0%,
+        20%,
+        50%,
+        80%,
+        100% {
+            transform: translateY(0) translateX(-50%);
+        }
+
+        40% {
+            transform: translateY(-6px) translateX(-50%);
+        }
+
+        60% {
+            transform: translateY(-3px) translateX(-50%);
+        }
+    }
+
+    .faculty-hero__scroll-hint {
+        animation: faculty-hero-bounce 2.4s ease infinite 2s;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+
+        .faculty-hero__image,
+        .faculty-hero__grain,
+        .faculty-hero__reveal,
+        .faculty-hero__scroll-hint {
+            animation: none !important;
+            opacity: 1 !important;
+            transform: none !important;
+        }
+
+        .faculty-hero__accent-line {
+            animation: none !important;
+            width: 4.5rem !important;
+        }
+    }
+
+    /* ═══════════════════════════════════════════════════
+       FACULTY HUB PAGE — Figma-faithful styles
+       ═══════════════════════════════════════════════════ */
+
+    /* Apply Now shimmer sweep */
+    .fac-hub-btn-primary {
+        position: relative;
+        overflow: hidden;
+    }
+
+    .fac-hub-btn-primary::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(
+            105deg,
+            transparent 35%,
+            rgba(255, 255, 255, 0.16) 50%,
+            transparent 65%
+        );
+        transform: translateX(-120%);
+        transition: transform 0.55s ease;
+        pointer-events: none;
+    }
+
+    .fac-hub-btn-primary:hover::after {
+        transform: translateX(120%);
+    }
+
+    /* Faculty cascade cards — staggered slide-in from right */
+    @keyframes fac-card-in {
+        from { opacity: 0; transform: translateX(40px); }
+        to   { opacity: 1; transform: translateX(0);    }
+    }
+
+    @keyframes fac-card-in-rtl {
+        from { opacity: 0; transform: translateX(-40px); }
+        to   { opacity: 1; transform: translateX(0);     }
+    }
+
+    .fac-hub-card {
+        opacity: 0;
+        animation: fac-card-in 0.65s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+        /* transition for hover effects */
+        will-change: background, box-shadow;
+    }
+
+    [dir='rtl'] .fac-hub-card {
+        animation-name: fac-card-in-rtl;
+    }
+
+    /* Stagger delays for up to 9 cards */
+    .fac-hub-card:nth-child(1)  { animation-delay: 0.08s; }
+    .fac-hub-card:nth-child(2)  { animation-delay: 0.14s; }
+    .fac-hub-card:nth-child(3)  { animation-delay: 0.20s; }
+    .fac-hub-card:nth-child(4)  { animation-delay: 0.26s; }
+    .fac-hub-card:nth-child(5)  { animation-delay: 0.32s; }
+    .fac-hub-card:nth-child(6)  { animation-delay: 0.38s; }
+    .fac-hub-card:nth-child(7)  { animation-delay: 0.44s; }
+    .fac-hub-card:nth-child(8)  { animation-delay: 0.50s; }
+    .fac-hub-card:nth-child(9)  { animation-delay: 0.56s; }
+
+    /* Reduced motion */
+    @media (prefers-reduced-motion: reduce) {
+        .fac-hub-card,
+        .fac-hub-btn-primary::after {
+            animation: none !important;
+            opacity: 1 !important;
+            transform: none !important;
+            transition: none !important;
+        }
+    }
+
+    /* ═══════════════════════════════════════════════════
+       ACADEMIC FACILITIES HUB HERO — diagonal split gallery
+       ═══════════════════════════════════════════════════ */
+
+    /* Stacked panoramic gallery layers — cross-fade on hover via Alpine */
+    .fac-gallery__layer {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        opacity: 0;
+        transition: opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+        will-change: opacity;
+    }
+
+    .fac-gallery__layer--default {
+        opacity: 1;
+    }
+
+    [x-cloak] { display: none !important; }
+
+    /* Sleek metallic diagonal divider line */
+    .fac-hub-divider {
+        position: absolute;
+        top: -10%;
+        bottom: -10%;
+        width: 2px;
+        background: linear-gradient(
+            180deg,
+            transparent 0%,
+            rgba(226, 184, 100, 0.0) 8%,
+            rgba(226, 184, 100, 0.65) 50%,
+            rgba(226, 184, 100, 0.0) 92%,
+            transparent 100%
+        );
+        box-shadow: 0 0 14px rgba(226, 184, 100, 0.35);
+        z-index: 1;
+        pointer-events: none;
+    }
+
+    /* Hero entrance reveals */
+    @keyframes fac-hub-hero-up {
+        from { opacity: 0; transform: translateY(26px); }
+        to   { opacity: 1; transform: translateY(0);    }
+    }
+
+    .fac-hub-hero__reveal {
+        opacity: 0;
+        animation: fac-hub-hero-up 0.9s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    }
+
+    .fac-hub-hero__reveal--d1 { animation-delay: 0.15s; }
+    .fac-hub-hero__reveal--d2 { animation-delay: 0.32s; }
+    .fac-hub-hero__reveal--d3 { animation-delay: 0.85s; }
+
+    @keyframes fac-hub-hero-line-draw {
+        from { width: 0; }
+        to   { width: 4rem; }
+    }
+
+    .fac-hub-hero__accent-line {
+        animation: fac-hub-hero-line-draw 0.85s cubic-bezier(0.22, 1, 0.36, 1) 0.55s forwards;
+    }
+
+    /* Floating faculty list card polish */
+    .fac-hub-card {
+        will-change: background, box-shadow, transform;
+        transition:
+            background 0.3s ease,
+            color      0.3s ease,
+            transform  0.3s cubic-bezier(0.22, 1, 0.36, 1),
+            box-shadow 0.3s ease,
+            opacity    0.3s ease;
+    }
+
+    .fac-hub-card__icon {
+        transition: background-color 0.3s ease;
+    }
+
+    .fac-hub-card__num {
+        transition: opacity 0.3s ease;
+    }
+
+    /* Floating glass stats bar */
+    .fac-hub-stats-bar {
+        backdrop-filter: blur(22px) saturate(180%);
+        -webkit-backdrop-filter: blur(22px) saturate(180%);
+        border: 1px solid rgba(255, 255, 255, 0.10);
+    }
+
+    .fac-hub-stats-bar > * {
+        position: relative;
+    }
+
+    .fac-hub-stats-bar > * + *::before {
+        content: '';
+        position: absolute;
+        inset-block: 16%;
+        inset-inline-start: 0;
+        width: 1px;
+        background: linear-gradient(180deg, transparent, rgba(255, 255, 255, 0.16), transparent);
+    }
+
+    @media (max-width: 767px) {
+        .fac-hub-stats-bar > *:nth-child(-n + 2)::after {
+            content: '';
+            position: absolute;
+            inset-inline: 14%;
+            inset-block-end: 0;
+            height: 1px;
+            background: rgba(255, 255, 255, 0.10);
+        }
+    }
+
+    /* Staircase list — cards descend like stairs, same width, indented from beginning edge */
+    .fac-hub-stairs .fac-hub-card--stair {
+        width: 100%;
+        margin-inline-start: 0;
+        transition:
+            background 0.3s ease,
+            color      0.3s ease,
+            transform  0.4s cubic-bezier(0.22, 1, 0.36, 1),
+            box-shadow 0.3s ease,
+            opacity    0.3s ease,
+            margin-inline-start 0.4s ease;
+    }
+
+    @media (min-width: 1280px) {
+        .fac-hub-stairs .fac-hub-card--stair {
+            width: calc(100% - 108px);
+        }
+
+        .fac-hub-stairs .fac-hub-card--stair:nth-child(2) { margin-inline-start: 18px; }
+        .fac-hub-stairs .fac-hub-card--stair:nth-child(3) { margin-inline-start: 36px; }
+        .fac-hub-stairs .fac-hub-card--stair:nth-child(4) { margin-inline-start: 54px; }
+        .fac-hub-stairs .fac-hub-card--stair:nth-child(5) { margin-inline-start: 72px; }
+        .fac-hub-stairs .fac-hub-card--stair:nth-child(6) { margin-inline-start: 90px; }
+        .fac-hub-stairs .fac-hub-card--stair:nth-child(7) { margin-inline-start: 108px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .fac-hub-hero__reveal,
+        .fac-hub-hero__accent-line,
+        .fac-hub-stairs .fac-hub-card--stair {
+            animation: none !important;
+            opacity: 1 !important;
+            transform: none !important;
+            transition: none !important;
+        }
+
+        .fac-gallery__layer {
+            transition: none !important;
+        }
+    }
+}

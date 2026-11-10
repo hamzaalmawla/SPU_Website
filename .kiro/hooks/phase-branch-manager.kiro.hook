@@ -1,0 +1,13 @@
+{
+  "enabled": true,
+  "name": "Phase Branch Manager",
+  "description": "When a spec task execution starts, check if the task is the first task of a new PX phase (e.g., Task 5 for PX06, Task 9 for PX07, Task 11 for PX08). If so, create a new git branch named after the phase (e.g., PX06, PX07, PX08) from the current branch before proceeding. When a checkpoint task completes (Tasks 4, 8, 10, 18), commit all changes and push the current branch to origin.",
+  "version": "1",
+  "when": {
+    "type": "preTaskExecution"
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "Check the task that is about to start. If it is the FIRST task of a new PX phase, create a new git branch before proceeding:\n- Task 5 (PX06 start) → create branch PX06 from current branch\n- Task 9 (PX07 start) → create branch PX07 from current branch  \n- Task 11 (PX08 start) → create branch PX08 from current branch\n\nTo create the branch, run: git checkout -b PX0X (where X is the phase number)\n\nIf the task is NOT the first task of a phase, do nothing."
+  }
+}

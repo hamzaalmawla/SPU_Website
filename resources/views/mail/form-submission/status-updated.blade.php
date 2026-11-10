@@ -1,0 +1,2 @@
+@php($dir = $locale === 'ar' ? 'rtl' : 'ltr')
+<!doctype html><html lang="{{ $locale }}" dir="{{ $dir }}"><body style="font-family:Arial,sans-serif;line-height:1.7;color:#202759"><h2>{{ trans('mail.form.status.greeting', ['name' => $applicantName], $locale) }}</h2><p>{{ trans('mail.form.status.body', [], $locale) }}</p><p><strong>{{ trans('mail.form.status.reference', [], $locale) }}:</strong> {{ $referenceNumber }}</p><p><strong>{{ trans('mail.form.status.status', [], $locale) }}:</strong> {{ $statusLabel }}</p></body></html>
