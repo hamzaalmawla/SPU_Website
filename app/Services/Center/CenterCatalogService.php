@@ -26,6 +26,8 @@ final class CenterCatalogService implements CenterCatalogServiceInterface
 
     private const PARTS = ['staff', 'courses'];
 
+    private const MAX_TERM = 20;
+
     private const DATA_DIRECTORY = 'seeders/Data/centers';
 
     /** @var array<string, array<string, mixed>>|null */
@@ -221,6 +223,109 @@ final class CenterCatalogService implements CenterCatalogServiceInterface
         return $base.(($course['required'] ?? true) !== false ? 'required-courses' : 'elective-courses');
     }
 
+    public function studyPlanDepartment(string $facultySlug, array $department, string $locale): array
+    {
+        $centerSlug = $this->requirementsUnit();
+        $terms = array_values(array_filter(is_array($department['terms'] ?? null) ? $department['terms'] : [], 'is_array'));
+
+        if ($centerSlug === null || $terms === [] || ! in_array($facultySlug, self::FACULTIES, true)) {
+            return $department;
+        }
+
+        $unitCourses = $this->courses($centerSlug);
+
+        if ($unitCourses === []) {
+            return $department;
+        }
+
+        $locale = $locale === 'ar' ? 'ar' : 'en';
+        $present = [];
+        $usedIds = [];
+
+        foreach ($terms as $termIndex => $term) {
+            $courses = array_values(array_filter(is_array($term['courses'] ?? null) ? $term['courses'] : [], 'is_array'));
+
+            foreach ($courses as $courseIndex => $course) {
+                $usedIds[(string) ($course['id'] ?? '')] = true;
+
+                if (($course['type'] ?? null) !== 'university' || ($course['electiveSlot'] ?? false) === true) {
+                    continue;
+                }
+
+                $match = $this->matchingCourseIn($unitCourses, $facultySlug, $course);
+
+                if ($match !== null) {
+                    $present[$match['id']] = true;
+                    $courses[$courseIndex] = $this->sharedStudyPlanCourse($course, $match, $facultySlug, $locale);
+                }
+            }
+
+            $terms[$termIndex]['courses'] = $courses;
+        }
+
+        // A required unit course that lists this faculty belongs in every program
+        // of its plan, at the term its faculty link names.
+        foreach ($unitCourses as $unitCourse) {
+            if (! $unitCourse['required'] || isset($present[$unitCourse['id']])) {
+                continue;
+            }
+
+            $link = null;
+            foreach ($unitCourse['faculties'] as $candidate) {
+                if ($candidate['faculty'] === $facultySlug) {
+                    $link = $candidate;
+                    break;
+                }
+            }
+
+            if ($link === null) {
+                continue;
+            }
+
+            $termIndex = 0;
+            foreach ($terms as $index => $term) {
+                if (isset($link['term']) && (string) ($term['id'] ?? '') === (string) $link['term']) {
+                    $termIndex = $index;
+                    break;
+                }
+            }
+
+            $id = $this->courseSlug($link['code']);
+            if ($id === '' || isset($usedIds[$id])) {
+                $id = 'unit-'.$unitCourse['id'];
+            }
+            $usedIds[$id] = true;
+
+            $course = [
+                'id' => $id,
+                'code' => $link['code'],
+                'term' => is_numeric($terms[$termIndex]['id'] ?? null) ? (int) $terms[$termIndex]['id'] : ($terms[$termIndex]['id'] ?? ''),
+                'type' => 'university',
+                'required' => true,
+                'forced' => false,
+                'prerequisites' => [],
+                'prerequisiteCredits' => 0,
+                'instructor' => null,
+                'hours' => $unitCourse['hours'],
+                'teachers' => $unitCourse['teachers'],
+                'descriptionAr' => '',
+                'descriptionEn' => '',
+                'description' => '',
+                'lessons' => [],
+                'requirementsUnitCourseId' => $unitCourse['id'],
+                'fromRequirementsUnit' => true,
+            ];
+            $terms[$termIndex]['courses'] = [
+                ...(is_array($terms[$termIndex]['courses'] ?? null) ? $terms[$termIndex]['courses'] : []),
+                $this->sharedStudyPlanCourse($course, $unitCourse, $facultySlug, $locale),
+            ];
+        }
+
+        $department['terms'] = $terms;
+
+        return $department;
+    }
+
     public function validationErrors(string $targetKey, array $payload): array
     {
         $target = $this->parseTarget($targetKey);
@@ -280,7 +385,16 @@ final class CenterCatalogService implements CenterCatalogServiceInterface
      */
     private function matchingUnitCourse(string $centerSlug, string $facultySlug, array $course): ?array
     {
-        $courses = $this->courses($centerSlug);
+        return $this->matchingCourseIn($this->courses($centerSlug), $facultySlug, $course);
+    }
+
+    /**
+     * @param  list<array<string, mixed>>  $courses  clean unit courses
+     * @param  array<string, mixed>  $course
+     * @return array<string, mixed>|null
+     */
+    private function matchingCourseIn(array $courses, string $facultySlug, array $course): ?array
+    {
         $picked = trim((string) ($course['requirementsUnitCourseId'] ?? ''));
 
         if ($picked !== '') {
@@ -293,19 +407,113 @@ final class CenterCatalogService implements CenterCatalogServiceInterface
 
         $code = $this->codeKey((string) ($course['code'] ?? ''));
 
-        if ($code === '') {
-            return null;
-        }
-
-        foreach ($courses as $unitCourse) {
-            foreach ($unitCourse['faculties'] as $link) {
-                if ($link['faculty'] === $facultySlug && $this->codeKey($link['code']) === $code) {
-                    return $unitCourse;
+        if ($code !== '') {
+            foreach ($courses as $unitCourse) {
+                foreach ($unitCourse['faculties'] as $link) {
+                    if ($link['faculty'] === $facultySlug && $this->codeKey($link['code']) === $code) {
+                        return $unitCourse;
+                    }
                 }
             }
         }
 
+        // A plan course whose code was changed is still the unit course of the
+        // same title that lists this faculty, so it is never shown twice.
+        $titles = array_filter([
+            $this->titleKey((string) ($course['titleAr'] ?? '')),
+            $this->titleKey((string) ($course['titleEn'] ?? '')),
+            $this->titleKey((string) ($course['title'] ?? '')),
+        ]);
+
+        foreach ($titles === [] ? [] : $courses as $unitCourse) {
+            $listsFaculty = array_filter($unitCourse['faculties'], static fn (array $link): bool => $link['faculty'] === $facultySlug) !== [];
+
+            if ($listsFaculty && array_intersect($titles, [$this->titleKey($unitCourse['titleAr']), $this->titleKey($unitCourse['titleEn'])]) !== []) {
+                return $unitCourse;
+            }
+        }
+
         return null;
+    }
+
+    private function titleKey(string $title): string
+    {
+        return mb_strtolower(trim((string) preg_replace('/\s+/u', ' ', $title)));
+    }
+
+    /**
+     * A plan course carrying its unit course's shared record in one locale. The
+     * code and credits are this faculty's; the plan's own copy fills a part the
+     * unit course leaves empty, so nothing an editor added disappears before the
+     * unit course has it.
+     *
+     * @param  array<string, mixed>  $course  a study plan course
+     * @param  array<string, mixed>  $unitCourse  a clean unit course
+     * @return array<string, mixed>
+     */
+    private function sharedStudyPlanCourse(array $course, array $unitCourse, string $facultySlug, string $locale): array
+    {
+        $code = $this->codeKey((string) ($course['code'] ?? ''));
+        $link = null;
+
+        foreach ($unitCourse['faculties'] as $candidate) {
+            if ($candidate['faculty'] === $facultySlug && ($link === null || $this->codeKey($candidate['code']) === $code)) {
+                $link = $candidate;
+            }
+        }
+
+        $suffix = $locale === 'ar' ? 'Ar' : 'En';
+        $other = $locale === 'ar' ? 'En' : 'Ar';
+        $course['code'] = $link['code'] ?? (trim((string) ($course['code'] ?? '')) ?: $unitCourse['code']);
+        $course['credits'] = $link['credits'] ?? $unitCourse['credits'];
+        $course['requirementsUnitCourseId'] = $unitCourse['id'];
+        $course['sharedFromRequirementsUnit'] = true;
+
+        foreach (['title', 'description'] as $field) {
+            foreach (['Ar', 'En'] as $language) {
+                if ($unitCourse[$field.$language] !== '') {
+                    $course[$field.$language] = $unitCourse[$field.$language];
+                }
+            }
+
+            $text = $unitCourse[$field.$suffix] !== '' ? $unitCourse[$field.$suffix] : $unitCourse[$field.$other];
+            if ($text !== '') {
+                $course[$field] = $text;
+            }
+        }
+
+        if ($unitCourse['hours']['theory'] + $unitCourse['hours']['practical'] > 0) {
+            $course['hours'] = $unitCourse['hours'];
+        }
+
+        if ($unitCourse['teachers']['theory']['memberIds'] !== [] || $unitCourse['teachers']['practical']['memberIds'] !== []) {
+            $course['teachers'] = $unitCourse['teachers'];
+        }
+
+        if ($unitCourse['specificationUrl'] !== '') {
+            $course['specificationUrl'] = $unitCourse['specificationUrl'];
+        }
+
+        if ($unitCourse['lessons'] !== []) {
+            $course['lessons'] = array_map(static fn (array $lesson, int $index): array => [
+                'id' => 'unit-'.$unitCourse['id'].'-'.($index + 1),
+                'type' => $lesson['type'],
+                'order' => $index + 1,
+                'title' => $lesson['title'.$suffix] !== '' ? $lesson['title'.$suffix] : $lesson['title'.$other],
+                'titleAr' => $lesson['titleAr'],
+                'titleEn' => $lesson['titleEn'],
+                'description' => '',
+                'pdfUrl' => $lesson['pdfUrl'],
+            ], $unitCourse['lessons'], array_keys($unitCourse['lessons']));
+        }
+
+        return $course;
+    }
+
+    /** A study plan course id made from a code, the way the board makes one. */
+    private function courseSlug(string $code): string
+    {
+        return trim((string) preg_replace('/[^a-z0-9]+/', '-', mb_strtolower($code)), '-');
     }
 
     private function codeKey(string $code): string
@@ -344,6 +552,11 @@ final class CenterCatalogService implements CenterCatalogServiceInterface
 
             if (is_numeric($link['credits'] ?? null)) {
                 $entry['credits'] = $this->number($link['credits']);
+            }
+
+            // The study plan term a required course is placed in for this faculty.
+            if (is_numeric($link['term'] ?? null) && (int) $link['term'] > 0) {
+                $entry['term'] = (int) $link['term'];
             }
 
             $faculties[] = $entry;
@@ -520,6 +733,10 @@ final class CenterCatalogService implements CenterCatalogServiceInterface
                     $errors['courses'][] = $label.': "'.$link['faculty'].'" is not a faculty.';
 
                     continue;
+                }
+
+                if (isset($link['term']) && $link['term'] > self::MAX_TERM) {
+                    $errors['courses'][] = $label.': the study plan term must be a number from 1 to '.self::MAX_TERM.'.';
                 }
 
                 $key = $link['faculty'].'|'.$this->codeKey($link['code']);

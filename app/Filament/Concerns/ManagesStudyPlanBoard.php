@@ -9,6 +9,7 @@ use App\Contracts\Content\ProfileAdminServiceInterface;
 use App\Contracts\Faculty\FacultyStudyPlanBoardServiceInterface;
 use App\Contracts\Media\MediaServiceInterface;
 use App\Exceptions\ConflictException;
+use App\Filament\Pages\ManageCenters;
 use Closure;
 use Filament\Notifications\Notification;
 use Illuminate\Http\UploadedFile;
@@ -63,11 +64,52 @@ trait ManagesStudyPlanBoard
     public function studyPlanBoardData(): array
     {
         if ($this->boardCache === null) {
-            $this->boardCache = $this->studyPlanBoardService->board($this->studyPlanPayload(), app()->getLocale(), $this->boardDepartmentId);
+            $this->boardCache = $this->studyPlanBoardService->board($this->boardDisplayPayload(), app()->getLocale(), $this->boardDepartmentId);
             $this->boardDepartmentId = (string) $this->boardCache['departmentId'];
         }
 
         return $this->boardCache;
+    }
+
+    /**
+     * The plan as the board shows it: each university requirement carries its
+     * Requirements Unit course's record, and the unit's required courses that
+     * list this faculty appear where they are missing. Those added cards are
+     * read-only here (they are edited in the Requirements Unit); every action
+     * still edits the stored plan.
+     *
+     * @return array<string, mixed>
+     */
+    private function boardDisplayPayload(): array
+    {
+        $payload = $this->studyPlanPayload();
+        $locale = app()->getLocale() === 'ar' ? 'ar' : 'en';
+        $parts = explode('.', $this->currentTargetKey());
+        $facultySlug = (string) ($parts[1] ?? '');
+        $departments = $payload['translations'][$locale]['payload']['plan']['departments'] ?? null;
+
+        if ($facultySlug === '' || ! is_array($departments)) {
+            return $payload;
+        }
+
+        $catalog = app(CenterCatalogServiceInterface::class);
+        $payload['translations'][$locale]['payload']['plan']['departments'] = array_map(
+            static fn (mixed $department): mixed => is_array($department) ? $catalog->studyPlanDepartment($facultySlug, $department, $locale) : $department,
+            $departments,
+        );
+
+        return $payload;
+    }
+
+    /** The Requirements Unit's course list in the Centers admin. */
+    public function boardUnitCoursesUrl(): ?string
+    {
+        $centerSlug = array_key_first(array_filter(
+            (array) config('centers.centers', []),
+            static fn (mixed $center): bool => is_array($center) && ($center['template'] ?? null) === 'requirements-unit',
+        ));
+
+        return is_string($centerSlug) ? ManageCenters::getUrl(['target' => 'centers.'.$centerSlug.'.courses']) : null;
     }
 
     /** @return array<string, string> */

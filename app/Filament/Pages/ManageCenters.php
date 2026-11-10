@@ -480,8 +480,9 @@ class ManageCenters extends Page implements HasForms
                         Select::make('faculty')->label(__('admin_centers.fields.faculty'))->options($faculties)->required()->native(false),
                         TextInput::make('code')->label(__('admin_centers.fields.faculty_code'))->required()->maxLength(80),
                         TextInput::make('credits')->label(__('admin_centers.fields.faculty_credits'))->helperText(__('admin_centers.fields.faculty_credits_help'))->numeric()->minValue(0)->maxValue(40),
+                        TextInput::make('term')->label(__('admin_centers.fields.faculty_term'))->helperText(__('admin_centers.fields.faculty_term_help'))->integer()->minValue(1)->maxValue(20),
                     ])
-                    ->defaultItems(0)->columns(3)->collapsible()->columnSpanFull(),
+                    ->defaultItems(0)->columns(4)->collapsible()->columnSpanFull(),
                 $teacherSelect('theoryTeacherIds', __('admin_centers.fields.theory_teachers')),
                 $teacherSelect('practicalTeacherIds', __('admin_centers.fields.practical_teachers')),
                 Toggle::make('theoryEnabled')->label(__('admin_centers.fields.theory_enabled'))->default(true),
@@ -528,6 +529,7 @@ class ManageCenters extends Page implements HasForms
                 'faculty' => $link['faculty'],
                 'code' => $link['code'],
                 'credits' => $link['credits'] ?? null,
+                'term' => $link['term'] ?? null,
             ], $course['faculties']),
             'theoryTeacherIds' => array_map('strval', $course['teachers']['theory']['memberIds']),
             'practicalTeacherIds' => array_map('strval', $course['teachers']['practical']['memberIds']),
@@ -562,6 +564,9 @@ class ManageCenters extends Page implements HasForms
                 $entry = ['faculty' => trim((string) ($link['faculty'] ?? '')), 'code' => trim((string) ($link['code'] ?? ''))];
                 if (is_numeric($link['credits'] ?? null)) {
                     $entry['credits'] = $number($link['credits']);
+                }
+                if (is_numeric($link['term'] ?? null) && (int) $link['term'] > 0) {
+                    $entry['term'] = (int) $link['term'];
                 }
 
                 return $entry;

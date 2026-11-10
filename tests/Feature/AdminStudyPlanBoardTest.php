@@ -46,6 +46,19 @@ final class AdminStudyPlanBoardTest extends TestCase
             ->assertDontSee('Choose an academic term');
     }
 
+    public function test_required_requirements_unit_courses_show_as_read_only_cards(): void
+    {
+        // The default plan holds no university requirements: the unit's required
+        // courses that list Dentistry show on the board, linked to the unit.
+        $page = $this->page()
+            ->assertSeeHtml('is-from-unit')
+            ->assertSeeHtml('manage-centers?target=centers.requirements-unit.courses')
+            ->assertSee('UNRE103');
+
+        $this->assertNull($this->course('unre103'));
+        $this->assertArrayNotHasKey('unre103', $page->instance()->studyPlanBoardData()['prerequisiteOptions']);
+    }
+
     public function test_a_course_can_be_added_edited_moved_and_deleted(): void
     {
         $page = $this->page();
@@ -105,16 +118,15 @@ final class AdminStudyPlanBoardTest extends TestCase
         $this->assertArrayNotHasKey('requirementsUnitCourseId', $this->course('den-907') ?? []);
     }
 
-    public function test_an_elective_university_requirement_can_become_an_elective_box(): void
+    public function test_an_elective_university_requirement_is_an_elective_box(): void
     {
         $page = $this->page();
 
         $page->call('newBoardCourse', '1')
             ->set('boardCourse.type', 'university')
-            ->assertDontSeeHtml('wire:model.live="boardCourse.electiveSlot"')
+            ->assertSeeHtml('wire:model="boardCourse.code"')
             ->set('boardCourse.required', false)
-            ->assertSeeHtml('wire:model.live="boardCourse.electiveSlot"')
-            ->set('boardCourse.electiveSlot', true)
+            ->assertSee(__('admin.faculty_workspace.board.elective_slot'))
             // Only the title, credits and term are left to edit.
             ->assertDontSeeHtml('wire:model="boardCourse.code"')
             ->assertDontSeeHtml('wire:model="boardCourse.prerequisites"')
@@ -273,7 +285,11 @@ final class AdminStudyPlanBoardTest extends TestCase
         $ids = [];
         foreach ($board['terms'] as $term) {
             foreach ($term['courses'] as $card) {
-                $ids[] = $card['id'];
+                // A Requirements Unit card is not stored in the plan, and a university
+                // elective is a box that needs nothing.
+                if (! $card['fromUnit'] && ($card['type'] !== 'university' || $card['required'])) {
+                    $ids[] = $card['id'];
+                }
             }
         }
         $last = $ids[count($ids) - 1];

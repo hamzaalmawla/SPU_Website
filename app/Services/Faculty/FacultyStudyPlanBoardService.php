@@ -134,6 +134,9 @@ final class FacultyStudyPlanBoardService implements FacultyStudyPlanBoardService
                     'type' => (string) ($course['type'] ?? 'faculty'),
                     'required' => (bool) ($course['required'] ?? true),
                     'electiveSlot' => $this->isElectiveSlot($course),
+                    // Shown from the Requirements Unit: not stored in this plan.
+                    'fromUnit' => ($course['fromRequirementsUnit'] ?? false) === true,
+                    'unitShared' => ($course['sharedFromRequirementsUnit'] ?? false) === true,
                     'prerequisites' => $prerequisites,
                     'prerequisiteCredits' => (int) ($course['prerequisiteCredits'] ?? 0),
                     'lessonCount' => count($this->records($course['lessons'] ?? [])),
@@ -155,7 +158,8 @@ final class FacultyStudyPlanBoardService implements FacultyStudyPlanBoardService
         foreach ($terms as $term) {
             foreach ($term['courses'] as $card) {
                 // A university elective box stands for a choice of courses: nothing can need it.
-                if ($card['electiveSlot']) {
+                // A course shown from the Requirements Unit is not in the stored plan.
+                if ($card['electiveSlot'] || $card['fromUnit']) {
                     continue;
                 }
 
@@ -737,9 +741,12 @@ final class FacultyStudyPlanBoardService implements FacultyStudyPlanBoardService
         $required = filter_var($form['required'] ?? true, FILTER_VALIDATE_BOOLEAN);
         // A university elective box stands for "one of the Requirements Unit's
         // elective courses": it has no code of its own and no prerequisites.
-        $electiveSlot = $type === 'university' && ! $required && filter_var($form['electiveSlot'] ?? false, FILTER_VALIDATE_BOOLEAN);
+        // University electives are chosen at the unit, so a plan never lists one:
+        // an elective university requirement is always a box.
+        $electiveSlot = $type === 'university' && ! $required;
 
         if ($electiveSlot) {
+            $code = '';
             $titleAr = $titleAr !== '' ? $titleAr : self::ELECTIVE_SLOT_TITLE_AR;
             $titleEn = $titleEn !== '' ? $titleEn : self::ELECTIVE_SLOT_TITLE_EN;
         }

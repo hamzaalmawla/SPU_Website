@@ -3,6 +3,7 @@
     $t = static fn (string $key, array $replace = []): string => __('admin.faculty_workspace.board.'.$key, $replace);
     $creditsShort = $t('credits_short');
     $termCount = count($board['terms']);
+    $unitCoursesUrl = $this->boardUnitCoursesUrl();
 @endphp
 
 <section class="spu-board" aria-labelledby="spu-board-heading" wire:key="study-plan-board">
@@ -65,6 +66,19 @@
                             </header>
 
                             @foreach ($term['courses'] as $course)
+                                @if ($course['fromUnit'])
+                                    {{-- A required Requirements Unit course listing this faculty: shown in every program, edited in the unit. --}}
+                                    <a wire:key="board-card-{{ $board['departmentId'] }}-{{ $course['id'] }}"
+                                        class="spu-board__card spu-board__card--university is-from-unit"
+                                        data-board-card data-course-id="{{ $course['id'] }}" data-prereqs='[]'
+                                        @if ($unitCoursesUrl) href="{{ $unitCoursesUrl }}" target="_blank" rel="noopener" @endif
+                                        title="{{ $t('from_unit_help') }}">
+                                        <span class="spu-board__card-meta"><span>{{ $course['code'] }}</span><span>{{ $course['credits'] }} {{ $creditsShort }}</span></span>
+                                        <span class="spu-board__card-title" dir="auto">{{ $course['title'] }}</span>
+                                        <span class="spu-board__card-flags"><span class="is-unit">{{ $t('from_unit_short') }} ↗</span></span>
+                                    </a>
+                                    @continue
+                                @endif
                                 <button type="button" wire:key="board-card-{{ $board['departmentId'] }}-{{ $course['id'] }}"
                                     class="spu-board__card spu-board__card--{{ $course['type'] }} @if (! $course['required']) is-elective @endif @if ($course['electiveSlot']) is-elective-slot @endif @if ($course['warning']) has-warning @endif"
                                     data-board-card data-course-id="{{ $course['id'] }}" data-prereqs='@json($course['prerequisites'])'
@@ -74,8 +88,9 @@
                                     x-on:focus="highlight('{{ $course['id'] }}')" x-on:blur="highlight('')">
                                     <span class="spu-board__card-meta"><span>{{ $course['electiveSlot'] ? $t('elective_slot_short').' ↗' : $course['code'] }}</span><span>{{ $course['credits'] }} {{ $creditsShort }}</span></span>
                                     <span class="spu-board__card-title" dir="auto">{{ $course['title'] }}</span>
-                                    @if ($course['lessonCount'] > 0 || $course['prerequisiteCredits'] > 0 || $course['warning'] || $course['sharedIn'] !== [])
+                                    @if ($course['lessonCount'] > 0 || $course['prerequisiteCredits'] > 0 || $course['warning'] || $course['sharedIn'] !== [] || $course['unitShared'])
                                         <span class="spu-board__card-flags">
+                                            @if ($course['unitShared'])<span class="is-unit" title="{{ $t('unit_shared_help') }}">{{ $t('from_unit_short') }}</span>@endif
                                             @if ($course['sharedIn'] !== [])<span class="is-shared" title="{{ $t('shared_in', ['names' => implode(app()->getLocale() === 'ar' ? '، ' : ', ', $course['sharedIn'])]) }}">{{ $t('shared_short', ['count' => count($course['sharedIn']) + 1]) }}</span>@endif
                                             @if ($course['lessonCount'] > 0)<span title="{{ $t('lectures') }}">PDF {{ $course['lessonCount'] }}</span>@endif
                                             @if ($course['prerequisiteCredits'] > 0)<span>&ge;{{ $course['prerequisiteCredits'] }} {{ $creditsShort }}</span>@endif
@@ -100,8 +115,8 @@
     @if (is_array($this->boardCourse))
         @php($course = $this->boardCourse)
         @php($canBeElectiveSlot = ($course['type'] ?? '') === 'university' && ! filter_var($course['required'] ?? true, FILTER_VALIDATE_BOOLEAN))
-        {{-- A university elective box has only a title, credits and a term. --}}
-        @php($isElectiveSlot = $canBeElectiveSlot && filter_var($course['electiveSlot'] ?? false, FILTER_VALIDATE_BOOLEAN))
+        {{-- An elective university requirement is always a box: only a title, credits and a term. --}}
+        @php($isElectiveSlot = $canBeElectiveSlot)
         <div class="spu-board-panel" role="dialog" aria-modal="true" aria-labelledby="spu-board-course-title" wire:key="board-course-panel"
             x-data x-on:keydown.escape.window="$wire.closeBoardPanels()">
             <div class="spu-board-panel__backdrop" wire:click="closeBoardPanels"></div>
@@ -137,10 +152,10 @@
                         @endunless
                         <label class="spu-board-form__check"><input type="checkbox" wire:model.live="boardCourse.required"> {{ $t('required') }}</label>
                         @if ($canBeElectiveSlot)
-                            <label class="spu-board-form__check spu-board-form__slot">
-                                <input type="checkbox" wire:model.live="boardCourse.electiveSlot" aria-describedby="board-elective-slot-help"> {{ $t('elective_slot') }}
-                                <small id="board-elective-slot-help">{{ $t('elective_slot_help') }}</small>
-                            </label>
+                            <p class="spu-board-form__slot spu-board-form__wide">
+                                <strong>{{ $t('elective_slot') }}</strong>
+                                <small>{{ $t('elective_slot_help') }}</small>
+                            </p>
                         @endif
                         @if (($this->boardCourse['type'] ?? '') === 'university' && ! $isElectiveSlot)
                             <label>{{ $t('unit_course') }}
@@ -152,6 +167,7 @@
                                 </select>
                                 <small id="board-unit-course-help">{{ $t('unit_course_help') }}</small>
                             </label>
+                            <p class="spu-board-hint spu-board-form__wide">{{ $t('unit_shared_help') }} @if ($unitCoursesUrl)<a href="{{ $unitCoursesUrl }}" target="_blank" rel="noopener">{{ $t('unit_courses_open') }} ↗</a>@endif</p>
                         @endif
                     </div>
 
