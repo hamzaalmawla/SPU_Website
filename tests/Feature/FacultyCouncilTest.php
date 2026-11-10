@@ -441,6 +441,48 @@ final class FacultyCouncilTest extends TestCase
             ->assertSee('ابحث بالاسم أو المنصب أو القسم');
     }
 
+    public function test_editors_rename_the_members_page_group_headings_per_language(): void
+    {
+        $this->member('heading-staff', 'Dr. Heading Staff', 'د. عضو العنوان');
+        $dean = $this->member('heading-dean', 'Dr. Heading Dean', 'د. عميد العنوان');
+        $this->publishCouncil([['positionSlug' => 'dean', 'memberId' => (int) $dean->getKey()]]);
+        app()->setLocale('en');
+        $this->actingAs($this->admin, 'web');
+        $target = 'facilities.medicine.members';
+
+        // The editor offers one field per heading in each language; an empty one keeps the default.
+        Livewire::test(ManageMedicineFaculty::class)
+            ->set('data.target_key', $target)
+            ->call('loadTarget', $target)
+            ->assertSee('Group headings')
+            ->set('data.ar_content.payload.groupLabels.leadership', '  عمادة الكلية ')
+            ->set('data.en_content.payload.groupLabels.leadership', 'Faculty Deanship')
+            ->set('data.en_content.payload.groupLabels.unknown', 'Dropped')
+            ->call('save');
+
+        $workflow = app(CmsWorkflowServiceInterface::class);
+        $draft = $workflow->latestEditableDraftPayload($target, (int) $this->admin->getKey());
+        $this->assertIsArray($draft);
+        $this->assertSame(['leadership' => 'عمادة الكلية', 'head' => '', 'council' => '', 'staff' => ''], $draft['translations']['ar']['payload']['groupLabels']);
+        $this->assertSame('Faculty Deanship', $draft['translations']['en']['payload']['groupLabels']['leadership']);
+        $this->assertArrayNotHasKey('unknown', $draft['translations']['en']['payload']['groupLabels']);
+
+        // Nothing changes on the public page before publishing.
+        $this->get('/ar/faculties/medicine/members')->assertOk()->assertSee('قيادة الكلية')->assertDontSee('عمادة الكلية');
+
+        $this->assertTrue($workflow->publish($target, (int) $this->admin->getKey()));
+        Cache::flush();
+
+        $this->get('/ar/faculties/medicine/members')
+            ->assertOk()
+            ->assertSeeInOrder(['عمادة الكلية', 'د. عميد العنوان', 'أعضاء الهيئة التدريسية', 'د. عضو العنوان'])
+            ->assertDontSee('قيادة الكلية');
+        $this->get('/en/faculties/medicine/members')
+            ->assertOk()
+            ->assertSeeInOrder(['Faculty Deanship', 'Dr. Heading Dean', 'Academic Staff', 'Dr. Heading Staff'])
+            ->assertDontSee('Faculty Leadership');
+    }
+
     public function test_before_the_council_places_them_the_members_page_ranks_by_the_typed_position(): void
     {
         $this->member('typed-technician', 'Lab Supervisor', 'مشرف المخبر', position: ['مشرف مخبر', 'Lab supervisor']);

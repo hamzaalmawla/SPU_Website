@@ -7,12 +7,8 @@
         'council' => 'council',
         default => 'staff',
     };
-    $groupLabels = [
-        'leadership' => $isAr ? 'قيادة الكلية' : 'Faculty Leadership',
-        'head' => $isAr ? 'رؤساء الأقسام' : 'Heads of Departments',
-        'council' => $isAr ? 'أعضاء مجلس الكلية' : 'Council Members',
-        'staff' => $isAr ? 'أعضاء الهيئة التدريسية' : 'Academic Staff',
-    ];
+    // Editors can rename each heading per language (members page editor › Group headings).
+    $groupLabels = \App\Support\FacultyMemberGroups::labels($subpage['payload']['groupLabels'] ?? null, $isAr ? 'ar' : 'en');
     $grouped = collect($members)->groupBy($groupOf);
     $groups = array_values(array_filter(array_keys($groupLabels), static fn (string $group): bool => $grouped->has($group)));
     $showHeadings = count($groups) > 1;

@@ -27,6 +27,7 @@ use App\Models\User\User;
 use App\Support\ExamScheduleBoard;
 use App\Support\ExamScheduleRows;
 use App\Support\FacultyLogoSubtitle;
+use App\Support\FacultyMemberGroups;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Actions\Action as FormAction;
 use Filament\Forms\Components\Component;
@@ -863,7 +864,21 @@ trait ManagesFacultyHomepage
     /** @return array<int, Section> */
     private function membersSubpageFields(string $prefix): array
     {
-        return [];
+        // The group headings on the public members page; an empty field keeps the default wording.
+        $defaults = FacultyMemberGroups::defaults(str_starts_with($prefix, 'ar') ? 'ar' : 'en');
+
+        return [
+            Section::make(__('admin.faculty_workspace.editor.sections.member_groups'))
+                ->description(__('admin.faculty_workspace.editor.help.member_groups'))
+                ->schema(array_map(
+                    static fn (string $group): TextInput => TextInput::make($prefix.'.payload.groupLabels.'.$group)
+                        ->label(__('admin.faculty_workspace.editor.fields.member_group_'.$group))
+                        ->placeholder($defaults[$group])
+                        ->maxLength(120),
+                    FacultyMemberGroups::GROUPS,
+                ))
+                ->columns(2),
+        ];
     }
 
     /** @return array<int, Section> */
@@ -2336,7 +2351,21 @@ trait ManagesFacultyHomepage
             return $content;
         }
 
-        if ($subpageSlug === 'research' || $subpageSlug === 'members') {
+        if ($subpageSlug === 'research') {
+            unset($content['items'], $content['stats'], $content['dean']);
+
+            return $content;
+        }
+
+        if ($subpageSlug === 'members') {
+            $payload = is_array($content['payload'] ?? null) ? $content['payload'] : [];
+            $saved = is_array($payload['groupLabels'] ?? null) ? $payload['groupLabels'] : [];
+            // Only the known groups, trimmed; an empty heading keeps the default wording on the page.
+            $payload['groupLabels'] = array_combine(FacultyMemberGroups::GROUPS, array_map(
+                static fn (string $group): string => is_string($saved[$group] ?? null) ? trim($saved[$group]) : '',
+                FacultyMemberGroups::GROUPS,
+            ));
+            $content['payload'] = $payload;
             unset($content['items'], $content['stats'], $content['dean']);
 
             return $content;
