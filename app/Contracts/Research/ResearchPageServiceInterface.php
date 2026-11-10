@@ -30,6 +30,17 @@ interface ResearchPageServiceInterface
     public function facultyPublications(string $facultySlug, string $locale): ResearchPageDTO;
 
     /**
+     * Narrows the publication cards a page already lists by a search (`q`, every
+     * word in any order, either language) and a publication year (`year`). Only
+     * the given items are searched, never the rest of the register.
+     *
+     * @param  array<int, array<string, mixed>>  $items
+     * @param  array{q?: string, year?: string}  $filters
+     * @return array<int, array<string, mixed>>
+     */
+    public function filterPublicationItems(array $items, string $locale, array $filters): array;
+
+    /**
      * The publications a faculty page features: published ones picked by slug
      * first, in the order given, then the faculty's newest to fill the rest.
      * Picks that are unpublished or deleted are skipped.

@@ -169,6 +169,31 @@ final class ResearchPageService implements ResearchPageServiceInterface
         );
     }
 
+    public function filterPublicationItems(array $items, string $locale, array $filters): array
+    {
+        $activeFilters = [
+            'q' => $this->filterValue($filters['q'] ?? null),
+            'faculty' => '',
+            'type' => '',
+            'year' => $this->filterValue($filters['year'] ?? null),
+        ];
+
+        if ($activeFilters['q'] === '' && $activeFilters['year'] === '') {
+            return array_values($items);
+        }
+
+        // Papers from the register carry both languages in searchText; the
+        // ones added on the CMS page are matched with their other-language copy.
+        $otherItems = $activeFilters['q'] !== ''
+            ? $this->itemsBySlug($this->arrayList($this->publishedLocalizedPayload('research.publications', $this->otherLocale($locale))['items'] ?? []))
+            : [];
+
+        return array_values(array_filter(
+            $items,
+            fn (array $item): bool => $this->publicationMatchesFilters($item, $activeFilters, $otherItems[(string) ($item['slug'] ?? '')] ?? []),
+        ));
+    }
+
     public function facultyFeaturedPublications(string $facultySlug, string $locale, array $selectedSlugs = [], int $limit = 3): ResearchPageDTO
     {
         $canonicalFacultySlug = $this->canonicalFacultySlug($facultySlug);

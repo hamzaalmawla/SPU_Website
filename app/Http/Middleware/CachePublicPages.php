@@ -279,7 +279,7 @@ final class CachePublicPages
         return match ($routeName) {
             'public.alumni.index' => ['q', 'year', 'faculty', 'department', 'page'],
             'public.about.leadership' => ['faculty'],
-            'public.about.directorates.staff' => ['faculty', 'page'],
+            'public.about.directorates.staff' => ['faculty', 'q', 'page'],
             'public.about.partnerships' => ['category', 'q', 'page'],
             'public.about.profile' => ['source'],
             'public.admissions.section' => $request->route('section') === 'documents' ? ['tab'] : [],
@@ -287,8 +287,7 @@ final class CachePublicPages
             'public.campus-life.career-development.jobs.apply' => ['job'],
             'public.faculties.subpage' => match ($request->route('subpage')) {
                 'alumni', 'valedictorians' => ['q', 'year', 'department', 'faculty', 'semester', 'academic_phase', 'page'],
-                'projects' => ['q', 'page'],
-                'research' => ['page'],
+                'projects', 'research' => ['q', 'year', 'page'],
                 'labs' => ['lab', 'page'],
                 default => [],
             },

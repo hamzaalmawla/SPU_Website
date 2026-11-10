@@ -36,10 +36,15 @@ interface AboutPageServiceInterface
 
     public function getStaffDirectoryPage(string $locale): AboutContentPageDTO;
 
+    /**
+     * The teaching staff directory, narrowed by faculty and by a search over the
+     * listed people's names (either language), positions, rank and faculty.
+     */
     public function getStaffDirectory(
         string $locale,
         ?string $requestedFaculty = null,
         int $requestedPage = 1,
+        ?string $search = null,
     ): StaffDirectoryDTO;
 
     /** @return Collection<int, PersonDTO> */

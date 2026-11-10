@@ -20,5 +20,6 @@ final readonly class StaffDirectoryDTO
         public int $totalPages,
         public int $totalItems,
         public int $perPage,
+        public string $activeSearch = '',
     ) {}
 }

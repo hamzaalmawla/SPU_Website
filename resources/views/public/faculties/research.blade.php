@@ -9,6 +9,23 @@
                 <x-public.rich-text class="mx-auto mb-12 max-w-[860px] text-[15px] leading-8 text-slate-600" :text="$subpage['body']" />
             @endif
 
+            @php
+                $researchFiltered = ($filters['q'] ?? '') !== '' || ($filters['year'] ?? '') !== '';
+                $hasPublications = $researchFiltered || $page->items !== [];
+            @endphp
+
+            @if ($hasPublications)
+                @include('public.faculties.partials.list-search', [
+                    'placeholder' => $isAr ? 'ابحث بعنوان البحث أو الباحث أو الكلمات المفتاحية...' : 'Search by title, author or keyword...',
+                    'searchLabel' => $isAr ? 'ابحث في أبحاث الكلية' : 'Search this faculty\'s research',
+                    'yearLabel' => $isAr ? 'سنة النشر' : 'Publication year',
+                ])
+
+                <p class="mb-5 text-[12px] font-semibold text-slate-500" role="status">
+                    {{ $isAr ? 'عرض' : 'Showing' }} {{ $pagination['from'] ?? 0 }}-{{ $pagination['to'] ?? 0 }} {{ $isAr ? 'من' : 'of' }} {{ $pagination['total_items'] ?? count($page->items) }}
+                </p>
+            @endif
+
             <div class="grid gap-[38px] lg:grid-cols-2">
                 @forelse ($page->items as $publication)
                     <a href="/{{ $locale }}/research/publications/{{ $publication['slug'] ?? '' }}" class="group block overflow-hidden rounded-[10px] border border-[#d5d9e2] bg-white shadow-[0_4px_10px_rgba(0,0,0,0.16)] transition-all motion-safe:hover:-translate-y-1 hover:shadow-[0_8px_24px_rgba(32,39,89,0.12)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-spu-blue">
@@ -29,10 +46,17 @@
                         </div>
                     </a>
                 @empty
+                    @if ($researchFiltered)
+                        <div class="rounded-[10px] border border-slate-200 bg-section p-8 text-center lg:col-span-2">
+                            <h2 class="text-xl font-bold text-spu-blue">{{ $isAr ? 'لا توجد أبحاث مطابقة لبحثك' : 'No research matches your search' }}</h2>
+                            <a href="{{ $studentListUrl }}" class="mt-4 inline-flex h-9 items-center justify-center rounded-[6px] border border-slate-200 bg-white px-4 text-[11px] font-bold uppercase tracking-[0.08em] text-spu-blue transition-colors hover:border-spu-blue">{{ $isAr ? 'عرض كل الأبحاث' : 'Show all research' }}</a>
+                        </div>
+                    @else
                     <div class="rounded-[10px] border border-slate-200 bg-section p-8 lg:col-span-2">
                         <h2 class="text-xl font-bold text-spu-blue">{{ $subpage['emptyTitle'] ?? ($isAr ? 'لا توجد منشورات حالياً' : 'No publications available') }}</h2>
                         <x-public.rich-text class="mt-3 text-sm leading-7 text-slate-600" :text="$subpage['emptySummary'] ?? ($isAr ? 'ستظهر منشورات الكلية هنا عند نشرها.' : 'Faculty publications will appear here when published.')" />
                     </div>
+                    @endif
                 @endforelse
             </div>
 

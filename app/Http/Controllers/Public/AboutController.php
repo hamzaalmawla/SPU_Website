@@ -148,13 +148,16 @@ final class AboutController extends Controller
         $page = $this->aboutPageService->getStaffDirectoryPage($locale);
         $requestedFaculty = $request->query('faculty');
         $requestedPage = $request->query('page');
+        $requestedSearch = $request->query('q');
         $directory = $this->aboutPageService->getStaffDirectory(
             $locale,
             is_string($requestedFaculty) ? $requestedFaculty : null,
             is_string($requestedPage) && ctype_digit($requestedPage) ? (int) $requestedPage : 1,
+            is_string($requestedSearch) ? $requestedSearch : null,
         );
         $query = array_filter([
             'faculty' => $directory->activeFaculty !== '' ? $directory->activeFaculty : null,
+            'q' => $directory->activeSearch !== '' ? $directory->activeSearch : null,
             'page' => $directory->currentPage > 1 ? $directory->currentPage : null,
         ], fn (mixed $value): bool => $value !== null);
         $languagePath = '/about/directorates/staff'.($query !== [] ? '?'.http_build_query($query) : '');

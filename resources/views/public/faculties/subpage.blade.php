@@ -387,13 +387,11 @@
     @elseif ($page->subpageSlug === 'projects')
         <section class="bg-white py-16 font-hacen md:py-20">
             <div class="container">
-                <form method="GET" action="{{ $studentListUrl }}" class="mb-8 flex flex-wrap items-center gap-4">
-                    <input type="search" name="q" value="{{ $filters['q'] ?? '' }}" placeholder="{{ $isAr ? 'ابحث باسم المشروع أو عضو الفريق...' : 'Search by project or team member name...' }}" class="h-9 w-full min-w-0 rounded-[6px] border border-slate-200 bg-white px-4 text-[12px] font-semibold text-spu-blue outline-none transition-colors focus:border-spu-blue sm:w-auto sm:min-w-[280px]">
-                    <button type="submit" class="inline-flex h-9 items-center justify-center rounded-[6px] bg-spu-red px-4 text-[11px] font-bold uppercase tracking-[0.08em] text-white transition-colors hover:bg-spu-blue">{{ $isAr ? 'بحث' : 'Search' }}</button>
-                    @if (($filters['q'] ?? '') !== '')
-                        <a href="{{ $studentListUrl }}" class="inline-flex h-9 items-center justify-center rounded-[6px] border border-slate-200 px-4 text-[11px] font-bold uppercase tracking-[0.08em] text-spu-blue transition-colors hover:border-spu-blue">{{ $isAr ? 'الكل' : 'All' }}</a>
-                    @endif
-                </form>
+                @include('public.faculties.partials.list-search', [
+                    'placeholder' => $isAr ? 'ابحث باسم المشروع أو عضو الفريق أو المشرف...' : 'Search by project, team member or supervisor...',
+                    'searchLabel' => $isAr ? 'ابحث في مشاريع الكلية' : 'Search this faculty\'s projects',
+                    'yearLabel' => $isAr ? 'السنة' : 'Year',
+                ])
 
                 <p class="mb-5 text-[12px] font-semibold text-slate-500">
                     {{ $isAr ? 'عرض' : 'Showing' }} {{ $pagination['from'] ?? 0 }}-{{ $pagination['to'] ?? 0 }} {{ $isAr ? 'من' : 'of' }} {{ $pagination['total_items'] ?? count($page->items) }}
@@ -408,6 +406,10 @@
                             </div>
                             <div class="p-6">
                                 <h2 class="card-title min-h-[42px] text-[16px] font-bold leading-[21px] text-spu-blue" dir="auto">{{ $item['title'] ?? '' }}</h2>
+                                @php $projectYear = trim((string) (($item['year'] ?? '') ?: ($item['academicYear'] ?? ''))); @endphp
+                                @if ($projectYear !== '')
+                                    <p class="mt-2 text-[11px] font-bold text-spu-red">{{ $isAr ? 'السنة:' : 'Year:' }} <span dir="ltr">{{ $projectYear }}</span></p>
+                                @endif
                                 <x-public.rich-text class="mt-3 min-h-[44px] text-[13px] font-medium leading-[22px] text-slate-600" :text="$item['summary'] ?? ''" />
                                 <div class="mt-6 border-t border-slate-100 pt-4">
                                     {{-- A label with nothing under it reads as missing data rather than
@@ -449,7 +451,11 @@
                             </div>
                         </article>
                     @empty
-                        <p class="text-slate-500">{{ $isAr ? 'لا توجد مشاريع منشورة حالياً.' : 'No published projects are available yet.' }}</p>
+                        @if (($filters['q'] ?? '') !== '' || ($filters['year'] ?? '') !== '')
+                            <p class="text-slate-500">{{ $isAr ? 'لا توجد مشاريع مطابقة لبحثك.' : 'No projects match your search.' }}</p>
+                        @else
+                            <p class="text-slate-500">{{ $isAr ? 'لا توجد مشاريع منشورة حالياً.' : 'No published projects are available yet.' }}</p>
+                        @endif
                     @endforelse
                 </div>
                 <x-public.pagination :current-page="$pagination['current_page'] ?? 1" :total-pages="$pagination['total_pages'] ?? 1" :page-url="$pageUrl" :locale="$locale" class="mt-10" />
