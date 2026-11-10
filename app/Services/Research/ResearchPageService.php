@@ -142,19 +142,39 @@ final class ResearchPageService implements ResearchPageServiceInterface
         );
     }
 
-    public function facultyPublications(string $facultySlug, string $locale): ResearchPageDTO
+    public function facultyPublications(string $facultySlug, string $locale, array $filters = []): ResearchPageDTO
     {
         $page = $this->publications($locale);
         $data = $page->data;
         $canonicalFacultySlug = $this->canonicalFacultySlug($facultySlug);
         $items = $this->publicPublicationItems($locale);
-        $data['items'] = array_values(array_filter(
+        $facultyItems = array_values(array_filter(
             $items,
             fn (array $item): bool => $this->canonicalFacultySlug((string) ($item['facultySlug'] ?? '')) === $canonicalFacultySlug,
         ));
-        $data['totalItems'] = count($data['items']);
+        $years = $this->publicationYears($facultyItems);
+        $year = $this->filterValue($filters['year'] ?? null);
+        // Search and year narrow this faculty's list only; nothing from other
+        // faculties or other sections is ever added.
+        $activeFilters = [
+            'q' => mb_substr($this->filterValue($filters['q'] ?? null), 0, 120),
+            'year' => in_array($year, $years, true) ? $year : '',
+        ];
+        $otherItems = $activeFilters['q'] !== ''
+            ? $this->itemsBySlug($this->arrayList($this->publishedLocalizedPayload('research.publications', $this->otherLocale($locale))['items'] ?? []))
+            : [];
+        $data['items'] = $activeFilters['q'] === '' && $activeFilters['year'] === ''
+            ? $facultyItems
+            : array_values(array_filter($facultyItems, fn (array $item): bool => $this->publicationMatchesFilters(
+                $item,
+                ['faculty' => '', 'type' => '', ...$activeFilters],
+                $otherItems[(string) ($item['slug'] ?? '')] ?? [],
+            )));
+        $data['totalItems'] = count($facultyItems);
         $data['resultCount'] = count($data['items']);
-        unset($data['pagination'], $data['activeFilters']);
+        $data['years'] = $years;
+        unset($data['pagination']);
+        $data['activeFilters'] = $activeFilters;
 
         return new ResearchPageDTO(
             locale: $page->locale,
@@ -165,7 +185,7 @@ final class ResearchPageService implements ResearchPageServiceInterface
             seoDescription: $page->seoDescription,
             seoImage: $page->seoImage,
             path: '/faculties/'.$canonicalFacultySlug.'/research',
-            isAvailable: $data['items'] !== [],
+            isAvailable: $facultyItems !== [],
         );
     }
 
@@ -1511,6 +1531,26 @@ final class ResearchPageService implements ResearchPageServiceInterface
     private function otherLocale(string $locale): string
     {
         return $locale === 'ar' ? 'en' : 'ar';
+    }
+
+    /**
+     * The years a list of publications appeared in, newest first.
+     *
+     * @param  array<int, array<string, mixed>>  $items
+     * @return list<string>
+     */
+    private function publicationYears(array $items): array
+    {
+        $years = [];
+        foreach ($items as $item) {
+            $year = trim((string) ($item['year'] ?? ''));
+            if ($year !== '' && ! in_array($year, $years, true)) {
+                $years[] = $year;
+            }
+        }
+        rsort($years, SORT_NATURAL);
+
+        return $years;
     }
 
     /**

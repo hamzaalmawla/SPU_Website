@@ -387,10 +387,25 @@
     @elseif ($page->subpageSlug === 'projects')
         <section class="bg-white py-16 font-hacen md:py-20">
             <div class="container">
-                <form method="GET" action="{{ $studentListUrl }}" class="mb-8 flex flex-wrap items-center gap-4">
-                    <input type="search" name="q" value="{{ $filters['q'] ?? '' }}" placeholder="{{ $isAr ? 'ابحث باسم المشروع أو عضو الفريق...' : 'Search by project or team member name...' }}" class="h-9 w-full min-w-0 rounded-[6px] border border-slate-200 bg-white px-4 text-[12px] font-semibold text-spu-blue outline-none transition-colors focus:border-spu-blue sm:w-auto sm:min-w-[280px]">
+                {{-- Search and year narrow this faculty's projects only; they work together. --}}
+                <form method="GET" action="{{ $studentListUrl }}" role="search" data-faculty-list-search aria-label="{{ $isAr ? 'البحث في مشاريع الكلية' : 'Search this faculty\'s projects' }}" class="mb-8 flex flex-wrap items-center gap-4">
+                    <label class="w-full sm:w-auto">
+                        <span class="sr-only">{{ $isAr ? 'ابحث في مشاريع الكلية' : 'Search this faculty\'s projects' }}</span>
+                        <input type="search" name="q" value="{{ $filters['q'] ?? '' }}" placeholder="{{ $isAr ? 'ابحث باسم المشروع أو عضو الفريق...' : 'Search by project or team member name...' }}" class="h-9 w-full min-w-0 rounded-[6px] border border-slate-200 bg-white px-4 text-[12px] font-semibold text-spu-blue outline-none transition-colors focus:border-spu-blue sm:w-auto sm:min-w-[280px]">
+                    </label>
+                    @if (($filterOptions['years'] ?? []) !== [])
+                        <label class="w-full sm:w-auto">
+                            <span class="sr-only">{{ $isAr ? 'السنة' : 'Year' }}</span>
+                            <select name="year" data-autosubmit class="h-9 w-full min-w-0 rounded-[6px] border border-slate-200 bg-white px-4 text-[12px] font-semibold text-spu-blue outline-none transition-colors focus:border-spu-blue sm:w-auto sm:min-w-[150px]">
+                                <option value="">{{ $isAr ? 'كل السنوات' : 'All years' }}</option>
+                                @foreach ($filterOptions['years'] as $year)
+                                    <option value="{{ $year }}" @selected(($filters['year'] ?? '') === (string) $year)>{{ $year }}</option>
+                                @endforeach
+                            </select>
+                        </label>
+                    @endif
                     <button type="submit" class="inline-flex h-9 items-center justify-center rounded-[6px] bg-spu-red px-4 text-[11px] font-bold uppercase tracking-[0.08em] text-white transition-colors hover:bg-spu-blue">{{ $isAr ? 'بحث' : 'Search' }}</button>
-                    @if (($filters['q'] ?? '') !== '')
+                    @if (($filters['q'] ?? '') !== '' || ($filters['year'] ?? '') !== '')
                         <a href="{{ $studentListUrl }}" class="inline-flex h-9 items-center justify-center rounded-[6px] border border-slate-200 px-4 text-[11px] font-bold uppercase tracking-[0.08em] text-spu-blue transition-colors hover:border-spu-blue">{{ $isAr ? 'الكل' : 'All' }}</a>
                     @endif
                 </form>
@@ -405,6 +420,9 @@
                             <div class="relative aspect-[1.72] overflow-hidden bg-slate-100">
                                 <img src="{{ $item['image'] ?? '/images/Gemini_Generated_Image_c89yjwc89yjwc89y.webp' }}" alt="{{ $item['title'] ?? '' }}" class="h-full w-full object-cover transition duration-500 hover:scale-[1.03]">
                                 <span class="absolute left-3 top-3 rounded-[3px] bg-spu-red px-2 py-1 text-[10px] font-bold leading-none text-white rtl:left-auto rtl:right-3">{{ $item['tag'] ?? ($isAr ? 'مشروع' : 'Project') }}</span>
+                                @if (($item['yearLabel'] ?? '') !== '')
+                                    <span class="absolute right-3 top-3 rounded-[3px] bg-white/90 px-2 py-1 text-[10px] font-bold leading-none text-spu-blue rtl:left-3 rtl:right-auto">{{ $item['yearLabel'] }}</span>
+                                @endif
                             </div>
                             <div class="p-6">
                                 <h2 class="card-title min-h-[42px] text-[16px] font-bold leading-[21px] text-spu-blue" dir="auto">{{ $item['title'] ?? '' }}</h2>
@@ -449,7 +467,11 @@
                             </div>
                         </article>
                     @empty
-                        <p class="text-slate-500">{{ $isAr ? 'لا توجد مشاريع منشورة حالياً.' : 'No published projects are available yet.' }}</p>
+                        @if (($filters['q'] ?? '') !== '' || ($filters['year'] ?? '') !== '')
+                            <p class="text-slate-500">{{ $isAr ? 'لا توجد مشاريع مطابقة في هذه الكلية. جرّب كلمات أخرى أو سنة أخرى.' : 'No projects of this faculty match. Try other words or another year.' }}</p>
+                        @else
+                            <p class="text-slate-500">{{ $isAr ? 'لا توجد مشاريع منشورة حالياً.' : 'No published projects are available yet.' }}</p>
+                        @endif
                     @endforelse
                 </div>
                 <x-public.pagination :current-page="$pagination['current_page'] ?? 1" :total-pages="$pagination['total_pages'] ?? 1" :page-url="$pageUrl" :locale="$locale" class="mt-10" />

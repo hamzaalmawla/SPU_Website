@@ -352,7 +352,8 @@ final class FacultyPageService implements FacultyPageServiceInterface
             'sections' => is_array($translation?->sections_json) ? $translation->sections_json : [],
             'payload' => $pagePayload,
         ];
-        $items = $this->subpageItems($faculty, $subpageSlug, $locale, $page);
+        // The research list is read once below, with the page's search and year.
+        $items = $subpageSlug === 'research' ? [] : $this->subpageItems($faculty, $subpageSlug, $locale, $page);
 
         if (is_array($cmsContent)) {
             $pageData = $this->cmsSubpageData($cmsContent, $pageData);
@@ -436,7 +437,10 @@ final class FacultyPageService implements FacultyPageServiceInterface
 
         if ($subpageSlug === 'projects') {
             $items = $this->withProjectSupervisors($faculty, $locale, $items);
-            $items = $this->filteredProjectItems($faculty, $locale, $items, $filters);
+            $filterOptions = ['years' => $this->projectYearOptions($items)];
+            // A year that no project of this faculty has is ignored.
+            $filters['year'] = in_array($filters['year'] ?? '', $filterOptions['years'], true) ? (string) $filters['year'] : '';
+            $items = array_map(fn (array $item): array => [...$item, 'yearLabel' => $this->projectYear($item)], $this->filteredProjectItems($faculty, $locale, $items, $filters));
             [$items, $pagination] = $this->paginatedItems($items, $filters, self::FACULTY_LIST_PER_PAGE);
         }
 
@@ -458,6 +462,15 @@ final class FacultyPageService implements FacultyPageServiceInterface
         }
 
         if ($subpageSlug === 'research') {
+            // Search and year narrow this faculty's own publications only.
+            $research = $this->researchPageService->facultyPublications($this->publicSlug($faculty), $locale, $filters)->data;
+            $items = $this->arrayList($research['items'] ?? []);
+            $filterOptions = ['years' => array_values(array_map('strval', is_array($research['years'] ?? null) ? $research['years'] : [])), 'total' => (int) ($research['totalItems'] ?? count($items))];
+            $filters = [
+                ...$filters,
+                'q' => (string) ($research['activeFilters']['q'] ?? ''),
+                'year' => (string) ($research['activeFilters']['year'] ?? ''),
+            ];
             [$items, $pagination] = $this->paginatedResearchItems($items, $filters);
         }
 
@@ -2113,10 +2126,14 @@ final class FacultyPageService implements FacultyPageServiceInterface
         return is_scalar($value) ? trim((string) $value) : '';
     }
 
-    /** @param array<string, mixed> $filters @return array{page: int} */
+    /** @param array<string, mixed> $filters @return array{q: string, year: string, page: int} */
     private function researchFilters(array $filters): array
     {
-        return $this->paginationFilters($filters);
+        return [
+            'q' => mb_substr($this->filterString($filters['q'] ?? $filters['search'] ?? ''), 0, 120),
+            'year' => mb_substr($this->filterString($filters['year'] ?? ''), 0, 20),
+            ...$this->paginationFilters($filters),
+        ];
     }
 
     /** @param array<string, mixed> $filters @return array{page: int} */
@@ -2125,13 +2142,49 @@ final class FacultyPageService implements FacultyPageServiceInterface
         return ['page' => max(1, min(500, (int) $this->filterString($filters['page'] ?? 1)))];
     }
 
-    /** @param array<string, mixed> $filters @return array{q: string, page: int} */
+    /** @param array<string, mixed> $filters @return array{q: string, year: string, page: int} */
     private function projectFilters(array $filters): array
     {
         return [
             'q' => mb_substr($this->filterString($filters['q'] ?? $filters['search'] ?? ''), 0, 120),
+            'year' => mb_substr($this->filterString($filters['year'] ?? ''), 0, 20),
             ...$this->paginationFilters($filters),
         ];
+    }
+
+    /**
+     * A project's academic year as the year filter knows it: "2023-2024" for
+     * an academic year however it was typed ("2023/2024", "2023 - 2024"),
+     * else the single year, else '' when the project gives none.
+     *
+     * @param  array<string, mixed>  $item
+     */
+    private function projectYear(array $item): string
+    {
+        $value = $this->filterString($item['year'] ?? '') ?: $this->filterString($item['academicYear'] ?? '');
+        $value = strtr($value, ['٠' => '0', '١' => '1', '٢' => '2', '٣' => '3', '٤' => '4', '٥' => '5', '٦' => '6', '٧' => '7', '٨' => '8', '٩' => '9']);
+
+        if (preg_match_all('/(?<!\d)(?:19|20)\d{2}(?!\d)/', $value, $matches) < 1) {
+            return '';
+        }
+
+        $years = array_slice($matches[0], 0, 2);
+
+        return count($years) === 2 && $years[0] !== $years[1] ? $years[0].'-'.$years[1] : $years[0];
+    }
+
+    /**
+     * The years this faculty's projects are from, newest first.
+     *
+     * @param  array<int, array<string, mixed>>  $items
+     * @return list<string>
+     */
+    private function projectYearOptions(array $items): array
+    {
+        $years = array_values(array_unique(array_filter(array_map(fn (array $item): string => $this->projectYear($item), $items))));
+        rsort($years, SORT_NATURAL);
+
+        return $years;
     }
 
     /** @param array<string, mixed> $filters @return array{lab: string, page: int} */
@@ -2212,6 +2265,12 @@ final class FacultyPageService implements FacultyPageServiceInterface
      */
     private function filteredProjectItems(Faculty $faculty, string $locale, array $items, array $filters): array
     {
+        $year = (string) ($filters['year'] ?? '');
+
+        if ($year !== '') {
+            $items = array_values(array_filter($items, fn (array $item): bool => $this->projectYear($item) === $year));
+        }
+
         $query = trim((string) ($filters['q'] ?? ''));
 
         if (LenientSearch::terms($query) === []) {
