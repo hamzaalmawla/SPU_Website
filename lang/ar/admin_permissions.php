@@ -43,6 +43,7 @@ return [
         'faculty_subpage_cards' => 'بطاقات الصفحات الفرعية للكليات',
         'staff_intake_links' => 'روابط بيانات الكادر',
         'center_staff_intake' => 'روابط وطلبات كادر المراكز',
+        'graduation_grades' => 'تقديرات الخريجين (لكل صفحات الخريجين)',
         'staff_intake_requests' => 'طلبات بيانات الكادر',
         'form_submissions' => 'الطلبات المرسلة (كل صناديق الوارد)',
         'forms' => 'النماذج',

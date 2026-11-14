@@ -1,4 +1,5 @@
 @php
+    $gradeNames ??= [];
     /** @var \App\DTOs\Career\StudentListImportPreviewDTO $preview */
     $isAlumni = $preview->kind === \App\Contracts\Career\StudentListImportServiceInterface::KIND_ALUMNI;
     $actionColor = fn (string $action): string => match ($action) {
@@ -64,7 +65,7 @@
                             @endif
                         </td>
                         @if ($isAlumni)
-                            <td>{{ $row->grade ? __('student_lists.grades.'.$row->grade) : '—' }}</td>
+                            <td>{{ $row->grade ? ($gradeNames[$row->grade] ?? $row->grade) : '—' }}</td>
                         @endif
                         <td>
                             <x-filament::badge :color="$actionColor($row->action)">{{ __('student_lists.admin.actions.'.$row->action) }}</x-filament::badge>

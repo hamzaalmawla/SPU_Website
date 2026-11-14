@@ -58,6 +58,7 @@ use Illuminate\Validation\ValidationException;
 trait ManagesFacultyHomepage
 {
     use ImportsStudentLists;
+    use ManagesGraduationGrades;
     use ManagesStudyPlanBoard;
 
     private const SELECTED_RESEARCH_LIMIT = 3;
@@ -309,6 +310,7 @@ trait ManagesFacultyHomepage
     {
         return [
             ...$this->studentListImportActions(),
+            ...$this->graduationGradeActions(),
             Action::make('save')->label(__('admin.faculty_workspace.actions.save_draft'))->icon('heroicon-o-check')->color('gray')->action(function (): void {
                 $this->save();
             }),
@@ -771,6 +773,7 @@ trait ManagesFacultyHomepage
             $fields = [
                 ...$fields,
                 TextInput::make('graduationYear')->label(__('admin.faculty_workspace.editor.fields.graduation_year'))->maxLength(20),
+                $this->graduationGradeField(),
                 TextInput::make('semester')->label(__('admin.faculty_workspace.editor.fields.semester_en'))->maxLength(80),
                 TextInput::make('semesterAr')->label(__('admin.faculty_workspace.editor.fields.semester_ar'))->maxLength(80),
                 TextInput::make('department')->label(__('admin.faculty_workspace.editor.fields.department_en'))->maxLength(160),
@@ -2125,6 +2128,10 @@ trait ManagesFacultyHomepage
         $arByKey = collect($arItems)->keyBy(fn (array $item): string => (string) ($item['_cmsKey'] ?? ''));
         $records = [];
         $processedIndexes = [];
+        // Graduates show the grade their page entry or their record holds.
+        $recordGrades = $this->subpageSlugFromTarget($targetKey) === 'alumni'
+            ? $this->graduationGrades()->recordGrades(array_map(static fn (array $item): int => (int) ($item['id'] ?? 0), [...$enItems, ...$arItems]))
+            : null;
 
         foreach (array_values($enItems) as $index => $enItem) {
             $key = (string) ($enItem['_cmsKey'] ?? 'record-position-'.$index);
@@ -2138,7 +2145,7 @@ trait ManagesFacultyHomepage
                 continue;
             }
 
-            $records[] = $this->studentRecordForForm($enItem, $arItem, $key);
+            $records[] = $this->withGraduationGrade($this->studentRecordForForm($enItem, $arItem, $key), $enItem, $arItem, $recordGrades);
             $processedIndexes[$index] = true;
         }
 
@@ -2151,11 +2158,31 @@ trait ManagesFacultyHomepage
             $key = (string) ($enItem['_cmsKey'] ?? $arItem['_cmsKey'] ?? 'record-position-'.$index);
 
             if ($this->studentRecordMatchesFilters($targetKey, $enItem, $arItem)) {
-                $records[] = $this->studentRecordForForm($enItem, $arItem, $key);
+                $records[] = $this->withGraduationGrade($this->studentRecordForForm($enItem, $arItem, $key), $enItem, $arItem, $recordGrades);
             }
         }
 
         return $this->deduplicateStudentRecords($records);
+    }
+
+    /**
+     * @param  array<string, mixed>  $record
+     * @param  array<string, mixed>  $enItem
+     * @param  array<string, mixed>  $arItem
+     * @param  array<int, string>|null  $recordGrades  alumni id => grade; null on pages without grades
+     * @return array<string, mixed>
+     */
+    private function withGraduationGrade(array $record, array $enItem, array $arItem, ?array $recordGrades): array
+    {
+        if ($recordGrades === null) {
+            return $record;
+        }
+
+        $item = [...$arItem, ...$enItem];
+        $id = (int) ($enItem['id'] ?? $arItem['id'] ?? 0);
+        $record['gradeKey'] = $this->graduationGrades()->itemGradeKey($item, $recordGrades[$id] ?? null);
+
+        return $record;
     }
 
     /** @param array<string, mixed> $enItem @param array<string, mixed> $arItem @return array<string, mixed> */
@@ -2296,6 +2323,11 @@ trait ManagesFacultyHomepage
                 if (array_key_exists($key, $record)) {
                     $item[$key] = $record[$key];
                 }
+            }
+
+            // The grade is a key of the shared grades list, the same in both languages ('' for none).
+            if (array_key_exists('gradeKey', $record)) {
+                $item['gradeKey'] = is_string($record['gradeKey']) ? trim($record['gradeKey']) : '';
             }
 
             foreach (['semester', 'department', 'faculty', 'degree', 'academicPhase'] as $key) {

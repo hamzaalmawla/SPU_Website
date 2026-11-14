@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\Page;
 
+use App\Contracts\Career\GraduationGradeServiceInterface;
 use App\Contracts\Center\CenterCatalogServiceInterface;
 use App\Contracts\Cms\CmsWorkflowServiceInterface;
 use App\Contracts\Content\PersonIdentityServiceInterface;
@@ -32,7 +33,6 @@ use App\DTOs\Faculty\FacultySubpageCardDTO;
 use App\DTOs\Faculty\FacultySubpageDTO;
 use App\DTOs\Faculty\ProjectFieldBlockDTO;
 use App\Enums\AcademicSemester;
-use App\Enums\GraduationGrade;
 use App\Models\Career\Alumni;
 use App\Models\Career\AlumniTranslation;
 use App\Models\Career\HonorStudent;
@@ -118,6 +118,7 @@ final class FacultyPageService implements FacultyPageServiceInterface
         private readonly CenterCatalogServiceInterface $centerCatalog,
         private readonly FacultyProgramServiceInterface $programService,
         private readonly FacultyStudyPlanGuideServiceInterface $studyPlanGuide,
+        private readonly GraduationGradeServiceInterface $graduationGrades,
     ) {}
 
     public function getHub(string $locale): FacultyHubPageDTO
@@ -425,6 +426,10 @@ final class FacultyPageService implements FacultyPageServiceInterface
         if ($this->isStudentListSubpage($subpageSlug)) {
             if ($subpageSlug === 'valedictorians') {
                 $items = $this->withSharedHonorPhotos($items);
+            }
+
+            if ($subpageSlug === 'alumni') {
+                $items = $this->withGradeNames($items, $locale);
             }
 
             $filterOptions = $this->studentFilterOptions($items, $subpageSlug);
@@ -1997,7 +2002,7 @@ final class FacultyPageService implements FacultyPageServiceInterface
                     'department' => $department,
                     'faculty' => $this->facultyTranslation($faculty, $locale)->name,
                     'degree' => $alumni->degree,
-                    'grade' => GraduationGrade::tryFrom((string) $alumni->grade)?->label($locale),
+                    'grade' => $this->graduationGrades->label($alumni->grade, $locale),
                     'gpaPercent' => $alumni->gpa_percent,
                     'academicYear' => $alumni->academic_year,
                     'semester' => AcademicSemester::tryFrom((string) $alumni->semester)?->label($locale),
@@ -2042,6 +2047,28 @@ final class FacultyPageService implements FacultyPageServiceInterface
                     'isMemorial' => $this->isMemorialHonorStudent($metadata),
                 ];
             })->values()->all();
+    }
+
+    /**
+     * Each graduate's grade, named from the shared grades list: the grade an
+     * editor picked on the page, else the one on the graduate's record (so a
+     * page published before grades were a list shows the record's grade).
+     *
+     * @param  array<int, array<string, mixed>>  $items
+     * @return array<int, array<string, mixed>>
+     */
+    private function withGradeNames(array $items, string $locale): array
+    {
+        $recordGrades = $this->graduationGrades->recordGrades(array_map(
+            static fn (array $item): int => (int) ($item['id'] ?? 0),
+            $items,
+        ));
+
+        return array_map(function (array $item) use ($recordGrades, $locale): array {
+            $key = $this->graduationGrades->itemGradeKey($item, $recordGrades[(int) ($item['id'] ?? 0)] ?? null);
+
+            return [...$item, 'gradeKey' => $key ?? '', 'grade' => $this->graduationGrades->label($key, $locale)];
+        }, $items);
     }
 
     /**

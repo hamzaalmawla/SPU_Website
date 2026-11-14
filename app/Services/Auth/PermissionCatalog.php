@@ -81,6 +81,9 @@ final class PermissionCatalog implements PermissionCatalogInterface
                 // link; update: rotate, revoke, approve, reject). No default role
                 // holds it: super admins only until a centers editor role exists.
                 'center_staff_intake' => ['view', 'create', 'update'],
+                // The graduate grades list shared by every Alumni page. No default
+                // role holds it: super admins only.
+                'graduation_grades' => self::RECORDS,
             ],
             'news_media' => [
                 'news_articles' => self::PUBLISHED_RECORDS,

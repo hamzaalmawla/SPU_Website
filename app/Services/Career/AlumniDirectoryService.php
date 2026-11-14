@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Services\Career;
 
 use App\Contracts\Career\AlumniDirectoryServiceInterface;
+use App\Contracts\Career\GraduationGradeServiceInterface;
 use App\DTOs\Career\AlumniDirectoryPageDTO;
-use App\Enums\GraduationGrade;
 use App\Models\Career\Alumni;
 use App\Models\Career\AlumniTranslation;
 use App\Models\Faculty\Department;
@@ -22,6 +22,10 @@ use Illuminate\Database\Eloquent\Builder;
 final class AlumniDirectoryService implements AlumniDirectoryServiceInterface
 {
     private const PER_PAGE = 12;
+
+    public function __construct(
+        private readonly GraduationGradeServiceInterface $graduationGrades,
+    ) {}
 
     public function getDirectory(string $locale, array $filters = []): ?AlumniDirectoryPageDTO
     {
@@ -165,7 +169,7 @@ final class AlumniDirectoryService implements AlumniDirectoryServiceInterface
                     'department' => $departmentName !== null && trim((string) $departmentName) !== '' ? (string) $departmentName : null,
                     'faculty' => (string) $facultyName,
                     'degree' => $alumni->degree,
-                    'grade' => GraduationGrade::tryFrom((string) $alumni->grade)?->label($locale),
+                    'grade' => $this->graduationGrades->label($alumni->grade, $locale),
                     'image' => $alumni->photoMedia instanceof MediaAsset
                         ? MediaUrlResolver::resolveImage($alumni->photoMedia->webp_path, $alumni->photoMedia->path, $alumni->photoMedia->disk)
                         : MediaUrlResolver::resolveLegacy($legacyPhoto),
