@@ -54,9 +54,10 @@ final class DecisionListParser
 
     /**
      * @param  array{paragraphs: list<string>, tables: list<list<list<array{text: string, span: int, continuesAbove: bool}>>>}  $document
+     * @param  array<string, list<string>>|null  $grades  the shared grades list (key => names); null reads the four grades decisions print
      * @return array{meta: array{decisionNumber: ?string, academicYear: ?string, semester: ?string}, rows: list<array<string, mixed>>}
      */
-    public static function graduates(array $document): array
+    public static function graduates(array $document, ?array $grades = null): array
     {
         $meta = self::meta($document['paragraphs']);
         $rows = [];
@@ -88,7 +89,7 @@ final class DecisionListParser
                     continue;
                 }
 
-                $rows[] = self::graduateRow($cells, $columns, count($rows) + 1);
+                $rows[] = self::graduateRow($cells, $columns, count($rows) + 1, $grades);
             }
 
             if ($columns !== null) {
@@ -278,6 +279,46 @@ final class DecisionListParser
     }
 
     /**
+     * The grade whose name the cell holds. A whole-name match wins; otherwise the
+     * longest name the cell contains ("جيد جداً" before "جيد").
+     *
+     * @param  array<string, list<string>>  $grades
+     */
+    private static function gradeKey(string $text, array $grades): ?string
+    {
+        $comparable = static fn (string $value): string => trim(preg_replace('/[^\p{L}\p{N}]+/u', ' ', SearchTextNormalizer::normalize($value)) ?? '');
+        $cell = $comparable($text);
+
+        if ($cell === '') {
+            return null;
+        }
+
+        $best = null;
+        $bestLength = 0;
+
+        foreach ($grades as $key => $names) {
+            foreach ($names as $name) {
+                $name = $comparable($name);
+
+                if ($name === '') {
+                    continue;
+                }
+
+                if ($name === $cell) {
+                    return (string) $key;
+                }
+
+                if (mb_strlen($name) > $bestLength && preg_match('/(^| )'.preg_quote($name, '/').'( |$)/u', $cell) === 1) {
+                    $best = (string) $key;
+                    $bestLength = mb_strlen($name);
+                }
+            }
+        }
+
+        return $best;
+    }
+
+    /**
      * The part of a specialization after the program prefix:
      * "الهندسة المعلوماتية/هندسة البرمجيات" => "هندسة البرمجيات".
      */
@@ -291,9 +332,10 @@ final class DecisionListParser
     /**
      * @param  list<string>  $cells
      * @param  array<string, int>  $columns
+     * @param  array<string, list<string>>|null  $grades
      * @return array<string, mixed>
      */
-    private static function graduateRow(array $cells, array $columns, int $line): array
+    private static function graduateRow(array $cells, array $columns, int $line, ?array $grades): array
     {
         $value = static fn (string $role): string => isset($columns[$role]) ? trim($cells[$columns[$role]] ?? '') : '';
         $issues = [];
@@ -303,7 +345,7 @@ final class DecisionListParser
         $specialization = $value('specialization');
         $gpaPoints = self::number($value('gpaPoints'), 0, 4);
         $gpaPercent = self::number($value('gpaPercent'), 0, 100);
-        $grade = GraduationGrade::fromArabic($value('grade'));
+        $grade = $grades === null ? GraduationGrade::fromArabic($value('grade'))?->value : self::gradeKey($value('grade'), $grades);
         $semesterText = $value('semester');
 
         if ($id === null) {
@@ -326,7 +368,7 @@ final class DecisionListParser
             'specialization' => $specialization !== '' ? self::specialization($specialization) : null,
             'gpaPoints' => $gpaPoints,
             'gpaPercent' => $gpaPercent,
-            'grade' => $grade?->value,
+            'grade' => $grade,
             'semester' => $semesterText !== '' ? AcademicSemester::fromArabic($semesterText)?->value : null,
             'academicYear' => $semesterText !== '' ? self::academicYear($semesterText) : null,
             'issues' => $issues,

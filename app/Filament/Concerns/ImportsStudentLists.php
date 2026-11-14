@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Filament\Concerns;
 
+use App\Contracts\Career\GraduationGradeServiceInterface;
 use App\Contracts\Career\StudentListImportServiceInterface;
 use App\DTOs\Career\StudentListImportChoicesDTO;
 use App\DTOs\Career\StudentListImportPreviewDTO;
@@ -190,7 +191,10 @@ trait ImportsStudentLists
         return [
             Placeholder::make('preview')
                 ->hiddenLabel()
-                ->content(new HtmlString(view('filament.student-lists.import-preview', ['preview' => $preview])->render())),
+                ->content(new HtmlString(view('filament.student-lists.import-preview', [
+                    'preview' => $preview,
+                    'gradeNames' => app(GraduationGradeServiceInterface::class)->all()->mapWithKeys(fn ($grade): array => [$grade->key => app()->getLocale() === 'ar' ? $grade->nameAr : $grade->nameEn])->all(),
+                ])->render())),
             Section::make()
                 ->schema([
                     TextInput::make('academic_year')

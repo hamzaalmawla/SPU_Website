@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services\Cms;
 
 use App\Contracts\Auth\AdminAccessServiceInterface;
+use App\Contracts\Career\GraduationGradeServiceInterface;
 use App\Contracts\Center\CenterCatalogServiceInterface;
 use App\Contracts\Cms\AboutEntityCmsServiceInterface;
 use App\Contracts\Cms\CmsTargetRegistryInterface;
@@ -66,6 +67,7 @@ final class CmsWorkflowService implements CmsWorkflowServiceInterface
         private readonly AdminAccessServiceInterface $access,
         private readonly CenterCatalogServiceInterface $centerCatalog,
         private readonly CouncilCatalogServiceInterface $councilCatalog,
+        private readonly GraduationGradeServiceInterface $graduationGrades,
     ) {}
 
     /** @param array<string, mixed> $payload */
@@ -613,6 +615,8 @@ final class CmsWorkflowService implements CmsWorkflowServiceInterface
         $this->newsArticleCmsService->publishTarget($draft->target_key, $payload, $publishedAt, $userId);
         $this->researchPublicationCmsService->publishTarget($draft->target_key, $payload, $publishedAt, $userId);
         $this->leadershipService->publishTarget($draft->target_key, $payload, $publishedAt, $userId);
+        // A grade picked on a faculty's Alumni page is saved on the graduate's record too.
+        $this->graduationGrades->publishTarget($draft->target_key, $payload);
 
         CmsTargetContent::query()->updateOrCreate(
             ['target_key' => $draft->target_key],

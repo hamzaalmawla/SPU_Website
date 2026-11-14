@@ -12,6 +12,7 @@ use App\Contracts\Auth\PermissionCatalogInterface;
 use App\Contracts\Auth\RoleAdminServiceInterface;
 use App\Contracts\Auth\TotpAuthenticatorInterface;
 use App\Contracts\Career\AlumniDirectoryServiceInterface;
+use App\Contracts\Career\GraduationGradeServiceInterface;
 use App\Contracts\Career\StudentListImportServiceInterface;
 use App\Contracts\Center\CenterCatalogServiceInterface;
 use App\Contracts\Center\CenterPageServiceInterface;
@@ -241,6 +242,7 @@ use App\Services\Auth\PermissionCatalog;
 use App\Services\Auth\RoleAdminService;
 use App\Services\Auth\TotpAuthenticator;
 use App\Services\Career\AlumniDirectoryService;
+use App\Services\Career\GraduationGradeService;
 use App\Services\Career\StudentListImportService;
 use App\Services\Center\CenterCatalogService;
 use App\Services\Center\CenterPageService;
@@ -821,6 +823,7 @@ class AppServiceProvider extends ServiceProvider
             ErrorPageServiceInterface::class => ErrorPageService::class,
             ErrorPageRendererInterface::class => ErrorPageRenderer::class,
             AlumniDirectoryServiceInterface::class => AlumniDirectoryService::class,
+            GraduationGradeServiceInterface::class => GraduationGradeService::class,
             StudentListImportServiceInterface::class => StudentListImportService::class,
             FacultyMemberActivityReportServiceInterface::class => FacultyMemberActivityReportService::class,
             AboutEntityCmsServiceInterface::class => AboutEntityCmsService::class,

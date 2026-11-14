@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services\Career;
 
 use App\Contracts\Auth\AdminAccessServiceInterface;
+use App\Contracts\Career\GraduationGradeServiceInterface;
 use App\Contracts\Career\StudentListImportServiceInterface;
 use App\Contracts\Cms\CmsTargetRegistryInterface;
 use App\Contracts\Shared\AuditServiceInterface;
@@ -50,6 +51,7 @@ final class StudentListImportService implements StudentListImportServiceInterfac
         private readonly CmsTargetRegistryInterface $targetRegistry,
         private readonly AuditServiceInterface $auditService,
         private readonly CacheServiceInterface $cacheService,
+        private readonly GraduationGradeServiceInterface $graduationGrades,
     ) {}
 
     public function canImport(Authenticatable $user, string $facultySlug, string $kind): bool
@@ -550,7 +552,7 @@ final class StudentListImportService implements StudentListImportServiceInterfac
         $document = DocxTableReader::read($absolutePath);
 
         $parsed = match ($kind) {
-            self::KIND_ALUMNI => DecisionListParser::graduates($document),
+            self::KIND_ALUMNI => DecisionListParser::graduates($document, $this->graduationGrades->importNames()),
             self::KIND_HONOR_STUDENTS => DecisionListParser::topStudents($document),
             default => throw new InvalidArgumentException('student_lists.errors.unknown_kind'),
         };
