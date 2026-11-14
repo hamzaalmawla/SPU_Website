@@ -69,16 +69,22 @@ return [
     | Content-Security-Policy origins required by the active provider.
     |
     | Empty when analytics is off, which leaves the public policy exactly as
-    | strict as it is today: script-src 'self' 'unsafe-inline', connect-src
-    | 'self'. img-src already permits https: so the GA measurement pixel needs
-    | no directive of its own.
+    | strict as it is today: script-src 'self' plus the bootstrap hash,
+    | connect-src 'self', img-src 'self' data:.
     |
+    | img-src     — the GA measurement pixel.
     | script-src  — gtag.js is served from googletagmanager.com.
     | connect-src — GA4 beacons POST to the google-analytics /
     |               analytics.google.com regional collection endpoints, and
     |               gtag.js fetches its container config from googletagmanager.
     */
     'csp' => [
+        // The GA measurement pixel: the public img-src is 'self' only.
+        'img-src' => $enabled ? [
+            'https://www.google-analytics.com',
+            'https://*.google-analytics.com',
+            'https://www.googletagmanager.com',
+        ] : [],
         'script-src' => $enabled ? [
             'https://www.googletagmanager.com',
         ] : [],

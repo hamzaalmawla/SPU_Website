@@ -1,7 +1,7 @@
 {{-- The council template: the council head(s) and members, then the council's functions. Every council page under About › Councils uses it; all text comes from the council's CMS content. --}}
 @once
     @push('styles')
-        <style>
+        <style @cspNonce>
             .rc { --rc-blue: #202759; --rc-red: #6f1616; --rc-gold: #caa949; }
             .rc-section { padding: 3rem 0; }
             .rc-heading { margin: 0 auto 2rem; max-width: 760px; text-align: center; }

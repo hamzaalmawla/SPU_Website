@@ -1,7 +1,7 @@
 @extends('layouts.public')
 
 @push('styles')
-    <style>
+    <style @cspNonce>
         .project-detail-layout {
             display: grid;
             grid-template-columns: 1fr;

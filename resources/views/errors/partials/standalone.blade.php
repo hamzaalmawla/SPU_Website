@@ -27,7 +27,7 @@
     <meta name="theme-color" content="#202759">
     <title>{{ $error->status }} — {{ $error->title }} | {{ $isArabic ? 'الجامعة السورية الخاصة' : 'Syrian Private University' }}</title>
     <link rel="icon" href="{{ $error->logoUrl }}" type="image/png">
-    <style>
+    <style @cspNonce>
         html {
             background: #f4f5f8;
         }

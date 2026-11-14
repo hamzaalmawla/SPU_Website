@@ -55,7 +55,7 @@
              Inline, so they apply at the first paint without a blocking request;
              otherwise a framed photo shows centred and then jumps. --}}
         @if (($mediaDisplayStyles ?? '') !== '')
-            <style id="media-display-styles">{!! $mediaDisplayStyles !!}</style>
+            <style id="media-display-styles" @cspNonce>{!! $mediaDisplayStyles !!}</style>
         @endif
         @php
             $publicViteJsEntries = ['resources/js/app.js'];
@@ -103,7 +103,7 @@
                 @php($inlineStylesheetPath = public_path('build/'.$cssEntry['file']))
                 @php($inlineStylesheet = trim($__env->yieldContent('inlinePublicStylesheet')) === '1' && is_file($inlineStylesheetPath) ? file_get_contents($inlineStylesheetPath) : false)
                 @if (is_string($inlineStylesheet) && $inlineStylesheet !== '' && ! str_contains(strtolower($inlineStylesheet), '</style'))
-                    <style id="public-stylesheet" data-stylesheet-href="{{ asset('build/'.$cssEntry['file']) }}">{!! $inlineStylesheet !!}</style>
+                    <style id="public-stylesheet" @cspNonce data-stylesheet-href="{{ asset('build/'.$cssEntry['file']) }}">{!! $inlineStylesheet !!}</style>
                 @else
                     <link rel="stylesheet" href="{{ asset('build/'.$cssEntry['file']) }}">
                 @endif
