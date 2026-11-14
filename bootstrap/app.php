@@ -4,6 +4,7 @@ use App\Contracts\ErrorPage\ErrorPageRendererInterface;
 use App\Http\Middleware\AdminAuthMiddleware;
 use App\Http\Middleware\CachePublicPages;
 use App\Http\Middleware\CompressPublicResponses;
+use App\Http\Middleware\EmptyRedirectBody;
 use App\Http\Middleware\EnforcePublicOrigin;
 use App\Http\Middleware\LocaleSetterMiddleware;
 use App\Http\Middleware\MinifyPublicHtml;
@@ -12,12 +13,14 @@ use App\Http\Middleware\RestrictAdminAccess;
 use App\Http\Middleware\SecurityHeadersMiddleware;
 use App\Http\Middleware\StaffIntakeHeaders;
 use App\Http\Middleware\TwoFactorChallengeMiddleware;
+use App\Http\Middleware\ValidateCsrfToken;
 use App\Http\Middleware\VerifyWebhookSignature;
 use App\Support\ExpiredAdminForm;
 use App\Support\PageExpiredDiagnostics;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken as FrameworkValidateCsrfToken;
 use Illuminate\Http\Request;
 use Illuminate\Session\TokenMismatchException;
 use Sentry\Laravel\Integration;
@@ -40,10 +43,19 @@ return Application::configure(basePath: dirname(__DIR__))
         );
         $middleware->prepend(RedirectContinuityMiddleware::class);
         $middleware->prepend(EnforcePublicOrigin::class);
+        // Prepended last, so it is outermost and sees every redirect: the
+        // canonical-host ones, the old-site ones RedirectContinuity returns
+        // before the rest of the stack runs, and those routes return.
+        $middleware->prepend(EmptyRedirectBody::class);
         $middleware->append(SecurityHeadersMiddleware::class);
         // Global, so it rejects before the route's session starts (no cookie),
         // and after SecurityHeaders, so its 404 gets the same headers as any other.
         $middleware->append(RestrictAdminAccess::class);
+
+        // Same check, no readable XSRF-TOKEN cookie (App\Http\Middleware\ValidateCsrfToken).
+        $middleware->web(replace: [
+            FrameworkValidateCsrfToken::class => ValidateCsrfToken::class,
+        ]);
 
         $middleware->validateCsrfTokens(except: [
             'webhook/*',

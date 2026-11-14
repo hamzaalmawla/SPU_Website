@@ -39,7 +39,13 @@ return [
     |
     */
 
-    'debug' => (bool) env('APP_DEBUG', false),
+    // Debug pages are only ever allowed on a developer's machine or in the
+    // test suite. A public host (production, staging, the v2 preview) never
+    // shows them, whatever its .env says: a stack trace there discloses file
+    // paths, queries and configuration to anyone (ZAP "Application Error
+    // Disclosure" / "Debug Error Messages", 2026-11 scan).
+    'debug' => in_array((string) env('APP_ENV', 'production'), ['local', 'development', 'testing'], true)
+        && (bool) env('APP_DEBUG', false),
 
     /*
     |--------------------------------------------------------------------------

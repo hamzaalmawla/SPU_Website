@@ -73,7 +73,7 @@ final class ErrorPageRenderingTest extends TestCase
         $this->assertStringNotContainsString('/build/assets/', $html);
         $this->assertStringNotContainsString('@vite', $html);
         // Critical CSS must be inline so the page is legible with no stylesheet.
-        $this->assertStringContainsString('<style>', $html);
+        $this->assertMatchesRegularExpression('/<style nonce="[^"]+">/', $html);
         $this->assertStringNotContainsString('<link rel="stylesheet"', $html);
         // Branding survives a missing logo asset: the emblem is embedded.
         $this->assertStringContainsString('src="data:image/webp;base64,', $html);

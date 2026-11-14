@@ -6,6 +6,7 @@ namespace App\Http\Middleware;
 
 use App\Contracts\Shared\CacheServiceInterface;
 use App\Support\AdminPath;
+use App\Support\CspNonce;
 use BadMethodCallException;
 use Closure;
 use Illuminate\Contracts\Auth\Factory as AuthFactory;
@@ -31,6 +32,13 @@ final class CachePublicPages
      * back in, per request, on the way out.
      */
     private const CSRF_PLACEHOLDER = '__SPU_CSRF_TOKEN_PLACEHOLDER__';
+
+    /**
+     * The Content-Security-Policy nonce on the page's inline <style> elements
+     * is per request too (App\Support\CspNonce). A cached page must carry the
+     * nonce of the request that serves it, or the browser drops its styles.
+     */
+    private const CSP_NONCE_PLACEHOLDER = '__SPU_CSP_NONCE_PLACEHOLDER__';
 
     private const BROWSER_CACHE_CONTROL = 'private, no-store, max-age=0';
 
@@ -345,7 +353,7 @@ final class CachePublicPages
         return [
             'status' => $response->getStatusCode(),
             'headers' => $this->filterHeaders($response),
-            'content' => $this->maskCsrfToken($request, (string) $response->getContent()),
+            'content' => $this->maskCspNonce($this->maskCsrfToken($request, (string) $response->getContent())),
         ];
     }
 
@@ -406,7 +414,7 @@ final class CachePublicPages
      */
     private function restoreResponse(array $payload): Response
     {
-        $response = new HttpResponse($this->restoreCsrfToken($payload['content']), $payload['status']);
+        $response = new HttpResponse($this->restoreCspNonce($this->restoreCsrfToken($payload['content'])), $payload['status']);
 
         foreach ($payload['headers'] as $name => $values) {
             foreach ($values as $value) {
@@ -444,6 +452,30 @@ final class CachePublicPages
         }
 
         return str_replace(self::CSRF_PLACEHOLDER, csrf_token(), $content);
+    }
+
+    /**
+     * The nonce is 24 random base64 characters, inside a nonce="..." attribute,
+     * so the exact replace cannot touch page content.
+     */
+    private function maskCspNonce(string $content): string
+    {
+        $nonce = app(CspNonce::class)->current();
+
+        if ($nonce === null) {
+            return $content;
+        }
+
+        return str_replace('nonce="'.$nonce.'"', 'nonce="'.self::CSP_NONCE_PLACEHOLDER.'"', $content);
+    }
+
+    private function restoreCspNonce(string $content): string
+    {
+        if (! str_contains($content, self::CSP_NONCE_PLACEHOLDER)) {
+            return $content;
+        }
+
+        return str_replace('nonce="'.self::CSP_NONCE_PLACEHOLDER.'"', 'nonce="'.e(app(CspNonce::class)->value()).'"', $content);
     }
 
     private function withCacheHeader(Response $response, string $value): Response

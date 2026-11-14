@@ -6,6 +6,7 @@ namespace App\Http\Middleware;
 
 use App\Contracts\Analytics\AnalyticsServiceInterface;
 use App\Support\AdminPath;
+use App\Support\CspNonce;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -21,6 +22,7 @@ final class SecurityHeadersMiddleware
 
     public function __construct(
         private readonly AnalyticsServiceInterface $analyticsService,
+        private readonly CspNonce $cspNonce,
     ) {}
 
     public function handle(Request $request, Closure $next): Response
@@ -133,20 +135,32 @@ final class SecurityHeadersMiddleware
         // on* attribute; their behaviour lives in resources/js.
         $analytics = $this->analyticsSources();
 
-        // Fonts and stylesheets are all self-hosted, so neither directive
-        // admits other origins; a scanner rightly reads `https:` there as a
-        // wildcard. img-src keeps it because CMS content may embed images
-        // from other sites. style-src keeps 'unsafe-inline' for the style
-        // attributes in templates and stored rich text.
+        // Fonts, stylesheets and images are all self-hosted, so none of
+        // these directives admits other origins; a scanner rightly reads
+        // `https:` as a wildcard (ZAP "CSP: Wildcard Directive"). A crawl of
+        // 750 live pages in 2026-11 found no image from another site. If CMS
+        // content ever needs one, list its origin in CSP_IMG_SOURCES rather
+        // than widening this back to every https: host.
+        //
+        // Styles: inline <style> elements run only with this request's nonce
+        // (style-src-elem), so an injected <style> is ignored. Inline style=""
+        // attributes stay allowed (style-src-attr): templates and stored rich
+        // text use them, and an attribute cannot load or run anything. The
+        // plain style-src keeps 'unsafe-inline' only for browsers too old to
+        // know the two split directives, which fall back to it.
+        $nonce = "'nonce-".$this->cspNonce->value()."'";
+
         return implode('; ', [
             "default-src 'self'",
             "base-uri 'self'",
             "object-src 'none'",
             "frame-ancestors 'self'",
             "form-action 'self'",
-            "img-src 'self' data: https:",
+            $this->directive('img-src', ["'self'", 'data:', ...$this->configuredSources('security.csp_img_sources')], $analytics),
             "font-src 'self' data:",
             "style-src 'self' 'unsafe-inline'",
+            "style-src-elem 'self' ".$nonce,
+            "style-src-attr 'unsafe-inline'",
             $this->directive('script-src', ["'self'", self::inlineScriptHash(self::JS_CLASS_BOOTSTRAP)], $analytics),
             "frame-src 'self' https://www.google.com https://maps.google.com",
             $this->directive('connect-src', ["'self'", ...$this->assistantConnectSources()], $analytics),
@@ -172,6 +186,28 @@ final class SecurityHeadersMiddleware
         $host = parse_url($url, PHP_URL_HOST);
 
         return is_string($scheme) && is_string($host) && in_array($scheme, ['wss', 'https'], true) ? [$scheme.'://'.$host] : [];
+    }
+
+    /**
+     * Extra origins from a space- or comma-separated config value, each one a
+     * plain https origin (no wildcard scheme, no keyword).
+     *
+     * @return list<string>
+     */
+    private function configuredSources(string $key): array
+    {
+        $raw = config($key, []);
+        $items = is_array($raw) ? $raw : preg_split('/[\s,]+/', (string) $raw, -1, PREG_SPLIT_NO_EMPTY);
+
+        $sources = [];
+        foreach ($items ?: [] as $item) {
+            $item = rtrim(trim((string) $item), '/');
+            if (preg_match('#^https://(\*\.)?[a-z0-9.-]+(:\d+)?$#i', $item) === 1) {
+                $sources[] = strtolower($item);
+            }
+        }
+
+        return array_values(array_unique($sources));
     }
 
     public static function inlineScriptHash(string $script): string
