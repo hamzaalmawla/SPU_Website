@@ -54,4 +54,11 @@ return [
     // from windows that open it, and still lets the share buttons' popups work.
     // An empty value sends no header.
     'coop' => (string) env('SECURITY_COOP', 'same-origin-allow-popups'),
+
+    // Content-Security-Policy img-src for the public site is 'self' and data:
+    // only. If CMS content must show an image hosted on another site, list
+    // that origin here (space- or comma-separated, https://host form), for
+    // example CSP_IMG_SOURCES="https://images.example.org". Anything that is
+    // not a plain https origin is ignored.
+    'csp_img_sources' => (string) env('CSP_IMG_SOURCES', ''),
 ];

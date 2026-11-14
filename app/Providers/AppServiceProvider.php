@@ -420,12 +420,14 @@ use App\Services\SiteStats\SiteStatsReportService;
 use App\Services\Staff\StaffIntakeLinkService;
 use App\Services\Staff\StaffIntakeReviewService;
 use App\Services\Staff\StaffIntakeService;
+use App\Support\CspNonce;
 use App\Support\HtmlSanitizer;
 use App\Support\PageExpiredDiagnostics;
 use Filament\Http\Responses\Auth\Contracts\LogoutResponse as LogoutResponseContract;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Queue\Events\JobProcessing;
+use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
@@ -447,6 +449,7 @@ class AppServiceProvider extends ServiceProvider
         $this->registerFoundationBindings();
 
         $this->app->singleton(HtmlSanitizer::class);
+        $this->app->scoped(CspNonce::class);
         $this->app->singleton(PreviewTokenStore::class);
         $this->app->singleton(HomepageDraftReader::class);
         $this->app->singleton(HomepageSectionValidator::class);
@@ -481,6 +484,17 @@ class AppServiceProvider extends ServiceProvider
         $this->registerMediaDisplayStylesComposer();
         $this->registerErrorPageComposer();
         $this->registerChatbotWidgetComposer();
+        $this->registerCspNonceDirective();
+    }
+
+    /**
+     * `<style @cspNonce>` prints this request's Content-Security-Policy nonce
+     * (App\Support\CspNonce). The public policy runs no inline <style>
+     * element without it.
+     */
+    private function registerCspNonceDirective(): void
+    {
+        Blade::directive('cspNonce', static fn (): string => '<?php echo \'nonce="\'.e(app(\App\Support\CspNonce::class)->value()).\'"\'; ?>');
     }
 
     /**

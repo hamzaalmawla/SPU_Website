@@ -35,7 +35,7 @@
                     @if (! empty($item['body']) || ! empty($item['paragraphs']))
                         <div class="rounded-[8px] border border-slate-200 bg-white p-6 shadow-[0_8px_24px_rgba(15,23,42,0.04)] md:p-8">
                             @if (! empty($item['body']))
-                                <div class="prose max-w-none prose-p:mt-4 prose-p:first:mt-0 prose-p:text-[15px] prose-p:leading-8 prose-headings:text-spu-blue">{!! $item['body'] !!}</div>
+                                <div class="prose max-w-none prose-p:mt-4 prose-p:first:mt-0 prose-p:text-[15px] prose-p:leading-8 prose-headings:text-spu-blue">{!! app(\App\Support\HtmlSanitizer::class)->sanitize($item['body']) !!}</div>
                             @else
                                 @foreach ($item['paragraphs'] as $paragraph)
                                     <x-public.rich-text dir="auto" class="mt-4 first:mt-0 text-[15px] leading-8 text-slate-700" :text="$paragraph" />

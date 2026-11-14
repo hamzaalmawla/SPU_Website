@@ -1,6 +1,6 @@
 @once
     @push('styles')
-        <style>
+        <style @cspNonce>
             .research-filter-grid-publications { display: grid; grid-template-columns: 1fr; gap: 1.5rem; }
             .research-filter-grid-projects { display: grid; grid-template-columns: 1fr; gap: 1.5rem; }
             .research-detail-grid { display: grid; gap: 2rem; }

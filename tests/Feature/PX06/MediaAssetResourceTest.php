@@ -10,6 +10,7 @@ use App\Filament\Resources\MediaAssetResource;
 use App\Filament\Resources\MediaAssetResource\Pages\BatchUploadMediaAssets;
 use App\Models\Media\MediaAsset;
 use App\Models\User\User;
+use App\Support\CspNonce;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -123,7 +124,7 @@ class MediaAssetResourceTest extends TestCase
         foreach (['ar', 'en'] as $locale) {
             $this->get('/'.$locale)
                 ->assertOk()
-                ->assertSee('<style id="media-display-styles">img[src*="/images/slider-1.webp"]{object-fit:cover!important;object-position:30% 20%!important;}</style>', false)
+                ->assertSee('<style id="media-display-styles" nonce="'.app(CspNonce::class)->value().'">img[src*="/images/slider-1.webp"]{object-fit:cover!important;object-position:30% 20%!important;}</style>', false)
                 ->assertDontSee('media/image/elsewhere.jpg', false)
                 ->assertDontSee('media-display.css', false);
         }

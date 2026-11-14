@@ -3,7 +3,7 @@
 
 @once
     @push('styles')
-        <style>
+        <style @cspNonce>
             .cl-section { padding: 3.5rem 0 4.5rem; }
             .cl-grid { display: grid; gap: 1.5rem; margin: 0 auto; max-width: 1200px; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); }
             .cl-card { position: relative; display: flex; flex-direction: column; overflow: hidden; border: 1px solid rgba(32, 39, 89, .1); border-radius: 1rem; background: #fff; box-shadow: 0 1px 2px rgba(15, 23, 42, .04); transition: box-shadow .2s, transform .2s, border-color .2s; }

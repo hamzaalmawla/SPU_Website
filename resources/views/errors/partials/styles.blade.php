@@ -12,7 +12,7 @@
     red (#6f1616) for hover on light surfaces. Layout uses logical properties
     so the same rules are correct in RTL and LTR.
 --}}
-<style>
+<style @cspNonce>
     @font-face {
         font-family: "SPU Error Hacen";
         src: url("/fonts/hacen-tunisia-regular.woff2") format("woff2"), url("/fonts/Hacen%20Tunisia%20Regular.ttf") format("truetype");

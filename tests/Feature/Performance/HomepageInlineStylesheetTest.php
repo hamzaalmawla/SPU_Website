@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Performance;
 
+use App\Support\CspNonce;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
@@ -30,7 +31,7 @@ final class HomepageInlineStylesheetTest extends TestCase
 
             // The file is prefetched by script after the page has loaded
             // (nextPageStylesheet.js), so <head> carries only its address.
-            $this->assertStringContainsString('<style id="public-stylesheet" data-stylesheet-href="'.asset('build/'.$file).'">', $html);
+            $this->assertStringContainsString('<style id="public-stylesheet" nonce="'.app(CspNonce::class)->value().'" data-stylesheet-href="'.asset('build/'.$file).'">', $html);
             $this->assertStringNotContainsString('<link rel="prefetch" href="'.asset('build/'.$file).'">', $html);
             $this->assertStringNotContainsString('<link rel="stylesheet" href="'.asset('build/'.$file).'">', $html);
         }
