@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Http\Middleware\ValidateCsrfToken;
 use App\Models\User\User;
 use Illuminate\Contracts\Encryption\Encrypter;
 use Illuminate\Foundation\Application;
-use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 

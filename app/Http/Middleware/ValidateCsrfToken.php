@@ -16,8 +16,10 @@ use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken as BaseValidateCsrfT
  * or Livewire's own page config, in the X-CSRF-TOKEN header. Forms post the
  * _token field. Dropping the cookie removes a token JavaScript could read and
  * changes nothing that is checked.
+ *
+ * Not final: tests extend it to switch the check back on under PHPUnit.
  */
-final class ValidateCsrfToken extends BaseValidateCsrfToken
+class ValidateCsrfToken extends BaseValidateCsrfToken
 {
     /**
      * @var bool
