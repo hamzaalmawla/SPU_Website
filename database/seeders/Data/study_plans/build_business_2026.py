@@ -419,6 +419,10 @@ def check(data: dict) -> None:
         program = [c for c in courses if c['type'] == 'specialization']
         assert sum(c['credits'] for c in program if c['required']) == 56, department['id']
         assert len([c for c in program if not c['required']]) == 5, department['id']
+        # The PDF's program requirement totals: theory and practical hours of the compulsory courses.
+        hours = {'hr': (45, 22), 'accounting': (39, 34), 'marketing': (46, 20), 'finance': (38, 36), 'mis': (39, 34)}[department['id']]
+        compulsory = [c for c in program if c['required']]
+        assert (sum(c['hours']['theory'] for c in compulsory), sum(c['hours']['practical'] for c in compulsory)) == hours, department['id']
 
 
 if __name__ == '__main__':
