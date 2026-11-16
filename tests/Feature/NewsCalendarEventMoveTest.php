@@ -10,12 +10,15 @@ use App\Models\Form\DynamicFormSubmission;
 use App\Models\News\NewsArticle;
 use App\Models\News\NewsArticleEvent;
 use App\Models\User\User;
+use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 final class NewsCalendarEventMoveTest extends TestCase
 {
     use RefreshDatabase;
+
+    private const SAMPLE_EVENTS_TODAY = '2026-11-01 09:00:00';
 
     private User $admin;
 
@@ -24,6 +27,9 @@ final class NewsCalendarEventMoveTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+
+        // The sample events in resources/data/news-events-content.json are dated; keep them upcoming.
+        $this->travelTo(CarbonImmutable::parse(self::SAMPLE_EVENTS_TODAY, 'Asia/Damascus'));
 
         $this->admin = User::factory()->create(['role_slug' => 'super_admin', 'is_locked' => false]);
         $this->publishEventsPage();
