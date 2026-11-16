@@ -13,6 +13,7 @@ use App\Enums\FormSubmissionInbox;
 use App\Mail\EventRegistrationReceived;
 use App\Models\Form\DynamicFormSubmission;
 use App\Models\User\User;
+use Carbon\CarbonImmutable;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -24,9 +25,14 @@ final class DynamicFormSubmissionTest extends TestCase
 {
     use RefreshDatabase;
 
+    private const SAMPLE_EVENTS_TODAY = '2026-11-01 09:00:00';
+
     protected function setUp(): void
     {
         parent::setUp();
+
+        // The sample events in resources/data/news-events-content.json are dated; keep them upcoming.
+        $this->travelTo(CarbonImmutable::parse(self::SAMPLE_EVENTS_TODAY, 'Asia/Damascus'));
 
         $this->seed(DatabaseSeeder::class);
         $this->publishRegistrationContexts();

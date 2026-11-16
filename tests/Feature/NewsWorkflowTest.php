@@ -14,6 +14,7 @@ use App\Models\News\NewsArticle;
 use App\Models\News\NewsArticleAttachment;
 use App\Models\News\NewsCategory;
 use App\Models\User\User;
+use Carbon\CarbonImmutable;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
@@ -23,9 +24,14 @@ final class NewsWorkflowTest extends TestCase
 {
     use RefreshDatabase;
 
+    private const SAMPLE_EVENTS_TODAY = '2026-11-01 09:00:00';
+
     protected function setUp(): void
     {
         parent::setUp();
+
+        // The sample events in resources/data/news-events-content.json are dated; keep them upcoming.
+        $this->travelTo(CarbonImmutable::parse(self::SAMPLE_EVENTS_TODAY, 'Asia/Damascus'));
 
         $this->seed(DatabaseSeeder::class);
         $this->publishTestOwnedEventsAndGallery();
