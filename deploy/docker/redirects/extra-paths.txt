@@ -1,0 +1,56 @@
+# Old-site entry points and files that are not in the old sitemap.
+# One path per line; redirect-parity.py records each one's status and Location.
+# Robots.txt and the sitemaps are left out on purpose: v2 serves staging
+# versions of them today, so they are checked by launch:validate instead.
+/
+/ar
+/en
+/index.php
+/index.php?lang=1
+/index.php?lang=2
+/index.php?lang=3
+/med
+/med/
+/med/index.php
+/dent
+/dent/
+/pharm
+/pharm/
+/info
+/info/
+/petrol
+/petrol/
+/admin
+/admin/
+/admin/index.php
+/research
+/research/
+/hospital
+/hospital/
+/dent_clinic
+/dent_clinic/
+/alumni
+/alumni/
+/clubs
+/clubs/
+/members
+/members/
+/members/index.php
+/forms/
+/Medicine/
+/spuh/
+/apple-touch-icon-120x120.png
+/FCKBIH/1.JPG
+/images/address.png
+/images/administration.png
+/images/ar.psd
+/downloads/files/1433147548_231726142.jpg
+/downloads/files/1433148617_963997963.jpg
+/downloads/files/1433148647_1091199908.jpg
+/downloads/files/1433148710_365554981.jpg
+/downloads/st_num_2022.pdf
+/med/images/arrows.png
+/dent/images/arrows.png
+/pharm/images/arrows.png
+/info/images/arrows.png
+/petrol/images/arrows.png

@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+# docker compose for the SPU stack: `spu ps`, `spu logs -f web`, `spu run --rm release`,
+# `spu artisan migrate:status` (runs php artisan inside the web container).
+set -euo pipefail
+ROOT="${SPU_ROOT:-/srv/spu}"
+COMPOSE=(docker compose --project-directory "${ROOT}/src/deploy/docker" -f "${ROOT}/src/deploy/docker/compose.yaml" --env-file "${ROOT}/stack.env")
+if [[ "${1:-}" == "artisan" ]]; then
+    shift
+    exec "${COMPOSE[@]}" exec web spu-entrypoint artisan "$@"
+fi
+exec "${COMPOSE[@]}" "$@"

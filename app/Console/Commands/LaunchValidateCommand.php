@@ -438,9 +438,14 @@ final class LaunchValidateCommand extends Command
             // whole job is to stay out of the index.
             $wantsIndexing = $env === 'production';
 
+            // Whole lines, not substrings: the production file also carries
+            // "Disallow: /*/search", which contains "Disallow: /" and made this
+            // check fail on the robots.txt the application really serves.
+            $disallowsAll = is_string($content) && preg_match('/^\s*Disallow:\s*\/\s*$/mi', $content) === 1;
+            $allowsAll = is_string($content) && preg_match('/^\s*Allow:\s*\/\s*$/mi', $content) === 1;
             $indexingCorrect = is_string($content) && ($wantsIndexing
-                ? str_contains($content, 'Allow: /') && ! str_contains($content, 'Disallow: /')
-                : str_contains($content, 'Disallow: /'));
+                ? $allowsAll && ! $disallowsAll
+                : $disallowsAll);
 
             // A Sitemap line is only meaningful on a host that invites
             // crawling. Requiring one on a disallow-all staging overlay failed
