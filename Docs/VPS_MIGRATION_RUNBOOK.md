@@ -9,6 +9,13 @@ Goal: v2 (Laravel, `spuedu_v2`) runs on the new VPS and answers at
 The old site is not moved. **Every old URL keeps the status code and target it
 has today** (Webometrics and search engines know the university through them).
 
+**The guided way:** `deploy/docker/migrate.sh` runs every step below on the VPS
+(prerequisites, code, copies, databases, certificate, start, checks) with
+prompts and "press Enter" pauses, resumes where it stopped, and prints the DNS
+and rollback steps. How to run it, in plain language:
+[VPS_MIGRATION_GUIDE.md](VPS_MIGRATION_GUIDE.md). This runbook is the reference
+behind it.
+
 ---
 
 ## 1. What the current server holds (read 2026-11-17)

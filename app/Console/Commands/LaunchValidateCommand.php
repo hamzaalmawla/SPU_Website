@@ -194,15 +194,22 @@ final class LaunchValidateCommand extends Command
     private function checkCacheTagSupport(): void
     {
         try {
-            $store = config('cache.default');
-            $supportsTags = in_array($store, ['redis', 'memcached', 'array'], true);
+            $store = (string) config('cache.default');
+            $driver = (string) config("cache.stores.{$store}.driver", $store);
+            $supportsTags = in_array($driver, ['redis', 'memcached', 'array'], true);
+            // Production runs on the file store (no Redis on the host). CacheService
+            // scopes every tagged key by a per-tag generation kept in the same store
+            // and bumps it on flush, so invalidation works without native tags.
+            $generationFallback = in_array($driver, ['file', 'database'], true);
 
             $this->record(
                 'Cache tag support',
-                $supportsTags ? 'PASS' : 'WARN',
-                $supportsTags
-                    ? "Cache store '{$store}' supports tag-based invalidation"
-                    : "Cache store '{$store}' does not support tags — cache invalidation may be unreliable",
+                ($supportsTags || $generationFallback) ? 'PASS' : 'WARN',
+                match (true) {
+                    $supportsTags => "Cache store '{$store}' supports tag-based invalidation",
+                    $generationFallback => "Cache store '{$store}' has no native tags; CacheService invalidates by tag generation",
+                    default => "Cache store '{$store}' does not support tags — cache invalidation may be unreliable",
+                },
             );
         } catch (\Throwable $e) {
             $this->record('Cache tag support', 'FAIL', $e->getMessage());

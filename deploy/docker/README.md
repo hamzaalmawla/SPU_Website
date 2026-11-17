@@ -4,6 +4,12 @@ How v2 runs on the new Ubuntu + Docker server, and how to operate it. The move
 itself (copying data, DNS, rollback) is in
 [`Docs/VPS_MIGRATION_RUNBOOK.md`](../../Docs/VPS_MIGRATION_RUNBOOK.md).
 
+The guided move (one interactive script, run as root on the VPS):
+`sudo bash deploy/docker/migrate.sh`; see
+[`Docs/VPS_MIGRATION_GUIDE.md`](../../Docs/VPS_MIGRATION_GUIDE.md).
+`scripts/cpanel-web.py` is its read-only HTTPS helper for the old cPanel
+(database backup download, certificate, file copy when FTP is closed).
+
 ## What runs
 
 | Service | Image | Job |

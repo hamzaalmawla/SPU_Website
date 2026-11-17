@@ -31,6 +31,7 @@ run_lftp() {
 set ftp:ssl-force true
 set ftp:ssl-protect-data true
 set ssl:verify-certificate ${FTP_VERIFY_CERT:-yes}
+set xfer:clobber on
 set net:max-retries 8
 set net:reconnect-interval-base 15
 set net:timeout 60

@@ -35,8 +35,11 @@ admin_path="$(env_value ADMIN_PATH)"
 [[ ${#admin_path} -ge 12 && "${admin_path}" != "admin" ]] || fail "ADMIN_PATH is missing or guessable. Keep the value from the cPanel .env."
 [[ "$(env_value APP_DEBUG)" == "false" ]] || fail "APP_DEBUG must be false."
 for i in $(seq 1 30); do
-    artisan db:show --no-ansi >/dev/null 2>&1 && break
-    [[ $i -eq 30 ]] && fail "The database does not answer. Is the db service healthy?"
+    db_check="$(artisan db:show --no-ansi 2>&1)" && break
+    if [[ $i -eq 30 ]]; then
+        printf '%s\n' "${db_check}" | grep -v '^[[:space:]]*$' | tail -8 >&2
+        fail "Laravel cannot use the database (the lines above say why). Is the db service healthy, and are .env's DB_* and security keys right?"
+    fi
     sleep 2
 done
 printf '   ✓ .env, admin path and database\n'
