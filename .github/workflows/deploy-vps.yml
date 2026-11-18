@@ -1,0 +1,118 @@
+# Shows on GitHub what the VPS did with a commit of dev.
+#
+# The VPS accepts SSH only from the university network, so this workflow never
+# connects to it to deploy. The server itself (deploy/docker/scripts/deploy-watch.py,
+# every minute or two) deploys each new commit on dev (AUTO_DEPLOY=yes), or a
+# commit for which this workflow was started by hand, and publishes its progress
+# at https://<site>/deploy-status.json. This job only waits for that file and
+# turns green or red.
+#
+#   push to dev    waits for the automatic deploy of that commit
+#   Run workflow   asks for a deploy or a rollback (GitHub shows the button only
+#                  when this file is on the default branch)
+#
+# A request by hand travels in the run's name, so keep the run-name format: the
+# server reads "VPS deploy request: <deploy|rollback> [migration names]".
+name: Deploy to the VPS
+run-name: "${{ github.event_name == 'push' && 'VPS automatic deploy' || format('VPS deploy request: {0} {1}', inputs.action, inputs.approve_migrations) }}"
+
+on:
+  push:
+    branches: [dev]
+  workflow_dispatch:
+    inputs:
+      action:
+        description: "deploy = put the latest dev live. rollback = go back to the release before the current one."
+        type: choice
+        options: [deploy, rollback]
+        default: deploy
+      approve_migrations:
+        description: "Only if a previous deploy said so: the data migrations to approve, separated by spaces."
+        type: string
+        required: false
+        default: ""
+      server_ip:
+        description: "Only before DNS points spu.edu.sy at the VPS: the VPS's public IP address."
+        type: string
+        required: false
+        default: ""
+
+permissions: {}
+
+concurrency:
+  group: vps-deploy
+  cancel-in-progress: false
+
+jobs:
+  wait-for-the-server:
+    if: github.ref == 'refs/heads/dev'
+    runs-on: ubuntu-latest
+    timeout-minutes: 80
+    steps:
+      - name: Wait for the VPS to deploy
+        env:
+          RUN_ID: ${{ github.run_id }}
+          EVENT: ${{ github.event_name }}
+          SHA: ${{ github.sha }}
+          REPO_URL: https://github.com/${{ github.repository }}
+          SERVER_IP: ${{ inputs.server_ip }}
+          SITE: spu.edu.sy
+        run: |
+          set -u
+          if [[ -n "${SERVER_IP}" ]]; then
+            [[ "${SERVER_IP}" =~ ^[0-9]{1,3}(\.[0-9]{1,3}){3}$ ]] || { echo "::error::server_ip must be an IPv4 address"; exit 1; }
+            fetch() { curl -sk -m 20 --resolve "${SITE}:443:${SERVER_IP}" "https://${SITE}/deploy-status.json?t=$(date +%s)"; }
+          else
+            fetch() { curl -s -m 20 "https://${SITE}/deploy-status.json?t=$(date +%s)"; }
+          fi
+          key="${RUN_ID}"
+          if [[ "${EVENT}" == push ]]; then
+            key="auto-${SHA:0:8}"
+            # Before the move the VPS does not answer at the site's name: nothing to wait for.
+            if ! fetch | jq -e '.runs' >/dev/null 2>&1; then
+              echo "::notice::The VPS does not answer at ${SITE} yet (before the DNS switch), so there is no deploy to follow."
+              exit 0
+            fi
+          fi
+          newer() {  # a later commit on dev replaces this one in the automatic deploy
+            [[ "${EVENT}" == push ]] || return 1
+            local head; head="$(git ls-remote "${REPO_URL}" refs/heads/dev | cut -f1)"
+            [[ -n "${head}" && "${head}" != "${SHA}" ]]
+          }
+          echo "The server checks for new commits and requests every minute or two."
+          seen="" start=$(date +%s)
+          while true; do
+            run="$(fetch | jq -c --arg id "${key}" '.runs[$id] // empty' 2>/dev/null)"
+            if [[ -z "${run}" ]]; then
+              if newer; then
+                echo "::notice::A newer commit is on dev; the server deploys that one instead (see its run)."
+                exit 0
+              fi
+              if (( $(date +%s) - start > 600 )); then
+                echo "::error::The server did not pick this up within 10 minutes. Is the VPS on, is the deploy watcher installed (migrate.sh step 14), and for pushes is AUTO_DEPLOY=yes in /srv/spu/deploy.conf? Before the DNS switch, fill in server_ip."
+                exit 1
+              fi
+              sleep 20; continue
+            fi
+            state="$(jq -r '.state' <<< "${run}")"
+            line="$(jq -r '"\(.state) | step: \(.step) | \(.sha // "") | \(.message // "")"' <<< "${run}")"
+            [[ "${line}" != "${seen}" ]] && { echo "$(date -u +%H:%M:%S)  ${line}"; seen="${line}"; }
+            case "${state}" in
+              running|waiting) sleep 20 ;;
+              success)
+                echo "::notice::$(jq -r '.message' <<< "${run}")"; exit 0 ;;
+              blocked)
+                pending="$(jq -r '.pending | join(" ")' <<< "${run}")"
+                echo "::error::Data migrations need approval: ${pending}"
+                echo "Nothing went live this time. Only approve them if you know what they change. To approve:"
+                echo "  add a line 'migration=<name>' for each to deploy/docker/approvals/data-migrations.approved"
+                echo "  in a pull request into dev; merging it deploys again. The names:"
+                printf '    migration=%s\n' ${pending}
+                echo "  (or run this workflow by hand and paste the names into approve_migrations)"
+                exit 1 ;;
+              *)
+                echo "::error::$(jq -r '.message' <<< "${run}")"
+                echo "The full log is on the server in /srv/spu/deploy-logs/$(jq -r '.log // ""' <<< "${run}")"
+                exit 1 ;;
+            esac
+          done

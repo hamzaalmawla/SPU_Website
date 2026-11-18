@@ -63,21 +63,56 @@ spu ps                                  # what is running
 spu logs -f web                         # Apache + PHP log (also caddy, queue, scheduler)
 spu artisan migrate:status              # any artisan command, as www-data
 spu artisan continuity:validate-redirects --probe
-/srv/spu/src/deploy/docker/scripts/deploy.sh          # release the latest dev
-/srv/spu/src/deploy/docker/scripts/deploy.sh <sha>    # or a given commit
+sudo spu-deploy                         # release the latest dev (same as the GitHub button)
+sudo spu-deploy --approve <migration>   # ... approving a pending data migration
+sudo spu-deploy --rollback              # back to the release before this one
+sudo spu-deploy status                  # what the GitHub button did lately
 /srv/spu/src/deploy/docker/scripts/backup.sh          # databases + file snapshot
 ```
 
-`deploy.sh` builds the new image while the old one keeps serving, dumps every
-database, runs `release`, and only then recreates the services. If `release`
-fails, the site stays on the previous image; `artisan up` is run on the way out
-so it is not left in maintenance. To go back a release:
-`SPU_IMAGE_TAG=<old sha> spu up -d` (images are tagged by commit), and restore
-the dump `deploy.sh` took if that release migrated.
+### Deploys without SSH (pull-based)
+
+The VPS accepts SSH only from the university network, so nothing pushes a
+deploy to it. `migrate.sh` step 14 installs the systemd timer
+`spu-deploy-watch.timer`: every minute (two without a GitHub token) it runs
+`scripts/deploy-watch.py`, which only makes outgoing HTTPS calls to GitHub.
+
+- **Automatic (the chosen way, `AUTO_DEPLOY=yes` in `/srv/spu/deploy.conf`):**
+  every new commit on dev is deployed, the newest when several arrive, each
+  commit once. Rolling back is a revert merged into dev.
+- **By hand:** a run of `.github/workflows/deploy-vps.yml` started with *Run
+  workflow* on dev (only people with write access can; the button shows only
+  while the file is on the default branch) asks for `deploy` or `rollback` plus
+  migrations to approve, carried in the run's name.
+
+Progress and results go to `https://<site>/deploy-status.json` (state, step,
+commit, message; no log lines), keyed by run id or `auto-<sha8>`. The same
+workflow runs on every push to dev and waits for its commit's entry, so each
+commit gets a green or red run on GitHub. Before DNS points at the VPS it
+finds no status file and ends green with a notice.
+
+Data migrations: the release refuses row-writing migrations that are not
+approved. Approvals come from `deploy/docker/approvals/data-migrations.approved`
+in the deployed commit (names of migrations that already ran may stay), from
+`--approve`, or from the `approve_migrations` input. Logs: `/srv/spu/deploy-logs/`.
+
+No self-hosted GitHub runner: the repository is public, and a runner on the
+server would run workflow code from anyone's pull request that a maintainer
+lets through.
+
+`deploy.sh` takes `/srv/spu/deploy.lock` (shared with `migrate.sh`), builds
+`spu-web:<sha>` while the old image serves, dumps every database, runs
+`release` on the new image, retags it `current`, recreates the services and
+checks `/ar` and `/en` through Caddy. A failed build, backup or release leaves
+the previous image and commit in place; a failed health check after the switch
+puts them back. The database is never restored automatically: the dump is in
+`backups/db`. Exit codes: 0 live, 2 blocked on data-migration approval, 3
+failed (previous release serving), 4 site down, 5 busy. Each live release is a
+line in `/srv/spu/releases`; the newest five images are kept.
 
 The approval-file data jobs of `cpanel-deploy.sh` (study plans, people unify,
-faculty positions, ...) are not part of `release`. With a shell they are run
-directly when wanted, dry run first, for example
+faculty positions, ...) are not part of `release` or of the GitHub button. With a shell (from the
+university network) they are run directly when wanted, dry run first, for example
 `spu artisan faculty:import-study-plan business-administration <file> --user=1`.
 
 ## Settings that matter

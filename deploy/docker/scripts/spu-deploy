@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+# Installed as /usr/local/sbin/spu-deploy by migrate.sh (step "Deploy from home").
+#   sudo spu-deploy                          release the latest dev
+#   sudo spu-deploy --approve <migration>    ... and approve a data migration
+#   sudo spu-deploy --rollback               back to the release before this one
+#   sudo spu-deploy status                   what the "Deploy to the VPS" button last did
+set -euo pipefail
+ROOT="${SPU_ROOT:-/srv/spu}"
+[[ ${EUID} -eq 0 ]] || { echo "Run it with sudo: sudo spu-deploy $*" >&2; exit 1; }
+if [[ "${1:-}" == status ]]; then
+    exec python3 "${ROOT}/src/deploy/docker/scripts/deploy-watch.py" --status
+fi
+exec bash "${ROOT}/src/deploy/docker/scripts/deploy.sh" "$@"

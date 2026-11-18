@@ -12,6 +12,9 @@
 #     sudo bash migrate.sh step <N>    run one step again
 #     sudo bash migrate.sh report      print the result and the DNS / rollback steps again
 #
+# Later releases: GitHub > Actions > "Deploy to the VPS" > Run workflow (step 14
+# sets it up), or on the server: sudo spu-deploy
+#
 # Safe by design:
 #   - The old server is only read (FTP download, cPanel download pages). Nothing
 #     is uploaded, changed or deleted there.
@@ -26,7 +29,7 @@
 set -uo pipefail
 umask 022
 
-VERSION="2026-11-17"
+VERSION="2026-11-18"
 ROOT="${SPU_ROOT:-/srv/spu}"
 SRC="${ROOT}/src"
 DOCK="${SRC}/deploy/docker"
@@ -47,7 +50,7 @@ SITE_DB="spuedu_v2"
 # database : folder of the app that uses it
 APP_DBS=("spuedu_forms:forms" "spuedu_medical:Medicine" "spuedu_spuh:spuh")
 
-STEP_IDS=(prereqs settings code prepare connect site apps media appenv databases tls start checks report)
+STEP_IDS=(prereqs settings code prepare connect site apps media appenv databases tls start checks deploys report)
 STEP_TITLES=(
     "Check this server and install what is missing"
     "Answer a few questions (domain, old server, passwords)"
@@ -62,6 +65,7 @@ STEP_TITLES=(
     "HTTPS certificate"
     "Build and start the website"
     "Check everything: pages, old links, redirects"
+    "Deploy from home: the GitHub button (no SSH needed)"
     "Result, DNS switch steps and rollback steps"
 )
 
@@ -933,6 +937,7 @@ step_start() {
     else bad "The website did not become healthy. See: spu logs --tail 100 web"; return 1; fi
     "${SPU}" ps
     echo "${sha} $(date -u +%FT%TZ) migrate.sh" >> "${ROOT}/deployed.log"
+    echo "${sha} $(date -u +%FT%TZ) migrate.sh" >> "${ROOT}/releases"
 }
 
 # curl through this server, as if DNS already pointed here
@@ -1082,6 +1087,80 @@ step_checks() {
             warn "That does not look like an e-mail address; skipped."
         fi
     fi
+}
+
+step_deploys() {
+    need_code || return 1
+    [[ -f "${DOCK}/scripts/deploy-watch.py" ]] || { bad "This code has no deploy watcher. Run step 3 again to update the code."; return 1; }
+    info "This server will accept SSH only from the university network. So that new versions"
+    info "still go live from anywhere, this server asks GitHub every minute or two whether dev"
+    info "has a new commit, and deploys it. Nothing from outside connects to it; each commit"
+    info "on GitHub gets a 'Deploy to the VPS' run that turns green or red with the result."
+    local conf="${ROOT}/deploy.conf" repo auto=no every=60
+    repo="$(sed -E 's#^https://github\.com/##; s#\.git$##; s#/$##' <<< "${REPO_URL:-${REPO_URL_DEFAULT}}")"
+    if [[ ! -f "${conf}" ]]; then
+        info "Automatic mode: every change merged into dev goes live by itself (recommended)."
+        info "Without it, only a 'Run workflow' request on GitHub deploys."
+        yesno "Deploy every change on dev automatically?" Y && auto=yes
+        printf '# Read by deploy-watch.py. AUTO_DEPLOY=yes deploys every new commit on dev by itself.\nREPO=%s\nBRANCH=dev\nAUTO_DEPLOY=%s\n' \
+            "${repo}" "${auto}" > "${conf}"
+    fi
+    chmod 644 "${conf}"
+    install -m 755 "${DOCK}/scripts/spu-deploy" /usr/local/sbin/spu-deploy
+    mkdir -p "${ROOT}/deploy-logs"; chmod 700 "${ROOT}/deploy-logs"
+    # Without a token GitHub allows 60 questions an hour, so ask every 2 minutes.
+    [[ -f "${SECRETS}/git-credentials" ]] || every=120
+    cat > /etc/systemd/system/spu-deploy-watch.service <<UNIT
+[Unit]
+Description=SPU website: deploy when "Deploy to the VPS" was pressed on GitHub
+After=network-online.target docker.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+Environment=SPU_ROOT=${ROOT}
+ExecStart=/usr/bin/python3 ${DOCK}/scripts/deploy-watch.py
+TimeoutStartSec=2h
+StandardOutput=append:${ROOT}/deploy-logs/watch.log
+StandardError=append:${ROOT}/deploy-logs/watch.log
+UNIT
+    cat > /etc/systemd/system/spu-deploy-watch.timer <<UNIT
+[Unit]
+Description=SPU website: look for deploy requests on GitHub
+
+[Timer]
+OnBootSec=2min
+OnUnitInactiveSec=${every}s
+AccuracySec=10s
+
+[Install]
+WantedBy=timers.target
+UNIT
+    [[ -s "${ROOT}/releases" ]] || echo "$(git -C "${SRC}" rev-parse --short HEAD) $(date -u +%FT%TZ) migrate.sh" >> "${ROOT}/releases"
+    info "Asking GitHub for the deploy requests that exist now (they are not deployed)..."
+    if SPU_ROOT="${ROOT}" python3 "${DOCK}/scripts/deploy-watch.py" --init; then
+        ok "GitHub answers."
+    else
+        warn "GitHub did not answer now; the watcher keeps trying every minute."
+    fi
+    systemctl daemon-reload && systemctl enable --now spu-deploy-watch.timer >/dev/null 2>&1 \
+        || { bad "Could not start the timer: systemctl status spu-deploy-watch.timer"; return 1; }
+    ok "Deploy watcher on (every ${every} seconds). Automatic deploys of dev: $(sed -n 's/^AUTO_DEPLOY=//p' "${conf}")."
+    cat <<TXT
+
+   To put a new version live: merge it into dev. Within a few minutes this server
+   deploys it. On GitHub, the commit's "Deploy to the VPS" run turns green when it is
+   live (red if it stopped; the site then stays on the version it had). Progress:
+   https://${DOMAIN}/deploy-status.json
+   Data migrations are approved in deploy/docker/approvals/data-migrations.approved
+   (the red run prints the lines to add). To go back: merge a revert into dev.
+
+   On this server (from the university network):
+     sudo spu-deploy              deploy the latest dev
+     sudo spu-deploy --rollback   back to the release before this one
+     sudo spu-deploy status       what the button did lately
+   Settings: ${conf}   Logs: ${ROOT}/deploy-logs/
+TXT
 }
 
 step_report() {
@@ -1284,7 +1363,7 @@ final_sync() {
 MODE="${1:-walk}"
 [[ ${EUID} -eq 0 ]] || { echo "Please run with sudo:  sudo bash $0 ${*}" >&2; exit 1; }
 case "${MODE}" in walk|final|after-dns|status|step|report|--help|-h|help) ;; *) MODE=help ;; esac
-if [[ "${MODE}" == help || "${MODE}" == -h || "${MODE}" == --help ]]; then sed -n '3,25p' "${SELF}"; exit 0; fi
+if [[ "${MODE}" == help || "${MODE}" == -h || "${MODE}" == --help ]]; then sed -n '3,28p' "${SELF}"; exit 0; fi
 
 # Long copies must survive a dropped SSH connection: offer to run inside tmux.
 if [[ -z "${TMUX:-}" && -z "${MIGRATE_INPUT:-}" && "${MODE}" =~ ^(walk|final|step)$ ]]; then
@@ -1307,6 +1386,13 @@ mkdir -p "${ROOT}" "${LOGDIR}"; chmod 700 "${LOGDIR}"
 LOG="${LOGDIR}/migrate-$(date +%Y%m%d-%H%M%S)-${MODE}.log"
 exec > >(tee -a "${LOG}") 2>&1
 conf_load
+if [[ "${MODE}" =~ ^(walk|final|step|after-dns)$ ]]; then
+    exec 9>"${ROOT}/deploy.lock"
+    if ! flock -n 9; then
+        echo "A deploy is running on this server; waiting for it to finish..."
+        flock 9
+    fi
+fi
 say ""
 say "${B}SPU website: move to the new server${N}   (script ${VERSION}, mode: ${MODE})"
 say "Nothing is changed on the old server, and DNS is never changed by this script."

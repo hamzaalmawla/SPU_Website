@@ -16,6 +16,12 @@ and rollback steps. How to run it, in plain language:
 [VPS_MIGRATION_GUIDE.md](VPS_MIGRATION_GUIDE.md). This runbook is the reference
 behind it.
 
+**Deploys after the move** are pull-based, because the VPS accepts SSH only
+from the university network: the server deploys every new commit on dev by
+itself within a few minutes, and each commit's *Deploy to the VPS* run on
+GitHub shows the result (`migrate.sh` step 14; details in
+`deploy/docker/README.md`, how-to in the guide's section 7).
+
 ---
 
 ## 1. What the current server holds (read 2026-11-17)

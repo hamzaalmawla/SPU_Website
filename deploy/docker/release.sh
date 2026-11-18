@@ -8,7 +8,8 @@
 #
 # What is the same as on cPanel: the maintenance window, the data-migration
 # gate (storage/app/private/legacy-imports/data-migrations.approved, one
-# `migration=<name>` line per pending migration that writes rows), migrations,
+# `migration=<name>` line per pending migration that writes rows; deploy.sh
+# writes it from deploy/docker/approvals/ and --approve), migrations,
 # the deterministic redirect rows, image derivatives, the search index, the
 # static sitemap, queue restart, cache warming and launch:validate.
 #
@@ -55,8 +56,11 @@ if printf '%s\n' "${preview}" | grep -Eiq '(^|[[:space:]])(update|delete[[:space
     pending="$(printf '%s\n' "${preview}" | grep -Eo '^[[:space:]]*[0-9]{4}_[0-9]{2}_[0-9]{2}_[0-9]{6}_[A-Za-z0-9_]+' | sed 's/[[:space:]]//g' | sort -u || true)"
     approved=""
     [[ -f "${approval}" ]] && approved="$(grep -E '^[[:space:]]*migration=' "${approval}" | cut -d= -f2- | sed 's/[[:space:]]//g' | sort -u || true)"
-    if [[ "${SPU_ALLOW_DATA_MIGRATIONS:-0}" != "1" && ( -z "${pending}" || "${pending}" != "${approved}" ) ]]; then
-        printf '   Pending migrations that write rows:\n%s\n' "$(printf '     %s\n' ${pending})" >&2
+    # Every pending one must be listed. The list may name more: the approvals file in the
+    # repository (deploy/docker/approvals/) keeps the names of migrations that already ran.
+    missing="$(comm -23 <(printf '%s\n' ${pending}) <(printf '%s\n' ${approved}))"
+    if [[ "${SPU_ALLOW_DATA_MIGRATIONS:-0}" != "1" && ( -z "${pending}" || -n "${missing}" ) ]]; then
+        printf '   Pending migrations that write rows:\n%s\n' "$(printf '     %s\n' ${missing:-${pending}})" >&2
         fail "Data migrations need approval in ${approval} (one 'migration=<name>' line each). Production content was not changed."
     fi
     printf '   data migrations approved\n'
