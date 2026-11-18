@@ -65,3 +65,4 @@ TODO.md
 
 # Local cPanel helper script containing credentials
 /cp.sh
+__pycache__/

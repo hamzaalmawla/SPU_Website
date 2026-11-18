@@ -77,7 +77,7 @@ not finish.
 
 ---
 
-## 4. The 14 steps
+## 4. The 15 steps
 
 | # | Step | What it asks you | Time |
 |---|---|---|---|
@@ -94,7 +94,8 @@ not finish.
 | 11 | HTTPS certificate | Choose **1** (copy the current `*.spu.edu.sy` certificate) | 1 min |
 | 12 | Build and start the website | Nothing | 5–15 min |
 | 13 | Check everything | Optional: the long check of all 28,428 old links, and a test e-mail | 5–40 min |
-| 14 | Result | Nothing. It prints **READY** or **NOT READY**, the DNS steps and the rollback steps | – |
+| 14 | Deploy from home (the GitHub button, section 7) | Deploy every change on dev automatically? (if unsure: **n**) | 1 min |
+| 15 | Result | Nothing. It prints **READY** or **NOT READY**, the DNS steps and the rollback steps | – |
 
 **Tip:** step 8 takes the longest. If you are short of time, answer **n** to
 *Copy them now?*. The website then takes the old images from the old server
@@ -117,7 +118,7 @@ them.
    `spu.edu.sy` → Manage, change the **TTL** of `spu.edu.sy`, `www.spu.edu.sy`,
    `v2.spu.edu.sy` and `www.v2.spu.edu.sy` from 14400 to **300**. This makes the
    switch and a rollback take 5 minutes instead of 4 hours.
-2. Run `sudo bash /root/migrate.sh` and go through all 14 steps. It must end
+2. Run `sudo bash /root/migrate.sh` and go through all 15 steps. It must end
    with **READY**. (You can do this the day before.)
 3. When you are ready to switch, ask the editors to stop editing, then run:
 
@@ -158,20 +159,79 @@ The full rollback text, with your IPs filled in, is in
 
 ---
 
-## 7. Useful commands
+## 7. Putting a new version live later (from home)
+
+The new server accepts SSH only from the university network. You do not need
+SSH to deploy: the server itself asks GitHub every minute whether someone
+pressed the deploy button. Nothing from outside connects to the server.
+
+**To deploy the latest `dev`:**
+
+1. Open the repository on GitHub, then **Actions** → **Deploy to the VPS** (left
+   column) → **Run workflow**.
+2. *Use workflow from*: **dev**. Leave the other fields empty. Press the green
+   **Run workflow** button.
+3. Within a minute or two the server starts. Open the run to watch the steps.
+   It turns **green** when the new version is live, and **red** if it stopped.
+   When it stops, the site stays on (or goes back to) the version it had, so
+   visitors never see a half-finished release.
+
+What the server does, in order: downloads `dev`, builds the new version while
+the old one keeps serving, saves every database, runs the release (migrations,
+search index, sitemap, launch checks), switches the site to the new version,
+and checks that the Arabic and English home pages answer. Only one deploy runs
+at a time.
+
+| The run says | What it means, what to do |
+|---|---|
+| green: *… is live* | Done. |
+| red: *Data migrations need approval: …* | The new version changes rows in the database. Nothing went live. If you know these changes are wanted, run the workflow again and paste the names it printed into **approve_migrations**. |
+| red: *… did not answer after the switch, so … is serving again* | The new version broke the site, so the server went back by itself. A developer should read the log named in the run. |
+| red: *The server did not pick this request up within 10 minutes* | The server is off, or the watcher is not installed (step 14). |
+
+**To go back to the previous version:** run the workflow with **action:
+rollback**. The database is not changed by a rollback. If the release you
+are leaving had migrated the database, the dump taken before it is in
+`/srv/spu/backups/db/`.
+
+**Before DNS points `spu.edu.sy` at the new server**, the run cannot find the
+server by its name: fill in **server_ip** with the new server's IP address.
+
+**Automatic mode:** if you answered **y** in step 14, every change merged into
+`dev` goes live by itself within a few minutes (each commit is tried once). To
+switch it on or off later, change `AUTO_DEPLOY=` in `/srv/spu/deploy.conf` to
+`yes` or `no` (on the server).
+
+**From the university network** (SSH), the same deploy is:
+
+```
+sudo spu-deploy              # the latest dev
+sudo spu-deploy --rollback   # the release before this one
+sudo spu-deploy status       # what the button did lately
+```
+
+Logs of every deploy: `/srv/spu/deploy-logs/`.
+
+**Note:** GitHub shows the **Run workflow** button only for workflows that are
+on the repository's default branch. The default branch is `main`, which is
+months behind `dev`. Either make `dev` the default branch (GitHub → Settings →
+General → Default branch), or copy `.github/workflows/deploy-vps.yml` to `main`.
+
+## 8. Useful commands
 
 | Command | What it does |
 |---|---|
 | `sudo bash /srv/spu/src/deploy/docker/migrate.sh status` | Which steps are done |
 | `sudo bash /srv/spu/src/deploy/docker/migrate.sh step 13` | Run one step again (here: the checks) |
 | `sudo bash /srv/spu/src/deploy/docker/migrate.sh report` | Show the result and the DNS/rollback steps again |
+| `sudo spu-deploy status` | What the GitHub deploy button did lately |
 | `spu ps` | Is everything running? |
 | `spu logs --tail 100 web` | The website's last log lines |
 | `cat /srv/spu/MIGRATION-REPORT.txt` | The last result |
 
 Logs of every run are in `/srv/spu/migrate-logs/`.
 
-## 8. Common problems
+## 9. Common problems
 
 | You see | What to do |
 |---|---|

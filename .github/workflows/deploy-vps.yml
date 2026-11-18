@@ -1,0 +1,88 @@
+# Deploy dev to the VPS from anywhere: Actions > "Deploy to the VPS" > Run workflow (on dev).
+#
+# The VPS accepts SSH only from the university network, so this workflow never
+# connects to it to deploy. The server itself asks GitHub every minute whether a
+# run of this workflow was started (deploy/docker/scripts/deploy-watch.py), runs
+# the deploy, and publishes its progress at https://<site>/deploy-status.json.
+# This job only waits for that file and shows the result here.
+#
+# The request travels in the run's name, so keep the run-name format: the
+# server reads "VPS deploy request: <deploy|rollback> [migration names]".
+name: Deploy to the VPS
+run-name: "VPS deploy request: ${{ inputs.action }} ${{ inputs.approve_migrations }}"
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: "deploy = put the latest dev live. rollback = go back to the release before the current one."
+        type: choice
+        options: [deploy, rollback]
+        default: deploy
+      approve_migrations:
+        description: "Only if a previous deploy said so: the data migrations to approve, separated by spaces."
+        type: string
+        required: false
+        default: ""
+      server_ip:
+        description: "Only before DNS points spu.edu.sy at the VPS: the VPS's public IP address."
+        type: string
+        required: false
+        default: ""
+
+permissions: {}
+
+concurrency:
+  group: vps-deploy
+  cancel-in-progress: false
+
+jobs:
+  wait-for-the-server:
+    if: github.ref == 'refs/heads/dev'
+    runs-on: ubuntu-latest
+    timeout-minutes: 80
+    steps:
+      - name: Wait for the VPS to deploy
+        env:
+          RUN_ID: ${{ github.run_id }}
+          SERVER_IP: ${{ inputs.server_ip }}
+          SITE: spu.edu.sy
+        run: |
+          set -u
+          if [[ -n "${SERVER_IP}" ]]; then
+            [[ "${SERVER_IP}" =~ ^[0-9]{1,3}(\.[0-9]{1,3}){3}$ ]] || { echo "::error::server_ip must be an IPv4 address"; exit 1; }
+            fetch() { curl -sk -m 20 --resolve "${SITE}:443:${SERVER_IP}" "https://${SITE}/deploy-status.json?t=$(date +%s)"; }
+          else
+            fetch() { curl -s -m 20 "https://${SITE}/deploy-status.json?t=$(date +%s)"; }
+          fi
+          echo "The server checks for new requests every minute or two."
+          seen="" start=$(date +%s)
+          while true; do
+            run="$(fetch | jq -c --arg id "${RUN_ID}" '.runs[$id] // empty' 2>/dev/null)"
+            if [[ -z "${run}" ]]; then
+              if (( $(date +%s) - start > 600 )); then
+                echo "::error::The server did not pick this request up within 10 minutes. Is the VPS on, and is the deploy watcher installed (migrate.sh step 14)? Before the DNS switch, fill in server_ip."
+                exit 1
+              fi
+              sleep 20; continue
+            fi
+            state="$(jq -r '.state' <<< "${run}")"
+            line="$(jq -r '"\(.state) | step: \(.step) | \(.sha // "") | \(.message // "")"' <<< "${run}")"
+            [[ "${line}" != "${seen}" ]] && { echo "$(date -u +%H:%M:%S)  ${line}"; seen="${line}"; }
+            case "${state}" in
+              running|waiting) sleep 20 ;;
+              success)
+                echo "::notice::$(jq -r '.message' <<< "${run}")"; exit 0 ;;
+              blocked)
+                pending="$(jq -r '.pending | join(" ")' <<< "${run}")"
+                echo "::error::Data migrations need approval: ${pending}"
+                echo "To approve them, run this workflow again and paste into approve_migrations:"
+                echo "    ${pending}"
+                echo "Only approve them if you know what they change. Nothing went live this time."
+                exit 1 ;;
+              *)
+                echo "::error::$(jq -r '.message' <<< "${run}")"
+                echo "The full log is on the server in /srv/spu/deploy-logs/$(jq -r '.log // ""' <<< "${run}")"
+                exit 1 ;;
+            esac
+          done
