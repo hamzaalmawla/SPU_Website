@@ -25,6 +25,7 @@ param(
     [string]$Repo = "/home/spuedu/repositories/spu-v2",
     [string]$Branch = "dev",
     [switch]$WithoutApps,
+    [switch]$Insecure,
     [int]$ChunkKb = 512
 )
 
@@ -53,6 +54,7 @@ $env:CPANEL_BRANCH = $Branch
 $env:CPANEL_HOME = "/home/$User"
 $env:CPANEL_CHUNK_KB = "$ChunkKb"
 $env:PYTHONIOENCODING = "utf-8"
+if ($Insecure) { $env:CPANEL_INSECURE = "1" } else { Remove-Item Env:CPANEL_INSECURE -ErrorAction SilentlyContinue }
 
 $items = @("env", "storage", "web", "db:spuedu_v2")
 if (-not $WithoutApps) {
@@ -61,9 +63,35 @@ if (-not $WithoutApps) {
 }
 
 try {
-    Write-Host "`n== Checking the token and the old server"
+    Write-Host "`n== Checking the token and the old server ($ApiHost`:$Port)"
     & $python @pyArgs -I $script check
-    if ($LASTEXITCODE -ne 0) { throw "The cPanel API does not answer with this token from this laptop." }
+    $rc = $LASTEXITCODE
+    if ($rc -eq 3) {
+        Write-Host ""
+        Write-Host "The server's HTTPS certificate is not trusted by this laptop (common on port 2083)."
+        Write-Host "The data is still encrypted; only the check of who the server is gets skipped."
+        $answer = Read-Host "Continue anyway? (y/n)"
+        if ($answer -notmatch '^(y|yes)$') { throw "Stopped." }
+        $env:CPANEL_INSECURE = "1"
+        & $python @pyArgs -I $script check
+        $rc = $LASTEXITCODE
+    }
+    if ($rc -ne 0) {
+        Write-Host ""
+        switch ($rc) {
+            5 { Write-Host "The token was refused. Make a new one in cPanel > Security > Manage API Tokens and run this again." }
+            4 {
+                Write-Host "This laptop cannot reach $ApiHost on port $Port. Testing the connection:"
+                $test = Test-NetConnection -ComputerName $ApiHost -Port $Port -WarningAction SilentlyContinue
+                Write-Host ("   address {0}, port {1} open: {2}" -f $test.RemoteAddress, $Port, $test.TcpTestSucceeded)
+                Write-Host "If the port is not open: try another network (e.g. a phone hotspot), or ask the hosting"
+                Write-Host "company to allow this laptop's IP address on port $Port (cPHulk / firewall)."
+                Write-Host "If cPanel opens in the browser at another address, run this script with -ApiHost <that name>."
+            }
+            default { Write-Host "See the ERROR line above." }
+        }
+        throw "The check failed (code $rc); nothing was downloaded."
+    }
 
     New-Item -ItemType Directory -Force -Path $OutRoot | Out-Null
     $out = Join-Path $OutRoot ("core-" + (Get-Date -Format "yyyyMMdd-HHmmss"))

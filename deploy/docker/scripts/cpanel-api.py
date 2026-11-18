@@ -52,6 +52,15 @@ import urllib.parse
 import urllib.request
 
 UA = "spu-migrate-api/1.0"
+
+# Exit codes the laptop script and migrate.sh act on.
+EXIT_CERT, EXIT_NETWORK, EXIT_TOKEN = 3, 4, 5
+
+
+class Fatal(SystemExit):
+    def __init__(self, code: int, message: str) -> None:
+        super().__init__(code)
+        self.message = message
 EXPORT_SCRIPT = "deploy/v2-staging/vps-export.sh"
 
 
@@ -74,6 +83,7 @@ class Api:
             ctx.check_hostname = False
             ctx.verify_mode = ssl.CERT_NONE
         self.ctx = ctx
+        self.attempts = 6
 
     def call(self, module: str, function: str, post: bool = False, quiet: bool = False,
              timeout: float = 180, **params: str) -> dict:
@@ -83,7 +93,7 @@ class Api:
             url += "?" + urllib.parse.urlencode(params)
         headers = {"Authorization": f"cpanel {self.user}:{self.token}", "User-Agent": UA}
         last: Exception | None = None
-        for attempt in range(6):
+        for attempt in range(self.attempts):
             try:
                 req = urllib.request.Request(url, data=data, headers=headers)
                 with urllib.request.urlopen(req, timeout=timeout, context=self.ctx) as resp:
@@ -91,22 +101,32 @@ class Api:
                 break
             except urllib.error.HTTPError as exc:
                 if exc.code in (401, 403):
-                    raise SystemExit(f"cPanel refused the token ({exc.code}). Check the user name and the token.")
+                    raise Fatal(EXIT_TOKEN, f"cPanel refused the token (HTTP {exc.code}). Check that the user name is "
+                                f"'{self.user}' and that the token is copied completely and not deleted or expired "
+                                "(cPanel > Security > Manage API Tokens).")
                 if exc.code in (429, 500, 502, 503, 504):
                     last = exc
                     time.sleep(5 + attempt * 10)
                     continue
                 raise SystemExit(f"{module}/{function}: HTTP {exc.code}")
             except (urllib.error.URLError, TimeoutError, ConnectionError, ssl.SSLError) as exc:
+                reason = getattr(exc, "reason", exc)
+                if isinstance(reason, ssl.SSLCertVerificationError) or "CERTIFICATE_VERIFY_FAILED" in str(exc):
+                    raise Fatal(EXIT_CERT, f"The certificate of {self.base} is not trusted by this computer "
+                                f"({getattr(reason, 'verify_message', '') or reason}). The connection works, "
+                                "but the certificate check failed.")
                 last = exc
-                time.sleep(5 + attempt * 10)
+                if attempt + 1 < self.attempts:
+                    time.sleep(5 + attempt * 10)
         else:
-            raise SystemExit(f"cannot reach {self.base}: {last}")
+            raise Fatal(EXIT_NETWORK, f"Cannot reach {self.base} from this computer: {last}. The port is blocked "
+                        "on this network or the server's firewall blocks this computer's IP address.")
         try:
             answer = json.loads(raw.decode("utf-8", "replace"))
         except ValueError:
             head = raw[:200].decode("utf-8", "replace").replace("\n", " ")
-            raise SystemExit(f"{module}/{function}: cPanel did not answer with JSON: {head}")
+            raise Fatal(EXIT_NETWORK, f"{self.base} answered, but not like the cPanel API (a firewall or bot-check "
+                        f"page?): {head}")
         if not answer.get("status"):
             message = "; ".join(answer.get("errors") or ["failed"])
             if quiet:
@@ -168,6 +188,7 @@ def mb(n: float) -> str:
 
 
 def check(api: Api) -> int:
+    api.attempts = 2  # answer quickly; the real work retries longer
     repo = api.repo_info()
     head = (repo.get("last_update") or {}).get("identifier") or "?"
     print(f"token works for {api.user} at {api.base}")
@@ -384,5 +405,8 @@ def main(argv: list[str]) -> int:
 if __name__ == "__main__":
     try:
         sys.exit(main(sys.argv))
+    except Fatal as exc:
+        print(f"ERROR: {exc.message}", file=sys.stderr)
+        sys.exit(exc.code)
     except KeyboardInterrupt:
         sys.exit(130)
