@@ -9,6 +9,10 @@ The guided move (one interactive script, run as root on the VPS):
 [`Docs/VPS_MIGRATION_GUIDE.md`](../../Docs/VPS_MIGRATION_GUIDE.md).
 `scripts/cpanel-web.py` is its read-only HTTPS helper for the old cPanel
 (database backup download, certificate, file copy when FTP is closed).
+`scripts/cpanel-api.py` copies with a cPanel API token alone (port 2083), when
+FTP and the cPanel login page are both closed: the old server packs the files
+and dumps in an export-only deploy (`deploy/v2-staging/vps-export.sh`) and the
+VPS reads them back through the API.
 
 ## What runs
 
@@ -34,7 +38,7 @@ Apache means none of it is translated, so none of it can change by accident.
   src/            this repository, checked out at the deployed commit
   stack.env       compose settings and database passwords        (chmod 600)
   app.env         Laravel .env, built from the cPanel one          (chmod 600, owner 33)
-  secrets/        ftp.env, cpanel.env (the copied cPanel .env)
+  secrets/        ftp.env or cpanel-api.env, cpanel.env (the copied cPanel .env)
   data/
     storage/      Laravel storage/ (uploads, media library, site stats)
     web/          the document root: the release's public/ plus files written

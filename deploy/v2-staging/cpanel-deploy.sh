@@ -30,6 +30,18 @@ SOURCE="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 log()  { printf '\n▸ %s\n' "$1"; }
 fail() { printf '\n✗ %s\n' "$1" >&2; exit 1; }
 
+# ── Move to the VPS: export only ─────────────────────────────────────────────
+# deploy/docker/scripts/cpanel-api.py (run on the new VPS) writes this request
+# file with Fileman/save_file_content and then starts a deploy. Such a deploy
+# only packs the requested files and database dumps for the VPS
+# (vps-export.sh) and changes nothing else: no sync, no migration, no
+# maintenance window. The request is used once; the next deploy is a normal one.
+VPS_EXPORT_REQUEST="${SPU_VPS_EXPORT_REQUEST:-$(dirname "${APP}")/vps-export.request}"
+if [[ -f "${VPS_EXPORT_REQUEST}" ]]; then
+    log "Export for the VPS (no deploy)"
+    exec /bin/bash "${SOURCE}/deploy/v2-staging/vps-export.sh" "${VPS_EXPORT_REQUEST}"
+fi
+
 log "Deploying ${SOURCE} → ${APP}"
 
 # ── Preconditions ────────────────────────────────────────────────────────────

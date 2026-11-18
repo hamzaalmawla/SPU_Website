@@ -16,7 +16,8 @@ Technical background: [VPS_MIGRATION_RUNBOOK.md](VPS_MIGRATION_RUNBOOK.md).
 | What | Where to find it |
 |---|---|
 | The new server's **IP address** and its **root password** (or a user with `sudo`) | Your VPS provider's panel |
-| The **FTP password** of `it@spu.edu.sy` | cPanel → FTP Accounts (you can set a new password there if nobody knows it) |
+| A **cPanel API token** for `spuedu` (when FTP and the cPanel login page are closed to the new server; see section 9) | cPanel → Security → Manage API Tokens → Create |
+| Or the **FTP password** of `it@spu.edu.sy` | cPanel → FTP Accounts (you can set a new password there if nobody knows it) |
 | The **cPanel password** of user `spuedu` | The one you use to log in to cPanel |
 | A **GitHub token**, only if GitHub asks for a login | GitHub → Settings → Developer settings → Personal access tokens → Fine-grained → only the `SPU_Website` repository → *Contents: Read-only* |
 | The **e-mail (SMTP) settings**, only if the site sent mail through the old server itself | Your mail administrator |
@@ -82,10 +83,10 @@ not finish.
 | # | Step | What it asks you | Time |
 |---|---|---|---|
 | 1 | Check this server, install Docker and tools | Nothing (maybe: stop an old web server on port 80) | 2–5 min |
-| 2 | Questions | Main address (`spu.edu.sy`), this server's IP, old server's IP, cPanel address and user, FTP account and password | 2 min |
+| 2 | Questions | Main address (`spu.edu.sy`), this server's IP, old server's IP, cPanel address and user, then **api** (API token) or **ftp** (FTP account and password) | 2 min |
 | 3 | Download the code | A GitHub token only if GitHub asks | 1 min |
 | 4 | Prepare folders and firewall | Turn on the firewall? (**y**) | 1 min |
-| 5 | Test the connection to the old server | The cPanel password (kept in memory only) | 1 min |
+| 5 | Test the connection to the old server | With **api**: nothing (it tests the token). With **ftp**: the cPanel password (kept in memory only) | 1 min |
 | 6 | Copy the website's own files | Nothing | 5–20 min |
 | 7 | Copy `/forms`, `/Medicine`, `/spuh` | Nothing | 5 min |
 | 8 | Copy the old images and downloads (~20 GB) | Copy now? (**y**) | hours |
@@ -175,10 +176,46 @@ Logs of every run are in `/srv/spu/migrate-logs/`.
 
 | You see | What to do |
 |---|---|
-| `Port 21 ... does not answer` | The old host blocks FTP from the new server. Choose **h**: the script copies over HTTPS with the cPanel password instead (slower). |
+| `Port 21 ... does not answer` | The old host blocks FTP from the new server. Choose **h** (cPanel password over HTTPS), or run step 2 again and answer **api** (section 9). |
+| `The API does not answer with this token` | Check the token in cPanel → Security → Manage API Tokens, and that the new server can open `https://spu.edu.sy:2083`. |
+| `The deploy ran but did not export anything` | The old server's copy of the code is older than `deploy/v2-staging/vps-export.sh`. Push the current code to `dev` and run the step again. |
+| `If cPanel says the file is too large` | Run the step again with smaller pieces: `sudo CPANEL_CHUNK_KB=256 bash migrate.sh step 6`. |
 | `cPanel login failed` | Check the password (log in to cPanel in a browser). After 3 wrong tries the host may block the new server for a while. |
 | `asks for a two-factor code` | Choose the manual database download (section 4). |
 | `The build failed` | Usually the internet of the new server. Run the same step again. |
 | `The release job stopped` | Read the lines just above it; they name the problem. Nothing was shown to visitors. |
 | `NOT READY` / `Old links: some addresses answer differently` | **Do not change DNS.** Keep the report file (`/srv/spu/MIGRATION-REPORT.txt`) and the folder `/srv/spu/parity/` for a developer. |
 | A step stopped for any other reason | Run the script again. Every step can be repeated safely. |
+
+## 9. When FTP and the cPanel login page are closed (API token)
+
+Choose **api** in step 2. The script then needs only the cPanel API port
+(`https://spu.edu.sy:2083`) and a token; no FTP, no cPanel password, no zipping
+by hand:
+
+1. The new server asks cPanel (Git Version Control) to update its copy of the
+   code and start a **deploy that only exports**: `cpanel-deploy.sh` sees the
+   request file `~/vps-export.request` and runs `deploy/v2-staging/vps-export.sh`
+   instead of deploying. Nothing on the site changes: no file sync, no
+   migration, no maintenance mode.
+2. On the old server that script packs (tar + gzip, and `mysqldump`) only what
+   is needed: v2's `.env`, `storage/` (without caches, sessions and logs), the
+   document root's runtime files and the `spuedu_v2` database; also `/forms`,
+   `/Medicine`, `/spuh` and their databases unless they stay on the old server.
+   Each pack is cut into small pieces saved as text in `~/vps-export/`.
+3. The new server reads the pieces through the API, checks each one (sha256),
+   puts the files together and unpacks them into `/srv/spu/data`, then deletes
+   `~/vps-export/` on the old server.
+
+Step 6 makes this package; steps 7 and 10 use the same one (a package younger
+than 6 hours is re-used; `final` always makes a fresh one). If one application
+database cannot be packed (its login is not found), the script asks you to
+upload that one dump by hand, as in section 4.
+
+The old images and downloads (step 8, about 20 GB) are packed one folder at a
+time, and the old account needs room for the largest folder. Answering **n**
+keeps them served from the old server; run `migrate.sh step 8` later.
+
+The deploy needs `deploy/v2-staging/vps-export.sh` in the `dev` branch on
+GitHub. After the move, delete the token in cPanel → Security → Manage API
+Tokens; `after-dns` offers to delete the copy saved on the new server.

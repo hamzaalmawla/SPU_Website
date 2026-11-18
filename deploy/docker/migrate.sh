@@ -12,9 +12,20 @@
 #     sudo bash migrate.sh step <N>    run one step again
 #     sudo bash migrate.sh report      print the result and the DNS / rollback steps again
 #
+# How the old server is read (chosen in step 2):
+#   - api: a cPanel API token over port 2083 only. For when FTP and the cPanel
+#     login page are closed to this server. The old server packs what is needed
+#     itself (a Git deploy that only exports, deploy/v2-staging/vps-export.sh) and
+#     this server reads the pieces back through the API (scripts/cpanel-api.py).
+#     Only the important data: v2's .env, storage and runtime files, the
+#     databases, and on request /forms, /Medicine, /spuh and the old media.
+#   - ftp: FTP over TLS, or the cPanel password over HTTPS.
+#
 # Safe by design:
-#   - The old server is only read (FTP download, cPanel download pages). Nothing
-#     is uploaded, changed or deleted there.
+#   - The old server is only read. With the API token the only things written
+#     there are the request file ~/vps-export.request and the packed copies in
+#     ~/vps-export/ (deleted again after each download). The site, its files
+#     and its databases are not changed.
 #   - DNS is never changed by this script. It prints the exact records to change.
 #   - Every step can be run again. Copies only fetch new or changed files.
 #   - Passwords are asked for, never written in this file. The FTP password is
@@ -26,7 +37,7 @@
 set -uo pipefail
 umask 022
 
-VERSION="2026-11-17"
+VERSION="2026-11-18"
 ROOT="${SPU_ROOT:-/srv/spu}"
 SRC="${ROOT}/src"
 DOCK="${SRC}/deploy/docker"
@@ -43,6 +54,7 @@ SELF="$(readlink -f "${BASH_SOURCE[0]}")"
 REPO_URL_DEFAULT="https://github.com/hamzaalmawla/SPU_Website.git"
 MIGRATION_BRANCHES=(claude/project-thread-01k9u9 claude/project-thread-w8no6t)
 OLD_IP_DEFAULT="184.107.185.129"
+API_ENV="${SECRETS}/cpanel-api.env"
 SITE_DB="spuedu_v2"
 # database : folder of the app that uses it
 APP_DBS=("spuedu_forms:forms" "spuedu_medical:Medicine" "spuedu_spuh:spuh")
@@ -343,6 +355,48 @@ step_settings() {
     ask CPANEL_URL "cPanel address" "https://cpanel.spu.edu.sy"
     CPANEL_URL="${CPANEL_URL%/}"; conf_set CPANEL_URL "${CPANEL_URL}"
     ask CPANEL_USER "cPanel user name" "spuedu"
+    say ""
+    info "How can this server read the old one?"
+    info "  api = a cPanel API token over port 2083 (use this when FTP and the cPanel login page are closed)"
+    info "  ftp = FTP, or the cPanel password over HTTPS"
+    while :; do
+        ask ACCESS_METHOD "Type api or ftp" "api"
+        [[ "${ACCESS_METHOD}" == api || "${ACCESS_METHOD}" == ftp ]] && break
+        ACCESS_METHOD=""
+    done
+    if [[ "${ACCESS_METHOD}" == api ]]; then
+        settings_api
+    else
+        settings_ftp
+    fi
+    dns_look
+}
+
+settings_api() {
+    ask CPANEL_API_HOST "cPanel API address (host:port)" "${DOMAIN}:2083"
+    CPANEL_API_HOST="${CPANEL_API_HOST#https://}"; CPANEL_API_HOST="${CPANEL_API_HOST%%/*}"
+    [[ "${CPANEL_API_HOST}" == *:* ]] || CPANEL_API_HOST="${CPANEL_API_HOST}:2083"
+    conf_set CPANEL_API_HOST "${CPANEL_API_HOST}"
+    ask CPANEL_REPO "v2's repository in cPanel > Git Version Control" "/home/${CPANEL_USER}/repositories/spu-v2"
+    ask CPANEL_BRANCH "Its branch" "dev"
+    local have=""
+    [[ -f "${API_ENV}" ]] && have="$(. "${API_ENV}"; printf '%s' "${CPANEL_TOKEN:-}")"
+    if [[ -n "${have}" ]] && yesno "A cPanel API token is already saved. Keep it?" Y; then
+        CPANEL_TOKEN="${have}"
+    else
+        info "Make one in cPanel > Security > Manage API Tokens (it can be deleted there after the move)."
+        ask_secret CPANEL_TOKEN "cPanel API token"
+    fi
+    write_api_env
+    ok "API token saved in ${API_ENV} (root only)."
+}
+
+write_api_env() {
+    mkdir -p "${SECRETS}"; chmod 700 "${SECRETS}"
+    ( umask 077; printf 'CPANEL_TOKEN=%q\n' "${CPANEL_TOKEN}" > "${API_ENV}" )
+}
+
+settings_ftp() {
     ask FTP_HOST "FTP server of the old host" "ftp.${DOMAIN}"
     ask FTP_USER "FTP account (its folder must be the whole account, /home/${CPANEL_USER})" "it@${DOMAIN}"
     local have_pw=""
@@ -354,7 +408,9 @@ step_settings() {
     fi
     write_ftp_env "${FTP_VERIFY_CERT:-yes}"
     ok "FTP details saved in ${SECRETS}/ftp.env (root only)."
+}
 
+dns_look() {
     say ""
     info "DNS today (read-only look, nothing is changed):"
     local ns ans
@@ -495,6 +551,18 @@ cls -1 spu_v2_app/.env
 
 step_connect() {
     need_code || return 1
+    if [[ -z "${ACCESS_METHOD:-}" ]]; then  # step 2 was answered by an older version of this script
+        info "How can this server read the old one?"
+        info "  api = a cPanel API token over port 2083 (use this when FTP and the cPanel login page are closed)"
+        info "  ftp = FTP, or the cPanel password over HTTPS"
+        while :; do
+            ask ACCESS_METHOD "Type api or ftp" "api"
+            [[ "${ACCESS_METHOD}" == api || "${ACCESS_METHOD}" == ftp ]] && break
+            ACCESS_METHOD=""
+        done
+        [[ "${ACCESS_METHOD}" == api ]] && settings_api
+    fi
+    [[ "${ACCESS_METHOD}" == api ]] && { step_connect_api; return $?; }
     [[ -f "${SECRETS}/ftp.env" ]] && FTP_PASSWORD="$(. "${SECRETS}/ftp.env"; printf '%s' "${FTP_PASSWORD:-}")"
     mkdir -p "${ROOT}/parity"
     info "1) Files: FTP over TLS to ${FTP_HOST} as ${FTP_USER}"
@@ -549,7 +617,158 @@ step_connect() {
     ok "Files will be copied by ${FILE_METHOD^^}; databases: $([[ ${DB_METHOD} == auto ]] && echo 'downloaded by the script' || echo 'you upload them (the script shows how)')."
 }
 
+# ── the old server through the cPanel API token (port 2083 only) ──────────────
+ca() {  # ca check|export|clean ...   (scripts/cpanel-api.py with the saved token)
+    [[ -f "${API_ENV}" ]] || { bad "No API token saved. Run step 2 again."; return 1; }
+    ( set -a; . "${API_ENV}"; set +a
+      CPANEL_USER="${CPANEL_USER}" CPANEL_HOST="${CPANEL_API_HOST%%:*}" CPANEL_PORT="${CPANEL_API_HOST##*:}" \
+      CPANEL_REPO="${CPANEL_REPO}" CPANEL_BRANCH="${CPANEL_BRANCH}" CPANEL_HOME="/home/${CPANEL_USER}" \
+      python3 -I "${DOCK}/scripts/cpanel-api.py" "$@" )
+}
+
+step_connect_api() {
+    mkdir -p "${ROOT}/xfer"; chmod 700 "${ROOT}/xfer"
+    info "Old server through the cPanel API at ${CPANEL_API_HOST} as ${CPANEL_USER} (token)."
+    while ! ca check; do
+        bad "The API does not answer with this token."
+        info "  r = type the address or the token again and retry"
+        info "  q = stop (fix the token or the firewall, then run this step again)"
+        local a; readin -p "   Choose r or q: " a || a=q
+        [[ "${a}" == r* ]] || return 1
+        settings_api
+    done
+    ok "The cPanel API answers."
+    FILE_METHOD=api; DB_METHOD=api
+    conf_set FILE_METHOD api; conf_set DB_METHOD api
+    say ""
+    info "How the copy works: the old server packs the files and database dumps itself"
+    info "(a Git deploy of ${CPANEL_BRANCH} that only exports: nothing on the site changes), and this server"
+    info "reads the pieces back through the API, checks every piece, and deletes the copy there afterwards."
+    info "The code in ${CPANEL_BRANCH} must contain deploy/v2-staging/vps-export.sh (pushed to GitHub)."
+}
+
+API_PKG=""   # this run's package of the old server's .env, storage, runtime files, apps and databases
+
+api_core_items() {
+    local items=(env storage web "db:${SITE_DB}") pair
+    if [[ "${APPS_MODE:-local}" != remote ]]; then
+        items+=(app:forms app:Medicine app:spuh)
+        for pair in "${APP_DBS[@]}"; do items+=("db:${pair%%:*}:${pair#*:}"); done
+    fi
+    printf '%s\n' "${items[@]}"
+}
+
+api_core() {  # fetch the package once per run; re-use a recent one outside the final sync
+    [[ -n "${API_PKG}" && -f "${API_PKG}/COMPLETE" ]] && return 0
+    local items latest age want ok_all=1
+    mapfile -t items < <(api_core_items)
+    if [[ "${MODE}" != final ]]; then
+        latest="$(ls -1dt "${ROOT}"/xfer/core-* 2>/dev/null | head -1)"
+        if [[ -n "${latest}" && -f "${latest}/COMPLETE" ]]; then
+            age=$(( $(date +%s) - $(stat -c %Y "${latest}/COMPLETE") ))
+            for want in env storage web; do
+                awk -F'\t' -v k="${want}" '$1==k{f=1} END{exit !f}' "${latest}/INDEX" || ok_all=0
+            done
+            if (( ok_all && age < 6 * 3600 )); then
+                API_PKG="${latest}"
+                info "Using the copy packed by the old server $(( age / 60 )) minutes ago."
+                return 0
+            fi
+        fi
+    fi
+    API_PKG="${ROOT}/xfer/core-$(date +%Y%m%d-%H%M%S)"
+    info "Asking the old server to pack: ${items[*]}"
+    info "This takes a few minutes up to an hour, depending on the size of storage/."
+    if ! ca export "${API_PKG}" "${items[@]}"; then
+        bad "The copy through the API failed (see above). Run this step again."
+        API_PKG=""; return 1
+    fi
+    ca clean || warn "The packed copy could not be deleted on the old server (~/vps-export); delete it in File Manager."
+    local old
+    for old in "${ROOT}"/xfer/core-*; do [[ "${old}" != "${API_PKG}" ]] && rm -rf "${old}"; done
+    return 0
+}
+
+pkg_file() {  # pkg_file <package dir> <item>  -> path of that item's file, or nothing
+    [[ -f "$1/INDEX" ]] && awk -F'\t' -v k="$2" '$1==k{print $2; exit}' "$1/INDEX"
+}
+
+api_db_file() {  # api_db_file <database>
+    [[ -f "${API_PKG}/INDEX" ]] && awk -F'\t' -v d="db:$1" '$1==d || index($1, d ":")==1 {print $2; exit}' "${API_PKG}/INDEX"
+}
+
+untar_into() {  # untar_into <archive> <folder>
+    mkdir -p "$2"
+    tar --no-same-owner --no-same-permissions -xzf "$1" -C "$2"
+}
+
+# Old site media, in batches, so the old account never holds more than one
+# batch at a time (it runs close to its disk quota). "item|folder under data/legacy";
+# a folder missing on the old server is skipped there.
+API_MEDIA_BATCHES=(
+    "media:public_html/downloads/files|downloads/files"
+    "media:public_html/downloads/files2|downloads/files2"
+    "media:public_html/images|images"
+    "media-root:public_html/downloads|downloads/root media:public_html/FCKBIH|FCKBIH"
+)
+
+pull_api() {  # pull_api site|apps|media
+    local rc=0 f s
+    case "$1" in
+        site)
+            api_core || return 1
+            f="$(pkg_file "${API_PKG}" env)"
+            [[ -n "${f}" ]] || { bad "The old server did not pack the .env."; return 1; }
+            install -m 600 -o root -g root "${f}" "${SECRETS}/cpanel.env"
+            f="$(pkg_file "${API_PKG}" storage)"
+            if [[ -n "${f}" ]]; then untar_into "${f}" "${DATA}/storage" || rc=1
+            else bad "The old server did not pack storage/."; rc=1; fi
+            f="$(pkg_file "${API_PKG}" web)"
+            if [[ -n "${f}" ]]; then untar_into "${f}" "${DATA}/web" || rc=1
+            else bad "The old server did not pack the document root's files."; rc=1; fi
+            chown -R 33:33 "${DATA}/storage" "${DATA}/web" ;;
+        apps)
+            api_core || return 1
+            for s in forms Medicine spuh; do
+                f="$(pkg_file "${API_PKG}" "app:${s}")"
+                if [[ -n "${f}" ]]; then untar_into "${f}" "${DATA}/legacy-apps/${s}" || rc=1
+                else bad "The old server did not pack /${s}."; rc=1; fi
+            done
+            chown -R 33:33 "${DATA}/legacy-apps" 2>/dev/null ;;
+        media)
+            local L="${DATA}/legacy" batch entry item pkg batches=("${API_MEDIA_BATCHES[@]}") last=""
+            for s in med dent pharm info petrol admin research hospital dent_clinic alumni clubs; do
+                last+=" media:public_html/${s}/images|${s}/images"
+            done
+            batches+=("${last# }")
+            for batch in "${batches[@]}"; do
+                local entries=() items=()
+                read -r -a entries <<< "${batch}"
+                for entry in "${entries[@]}"; do items+=("${entry%%|*}"); done
+                say ""
+                pkg="${ROOT}/xfer/media-$(date +%s)"
+                if ! ca export "${pkg}" "${items[@]}"; then
+                    warn "Not copied: ${items[*]}"; rc=1; rm -rf "${pkg}"; continue
+                fi
+                for entry in "${entries[@]}"; do
+                    item="${entry%%|*}"
+                    f="$(pkg_file "${pkg}" "${item}")"
+                    if [[ -n "${f}" ]]; then untar_into "${f}" "${L}/${entry#*|}" || rc=1
+                    else info "Not on the old server: ${item#*:}"; fi
+                done
+                rm -rf "${pkg}"
+            done
+            ca clean || warn "The packed copy could not be deleted on the old server (~/vps-export); delete it in File Manager."
+            install -m 0644 "${DOCK}/legacy-media.htaccess" "${L}/.htaccess" ;;
+    esac
+    return ${rc}
+}
+
 pull() {  # pull site|apps|media
+    if [[ "${FILE_METHOD:-ftp}" == api ]]; then
+        pull_api "$1"
+        return $?
+    fi
     if [[ "${FILE_METHOD:-ftp}" == ftp ]]; then
         bash "${DOCK}/scripts/pull-from-cpanel.sh" "$1"
         return $?
@@ -633,6 +852,11 @@ step_media() {
     local free; free="$(df -BG --output=avail "${DATA}" | tail -1 | tr -dc 0-9)"
     info "Free space now: ${free} GB."
     (( free < 30 )) && warn "Less than 30 GB free. The copy may fill the disk."
+    if [[ "${FILE_METHOD:-}" == api ]]; then
+        info "Over the API the old server packs one folder at a time; the largest (downloads/files)"
+        info "needs that much free space on the old account too. Serving the media from the old server"
+        info "for now (answer n) is fine; this step can be run again later."
+    fi
     if [[ "${MODE}" != final ]] && ! yesno "Copy them now?" Y; then
         MEDIA_MODE=remote; conf_set MEDIA_MODE remote
         stack_set SPU_LEGACY_MEDIA remote
@@ -743,6 +967,16 @@ detect_app_db_login() {  # detect_app_db_login <app dir> <database>  -> "file<TA
 get_dump() {  # get_dump <database>  -> prints the dump path on stdout (messages on stderr)
     local db="$1" out latest a
     mkdir -p "${ROOT}/dumps"; chmod 700 "${ROOT}/dumps"
+    if [[ "${DB_METHOD:-manual}" == api ]]; then
+        if api_core >&2; then
+            out="$(api_db_file "${db}")"
+            if [[ -n "${out}" && -f "${out}" ]] && gzip -t "${out}" 2>/dev/null; then
+                info "Using the dump of ${db} packed by the old server at $(cat "${API_PKG}/COMPLETE")." >&2
+                printf '%s\n' "${out}"; return 0
+            fi
+        fi
+        bad "The old server did not pack ${db}. Falling back to the manual way for it." >&2
+    fi
     if [[ "${DB_METHOD:-manual}" == auto ]] && ensure_cpanel_login >&2; then
         out="${ROOT}/dumps/${db}-$(date +%Y%m%d-%H%M).sql.gz"
         info "Downloading ${db} from cPanel..." >&2
@@ -805,6 +1039,11 @@ step_databases() {
     ok "Database server running."
     [[ "${MODE}" == final ]] && warn "Final sync: make sure editors stopped editing and the dumps are fresh (taken now)."
 
+    # Fetch the package here, not inside get_dump's subshell, so it is fetched once.
+    if [[ "${DB_METHOD:-manual}" == api ]] && ! api_core; then
+        warn "The old server's package did not arrive; you will upload the database files yourself."
+        DB_METHOD=manual
+    fi
     # Log in here, not inside get_dump's subshell, so the password is asked once.
     if [[ "${DB_METHOD:-manual}" == auto ]] && ! ensure_cpanel_login; then
         warn "No cPanel login; you will upload the database files yourself."
@@ -1197,6 +1436,10 @@ after_dns() {
         shred -u "${SECRETS}/ftp.env" 2>/dev/null || rm -f "${SECRETS}/ftp.env"
         ok "FTP password deleted."
     fi
+    if [[ -f "${API_ENV}" ]] && yesno "Delete the saved cPanel API token from this server now? (only needed for copying)" Y; then
+        shred -u "${API_ENV}" 2>/dev/null || rm -f "${API_ENV}"
+        ok "API token deleted here. Also delete it in cPanel > Security > Manage API Tokens."
+    fi
     mark_done after-dns
     step_report
     cat <<TXT
@@ -1275,6 +1518,8 @@ final_sync() {
         for i in "${!STEP_IDS[@]}"; do [[ "${STEP_IDS[$i]}" == "${id}" ]] && break; done
         [[ "${id}" == apps && "${APPS_MODE:-local}" == remote ]] && continue
         [[ "${id}" == media && "${MEDIA_MODE:-local}" == remote ]] && { warn "Old media is still served from the old server (step 8 never finished)."; continue; }
+        # The old site's media no longer changes; over the API a fresh copy would mean packing ~20 GB again.
+        [[ "${id}" == media && "${FILE_METHOD:-}" == api ]] && is_done media && { info "Old media was already copied; not copied again."; continue; }
         run_step "${i}" || exit 1
     done
     (( ${REPORT_FAILS:-0} == 0 )) || exit 1
