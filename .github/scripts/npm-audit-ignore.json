@@ -1,0 +1,8 @@
+[
+    {
+        "advisory": "GHSA-fc5q-39xc-vjpf",
+        "package": "picomatch",
+        "reason": "ReDoS in picomatch <=4.0.7, the latest release; no patched version exists yet. Only the Vite build tools use it (glob patterns we write), never the public site. Remove this entry and update picomatch once a fixed version is published.",
+        "reviewBy": "2026-12-02"
+    }
+]
