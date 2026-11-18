@@ -49,14 +49,17 @@ jobs:
       # A blocking check that fails on a registry hiccup teaches people to
       # ignore red, which is how the PHPStan finding above went unnoticed.
       # Retry transport errors; fail immediately on a real advisory.
+      # Advisories with no fixed release yet are listed, with a reason and a
+      # review date, in .github/scripts/npm-audit-ignore.json.
       - name: NPM audit
         run: |
           for attempt in 1 2 3; do
-            if out=$(npm audit --audit-level=high 2>&1); then
-              echo "$out"; exit 0
+            status=0
+            node .github/scripts/npm-audit.mjs || status=$?
+            if [ "$status" -eq 0 ]; then
+              exit 0
             fi
-            echo "$out"
-            if echo "$out" | grep -qE "audit endpoint returned an error|ENOTFOUND|ETIMEDOUT|ECONNRESET|EAI_AGAIN|socket hang up"; then
+            if [ "$status" -eq 2 ]; then
               echo "::warning::npm registry error on attempt $attempt/3; retrying"
               sleep $((attempt * 15))
               continue
