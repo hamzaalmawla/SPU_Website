@@ -75,15 +75,26 @@ sudo spu-deploy status                  # what the GitHub button did lately
 The VPS accepts SSH only from the university network, so nothing pushes a
 deploy to it. `migrate.sh` step 14 installs the systemd timer
 `spu-deploy-watch.timer`: every minute (two without a GitHub token) it runs
-`scripts/deploy-watch.py`, which only makes outgoing HTTPS calls to GitHub. It
-lists the runs of `.github/workflows/deploy-vps.yml` started on `dev` with the
-*Run workflow* button (only people with write access can start one), reads the
-request from the run's name (`deploy` or `rollback`, plus migrations to
-approve), and runs `deploy.sh` on that run's commit. Progress and the result
-go to `https://<site>/deploy-status.json` (state, step, commit, message; no
-log lines); the workflow run on GitHub waits for that file and turns green or
-red. With `AUTO_DEPLOY=yes` in `/srv/spu/deploy.conf` every new commit on dev
-is deployed by itself, each one tried once. Logs: `/srv/spu/deploy-logs/`.
+`scripts/deploy-watch.py`, which only makes outgoing HTTPS calls to GitHub.
+
+- **Automatic (the chosen way, `AUTO_DEPLOY=yes` in `/srv/spu/deploy.conf`):**
+  every new commit on dev is deployed, the newest when several arrive, each
+  commit once. Rolling back is a revert merged into dev.
+- **By hand:** a run of `.github/workflows/deploy-vps.yml` started with *Run
+  workflow* on dev (only people with write access can; the button shows only
+  while the file is on the default branch) asks for `deploy` or `rollback` plus
+  migrations to approve, carried in the run's name.
+
+Progress and results go to `https://<site>/deploy-status.json` (state, step,
+commit, message; no log lines), keyed by run id or `auto-<sha8>`. The same
+workflow runs on every push to dev and waits for its commit's entry, so each
+commit gets a green or red run on GitHub. Before DNS points at the VPS it
+finds no status file and ends green with a notice.
+
+Data migrations: the release refuses row-writing migrations that are not
+approved. Approvals come from `deploy/docker/approvals/data-migrations.approved`
+in the deployed commit (names of migrations that already ran may stay), from
+`--approve`, or from the `approve_migrations` input. Logs: `/srv/spu/deploy-logs/`.
 
 No self-hosted GitHub runner: the repository is public, and a runner on the
 server would run workflow code from anyone's pull request that a maintainer

@@ -7,7 +7,10 @@
 #     deploy.sh <sha>                    a given commit (it must be on dev)
 #     deploy.sh --approve <migration>    also approve a pending data migration
 #                                        (repeat for each; the release refuses
-#                                        unapproved row-writing migrations)
+#                                        unapproved row-writing migrations).
+#                                        Names listed in the commit's
+#                                        deploy/docker/approvals/data-migrations.approved
+#                                        are approved too.
 #     deploy.sh --rollback               go back to the release before this one
 #
 # Usually started from home by the "Deploy to the VPS" button on GitHub
@@ -139,6 +142,14 @@ deploy() {
     echo "   now live: $(git -C "${SRC}" rev-parse --short HEAD)"
 
     git -C "${SRC}" checkout -q --force --detach "${full}" || die failed "Could not check out ${sha}." 3
+
+    # Approvals committed to dev (for automatic deploys, which have no approval box).
+    local committed="${SRC}/deploy/docker/approvals/data-migrations.approved" name
+    if [[ -f "${committed}" ]]; then
+        while read -r name; do
+            [[ "${name}" =~ ^[0-9]{4}_[0-9]{2}_[0-9]{2}_[0-9]{6}_[A-Za-z0-9_]+$ ]] && approvals+=("${name}")
+        done < <(sed -e 's/#.*//' -e 's/^[[:space:]]*migration=//' -e 's/[[:space:]]//g' "${committed}")
+    fi
 
     step build "Building the image of ${sha} (the site keeps serving the current one)"
     if [[ "${SPU_DEPLOY_SKIP_BUILD:-}" == 1 ]] && docker image inspect "spu-web:${sha}" >/dev/null 2>&1; then

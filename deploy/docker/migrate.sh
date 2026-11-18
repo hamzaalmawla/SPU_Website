@@ -1092,15 +1092,16 @@ step_checks() {
 step_deploys() {
     need_code || return 1
     [[ -f "${DOCK}/scripts/deploy-watch.py" ]] || { bad "This code has no deploy watcher. Run step 3 again to update the code."; return 1; }
-    info "This server will accept SSH only from the university network. To put a new version"
-    info "live from anywhere, this server asks GitHub every minute whether someone pressed"
-    info "Actions > 'Deploy to the VPS' > Run workflow. Nothing from outside connects to it;"
-    info "the result shows on GitHub (the run turns green or red)."
+    info "This server will accept SSH only from the university network. So that new versions"
+    info "still go live from anywhere, this server asks GitHub every minute or two whether dev"
+    info "has a new commit, and deploys it. Nothing from outside connects to it; each commit"
+    info "on GitHub gets a 'Deploy to the VPS' run that turns green or red with the result."
     local conf="${ROOT}/deploy.conf" repo auto=no every=60
     repo="$(sed -E 's#^https://github\.com/##; s#\.git$##; s#/$##' <<< "${REPO_URL:-${REPO_URL_DEFAULT}}")"
     if [[ ! -f "${conf}" ]]; then
-        info "Automatic mode also deploys every change merged into dev, without the button."
-        yesno "Deploy every change on dev automatically? (if unsure: n)" N && auto=yes
+        info "Automatic mode: every change merged into dev goes live by itself (recommended)."
+        info "Without it, only a 'Run workflow' request on GitHub deploys."
+        yesno "Deploy every change on dev automatically?" Y && auto=yes
         printf '# Read by deploy-watch.py. AUTO_DEPLOY=yes deploys every new commit on dev by itself.\nREPO=%s\nBRANCH=dev\nAUTO_DEPLOY=%s\n' \
             "${repo}" "${auto}" > "${conf}"
     fi
@@ -1147,12 +1148,12 @@ UNIT
     ok "Deploy watcher on (every ${every} seconds). Automatic deploys of dev: $(sed -n 's/^AUTO_DEPLOY=//p' "${conf}")."
     cat <<TXT
 
-   To put the latest dev live, from anywhere:
-     github.com/${repo} > Actions > "Deploy to the VPS" > Run workflow
-     > Use workflow from: dev > Run workflow.
-   Within a minute or two this server starts; the run on GitHub shows the steps and
-   turns green when the new version is live (red if it stopped; the site then stays on
-   the version it had). Until DNS points ${DOMAIN} here, also fill in server_ip: ${VPS_IP}.
+   To put a new version live: merge it into dev. Within a few minutes this server
+   deploys it. On GitHub, the commit's "Deploy to the VPS" run turns green when it is
+   live (red if it stopped; the site then stays on the version it had). Progress:
+   https://${DOMAIN}/deploy-status.json
+   Data migrations are approved in deploy/docker/approvals/data-migrations.approved
+   (the red run prints the lines to add). To go back: merge a revert into dev.
 
    On this server (from the university network):
      sudo spu-deploy              deploy the latest dev

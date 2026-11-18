@@ -1,0 +1,10 @@
+# Data migrations approved for the VPS (automatic deploys of dev).
+#
+# A migration that changes existing rows (UPDATE, DELETE, INSERT) does not go
+# live until it is named here. When a deploy stops with "Data migrations need
+# approval", the run on GitHub prints the names. Add one line per name, in a pull
+# request into dev; merging it deploys again with them approved.
+#
+# Names of migrations that have already run can stay; they are ignored.
+#
+# migration=2026_11_18_000001_example_name

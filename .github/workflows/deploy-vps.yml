@@ -1,17 +1,24 @@
-# Deploy dev to the VPS from anywhere: Actions > "Deploy to the VPS" > Run workflow (on dev).
+# Shows on GitHub what the VPS did with a commit of dev.
 #
 # The VPS accepts SSH only from the university network, so this workflow never
-# connects to it to deploy. The server itself asks GitHub every minute whether a
-# run of this workflow was started (deploy/docker/scripts/deploy-watch.py), runs
-# the deploy, and publishes its progress at https://<site>/deploy-status.json.
-# This job only waits for that file and shows the result here.
+# connects to it to deploy. The server itself (deploy/docker/scripts/deploy-watch.py,
+# every minute or two) deploys each new commit on dev (AUTO_DEPLOY=yes), or a
+# commit for which this workflow was started by hand, and publishes its progress
+# at https://<site>/deploy-status.json. This job only waits for that file and
+# turns green or red.
 #
-# The request travels in the run's name, so keep the run-name format: the
+#   push to dev    waits for the automatic deploy of that commit
+#   Run workflow   asks for a deploy or a rollback (GitHub shows the button only
+#                  when this file is on the default branch)
+#
+# A request by hand travels in the run's name, so keep the run-name format: the
 # server reads "VPS deploy request: <deploy|rollback> [migration names]".
 name: Deploy to the VPS
-run-name: "VPS deploy request: ${{ inputs.action }} ${{ inputs.approve_migrations }}"
+run-name: "${{ github.event_name == 'push' && 'VPS automatic deploy' || format('VPS deploy request: {0} {1}', inputs.action, inputs.approve_migrations) }}"
 
 on:
+  push:
+    branches: [dev]
   workflow_dispatch:
     inputs:
       action:
@@ -45,6 +52,9 @@ jobs:
       - name: Wait for the VPS to deploy
         env:
           RUN_ID: ${{ github.run_id }}
+          EVENT: ${{ github.event_name }}
+          SHA: ${{ github.sha }}
+          REPO_URL: https://github.com/${{ github.repository }}
           SERVER_IP: ${{ inputs.server_ip }}
           SITE: spu.edu.sy
         run: |
@@ -55,13 +65,31 @@ jobs:
           else
             fetch() { curl -s -m 20 "https://${SITE}/deploy-status.json?t=$(date +%s)"; }
           fi
-          echo "The server checks for new requests every minute or two."
+          key="${RUN_ID}"
+          if [[ "${EVENT}" == push ]]; then
+            key="auto-${SHA:0:8}"
+            # Before the move the VPS does not answer at the site's name: nothing to wait for.
+            if ! fetch | jq -e '.runs' >/dev/null 2>&1; then
+              echo "::notice::The VPS does not answer at ${SITE} yet (before the DNS switch), so there is no deploy to follow."
+              exit 0
+            fi
+          fi
+          newer() {  # a later commit on dev replaces this one in the automatic deploy
+            [[ "${EVENT}" == push ]] || return 1
+            local head; head="$(git ls-remote "${REPO_URL}" refs/heads/dev | cut -f1)"
+            [[ -n "${head}" && "${head}" != "${SHA}" ]]
+          }
+          echo "The server checks for new commits and requests every minute or two."
           seen="" start=$(date +%s)
           while true; do
-            run="$(fetch | jq -c --arg id "${RUN_ID}" '.runs[$id] // empty' 2>/dev/null)"
+            run="$(fetch | jq -c --arg id "${key}" '.runs[$id] // empty' 2>/dev/null)"
             if [[ -z "${run}" ]]; then
+              if newer; then
+                echo "::notice::A newer commit is on dev; the server deploys that one instead (see its run)."
+                exit 0
+              fi
               if (( $(date +%s) - start > 600 )); then
-                echo "::error::The server did not pick this request up within 10 minutes. Is the VPS on, and is the deploy watcher installed (migrate.sh step 14)? Before the DNS switch, fill in server_ip."
+                echo "::error::The server did not pick this up within 10 minutes. Is the VPS on, is the deploy watcher installed (migrate.sh step 14), and for pushes is AUTO_DEPLOY=yes in /srv/spu/deploy.conf? Before the DNS switch, fill in server_ip."
                 exit 1
               fi
               sleep 20; continue
@@ -76,9 +104,11 @@ jobs:
               blocked)
                 pending="$(jq -r '.pending | join(" ")' <<< "${run}")"
                 echo "::error::Data migrations need approval: ${pending}"
-                echo "To approve them, run this workflow again and paste into approve_migrations:"
-                echo "    ${pending}"
-                echo "Only approve them if you know what they change. Nothing went live this time."
+                echo "Nothing went live this time. Only approve them if you know what they change. To approve:"
+                echo "  add a line 'migration=<name>' for each to deploy/docker/approvals/data-migrations.approved"
+                echo "  in a pull request into dev; merging it deploys again. The names:"
+                printf '    migration=%s\n' ${pending}
+                echo "  (or run this workflow by hand and paste the names into approve_migrations)"
                 exit 1 ;;
               *)
                 echo "::error::$(jq -r '.message' <<< "${run}")"

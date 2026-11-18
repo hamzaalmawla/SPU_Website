@@ -17,10 +17,10 @@ and rollback steps. How to run it, in plain language:
 behind it.
 
 **Deploys after the move** are pull-based, because the VPS accepts SSH only
-from the university network: GitHub › Actions › *Deploy to the VPS* › Run
-workflow (on dev), which the server picks up within a minute or two
-(`migrate.sh` step 14; details in `deploy/docker/README.md`, how-to in the
-guide's section 7).
+from the university network: the server deploys every new commit on dev by
+itself within a few minutes, and each commit's *Deploy to the VPS* run on
+GitHub shows the result (`migrate.sh` step 14; details in
+`deploy/docker/README.md`, how-to in the guide's section 7).
 
 ---
 

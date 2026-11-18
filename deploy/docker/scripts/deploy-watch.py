@@ -13,8 +13,9 @@ minute; it only makes outgoing HTTPS calls to GitHub:
      website. The workflow run on GitHub waits for that file and shows the
      result, so whoever pressed the button sees it there.
 
-With AUTO_DEPLOY=yes in /srv/spu/deploy.conf it also deploys every new commit
-on dev by itself (each commit is tried once).
+With AUTO_DEPLOY=yes in /srv/spu/deploy.conf (the usual setting) it deploys
+every new commit on dev by itself, each commit once; its status entry is
+"auto-<first 8 characters of the commit>", which the workflow's push run waits for.
 
     deploy-watch.py            one check (what the timer runs)
     deploy-watch.py --init     remember the runs that exist now, so they are not deployed
@@ -269,7 +270,9 @@ def check(init: bool = False) -> int:
         if head and head != live and head != state.get("auto_tried"):
             state["auto_tried"] = head
             save(state)
-            run_deploy(state, "auto", [head], {"by": "auto", "action": "deploy", "sha": head[:8]})
+            if run_deploy(state, f"auto-{head[:8]}", [head], {"by": "auto", "action": "deploy", "sha": head[:8]}) == 5:
+                state["auto_tried"] = ""
+                save(state)
     return 0
 
 
