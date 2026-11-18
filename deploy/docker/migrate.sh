@@ -355,21 +355,26 @@ step_settings() {
     ask CPANEL_URL "cPanel address" "https://cpanel.spu.edu.sy"
     CPANEL_URL="${CPANEL_URL%/}"; conf_set CPANEL_URL "${CPANEL_URL}"
     ask CPANEL_USER "cPanel user name" "spuedu"
+    choose_access
+    case "${ACCESS_METHOD}" in
+        api) settings_api ;;
+        ftp) settings_ftp ;;
+    esac
+    dns_look
+}
+
+choose_access() {
     say ""
-    info "How can this server read the old one?"
-    info "  api = a cPanel API token over port 2083 (use this when FTP and the cPanel login page are closed)"
-    info "  ftp = FTP, or the cPanel password over HTTPS"
+    info "How does the old server's data get here?"
+    info "  api    = this server reads it with a cPanel API token over port 2083"
+    info "  laptop = you downloaded it on a laptop (deploy/docker/laptop/get-old-server-data.ps1)"
+    info "           and upload the folder to ${ROOT}/xfer/ here; this server never contacts the old one"
+    info "  ftp    = FTP, or the cPanel password over HTTPS"
     while :; do
-        ask ACCESS_METHOD "Type api or ftp" "api"
-        [[ "${ACCESS_METHOD}" == api || "${ACCESS_METHOD}" == ftp ]] && break
+        ask ACCESS_METHOD "Type api, laptop or ftp" "api"
+        [[ "${ACCESS_METHOD}" =~ ^(api|laptop|ftp)$ ]] && break
         ACCESS_METHOD=""
     done
-    if [[ "${ACCESS_METHOD}" == api ]]; then
-        settings_api
-    else
-        settings_ftp
-    fi
-    dns_look
 }
 
 settings_api() {
@@ -552,17 +557,11 @@ cls -1 spu_v2_app/.env
 step_connect() {
     need_code || return 1
     if [[ -z "${ACCESS_METHOD:-}" ]]; then  # step 2 was answered by an older version of this script
-        info "How can this server read the old one?"
-        info "  api = a cPanel API token over port 2083 (use this when FTP and the cPanel login page are closed)"
-        info "  ftp = FTP, or the cPanel password over HTTPS"
-        while :; do
-            ask ACCESS_METHOD "Type api or ftp" "api"
-            [[ "${ACCESS_METHOD}" == api || "${ACCESS_METHOD}" == ftp ]] && break
-            ACCESS_METHOD=""
-        done
+        choose_access
         [[ "${ACCESS_METHOD}" == api ]] && settings_api
     fi
     [[ "${ACCESS_METHOD}" == api ]] && { step_connect_api; return $?; }
+    [[ "${ACCESS_METHOD}" == laptop ]] && { step_connect_laptop; return $?; }
     [[ -f "${SECRETS}/ftp.env" ]] && FTP_PASSWORD="$(. "${SECRETS}/ftp.env"; printf '%s' "${FTP_PASSWORD:-}")"
     mkdir -p "${ROOT}/parity"
     info "1) Files: FTP over TLS to ${FTP_HOST} as ${FTP_USER}"
@@ -647,6 +646,30 @@ step_connect_api() {
     info "The code in ${CPANEL_BRANCH} must contain deploy/v2-staging/vps-export.sh (pushed to GitHub)."
 }
 
+step_connect_laptop() {
+    mkdir -p "${ROOT}/xfer"; chmod 700 "${ROOT}/xfer"
+    FILE_METHOD=api; DB_METHOD=api; MEDIA_MODE=remote
+    conf_set FILE_METHOD api; conf_set DB_METHOD api; conf_set MEDIA_MODE remote
+    info "The data comes from a folder made on a laptop with deploy/docker/laptop/get-old-server-data.ps1"
+    info "(it is named core-<date>-<time> and holds INDEX and COMPLETE). Upload the whole folder into"
+    info "${ROOT}/xfer/ on this server, e.g. from the laptop:"
+    info "  scp -r core-20261119-0900 root@${VPS_IP:-this-server}:${ROOT}/xfer/"
+    if laptop_package >/dev/null; then
+        ok "Found $(laptop_package), made $(cat "$(laptop_package)/COMPLETE")."
+    else
+        warn "No uploaded folder yet. Upload it before step 6."
+    fi
+    info "The old images and downloads (~20 GB) are not in it; they stay served from the old server."
+}
+
+laptop_package() {  # newest complete uploaded package folder
+    local d
+    for d in $(ls -1d "${ROOT}"/xfer/core-* 2>/dev/null | sort -r); do
+        [[ -f "${d}/COMPLETE" && -f "${d}/INDEX" ]] && { printf '%s\n' "${d}"; return 0; }
+    done
+    return 1
+}
+
 API_PKG=""   # this run's package of the old server's .env, storage, runtime files, apps and databases
 
 api_core_items() {
@@ -661,6 +684,21 @@ api_core_items() {
 api_core() {  # fetch the package once per run; re-use a recent one outside the final sync
     [[ -n "${API_PKG}" && -f "${API_PKG}/COMPLETE" ]] && return 0
     local items latest age want ok_all=1
+    if [[ "${ACCESS_METHOD:-}" == laptop ]]; then
+        latest="$(laptop_package)" || {
+            bad "No uploaded folder in ${ROOT}/xfer/ (core-<date>-<time> with INDEX and COMPLETE)."
+            info "Make it on the laptop with deploy/docker/laptop/get-old-server-data.ps1 and upload it."
+            return 1
+        }
+        for want in env storage web "db:${SITE_DB}"; do
+            awk -F'\t' -v k="${want}" '$1==k{f=1} END{exit !f}' "${latest}/INDEX" || { bad "${latest} has no ${want}."; return 1; }
+        done
+        info "Using the folder from the laptop: ${latest} (made $(cat "${latest}/COMPLETE"))."
+        [[ "${MODE}" == final ]] && warn "Final sync: this must be a download made AFTER the editors stopped editing."
+        yesno "Use it?" Y || return 1
+        API_PKG="${latest}"
+        return 0
+    fi
     mapfile -t items < <(api_core_items)
     if [[ "${MODE}" != final ]]; then
         latest="$(ls -1dt "${ROOT}"/xfer/core-* 2>/dev/null | head -1)"
@@ -689,12 +727,21 @@ api_core() {  # fetch the package once per run; re-use a recent one outside the 
     return 0
 }
 
+pkg_path() {  # pkg_path <package dir> <file from INDEX>   (INDEX names are relative to the folder)
+    local f="${2%$'\r'}"
+    [[ -z "${f}" ]] && return 0
+    [[ "${f}" == /* ]] || f="$1/${f##*[\\/]}"
+    printf '%s\n' "${f}"
+}
+
 pkg_file() {  # pkg_file <package dir> <item>  -> path of that item's file, or nothing
-    [[ -f "$1/INDEX" ]] && awk -F'\t' -v k="$2" '$1==k{print $2; exit}' "$1/INDEX"
+    [[ -f "$1/INDEX" ]] || return 0
+    pkg_path "$1" "$(tr -d '\r' < "$1/INDEX" | awk -F'\t' -v k="$2" '$1==k{print $2; exit}')"
 }
 
 api_db_file() {  # api_db_file <database>
-    [[ -f "${API_PKG}/INDEX" ]] && awk -F'\t' -v d="db:$1" '$1==d || index($1, d ":")==1 {print $2; exit}' "${API_PKG}/INDEX"
+    [[ -f "${API_PKG}/INDEX" ]] || return 0
+    pkg_path "${API_PKG}" "$(tr -d '\r' < "${API_PKG}/INDEX" | awk -F'\t' -v d="db:$1" '$1==d || index($1, d ":")==1 {print $2; exit}')"
 }
 
 untar_into() {  # untar_into <archive> <folder>
@@ -847,6 +894,12 @@ step_apps() {
 
 step_media() {
     need_code || return 1
+    if [[ "${ACCESS_METHOD:-}" == laptop ]]; then
+        MEDIA_MODE=remote; conf_set MEDIA_MODE remote
+        stack_set SPU_LEGACY_MEDIA remote
+        warn "Old images and downloads stay served from the old server (${OLD_IP}); they are not in the laptop folder."
+        return 0
+    fi
     info "The old site's images and downloads (downloads/files, files2, images, the faculties' images, FCKBIH)."
     info "About 20 GB. It can take hours; if the connection drops, run the script again and it continues."
     local free; free="$(df -BG --output=avail "${DATA}" | tail -1 | tr -dc 0-9)"

@@ -219,3 +219,25 @@ keeps them served from the old server; run `migrate.sh step 8` later.
 The deploy needs `deploy/v2-staging/vps-export.sh` in the `dev` branch on
 GitHub. After the move, delete the token in cPanel → Security → Manage API
 Tokens; `after-dns` offers to delete the copy saved on the new server.
+
+### 9a. Download on a laptop, upload to the VPS later
+
+When the VPS cannot reach port 2083 either, or you want the data ready in
+advance, download it on a Windows laptop that can reach
+`https://spu.edu.sy:2083` (needs Python 3), in this repository on `dev`:
+
+```
+powershell -ExecutionPolicy Bypass -File deploy\docker\laptop\get-old-server-data.ps1
+```
+
+It asks for the API token and writes one folder,
+`%USERPROFILE%\spu-vps-data\core-<date>-<time>`, holding v2's `.env`, `storage`,
+runtime files, `/forms`, `/Medicine`, `/spuh` and the databases. The old
+images and downloads are not included; they stay served from the old server.
+Keep the folder private (it holds the `.env` and full database dumps).
+
+Upload it into `/srv/spu/xfer/` on the VPS (`scp -r <folder> root@<VPS-IP>:/srv/spu/xfer/`),
+then run `migrate.sh step 5` and answer **laptop**: steps 6, 7 and 10 use that
+folder and the VPS never contacts the old server. For the final sync,
+download a fresh folder after the editors stop, upload it, and run `final`.
+Delete the folder from the laptop once it is on the VPS.

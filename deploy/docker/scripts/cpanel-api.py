@@ -19,7 +19,8 @@ shell. Everything goes over cPanel's API port (2083) with an API token:
 
 Items: env, storage, web, app:<dir>, db:<name>, db:<name>:<app dir>,
 media:<path under home>, media-root:<path under home> (see vps-export.sh).
-<out dir>/INDEX lists "item<TAB>file" for every item that arrived.
+<out dir>/INDEX lists "item<TAB>file name" for every item that arrived (names relative to
+<out dir>, so the folder can be made on a laptop and uploaded to the VPS).
 
 Settings come from the environment (the token never goes on a command line):
     CPANEL_TOKEN     the API token (cPanel > Security > Manage API Tokens)
@@ -337,7 +338,7 @@ def export(api: Api, out: str, items: list[str]) -> int:
         for wanted in items:
             for item in arrived:
                 if item["name"] == item_name(wanted):
-                    fh.write(f"{wanted}\t{os.path.join(out, item['file'])}\n")
+                    fh.write(f"{wanted}\t{item['file']}\n")
     with open(os.path.join(out, "COMPLETE"), "w", encoding="utf-8") as fh:
         fh.write(time.strftime("%Y-%m-%d %H:%M:%S\n"))
     missing = [i for i in items if item_name(i) not in {a["name"] for a in arrived}]
