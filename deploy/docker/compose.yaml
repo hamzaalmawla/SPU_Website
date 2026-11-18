@@ -1,0 +1,132 @@
+# The SPU website (v2) on the Docker VPS.
+#
+# Run it through deploy/docker/bin/spu, which points compose at this file and
+# at /srv/spu/stack.env:
+#
+#     spu up -d                 start or update everything
+#     spu run --rm release      migrations, search index, sitemap, launch checks
+#     spu logs -f web           Apache + PHP log
+#
+# Only Caddy publishes ports. Host directories under ${SPU_ROOT} hold every
+# piece of state, so a backup of /srv/spu/data plus the database dump is the
+# whole site.
+
+name: spu
+
+x-app: &app
+  image: spu-web:${SPU_IMAGE_TAG:-current}
+  restart: unless-stopped
+  environment:
+    SPU_LEGACY_APPS: ${SPU_LEGACY_APPS:-local}
+    SPU_LEGACY_MEDIA: ${SPU_LEGACY_MEDIA:-local}
+    SPU_LEGACY_ORIGIN: ${SPU_LEGACY_ORIGIN:-https://184.107.185.129}
+    SPU_PROXY_SUBNET: 172.30.0.0/24
+    APACHE_MAX_WORKERS: ${APACHE_MAX_WORKERS:-40}
+  volumes:
+    - ${SPU_ROOT:-/srv/spu}/app.env:/var/www/spu/.env:ro
+    - ${SPU_ROOT:-/srv/spu}/data/storage:/var/www/spu/storage
+    - ${SPU_ROOT:-/srv/spu}/data/web:/var/www/spu/public
+    - ${SPU_ROOT:-/srv/spu}/data/legacy:/var/www/spu/public/_legacy:ro
+  depends_on:
+    db:
+      condition: service_healthy
+  networks: [spu]
+
+services:
+  db:
+    image: mariadb:10.11
+    restart: unless-stopped
+    command:
+      - --innodb-buffer-pool-size=${INNODB_BUFFER_POOL_SIZE:-1G}
+    environment:
+      MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:?set DB_ROOT_PASSWORD in stack.env}
+      MARIADB_DATABASE: ${DB_DATABASE:-spuedu_v2}
+      MARIADB_USER: ${DB_USERNAME:-spuedu_v2usr}
+      MARIADB_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in stack.env}
+      MARIADB_AUTO_UPGRADE: "1"
+    volumes:
+      - ${SPU_ROOT:-/srv/spu}/data/mysql:/var/lib/mysql
+      - ${SPU_ROOT:-/srv/spu}/backups:/backups
+      - ./mariadb/spu.cnf:/etc/mysql/conf.d/spu.cnf:ro
+      - mysqld-socket:/run/mysqld
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+    networks: [spu]
+
+  web:
+    <<: *app
+    # Built once here; queue, scheduler and release run the same image.
+    build:
+      context: ../..
+      dockerfile: deploy/docker/Dockerfile
+    command: ["web"]
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null -H 'Host: ${SPU_CANONICAL_HOST:-spu.edu.sy}' -H 'X-Forwarded-Proto: https' http://127.0.0.1/up || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  queue:
+    <<: *app
+    command: ["queue"]
+
+  scheduler:
+    <<: *app
+    command: ["scheduler"]
+
+  # One-off: `spu run --rm release`. Never started by `up`.
+  release:
+    <<: *app
+    restart: "no"
+    command: ["release"]
+    profiles: ["tools"]
+
+  # /forms, /Medicine and /spuh from the old document root (SPU_LEGACY_APPS=local).
+  # Enabled by COMPOSE_PROFILES=legacy-apps in stack.env.
+  legacy-apps:
+    build:
+      context: .
+      dockerfile: legacy-apps/Dockerfile
+    image: spu-legacy-apps:current
+    restart: unless-stopped
+    profiles: ["legacy-apps"]
+    volumes:
+      - ${SPU_ROOT:-/srv/spu}/data/legacy-apps:/var/www/legacy
+      - mysqld-socket:/run/mysqld
+    depends_on:
+      db:
+        condition: service_healthy
+    networks: [spu]
+
+  caddy:
+    image: caddy:2.8.4-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      SPU_CANONICAL_HOST: ${SPU_CANONICAL_HOST:-spu.edu.sy}
+      SPU_ALIAS_HOSTS: ${SPU_ALIAS_HOSTS:-www.spu.edu.sy v2.spu.edu.sy}
+      SPU_TLS_MODE: ${SPU_TLS_MODE:-internal}
+      SPU_HSTS: ${SPU_HSTS:-max-age=604800; includeSubDomains}
+    volumes:
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - ${SPU_ROOT:-/srv/spu}/data/caddy:/data
+      - ${SPU_ROOT:-/srv/spu}/data/certs:/certs:ro
+    depends_on:
+      - web
+    networks: [spu]
+
+volumes:
+  mysqld-socket:
+
+networks:
+  spu:
+    ipam:
+      config:
+        - subnet: 172.30.0.0/24

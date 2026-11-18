@@ -1,0 +1,20 @@
+# MariaDB 10.11, the same major version as the cPanel host (10.11.19), so the
+# dumps restore without conversion.
+[mysqld]
+character-set-server = utf8mb4
+collation-server = utf8mb4_unicode_ci
+skip-name-resolve
+max_allowed_packet = 256M
+# innodb_buffer_pool_size is set in compose.yaml (INNODB_BUFFER_POOL_SIZE)
+innodb_log_file_size = 256M
+innodb_flush_log_at_trx_commit = 1
+max_connections = 150
+table_open_cache = 4000
+tmp_table_size = 64M
+max_heap_table_size = 64M
+slow_query_log = 1
+slow_query_log_file = /var/lib/mysql/slow.log
+long_query_time = 2
+
+[client]
+default-character-set = utf8mb4

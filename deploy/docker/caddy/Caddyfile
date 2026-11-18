@@ -1,0 +1,77 @@
+# Caddy: TLS, and the host-level redirects. Everything below the host level
+# (old-site URLs, legacy files, trailing slashes) is the application's and
+# public/.htaccess's job, unchanged from cPanel.
+#
+#   SPU_CANONICAL_HOST  the one address the site lives at        (spu.edu.sy)
+#   SPU_ALIAS_HOSTS     names that 301 to it, path and query kept (www.spu.edu.sy v2.spu.edu.sy)
+#   SPU_TLS_MODE        auto     = Let's Encrypt, once DNS points here
+#                       files    = certificate files in /srv/spu/data/certs
+#                                  (fullchain.pem, privkey.pem), e.g. the
+#                                  *.spu.edu.sy certificate from cPanel, so
+#                                  HTTPS works the second DNS moves
+#                       internal = self-signed, for testing before DNS moves
+#   SPU_HSTS            HSTS value for responses that do not set their own
+#                       (static files; Laravel sets it on what it renders)
+
+{
+	# No ACME account e-mail: Let's Encrypt stopped sending expiry mail in 2025,
+	# and Caddy renews on its own.
+	admin off
+	# Caddy's own HTTP->HTTPS redirect answers 308; the http:// block below
+	# answers 301, like the site always has. Certificates are still managed and
+	# Let's Encrypt's HTTP challenge is still answered on port 80.
+	auto_https disable_redirects
+	servers {
+		protocols h1 h2
+	}
+}
+
+(tls-auto) {
+}
+
+(tls-files) {
+	tls /certs/fullchain.pem /certs/privkey.pem
+}
+
+(tls-internal) {
+	tls internal
+}
+
+(common) {
+	import tls-{$SPU_TLS_MODE}
+	log {
+		output stdout
+		format json
+	}
+}
+
+# Plain HTTP, any name: one 301 to the canonical HTTPS address. The old site
+# answered http:// with pages; a crawler holding such a link now lands on the
+# right page in one hop more. Let's Encrypt's HTTP challenge is still answered
+# here (Caddy handles it before this redirect).
+http:// {
+	redir https://{$SPU_CANONICAL_HOST}{uri} 301
+}
+
+# Old names of the site: www and the v2 staging host.
+{$SPU_ALIAS_HOSTS} {
+	import common
+	redir https://{$SPU_CANONICAL_HOST}{uri} 301
+}
+
+{$SPU_CANONICAL_HOST} {
+	import common
+	request_body {
+		max_size 25MB
+	}
+	header ?Strict-Transport-Security "{$SPU_HSTS}"
+	header -Server
+	# The application compresses its own HTML, and Apache serves pre-compressed
+	# build assets; encode only fills in for the rest and never re-encodes.
+	encode zstd gzip
+	reverse_proxy web:80 {
+		transport http {
+			read_timeout 180s
+		}
+	}
+}

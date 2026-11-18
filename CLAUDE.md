@@ -158,5 +158,6 @@ The imported `AGENTS.MD` is the authoritative project rulebook (scope, architect
 - `Docs/ARCHITECTURE.md`, `Docs/BACKEND_RULES.md`, `Docs/STYLEGUIDE.md`, `Docs/WORKFLOW.md`: layering and conventions
 - `Docs/FRONTEND_IMPORT_TRACKER.md`, `Docs/FRONTEND_ROUTE_PARITY_MATRIX.md`: parity status per route
 - `Docs/DEPLOYING.md`, `Docs/LEGACY_IMPORT_RUNBOOK.md`: deploy and legacy content import
+- `deploy/docker/README.md`, `Docs/VPS_MIGRATION_RUNBOOK.md`: the Docker VPS stack (Caddy, Apache + PHP 8.4, MariaDB 10.11, queue, scheduler, legacy apps) and the move to spu.edu.sy with its redirect map and parity check (`deploy/docker/scripts/redirect-parity.py`); the guided move is `deploy/docker/migrate.sh` (plain-language guide `Docs/VPS_MIGRATION_GUIDE.md`)
 - `Docs/SESSION_HANDOFF_2026-08-22.md`: most recent written handoff
 - Branch work happens on `dev`; PRs merge into it from `feat/*` and `fix/*` branches

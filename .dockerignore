@@ -1,0 +1,20 @@
+# Build context for deploy/docker/Dockerfile. Secrets and runtime state never
+# enter the image: .env, storage and bootstrap/cache come from the host.
+.git
+.github
+.kiro
+node_modules
+vendor
+.env
+.env.*
+!.env.example
+!.env.production.example
+storage/*
+bootstrap/cache/*.php
+public/hot
+public/storage
+public/robots.txt
+public/sitemap.xml
+public/sitemaps
+tests
+*.log

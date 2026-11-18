@@ -148,6 +148,35 @@ final class LaunchGateArtefactTest extends TestCase
     }
 
     /**
+     * The application's own robots.txt keeps crawlers off site search with
+     * a "Disallow:" line for /{locale}/search. That line starts with "Disallow: /", and a substring
+     * check read it as disallow-all, so a production deploy with no overlay at
+     * all failed this gate (found preparing the Docker VPS, 2026-11-17).
+     */
+    public function test_a_production_deploy_serving_the_application_robots_passes(): void
+    {
+        $overlay = public_path('robots.txt');
+        $existing = is_file($overlay) ? file_get_contents($overlay) : null;
+        @unlink($overlay);
+        // SitemapController serves the production file only in production.
+        $previous = $this->app->environment();
+        $this->app->detectEnvironment(fn (): string => 'production');
+
+        try {
+            $output = $this->runValidate('production');
+
+            $this->assertStringContainsString('robots.txt correctness', $output);
+            $this->assertStringContainsString('robots.txt invites crawling', $output);
+            $this->assertStringNotContainsString('[FAIL] robots.txt correctness', $output);
+        } finally {
+            $this->app->detectEnvironment(fn (): string => $previous);
+            if ($existing !== null) {
+                file_put_contents($overlay, $existing);
+            }
+        }
+    }
+
+    /**
      * A Sitemap line does nothing on a host that forbids crawling, and
      * requiring one failed this check for the absence of a line that would have
      * had no effect. It is still required where it matters.
