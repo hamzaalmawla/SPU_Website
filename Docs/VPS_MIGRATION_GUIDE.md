@@ -83,10 +83,10 @@ not finish.
 | # | Step | What it asks you | Time |
 |---|---|---|---|
 | 1 | Check this server, install Docker and tools | Nothing (maybe: stop an old web server on port 80) | 2–5 min |
-| 2 | Questions | Main address (`spu.edu.sy`), this server's IP, old server's IP, cPanel address and user, then **api** (API token) or **ftp** (FTP account and password) | 2 min |
+| 2 | Questions | Main address (`spu.edu.sy`), this server's IP, old server's IP, cPanel address and user, then how the data arrives: **folder**, **api**, **laptop** or **ftp** | 2 min |
 | 3 | Download the code | A GitHub token only if GitHub asks | 1 min |
 | 4 | Prepare folders and firewall | Turn on the firewall? (**y**) | 1 min |
-| 5 | Test the connection to the old server | With **api**: nothing (it tests the token). With **ftp**: the cPanel password (kept in memory only) | 1 min |
+| 5 | Find the old server's data | With **folder**: where the uploaded folder is; it shows what it found, you confirm. With **api**: nothing (it tests the token). With **ftp**: the cPanel password (kept in memory only) | 1 min |
 | 6 | Copy the website's own files | Nothing | 5–20 min |
 | 7 | Copy `/forms`, `/Medicine`, `/spuh` | Nothing | 5 min |
 | 8 | Copy the old images and downloads (~20 GB) | Copy now? (**y**) | hours |
@@ -241,3 +241,32 @@ then run `migrate.sh step 5` and answer **laptop**: steps 6, 7 and 10 use that
 folder and the VPS never contacts the old server. For the final sync,
 download a fresh folder after the editors stop, upload it, and run `final`.
 Delete the folder from the laptop once it is on the VPS.
+
+### 9b. A folder you copied by hand (SPU-Old-Server-Data)
+
+Upload the folder to the VPS, for example from Windows:
+
+```
+scp -r "C:\path\SPU-Old-Server-Data" root@<VPS-IP>:/srv/spu/
+```
+
+Answer **folder** in step 2 (or in step 5) and give the folder's path. Step 5
+looks through it (`scripts/find-old-data.py`) and lists what it found; any
+layout works, and each item may be a folder, a `.zip`, a `.tar.gz` or (dumps)
+`.sql` / `.sql.gz` / `.zip`:
+
+| Item | Recognised by | Needed |
+|---|---|---|
+| v2 `.env` | a file holding `APP_KEY=` and `DB_DATABASE=` (`.env`, `env`, `env.txt`, ...) | yes |
+| v2 `storage` | a folder `storage` holding `app/`, or `storage.zip` / `.tar.gz` | yes |
+| `spuedu_v2` dump | a file whose name contains `spuedu_v2` (`.sql`, `.sql.gz`, `.zip`) | yes |
+| v2 document root | `spu_v2/public` holding `index.php` | no |
+| `/forms`, `/Medicine`, `/spuh` and their dumps | folders or zips with those names; `spuedu_forms`, `spuedu_medical`, `spuedu_spuh` | no: missing ones stay on the old server |
+| old media | `downloads/files`, `downloads/files2`, `downloads`, `images`, `FCKBIH`, `<faculty>/images` | no: missing ones stay on the old server |
+
+Type an item's name to point it at another path. The list is kept in
+`/srv/spu/old-data.map`; steps 6, 7, 8 and 10 copy from it, and the folder
+itself is never changed. In step 11 choose **3** (Let's Encrypt after the DNS
+switch) or **2** if you have the certificate files; option 1 needs the cPanel
+login. Old media or apps left on the old server are fetched from it by this
+server, so the old site must stay on until they are copied.

@@ -366,13 +366,14 @@ step_settings() {
 choose_access() {
     say ""
     info "How does the old server's data get here?"
+    info "  folder = you copied it into a folder (e.g. SPU-Old-Server-Data) and uploaded that folder here"
     info "  api    = this server reads it with a cPanel API token over port 2083"
     info "  laptop = you downloaded it on a laptop (deploy/docker/laptop/get-old-server-data.ps1)"
     info "           and upload the folder to ${ROOT}/xfer/ here; this server never contacts the old one"
     info "  ftp    = FTP, or the cPanel password over HTTPS"
     while :; do
-        ask ACCESS_METHOD "Type api, laptop or ftp" "api"
-        [[ "${ACCESS_METHOD}" =~ ^(api|laptop|ftp)$ ]] && break
+        ask ACCESS_METHOD "Type folder, api, laptop or ftp" "folder"
+        [[ "${ACCESS_METHOD}" =~ ^(folder|api|laptop|ftp)$ ]] && break
         ACCESS_METHOD=""
     done
 }
@@ -562,6 +563,7 @@ step_connect() {
     fi
     [[ "${ACCESS_METHOD}" == api ]] && { step_connect_api; return $?; }
     [[ "${ACCESS_METHOD}" == laptop ]] && { step_connect_laptop; return $?; }
+    [[ "${ACCESS_METHOD}" == folder ]] && { step_connect_folder; return $?; }
     [[ -f "${SECRETS}/ftp.env" ]] && FTP_PASSWORD="$(. "${SECRETS}/ftp.env"; printf '%s' "${FTP_PASSWORD:-}")"
     mkdir -p "${ROOT}/parity"
     info "1) Files: FTP over TLS to ${FTP_HOST} as ${FTP_USER}"
@@ -614,6 +616,231 @@ step_connect() {
     fi
     conf_set DB_METHOD "${DB_METHOD}"
     ok "Files will be copied by ${FILE_METHOD^^}; databases: $([[ ${DB_METHOD} == auto ]] && echo 'downloaded by the script' || echo 'you upload them (the script shows how)')."
+}
+
+# ── the old server's data from a folder uploaded by hand ──────────────────────
+OLD_DATA_MAP="${ROOT}/old-data.map"   # item<TAB>path, made by step 5, editable
+
+folder_get() {  # folder_get <item>  -> path in the uploaded folder, or nothing
+    [[ -f "${OLD_DATA_MAP}" ]] && awk -F'\t' -v k="$1" '$1==k{print $2; exit}' "${OLD_DATA_MAP}"
+}
+
+folder_set() {  # folder_set <item> <path>   (empty path = not there)
+    local tmp; tmp="$(mktemp "${OLD_DATA_MAP}.XXXX")"
+    [[ -f "${OLD_DATA_MAP}" ]] && awk -F'\t' -v k="$1" '$1!=k' "${OLD_DATA_MAP}" > "${tmp}"
+    [[ -n "$2" ]] && printf '%s\t%s\n' "$1" "$2" >> "${tmp}"
+    mv "${tmp}" "${OLD_DATA_MAP}"
+}
+
+FOLDER_ITEMS=(env storage web app:forms app:Medicine app:spuh db:spuedu_v2 db:spuedu_forms
+    db:spuedu_medical db:spuedu_spuh media:downloads/files media:downloads/files2 media:downloads/root
+    media:images media:FCKBIH)
+for _s in med dent pharm info petrol admin research hospital dent_clinic alumni clubs; do FOLDER_ITEMS+=("media:${_s}/images"); done
+unset _s
+
+folder_describe() {  # what an item is, in words
+    case "$1" in
+        env) echo "v2 settings (.env)          REQUIRED" ;;
+        storage) echo "v2 storage/ (uploads)       REQUIRED" ;;
+        web) echo "v2 document root files      optional" ;;
+        db:spuedu_v2) echo "website database dump       REQUIRED" ;;
+        app:*) echo "/${1#app:} application" ;;
+        db:*) echo "${1#db:} database dump" ;;
+        media:*) echo "old media ${1#media:}" ;;
+    esac
+}
+
+folder_show() {
+    local item p size
+    say ""
+    for item in "${FOLDER_ITEMS[@]}"; do
+        p="$(folder_get "${item}")"
+        if [[ -n "${p}" && -e "${p}" ]]; then
+            size="$(du -sh "${p}" 2>/dev/null | cut -f1)"
+            printf '   %s[found]%s %-34s %s  (%s)\n' "${G}" "${N}" "$(folder_describe "${item}")" "${p#"${OLD_DATA_DIR}"/}" "${size}"
+        else
+            [[ "${item}" == media:*/images && "${item}" != media:images ]] && continue
+            printf '   [ --- ] %-34s not in the folder\n' "$(folder_describe "${item}")"
+        fi
+    done
+}
+
+step_connect_folder() {
+    local def="${OLD_DATA_DIR:-${ROOT}/SPU-Old-Server-Data}" a item p
+    info "The old server's data comes from a folder you copied by hand and uploaded to this server,"
+    info "for example from Windows:  scp -r \"C:\\path\\SPU-Old-Server-Data\" root@${VPS_IP:-this-server}:${ROOT}/"
+    while :; do
+        ask OLD_DATA_DIR "Where is that folder on this server?" "${def}"
+        OLD_DATA_DIR="${OLD_DATA_DIR%/}"; conf_set OLD_DATA_DIR "${OLD_DATA_DIR}"
+        [[ -d "${OLD_DATA_DIR}" ]] && break
+        bad "${OLD_DATA_DIR} does not exist on this server. Upload it first (see the scp line above)."
+        yesno "Type another path?" Y || return 1
+        OLD_DATA_DIR=""
+    done
+    info "Looking through ${OLD_DATA_DIR} ($(du -sh "${OLD_DATA_DIR}" 2>/dev/null | cut -f1))..."
+    python3 -I "${DOCK}/scripts/find-old-data.py" "${OLD_DATA_DIR}" > "${ROOT}/old-data.found" || { bad "Could not read the folder."; return 1; }
+    grep -v '^alt' "${ROOT}/old-data.found" > "${OLD_DATA_MAP}"
+    if grep -q '^alt' "${ROOT}/old-data.found"; then
+        info "Other candidates (the best one was picked; you can change it below):"
+        grep '^alt' "${ROOT}/old-data.found" | cut -f2- | sed 's/^/      /; s/\t/  /'
+    fi
+    while :; do
+        folder_show
+        say ""
+        local missing=()
+        for item in env storage db:spuedu_v2; do
+            p="$(folder_get "${item}")"; [[ -n "${p}" && -e "${p}" ]] || missing+=("${item}")
+        done
+        (( ${#missing[@]} )) && bad "Missing required: ${missing[*]}"
+        info "To change one, type its name and then its path (e.g. storage, or db:spuedu_v2)."
+        readin -p "   Press Enter if this is right, or type a name to change: " a || a=""
+        if [[ -z "${a}" ]]; then
+            (( ${#missing[@]} == 0 )) && break
+            bad "The required items must be found first (or type their path)."
+            yesno "Try again?" Y || return 1
+            continue
+        fi
+        [[ " ${FOLDER_ITEMS[*]} " == *" ${a} "* ]] || { warn "Unknown name: ${a}"; continue; }
+        readin -p "   Path of ${a} (folder, .zip, .tar.gz, .sql or .sql.gz; empty = not there): " p || p=""
+        if [[ -n "${p}" && ! -e "${p}" && -e "${OLD_DATA_DIR}/${p}" ]]; then p="${OLD_DATA_DIR}/${p}"; fi
+        if [[ -n "${p}" && ! -e "${p}" ]]; then bad "No such file or folder: ${p}"; continue; fi
+        folder_set "${a}" "${p}"
+    done
+    FILE_METHOD=folder; DB_METHOD=folder
+    conf_set FILE_METHOD folder; conf_set DB_METHOD folder
+    if [[ -z "$(folder_get app:forms)$(folder_get app:Medicine)$(folder_get app:spuh)" ]]; then
+        APPS_MODE=remote; conf_set APPS_MODE remote
+        stack_set SPU_LEGACY_APPS remote
+        stack_set COMPOSE_PROFILES ""
+        warn "/forms, /Medicine and /spuh are not in the folder: they stay served from the old server."
+    fi
+    if ! grep -q '^media:' "${OLD_DATA_MAP}"; then
+        MEDIA_MODE=remote; conf_set MEDIA_MODE remote
+        stack_set SPU_LEGACY_MEDIA remote
+        warn "The old images and downloads are not in the folder: they stay served from the old server."
+    fi
+    ok "List saved in ${OLD_DATA_MAP}. Steps 6, 7, 8 and 10 copy from it."
+}
+
+# place <source folder or archive> <destination> [rsync excludes...]
+# An archive is unpacked first; when it holds one single folder (storage.zip ->
+# storage/...), that folder's contents are what gets copied.
+place() {
+    local src="$1" dest="$2" tmp="" root; shift 2
+    mkdir -p "${dest}"
+    if [[ -d "${src}" ]]; then
+        root="${src}"
+    else
+        tmp="$(mktemp -d "${ROOT}/xfer/unpack.XXXX")"
+        case "${src,,}" in
+            *.zip) python3 -I -m zipfile -e "${src}" "${tmp}" || { rm -rf "${tmp}"; return 1; } ;;
+            *.tar.gz|*.tgz) tar --no-same-owner -xzf "${src}" -C "${tmp}" || { rm -rf "${tmp}"; return 1; } ;;
+            *.tar) tar --no-same-owner -xf "${src}" -C "${tmp}" || { rm -rf "${tmp}"; return 1; } ;;
+            *) bad "Cannot unpack ${src} (use a folder, .zip, .tar.gz or .tar)."; rm -rf "${tmp}"; return 1 ;;
+        esac
+        root="${tmp}"
+        local n
+        for n in 1 2 3; do
+            mapfile -t _e < <(ls -A "${root}")
+            [[ ${#_e[@]} -eq 1 && -d "${root}/${_e[0]}" ]] || break
+            # stop at the level that already looks like the target (storage holds app/, an app holds .php)
+            [[ -d "${root}/app" || -n "$(ls "${root}"/*.php 2>/dev/null)" ]] && break
+            root="${root}/${_e[0]}"
+        done
+    fi
+    local ex=() p
+    for p in "$@"; do ex+=(--exclude "${p}"); done
+    rsync -a --no-owner --no-group "${ex[@]}" "${root}/" "${dest}/"
+    local rc=$?
+    [[ -n "${tmp}" ]] && rm -rf "${tmp}"
+    return ${rc}
+}
+
+folder_dump() {  # folder_dump <database> <file>  -> a .sql or .sql.gz path import-db.sh can read
+    local db="$1" f="$2" out
+    mkdir -p "${ROOT}/dumps"; chmod 700 "${ROOT}/dumps"
+    case "${f,,}" in
+        *.zip)
+            out="${ROOT}/dumps/${db}-from-zip.sql"
+            python3 -I - "${f}" "${out}" <<'PY' || return 1
+import sys, zipfile
+z = zipfile.ZipFile(sys.argv[1])
+names = [n for n in z.namelist() if n.lower().endswith(".sql")] or [n for n in z.namelist() if not n.endswith("/")]
+if not names:
+    sys.exit(1)
+with z.open(names[0]) as src, open(sys.argv[2], "wb") as dst:
+    while True:
+        b = src.read(1 << 20)
+        if not b:
+            break
+        dst.write(b)
+PY
+            ;;
+        *.gz)
+            gzip -t "${f}" 2>/dev/null || { bad "${f} is not a complete .gz file." >&2; return 1; }
+            out="${f}" ;;
+        *) out="${f}" ;;
+    esac
+    if ! { [[ "${out}" == *.gz ]] && gzip -cd "${out}" || cat "${out}"; } 2>/dev/null | head -c 1000000 | grep -qi 'CREATE TABLE\|INSERT INTO\|MySQL dump\|MariaDB dump'; then
+        bad "${f} does not look like a database dump." >&2; return 1
+    fi
+    printf '%s\n' "${out}"
+}
+
+pull_folder() {  # pull_folder site|apps|media
+    local rc=0 f s item
+    mkdir -p "${ROOT}/xfer"; chmod 700 "${ROOT}/xfer"
+    [[ -d "${OLD_DATA_DIR:-}" ]] || { bad "The folder ${OLD_DATA_DIR:-?} is not on this server. Run step 5."; return 1; }
+    case "$1" in
+        site)
+            if [[ "${MODE}" == final ]]; then
+                warn "Final sync: ${OLD_DATA_DIR} must be a copy made AFTER the editors stopped editing."
+                yesno "Is it?" N || { info "Upload a fresh copy (and run step 5 if its layout changed), then run this again."; return 1; }
+            fi
+            f="$(folder_get env)"
+            [[ -n "${f}" && -f "${f}" ]] || { bad "The .env is not in the folder. Run step 5."; return 1; }
+            ( umask 077; tr -d '\r' < "${f}" > "${SECRETS}/cpanel.env" ); chmod 600 "${SECRETS}/cpanel.env"
+            f="$(folder_get storage)"
+            [[ -n "${f}" ]] || { bad "storage/ is not in the folder. Run step 5."; return 1; }
+            info "Copying storage/ ($(du -sh "${f}" 2>/dev/null | cut -f1))..."
+            place "${f}" "${DATA}/storage" /framework/cache/data/ /framework/views/ /framework/sessions/ \
+                /framework/down /cutover-backups/ || rc=1
+            f="$(folder_get web)"
+            if [[ -n "${f}" ]]; then
+                info "Copying the document root's files..."
+                place "${f}" "${DATA}/web" /_legacy /forms /Medicine /spuh /storage /.htaccess /robots.txt \
+                    /.user.ini /php.ini /cgi-bin /.well-known || rc=1
+            else
+                info "No document root in the folder; the release's own public/ is used (fine)."
+            fi
+            chown -R 33:33 "${DATA}/storage" "${DATA}/web" 2>/dev/null ;;
+        apps)
+            for s in forms Medicine spuh; do
+                f="$(folder_get "app:${s}")"
+                if [[ -n "${f}" ]]; then info "Copying /${s}..."; place "${f}" "${DATA}/legacy-apps/${s}" || rc=1
+                else bad "/${s} is not in the folder."; rc=1; fi
+            done
+            chown -R 33:33 "${DATA}/legacy-apps" 2>/dev/null ;;
+        media)
+            local L="${DATA}/legacy" any=0
+            for item in "${FOLDER_ITEMS[@]}"; do
+                [[ "${item}" == media:* ]] || continue
+                f="$(folder_get "${item}")"; [[ -n "${f}" ]] || continue
+                any=1; info "Copying ${item#media:} ($(du -sh "${f}" 2>/dev/null | cut -f1))..."
+                if [[ "${item}" == media:downloads/root ]]; then
+                    # only the loose documents and images directly in downloads/
+                    mkdir -p "${L}/downloads/root"
+                    find "${f}" -maxdepth 1 -type f -regextype posix-extended \
+                        -iregex '.*\.(pdf|docx?|xlsx?|pptx?|zip|rar|jpe?g|png|gif)$' \
+                        -exec cp -p -t "${L}/downloads/root/" {} + || rc=1
+                else
+                    place "${f}" "${L}/${item#media:}" || rc=1
+                fi
+            done
+            (( any )) || { bad "No old media in the folder."; return 1; }
+            install -m 0644 "${DOCK}/legacy-media.htaccess" "${L}/.htaccess" ;;
+    esac
+    return ${rc}
 }
 
 # ── the old server through the cPanel API token (port 2083 only) ──────────────
@@ -812,6 +1039,10 @@ pull_api() {  # pull_api site|apps|media
 }
 
 pull() {  # pull site|apps|media
+    if [[ "${FILE_METHOD:-ftp}" == folder ]]; then
+        pull_folder "$1"
+        return $?
+    fi
     if [[ "${FILE_METHOD:-ftp}" == api ]]; then
         pull_api "$1"
         return $?
@@ -1020,6 +1251,14 @@ detect_app_db_login() {  # detect_app_db_login <app dir> <database>  -> "file<TA
 get_dump() {  # get_dump <database>  -> prints the dump path on stdout (messages on stderr)
     local db="$1" out latest a
     mkdir -p "${ROOT}/dumps"; chmod 700 "${ROOT}/dumps"
+    if [[ "${DB_METHOD:-manual}" == folder ]]; then
+        out="$(folder_get "db:${db}")"
+        if [[ -n "${out}" ]] && out="$(folder_dump "${db}" "${out}")"; then
+            info "Using ${out}" >&2
+            printf '%s\n' "${out}"; return 0
+        fi
+        bad "No usable dump of ${db} in ${OLD_DATA_DIR}. Falling back to the manual way for it." >&2
+    fi
     if [[ "${DB_METHOD:-manual}" == api ]]; then
         if api_core >&2; then
             out="$(api_db_file "${db}")"
@@ -1092,6 +1331,10 @@ step_databases() {
     ok "Database server running."
     [[ "${MODE}" == final ]] && warn "Final sync: make sure editors stopped editing and the dumps are fresh (taken now)."
 
+    if [[ "${DB_METHOD:-manual}" == folder && "${MODE}" == final ]]; then
+        warn "Final sync: the dumps in ${OLD_DATA_DIR} must be taken AFTER the editors stopped editing."
+        yesno "Are they?" N || { info "Put fresh dumps in the folder, then run this again."; return 1; }
+    fi
     # Fetch the package here, not inside get_dump's subshell, so it is fetched once.
     if [[ "${DB_METHOD:-manual}" == api ]] && ! api_core; then
         warn "The old server's package did not arrive; you will upload the database files yourself."
@@ -1572,7 +1815,7 @@ final_sync() {
         [[ "${id}" == apps && "${APPS_MODE:-local}" == remote ]] && continue
         [[ "${id}" == media && "${MEDIA_MODE:-local}" == remote ]] && { warn "Old media is still served from the old server (step 8 never finished)."; continue; }
         # The old site's media no longer changes; over the API a fresh copy would mean packing ~20 GB again.
-        [[ "${id}" == media && "${FILE_METHOD:-}" == api ]] && is_done media && { info "Old media was already copied; not copied again."; continue; }
+        [[ "${id}" == media && "${FILE_METHOD:-}" =~ ^(api|folder)$ ]] && is_done media && { info "Old media was already copied; not copied again."; continue; }
         run_step "${i}" || exit 1
     done
     (( ${REPORT_FAILS:-0} == 0 )) || exit 1
