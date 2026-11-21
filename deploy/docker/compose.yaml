@@ -114,6 +114,8 @@ services:
       SPU_ALIAS_HOSTS: ${SPU_ALIAS_HOSTS:-www.spu.edu.sy v2.spu.edu.sy}
       SPU_TLS_MODE: ${SPU_TLS_MODE:-internal}
       SPU_HSTS: ${SPU_HSTS:-max-age=604800; includeSubDomains}
+      SPU_INDEXING: ${SPU_INDEXING:-on}
+      SPU_WRITES: ${SPU_WRITES:-on}
     volumes:
       - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
       - ${SPU_ROOT:-/srv/spu}/data/caddy:/data

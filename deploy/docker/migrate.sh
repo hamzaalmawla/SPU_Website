@@ -11,6 +11,10 @@
 #     sudo bash migrate.sh status      which steps are done
 #     sudo bash migrate.sh step <N>    run one step again
 #     sudo bash migrate.sh report      print the result and the DNS / rollback steps again
+#     sudo bash migrate.sh preview on preview.spu.edu.sy
+#                                      before the switch: show this copy to anyone at a
+#                                      separate name (read-only, noindex); 'preview off'
+#                                      puts everything back and must run before 'final'
 #
 # How the old server is read (chosen in step 2):
 #   - api: a cPanel API token over port 2083 only. For when FTP and the cPanel
@@ -1761,10 +1765,115 @@ after_dns() {
 TXT
 }
 
+# ── temporary preview address ─────────────────────────────────────────────────
+# Before the switch, the copy on this server can be shown at a separate name
+# (e.g. preview.spu.edu.sy, one A record pointing here). It is read-only (Caddy
+# refuses anything but GET/HEAD/OPTIONS: its database is the copy that 'final'
+# overwrites, so a form sent there would be lost) and carries noindex. The old
+# names get plain HTTP only, so no certificate is requested for names that still
+# point at the old server. 'preview off' puts back the exact settings files saved
+# by 'preview on'; every step, 'final' and 'after-dns' refuse to run while it is on.
+
+PREVIEW_FLAG="${ROOT}/preview.on"
+PREVIEW_SAVE="${SECRETS}/preview-saved"
+
+preview_guard() {
+    [[ -f "${PREVIEW_FLAG}" ]] || return 0
+    bad "The preview address $(head -1 "${PREVIEW_FLAG}") is on: the site does not answer as ${DOMAIN:-its own name} now."
+    info "Turn it off first:  sudo bash ${SELF} preview off"
+    return 1
+}
+
+preview_restart() {
+    "${SPU}" up -d --force-recreate caddy web queue scheduler >/dev/null 2>&1 || "${SPU}" up -d --force-recreate caddy web queue scheduler || return 1
+    wait_healthy web 240 || true
+    spu_artisan cache:clear >/dev/null 2>&1 || true
+}
+
+preview_status() {
+    if [[ -f "${PREVIEW_FLAG}" ]]; then
+        info "Preview address ON: https://$(head -1 "${PREVIEW_FLAG}")  (since $(sed -n 2p "${PREVIEW_FLAG}"); read-only, noindex)"
+        info "Turn it off before the switch:  sudo bash ${SELF} preview off"
+    else
+        info "No preview address. The site answers as ${DOMAIN:-its own name}."
+    fi
+}
+
+preview_on() {
+    local host="${1:-}" here there n code
+    if [[ ! "${host}" =~ ^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$ ]]; then
+        say "Usage: sudo bash ${SELF} preview on <name>    for example: preview.${DOMAIN:-spu.edu.sy}"; return 2
+    fi
+    [[ -n "${DOMAIN:-}" ]] || { bad "No domain saved yet (step 2)."; return 1; }
+    [[ "${host}" != "${DOMAIN}" && "${host}" != "www.${DOMAIN}" ]] || { bad "Use a separate name, not ${host}."; return 1; }
+    [[ -f "${PREVIEW_FLAG}" ]] && { bad "A preview is already on ($(head -1 "${PREVIEW_FLAG}")). Run 'preview off' first."; return 1; }
+    is_done start || { bad "The site is not built and started yet (step 12)."; return 1; }
+    here="$(curl -s --max-time 10 https://api.ipify.org || true)"
+    there="$(python3 -c 'import socket,sys; print(socket.gethostbyname(sys.argv[1]))' "${host}" 2>/dev/null || true)"
+    if [[ -z "${here}" || "${here}" != "${there}" ]]; then
+        bad "${host} points to ${there:-nothing}, this server is ${here:-unknown}."
+        info "Add an A record ${host} -> ${here:-<the address of this server>} in the DNS of ${DOMAIN}, wait a few minutes, and run this again."
+        return 1
+    fi
+    ok "${host} points to this server (${here})."
+
+    mkdir -p "${PREVIEW_SAVE}"; chmod 700 "${PREVIEW_SAVE}"
+    cp -p "${ROOT}/stack.env" "${PREVIEW_SAVE}/stack.env" || return 1
+    cp -p "${ROOT}/app.env" "${PREVIEW_SAVE}/app.env" || return 1
+    printf '%s\n%s\n' "${host}" "$(date '+%F %T')" > "${PREVIEW_FLAG}"
+
+    local olds h
+    olds="$(for h in ${DOMAIN} $(env_get "${ROOT}/stack.env" SPU_ALIAS_HOSTS); do printf 'http://%s ' "${h}"; done)"
+    stack_set SPU_CANONICAL_HOST "${host}"
+    stack_set SPU_ALIAS_HOSTS "${olds% }"
+    stack_set SPU_TLS_MODE auto
+    stack_set SPU_INDEXING off
+    stack_set SPU_WRITES off
+    env_set "${ROOT}/app.env" APP_URL "https://${host}"
+    env_set "${ROOT}/app.env" APP_CANONICAL_URL "https://${host}"
+    env_set "${ROOT}/app.env" SESSION_DOMAIN null   # host-only cookies: never on .${DOMAIN}
+
+    if ! "${SPU}" run --rm --no-deps -T caddy caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile >/dev/null 2>&1; then
+        bad "The web server rejected the preview settings; putting the saved ones back."
+        cp -p "${PREVIEW_SAVE}/stack.env" "${ROOT}/stack.env"; cp -p "${PREVIEW_SAVE}/app.env" "${ROOT}/app.env"
+        rm -f "${PREVIEW_FLAG}"
+        return 1
+    fi
+    info "Restarting with the preview settings..."
+    preview_restart || { bad "Restart failed (spu logs caddy / spu logs web). Run 'preview off' to go back."; return 1; }
+    info "Waiting for the HTTPS certificate of ${host}..."
+    for n in $(seq 1 24); do
+        code="$(curl -s -o /dev/null -m 15 --resolve "${host}:443:127.0.0.1" -w '%{http_code}' "https://${host}/ar" || true)"
+        [[ "${code}" == 200 ]] && break
+        sleep 5
+    done
+    if [[ "${code}" == 200 ]]; then
+        ok "https://${host}/ar answers 200 with a valid certificate."
+    else
+        warn "https://${host}/ar answered ${code:-nothing} so far (certificate still coming? spu logs caddy)."
+    fi
+    info "Read-only and hidden from search engines. Before the switch:  sudo bash ${SELF} preview off"
+}
+
+preview_off() {
+    local code
+    [[ -f "${PREVIEW_FLAG}" ]] || { info "No preview address is on."; return 0; }
+    [[ -f "${PREVIEW_SAVE}/stack.env" && -f "${PREVIEW_SAVE}/app.env" ]] || { bad "The saved settings are missing in ${PREVIEW_SAVE}."; return 1; }
+    cp -p "${PREVIEW_SAVE}/stack.env" "${ROOT}/stack.env" || return 1
+    cp -p "${PREVIEW_SAVE}/app.env" "${ROOT}/app.env" || return 1
+    rm -f "${PREVIEW_FLAG}"
+    info "Restarting with the normal settings..."
+    preview_restart || { bad "Restart failed (spu logs web)."; return 1; }
+    code="$(curl -sk -o /dev/null -m 20 --resolve "${DOMAIN}:443:127.0.0.1" -w '%{http_code}' "https://${DOMAIN}/ar" || true)"
+    [[ "${code}" == 200 ]] && ok "Back to normal: https://${DOMAIN}/ar answers 200 here." || warn "https://${DOMAIN}/ar answered ${code:-nothing}."
+    rm -rf "${PREVIEW_SAVE}"
+}
+
 # ── running steps ──────────────────────────────────────────────────────────────
 
 run_step() {  # run_step <index 0-based>
     local i="$1" id="${STEP_IDS[$1]}" rc
+    preview_guard || return 1
     say ""; line
     printf '%s Step %d of %d: %s%s\n' "${B}${C}" "$((i + 1))" "${#STEP_IDS[@]}" "${STEP_TITLES[$i]}" "${N}"
     line
@@ -1838,8 +1947,8 @@ final_sync() {
 # ── main ───────────────────────────────────────────────────────────────────────
 MODE="${1:-walk}"
 [[ ${EUID} -eq 0 ]] || { echo "Please run with sudo:  sudo bash $0 ${*}" >&2; exit 1; }
-case "${MODE}" in walk|final|after-dns|status|step|report|--help|-h|help) ;; *) MODE=help ;; esac
-if [[ "${MODE}" == help || "${MODE}" == -h || "${MODE}" == --help ]]; then sed -n '3,25p' "${SELF}"; exit 0; fi
+case "${MODE}" in walk|final|after-dns|status|step|report|preview|--help|-h|help) ;; *) MODE=help ;; esac
+if [[ "${MODE}" == help || "${MODE}" == -h || "${MODE}" == --help ]]; then sed -n '3,29p' "${SELF}"; exit 0; fi
 
 # Long copies must survive a dropped SSH connection: offer to run inside tmux.
 if [[ -z "${TMUX:-}" && -z "${MIGRATE_INPUT:-}" && "${MODE}" =~ ^(walk|final|step)$ ]]; then
@@ -1868,8 +1977,15 @@ say "Nothing is changed on the old server, and DNS is never changed by this scri
 
 case "${MODE}" in
     walk)      walk ;;
-    final)     final_sync ;;
-    after-dns) after_dns ;;
+    final)     preview_guard || exit 1; final_sync ;;
+    after-dns) preview_guard || exit 1; after_dns ;;
+    preview)
+        case "${2:-status}" in
+            on)     preview_on "${3:-}" ;;
+            off)    preview_off ;;
+            status) preview_status ;;
+            *)      say "Usage: migrate.sh preview on <name> | off | status"; exit 2 ;;
+        esac ;;
     status)    show_status ;;
     report)    step_report ;;
     step)

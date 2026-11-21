@@ -95,6 +95,17 @@ directly when wanted, dry run first, for example
 - `SPU_CANONICAL_HOST` / `SPU_ALIAS_HOSTS`: the one address and the names
   that 301 to it. Must agree with `APP_URL` / `APP_CANONICAL_URL` in app.env.
 - `SPU_HSTS`: keep identical to the application's HSTS (`HSTS_*` in app.env).
+- `SPU_INDEXING`, `SPU_WRITES`: `on` normally. `off` only while a temporary
+  preview address is on (`migrate.sh preview on preview.spu.edu.sy`, before the
+  switch): every response gets `X-Robots-Tag: noindex`, and Caddy answers
+  anything but GET/HEAD/OPTIONS with 403, since that copy's database is
+  overwritten by `final` (a form sent there would be lost). `preview on` needs an
+  A record for the name pointing here; it saves `stack.env` and `app.env`, sets
+  the preview name as canonical (`APP_URL`, `APP_CANONICAL_URL`, host-only
+  `SESSION_DOMAIN`), gives the real names plain HTTP only (no certificate
+  requests for names that still point at the old host) and restarts.
+  `preview off` puts the saved files back; every step, `final` and `after-dns`
+  refuse to run while the preview is on.
 - `SPU_LEGACY_MEDIA`, `SPU_LEGACY_APPS`: `local` once the files are copied;
   `remote` proxies them to the old host (a bridge if a copy is unfinished; the
   old host must then stay up). `SPU_LEGACY_APPS=off` retires `/forms`,
