@@ -34,8 +34,9 @@ import socket
 import ssl
 import sys
 import time
-from urllib.parse import urlsplit
+from urllib.parse import quote, urlsplit
 
+REQUEST_SAFE = "/?&=%:@!$'()*+,;~#[]-._"
 SITE_HOSTS = {"spu.edu.sy", "www.spu.edu.sy", "v2.spu.edu.sy", "www.v2.spu.edu.sy"}
 BOT_CHECK_MARKERS = (b"One moment, please", b"One moment please")
 USER_AGENT = "spu-redirect-parity/1.0"
@@ -99,7 +100,10 @@ def fetch(base: str, path: str, ip: str | None, insecure: bool, timeout: float, 
                 conn = PinnedHTTPSConnection(host, ip, port=port, timeout=timeout, context=context)
             else:
                 conn = http.client.HTTPConnection(ip or host, port=port, timeout=timeout)
-            conn.request("GET", path, headers={
+            # Encode what a browser would (spaces, control and non-ASCII
+            # characters) and leave existing %XX escapes and URL syntax alone.
+            # Some old sitemap entries are free text with spaces.
+            conn.request("GET", quote(path, safe=REQUEST_SAFE), headers={
                 "Host": host if not port else f"{host}:{port}",
                 "User-Agent": USER_AGENT,
                 "Accept": "text/html,*/*",
