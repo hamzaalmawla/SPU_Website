@@ -12,6 +12,12 @@
 #                       internal = self-signed, for testing before DNS moves
 #   SPU_HSTS            HSTS value for responses that do not set their own
 #                       (static files; Laravel sets it on what it renders)
+#   SPU_INDEXING        on  = normal; off = X-Robots-Tag noindex on every response
+#   SPU_WRITES          on  = normal; off = read-only: anything but GET/HEAD/OPTIONS
+#                       answers 403 (forms, logins, the assistant)
+#                       Both are "off" only on a temporary preview address
+#                       (migrate.sh preview on <host>), whose database is a copy
+#                       that the switch overwrites.
 
 {
 	# No ACME account e-mail: Let's Encrypt stopped sending expiry mail in 2025,
@@ -35,6 +41,23 @@
 
 (tls-internal) {
 	tls internal
+}
+
+(indexing-on) {
+}
+
+# A noindex header, not a robots.txt Disallow: crawlers must be able to fetch
+# a page to see that it is not to be indexed.
+(indexing-off) {
+	header X-Robots-Tag "noindex, nofollow, noarchive"
+}
+
+(writes-on) {
+}
+
+(writes-off) {
+	@write not method GET HEAD OPTIONS
+	respond @write "Preview copy: read-only. Forms and logins work only on the live site. / نسخة معاينة للقراءة فقط: النماذج وتسجيل الدخول تعمل على الموقع الفعلي فقط." 403
 }
 
 (common) {
@@ -61,6 +84,8 @@ http:// {
 
 {$SPU_CANONICAL_HOST} {
 	import common
+	import indexing-{$SPU_INDEXING}
+	import writes-{$SPU_WRITES}
 	request_body {
 		max_size 25MB
 	}
