@@ -1,0 +1,9 @@
+{
+  "source": "Clears invented contact details the redesign shipped with. The hospital page's emergency hotline '+963 11 123 4567' is not a real number and the old site gives none, so it is emptied: the page then hides the hotline and the call button until an editor enters the real number.",
+  "targets": {
+    "campus_life.hospital": {
+      "ar": {"emergency.phone": ""},
+      "en": {"emergency.phone": ""}
+    }
+  }
+}

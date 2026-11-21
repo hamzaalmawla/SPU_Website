@@ -1,0 +1,15 @@
+# Copied from the cPanel docroot (public_html/spu_v2/public/_legacy/.htaccess,
+# 2026-11-17). pull-from-cpanel.sh installs it as /srv/spu/data/legacy/.htaccess.
+# Defence in depth for the preserved legacy media trees.
+# Nothing under _legacy/ is application code; it is static media only.
+Options -Indexes -ExecCGI
+RemoveHandler .php .php3 .php4 .php5 .php7 .php8 .phtml .phar .cgi .pl .py .sh
+RemoveType .php .php3 .php4 .php5 .php7 .php8 .phtml .phar .cgi .pl .py .sh
+
+<FilesMatch "\.(?i:php[0-9]?|phtml|phar|cgi|pl|py|sh|asp|aspx|jsp|exe|dll|bat|cmd|ps1|sql|bak|conf|config|ini|log|env)$">
+    Require all denied
+</FilesMatch>
+
+<FilesMatch "^\.">
+    Require all denied
+</FilesMatch>

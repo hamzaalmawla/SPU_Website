@@ -1,0 +1,168 @@
+﻿
+  GET|HEAD  / .......................................................... root ΓÇ║ Public\BrowserLocaleRedirectController
+  GET|HEAD  admin ........................................ filament.admin.pages.dashboard ΓÇ║ Filament\Pages ΓÇ║ Dashboard
+  GET|HEAD  admin/about-navigation-cards filament.admin.resources.about-navigation-cards.index ΓÇ║ App\Filament\ResourcΓÇª
+  GET|HEAD  admin/about-pages filament.admin.resources.about-pages.index ΓÇ║ App\Filament\Resources\AboutPageResource\PΓÇª
+  GET|HEAD  admin/about-pages/create filament.admin.resources.about-pages.create ΓÇ║ App\Filament\Resources\AboutPageReΓÇª
+  GET|HEAD  admin/about-pages/{record}/edit filament.admin.resources.about-pages.edit ΓÇ║ App\Filament\Resources\AboutPΓÇª
+  GET|HEAD  admin/audit-logs filament.admin.resources.audit-logs.index ΓÇ║ App\Filament\Resources\AuditLogResource\PageΓÇª
+  GET|HEAD  admin/audit-logs/{record} filament.admin.resources.audit-logs.view ΓÇ║ App\Filament\Resources\AuditLogResouΓÇª
+  POST      admin/auth/logout ............................................ admin.logout ΓÇ║ Admin\AuthController@destroy
+  GET|HEAD  admin/contact-messages filament.admin.resources.contact-messages.index ΓÇ║ App\Filament\Resources\ContactMeΓÇª
+  GET|HEAD  admin/contact-messages/{record} filament.admin.resources.contact-messages.view ΓÇ║ App\Filament\Resources\CΓÇª
+  GET|HEAD  admin/directorates filament.admin.resources.directorates.index ΓÇ║ App\Filament\Resources\DirectorateResourΓÇª
+  GET|HEAD  admin/directorates/create filament.admin.resources.directorates.create ΓÇ║ App\Filament\Resources\DirectoraΓÇª
+  GET|HEAD  admin/directorates/{record}/edit filament.admin.resources.directorates.edit ΓÇ║ App\Filament\Resources\DireΓÇª
+  GET|HEAD  admin/dynamic-form-submissions filament.admin.resources.dynamic-form-submissions.index ΓÇ║ App\Filament\ResΓÇª
+  GET|HEAD  admin/dynamic-form-submissions/{record} filament.admin.resources.dynamic-form-submissions.view ΓÇ║ App\FilaΓÇª
+  GET|HEAD  admin/faculty-members filament.admin.resources.faculty-members.index ΓÇ║ App\Filament\Resources\FacultyMembΓÇª
+  GET|HEAD  admin/faculty-members/create filament.admin.resources.faculty-members.create ΓÇ║ App\Filament\Resources\FacΓÇª
+  GET|HEAD  admin/faculty-members/{record} filament.admin.resources.faculty-members.view ΓÇ║ App\Filament\Resources\FacΓÇª
+  GET|HEAD  admin/faculty-members/{record}/edit filament.admin.resources.faculty-members.edit ΓÇ║ App\Filament\ResourceΓÇª
+  GET|HEAD  admin/faculty-subpage-cards filament.admin.resources.faculty-subpage-cards.index ΓÇ║ App\Filament\ResourcesΓÇª
+  GET|HEAD  admin/form-submissions/{submission}/attachments/{field} admin.form-submissions.attachments.download ΓÇ║ AdmΓÇª
+  GET|HEAD  admin/legacy-media-assets filament.admin.resources.legacy-media-assets.index ΓÇ║ App\Filament\Resources\LegΓÇª
+  POST      admin/locale/{locale} ................................... admin.locale ΓÇ║ Admin\AuthController@switchLocale
+  GET|HEAD  admin/login .................................................... admin.login ΓÇ║ Admin\AuthController@create
+  POST      admin/login ............................................. admin.login.attempt ΓÇ║ Admin\AuthController@store
+  POST      admin/logout ............................... filament.admin.auth.logout ΓÇ║ Filament\Http ΓÇ║ LogoutController
+  GET|HEAD  admin/manage-about .................... filament.admin.pages.manage-about ΓÇ║ App\Filament\Pages\ManageAbout
+  GET|HEAD  admin/manage-admissions ..... filament.admin.pages.manage-admissions ΓÇ║ App\Filament\Pages\ManageAdmissions
+  GET|HEAD  admin/manage-announcements filament.admin.pages.manage-announcements ΓÇ║ App\Filament\Pages\ManageAnnouncemΓÇª
+  GET|HEAD  admin/manage-artificial-intelligence-faculty filament.admin.pages.manage-artificial-intelligence-faculty ΓÇª
+  GET|HEAD  admin/manage-building-construction-engineering-faculty filament.admin.pages.manage-building-construction-ΓÇª
+  GET|HEAD  admin/manage-business-administration-faculty filament.admin.pages.manage-business-administration-faculty ΓÇª
+  GET|HEAD  admin/manage-campus-life ... filament.admin.pages.manage-campus-life ΓÇ║ App\Filament\Pages\ManageCampusLife
+  GET|HEAD  admin/manage-contact-page filament.admin.pages.manage-contact-page ΓÇ║ App\Filament\Pages\ManageContactPage
+  GET|HEAD  admin/manage-dentistry-faculty filament.admin.pages.manage-dentistry-faculty ΓÇ║ App\Filament\Pages\ManageDΓÇª
+  GET|HEAD  admin/manage-e-services-page filament.admin.pages.manage-e-services-page ΓÇ║ App\Filament\Pages\ManageEServΓÇª
+  GET|HEAD  admin/manage-events ................. filament.admin.pages.manage-events ΓÇ║ App\Filament\Pages\ManageEvents
+  GET|HEAD  admin/manage-facilities ..... filament.admin.pages.manage-facilities ΓÇ║ App\Filament\Pages\ManageFacilities
+  GET|HEAD  admin/manage-homepage ........... filament.admin.pages.manage-homepage ΓÇ║ App\Filament\Pages\ManageHomepage
+  GET|HEAD  admin/manage-job-board ......... filament.admin.pages.manage-job-board ΓÇ║ App\Filament\Pages\ManageJobBoard
+  GET|HEAD  admin/manage-medicine-faculty filament.admin.pages.manage-medicine-faculty ΓÇ║ App\Filament\Pages\ManageMedΓÇª
+  GET|HEAD  admin/manage-menu ....................... filament.admin.pages.manage-menu ΓÇ║ App\Filament\Pages\ManageMenu
+  GET|HEAD  admin/manage-news ....................... filament.admin.pages.manage-news ΓÇ║ App\Filament\Pages\ManageNews
+  GET|HEAD  admin/manage-petroleum-faculty filament.admin.pages.manage-petroleum-faculty ΓÇ║ App\Filament\Pages\ManagePΓÇª
+  GET|HEAD  admin/manage-pharmacy-faculty filament.admin.pages.manage-pharmacy-faculty ΓÇ║ App\Filament\Pages\ManagePhaΓÇª
+  GET|HEAD  admin/manage-research ........... filament.admin.pages.manage-research ΓÇ║ App\Filament\Pages\ManageResearch
+  GET|HEAD  admin/manage-settings ........... filament.admin.pages.manage-settings ΓÇ║ App\Filament\Pages\ManageSettings
+  GET|HEAD  admin/media-assets filament.admin.resources.media-assets.index ΓÇ║ App\Filament\Resources\MediaAssetResourcΓÇª
+  GET|HEAD  admin/media-assets/create filament.admin.resources.media-assets.create ΓÇ║ App\Filament\Resources\MediaAsseΓÇª
+  GET|HEAD  admin/media-assets/{record} filament.admin.resources.media-assets.view ΓÇ║ App\Filament\Resources\MediaAsseΓÇª
+  GET|HEAD  admin/media-assets/{record}/edit filament.admin.resources.media-assets.edit ΓÇ║ App\Filament\Resources\MediΓÇª
+  GET|HEAD  admin/news-articles filament.admin.resources.news-articles.index ΓÇ║ App\Filament\Resources\NewsArticleResoΓÇª
+  GET|HEAD  admin/news-articles/create filament.admin.resources.news-articles.create ΓÇ║ App\Filament\Resources\NewsArtΓÇª
+  GET|HEAD  admin/news-articles/{record}/edit filament.admin.resources.news-articles.edit ΓÇ║ App\Filament\Resources\NeΓÇª
+  GET|HEAD  admin/news-categories filament.admin.resources.news-categories.index ΓÇ║ App\Filament\Resources\NewsCategorΓÇª
+  GET|HEAD  admin/news-categories/create filament.admin.resources.news-categories.create ΓÇ║ App\Filament\Resources\NewΓÇª
+  GET|HEAD  admin/news-categories/{record}/edit filament.admin.resources.news-categories.edit ΓÇ║ App\Filament\ResourceΓÇª
+  GET|HEAD  admin/pages ... filament.admin.resources.pages.index ΓÇ║ App\Filament\Resources\PageResource\Pages\ListPages
+  GET|HEAD  admin/pages/create filament.admin.resources.pages.create ΓÇ║ App\Filament\Resources\PageResource\Pages\CreaΓÇª
+  GET|HEAD  admin/pages/{record} filament.admin.resources.pages.view ΓÇ║ App\Filament\Resources\PageResource\Pages\ViewΓÇª
+  GET|HEAD  admin/pages/{record}/edit filament.admin.resources.pages.edit ΓÇ║ App\Filament\Resources\PageResource\PagesΓÇª
+  GET|HEAD  admin/partnerships filament.admin.resources.partnerships.index ΓÇ║ App\Filament\Resources\PartnershipResourΓÇª
+  GET|HEAD  admin/partnerships/create filament.admin.resources.partnerships.create ΓÇ║ App\Filament\Resources\PartnershΓÇª
+  GET|HEAD  admin/partnerships/{record}/edit filament.admin.resources.partnerships.edit ΓÇ║ App\Filament\Resources\PartΓÇª
+  GET|HEAD  admin/people filament.admin.resources.people.index ΓÇ║ App\Filament\Resources\PersonResource\Pages\ListPeopΓÇª
+  GET|HEAD  admin/people/create filament.admin.resources.people.create ΓÇ║ App\Filament\Resources\PersonResource\Pages\ΓÇª
+  GET|HEAD  admin/people/{record} filament.admin.resources.people.view ΓÇ║ App\Filament\Resources\PersonResource\Pages\ΓÇª
+  GET|HEAD  admin/people/{record}/edit filament.admin.resources.people.edit ΓÇ║ App\Filament\Resources\PersonResource\PΓÇª
+  GET|HEAD  admin/two-factor-challenge ........ admin.two-factor.challenge ΓÇ║ Admin\TwoFactorChallengeController@create
+  POST      admin/two-factor-challenge ............ admin.two-factor.verify ΓÇ║ Admin\TwoFactorChallengeController@store
+  GET|HEAD  admin/two-factor-setup ......... filament.admin.pages.two-factor-setup ΓÇ║ App\Filament\Pages\TwoFactorSetup
+  GET|HEAD  admin/users ... filament.admin.resources.users.index ΓÇ║ App\Filament\Resources\UserResource\Pages\ListUsers
+  GET|HEAD  admin/users/{record}/edit filament.admin.resources.users.edit ΓÇ║ App\Filament\Resources\UserResource\PagesΓÇª
+  GET|HEAD  filament/exports/{export}/download ......... filament.exports.download ΓÇ║ Filament\Actions ΓÇ║ DownloadExport
+  GET|HEAD  filament/imports/{import}/failed-rows/download filament.imports.failed-rows.download ΓÇ║ Filament\Actions  ΓÇª
+  GET|HEAD  livewire/livewire.js ......................... Livewire\Mechanisms ΓÇ║ FrontendAssets@returnJavaScriptAsFile
+  GET|HEAD  livewire/livewire.min.js.map ................................... Livewire\Mechanisms ΓÇ║ FrontendAssets@maps
+  GET|HEAD  livewire/preview-file/{filename} livewire.preview-file ΓÇ║ Livewire\Features ΓÇ║ FilePreviewController@handle
+  POST      livewire/update .............. default.livewire.update ΓÇ║ Livewire\Mechanisms ΓÇ║ HandleRequests@handleUpdate
+  POST      livewire/upload-file .............. livewire.upload-file ΓÇ║ Livewire\Features ΓÇ║ FileUploadController@handle
+  GET|HEAD  robots.txt ...................................................... robots ΓÇ║ Public\SitemapController@robots
+  GET|HEAD  sitemap.xml ................................................... sitemap ΓÇ║ Public\SitemapController@sitemap
+  GET|HEAD  storage/{path} storage.local ΓÇ║ vendor/laravel/framework/src/Illuminate/Filesystem/FilesystemServiceProvidΓÇª
+  PUT       storage/{path} storage.local.upload ΓÇ║ vendor/laravel/framework/src/Illuminate/Filesystem/FilesystemServicΓÇª
+  GET|HEAD  up ........... vendor/laravel/framework/src/Illuminate/Foundation/Configuration/ApplicationBuilder.php:219
+  POST      webhook/incoming ................................................... webhook.incoming ΓÇ║ routes/web.php:266
+  GET|HEAD  {locale} ............................................................. public.home ΓÇ║ Public\HomeController
+  GET|HEAD  {locale}/about ..................................... public.about.landing ΓÇ║ Public\AboutController@landing
+  GET|HEAD  {locale}/about/central-directorates public.about.central-directorates ΓÇ║ Public\AboutController@directoratΓÇª
+  GET|HEAD  {locale}/about/directorates .............. public.about.directorates ΓÇ║ Public\AboutController@directorates
+  GET|HEAD  {locale}/about/directorates/staff public.about.directorates.staff ΓÇ║ Public\AboutController@staffDirectory
+  GET|HEAD  {locale}/about/directorates/{directorate} public.about.directorates.show ΓÇ║ Public\AboutController@directoΓÇª
+  GET|HEAD  {locale}/about/history ............................. public.about.history ΓÇ║ Public\AboutController@history
+  GET|HEAD  {locale}/about/leadership .................... public.about.leadership ΓÇ║ Public\AboutController@leadership
+  GET|HEAD  {locale}/about/partnership public.about.partnership.redirect ΓÇ║ Public\AboutController@redirectPartnershipΓÇª
+  GET|HEAD  {locale}/about/partnerships .............. public.about.partnerships ΓÇ║ Public\AboutController@partnerships
+  GET|HEAD  {locale}/about/profile ........ public.about.profile.legacy ΓÇ║ Public\AboutController@redirectLegacyProfile
+  GET|HEAD  {locale}/about/profile/{source}/{slug} ............. public.about.profile ΓÇ║ Public\AboutController@profile
+  GET|HEAD  {locale}/about/university-council public.about.university-council.redirect ΓÇ║ Public\AboutController@redirΓÇª
+  GET|HEAD  {locale}/about/vision-mission ......... public.about.vision-mission ΓÇ║ Public\AboutController@visionMission
+  GET|HEAD  {locale}/about/{section} ........................... public.about.content ΓÇ║ Public\AboutController@content
+  GET|HEAD  {locale}/admissions ...................... public.admissions.landing ΓÇ║ Public\AdmissionsController@landing
+  GET|HEAD  {locale}/admissions/academic-warnings public.admissions.academic-warnings.redirect ΓÇ║ Public\AdmissionsConΓÇª
+  GET|HEAD  {locale}/admissions/study-system public.admissions.study-system.redirect ΓÇ║ Public\AdmissionsController@reΓÇª
+  GET|HEAD  {locale}/admissions/{section} ............ public.admissions.section ΓÇ║ Public\AdmissionsController@section
+  GET|HEAD  {locale}/campus-life .................... public.campus-life.landing ΓÇ║ Public\CampusLifeController@landing
+  GET|HEAD  {locale}/campus-life/career-development/jobs public.campus-life.career-development.jobs ΓÇ║ Public\CampusLiΓÇª
+  GET|HEAD  {locale}/campus-life/career-development/jobs/apply public.campus-life.career-development.jobs.apply ΓÇ║ PubΓÇª
+  GET|HEAD  {locale}/campus-life/career-development/jobs/{job} public.campus-life.career-development.jobs.show ΓÇ║ PublΓÇª
+  GET|HEAD  {locale}/campus-life/{section} .......... public.campus-life.section ΓÇ║ Public\CampusLifeController@section
+  GET|HEAD  {locale}/contact .................................... public.contact ΓÇ║ Public\PublicContactController@show
+  POST      {locale}/contact ............................ public.contact.submit ΓÇ║ Public\PublicContactController@store
+  GET|HEAD  {locale}/e-services ....................................... public.e-services ΓÇ║ Public\EServicesController
+  GET|HEAD  {locale}/e-services/suggestions-complaints public.e-services.suggestions-complaints ΓÇ║ Public\EServicesConΓÇª
+  POST      {locale}/e-services/suggestions-complaints public.e-services.suggestions-complaints.submit ΓÇ║ Public\EServΓÇª
+  GET|HEAD  {locale}/e-services/{detail} ................ public.e-services.detail ΓÇ║ Public\EServicesController@detail
+  GET|HEAD  {locale}/facilities ................................. public.facilities.hub ΓÇ║ Public\FacultyController@hub
+  GET|HEAD  {locale}/facilities/{faculty} .................. public.facilities.show ΓÇ║ Public\FacultyController@faculty
+  GET|HEAD  {locale}/facilities/{faculty}/projects/{project} public.facilities.projects.show ΓÇ║ Public\FacultyControllΓÇª
+  GET|HEAD  {locale}/facilities/{faculty}/study-plan public.facilities.study-plan ΓÇ║ Public\FacultyController@studyPlan
+  GET|HEAD  {locale}/facilities/{faculty}/study-plan/course public.facilities.study-plan.course ΓÇ║ Public\FacultyContrΓÇª
+  GET|HEAD  {locale}/facilities/{faculty}/{subpage} ..... public.facilities.subpage ΓÇ║ Public\FacultyController@subpage
+  GET|HEAD  {locale}/faculties/{legacyPath?} public.faculties.legacy.redirect ΓÇ║ Public\FacultyController@redirectLegaΓÇª
+  POST      {locale}/forms/{form}/submissions ........... public.forms.submit ΓÇ║ Public\DynamicFormSubmissionController
+  GET|HEAD  {locale}/news ............................................ public.news.index ΓÇ║ Public\NewsController@index
+  GET|HEAD  {locale}/news/announcements .............. public.news.announcements ΓÇ║ Public\NewsController@announcements
+  GET|HEAD  {locale}/news/article ........... public.news.article.legacy ΓÇ║ Public\NewsController@redirectLegacyArticle
+  GET|HEAD  {locale}/news/articles ............................. public.news.articles ΓÇ║ Public\NewsController@articles
+  GET|HEAD  {locale}/news/events ................................... public.news.events ΓÇ║ Public\NewsController@events
+  GET|HEAD  {locale}/news/events-list ..................... public.news.events-list ΓÇ║ Public\NewsController@eventsList
+  GET|HEAD  {locale}/news/events-list/past ............ public.news.events-list.past ΓÇ║ Public\NewsController@pastEvent
+  GET|HEAD  {locale}/news/events-list/register public.news.events-list.register ΓÇ║ Public\NewsController@eventRegistraΓÇª
+  GET|HEAD  {locale}/news/gallery ................................ public.news.gallery ΓÇ║ Public\NewsController@gallery
+  GET|HEAD  {locale}/news/{article} .................................... public.news.show ΓÇ║ Public\NewsController@show
+  GET|HEAD  {locale}/preview ................................................. preview.show ΓÇ║ Public\PreviewController
+  GET|HEAD  {locale}/projects/detail .. public.projects.detail.legacy ΓÇ║ Public\FacultyController@redirectLegacyProject
+  GET|HEAD  {locale}/research ................................ public.research.index ΓÇ║ Public\ResearchController@index
+  GET|HEAD  {locale}/research/centers .............. public.research.centers.index ΓÇ║ Public\ResearchController@centers
+  GET|HEAD  {locale}/research/centers/detail ...... public.research.centers.detail ΓÇ║ Public\ResearchController@centers
+  GET|HEAD  {locale}/research/centers/{slug} ......... public.research.centers.show ΓÇ║ Public\ResearchController@center
+  GET|HEAD  {locale}/research/conferences ........ public.research.conferences ΓÇ║ Public\ResearchController@conferences
+  GET|HEAD  {locale}/research/conferences/register public.research.conferences.register ΓÇ║ Public\ResearchController@cΓÇª
+  GET|HEAD  {locale}/research/detail ................. public.research.detail ΓÇ║ Public\ResearchController@legacyDetail
+  GET|HEAD  {locale}/research/expert-finder ... public.research.expert-finder ΓÇ║ Public\ResearchController@expertFinder
+  GET|HEAD  {locale}/research/library .................... public.research.library ΓÇ║ Public\ResearchController@library
+  GET|HEAD  {locale}/research/office ....................... public.research.office ΓÇ║ Public\ResearchController@office
+  GET|HEAD  {locale}/research/policies ................. public.research.policies ΓÇ║ Public\ResearchController@policies
+  GET|HEAD  {locale}/research/projects ........... public.research.projects.index ΓÇ║ Public\ResearchController@projects
+  GET|HEAD  {locale}/research/projects/detail ... public.research.projects.detail ΓÇ║ Public\ResearchController@projects
+  GET|HEAD  {locale}/research/projects/{slug} ...... public.research.projects.show ΓÇ║ Public\ResearchController@project
+  GET|HEAD  {locale}/research/publications public.research.publications.index ΓÇ║ Public\ResearchController@publications
+  GET|HEAD  {locale}/research/publications/detail public.research.publications.detail ΓÇ║ Public\ResearchController@legΓÇª
+  GET|HEAD  {locale}/research/publications/{slug} public.research.publications.show ΓÇ║ Public\ResearchController@publiΓÇª
+  GET|HEAD  {locale}/research/repository ........... public.research.repository ΓÇ║ Public\ResearchController@repository
+  GET|HEAD  {locale}/research/researchers .. public.research.researchers.index ΓÇ║ Public\ResearchController@researchers
+  GET|HEAD  {locale}/research/researchers/detail public.research.researchers.detail ΓÇ║ Public\ResearchController@reseaΓÇª
+  GET|HEAD  {locale}/research/researchers/{slug} public.research.researchers.show ΓÇ║ Public\ResearchController@researcΓÇª
+  GET|HEAD  {locale}/research/themes ................. public.research.themes.index ΓÇ║ Public\ResearchController@themes
+  GET|HEAD  {locale}/research/themes/detail ......... public.research.themes.detail ΓÇ║ Public\ResearchController@themes
+  GET|HEAD  {locale}/research/themes/{slug} ............ public.research.themes.show ΓÇ║ Public\ResearchController@theme
+  GET|HEAD  {locale}/virtual-tour ................................. public.virtual-tour ΓÇ║ Public\VirtualTourController
+  GET|HEAD  {locale}/{slugPath} .................................................. public.page ΓÇ║ Public\PageController
+  GET|HEAD  {referencePath} ................................ reference.locale ΓÇ║ Public\BrowserLocaleRedirectController
+
+                                                                                                  Showing [164] routes
+

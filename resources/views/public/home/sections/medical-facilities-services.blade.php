@@ -1,0 +1,84 @@
+<section x-data="statsCounter()" class="py-16 bg-slate-50 font-hacen overflow-hidden reveal">
+    <div class="container">
+        <h2 class="text-4xl lg:text-5xl font-bold text-spu-blue mb-10">{{ $section->payload->title }}</h2>
+
+        <div class="mb-16 grid grid-cols-1 gap-4 md:grid-cols-12 md:gap-8">
+            @isset($section->payload->items[0])
+                @php($mainItem = $section->payload->items[0])
+                @php($mainImage = $mainItem['imageUrl'] ?? ($mainItem['image'] ?? null))
+                <article class="col-span-1 flex flex-col overflow-hidden rounded-[2rem] bg-white shadow-card-elevated transition-all duration-500 group hover:shadow-panel md:col-span-12 lg:col-span-7">
+                    @if ($mainImage)
+                        <div class="h-64 md:h-[350px] overflow-hidden relative">
+                            @php($mainSrcset = \App\Support\MediaUrlResolver::legacySrcset($mainImage))
+                            <img src="{{ $mainImage }}" @if ($mainSrcset) srcset="{{ $mainSrcset }}" sizes="(max-width: 1024px) 100vw, 840px" @endif alt="{{ $mainItem['title'] ?? '' }}" loading="lazy" decoding="async" width="840" height="350" class="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110">
+                            <div class="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
+                        </div>
+                    @endif
+                    <div class="p-5 md:p-8 flex-1 flex flex-col justify-between">
+                        <div>
+                            @if (! empty($mainItem['title']))<h3 class="text-2xl font-bold text-spu-blue mb-4">{{ $mainItem['title'] }}</h3>@endif
+                            @if (! empty($mainItem['summary']))<x-public.rich-text class="text-gray-600 leading-relaxed mb-6" :text="$mainItem['summary']" />@endif
+                            @if (! empty($mainItem['features']))
+                            <ul class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+                                    @foreach ($mainItem['features'] as $feature)
+                                        <li class="flex items-center gap-3"><div class="w-6 h-6 rounded-full bg-green-500/30 flex items-center justify-center shrink-0"><img src="/images/icons/check-circle.svg" class="w-3 h-3 brightness-105 invert" alt="" width="24" height="24" loading="lazy" decoding="async"></div><span class="text-spu-blue font-medium text-sm">{{ $feature }}</span></li>
+                                    @endforeach
+                                </ul>
+                            @endif
+                        </div>
+                        @if (! empty($mainItem['action']['url']) && ! empty($mainItem['action']['label']))
+                            <a href="{{ $mainItem['action']['url'] }}" class="inline-flex items-center justify-center px-10 py-3 bg-spu-blue text-white rounded-xl font-bold hover:bg-spu-red transition-all self-start" @if (! empty($mainItem['action']['target'])) target="{{ $mainItem['action']['target'] }}" rel="noreferrer" @endif>{{ $mainItem['action']['label'] }}</a>
+                        @endif
+                    </div>
+                </article>
+            @endisset
+
+            @if (isset($section->payload->items[1]) || isset($section->payload->items[2]))
+                    <div class="col-span-1 grid grid-cols-1 gap-4 md:col-span-12 md:grid-cols-2 md:gap-8 lg:col-span-5 lg:grid-cols-1">
+                    @foreach ([1, 2] as $index)
+                        @isset($section->payload->items[$index])
+                            @php($sideItem = $section->payload->items[$index])
+                            @php($sideImage = $sideItem['imageUrl'] ?? ($sideItem['image'] ?? null))
+                            <article class="bg-white rounded-[2rem] shadow-card-elevated overflow-hidden flex flex-col flex-1 group hover:shadow-panel transition-all">
+                                @if ($sideImage)
+                                    @php($sideSrcset = \App\Support\MediaUrlResolver::legacySrcset($sideImage))
+                                    <div class="h-40 md:h-48 overflow-hidden"><img src="{{ $sideImage }}" @if ($sideSrcset) srcset="{{ $sideSrcset }}" sizes="(max-width: 1024px) 100vw, 560px" @endif alt="{{ $sideItem['title'] ?? '' }}" loading="lazy" decoding="async" width="560" height="192" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"></div>
+                                @endif
+                                <div class="p-5 md:p-6">
+                                    @if (! empty($sideItem['title']))<h4 class="card-title text-xl font-bold text-spu-blue mb-2" dir="auto">{{ $sideItem['title'] }}</h4>@endif
+                                    @if (! empty($sideItem['summary']))<p class="text-gray-500 text-sm line-clamp-2">{{ $sideItem['summary'] }}</p>@endif
+                                    @if (! empty($sideItem['action']['url']) && ! empty($sideItem['action']['label']))
+                                        <a href="{{ $sideItem['action']['url'] }}" class="text-spu-blue font-bold text-sm flex items-center gap-2 hover:text-spu-red transition-colors mt-2" @if (! empty($sideItem['action']['target'])) target="{{ $sideItem['action']['target'] }}" rel="noreferrer" @endif><span>{{ $sideItem['action']['label'] }}</span><img src="/images/icon-chevron-right-outline.svg" class="w-2.5 h-2.5 rtl:rotate-180" alt="" width="24" height="24" loading="lazy" decoding="async"></a>
+                                    @endif
+                                </div>
+                            </article>
+                        @endisset
+                    @endforeach
+                </div>
+            @endif
+        </div>
+
+        @if ($section->payload->stats !== [])
+            @php($statsCount = count($section->payload->stats))
+            {{-- Every stat shares one row on desktop (up to six), so adding a fifth
+                 sits beside the others instead of wrapping onto a second line. --}}
+            @php($statsDense = $statsCount > 4)
+            <div class="bg-spu-blue rounded-[24px] py-12 px-8 shadow-panel relative overflow-hidden">
+                <div class="cms-grid-stats cms-grid-stats-fit {{ $statsDense ? 'gap-8' : 'gap-12' }} relative z-10" style="--stats-cols: {{ max(1, min($statsCount, 6)) }}; --stats-cols-md: {{ $statsCount === 4 ? 2 : max(1, min($statsCount, 3)) }};" data-stats-count="{{ $statsCount }}">
+                    @foreach ($section->payload->stats as $stat)
+                        <div class="flex flex-col items-center justify-center text-center {{ $statsDense ? 'px-2' : 'px-4' }}">
+                            <div class="flex items-baseline mb-3">
+                                <span class="text-5xl {{ $statsDense ? 'lg:text-5xl' : 'lg:text-6xl' }} font-bold text-white tracking-tighter stats-card-value" data-value="{{ $stat->value }}" translate="no">{{ $stat->value }}</span>
+                                {{-- Gold, not the brand red: this sits on the dark navy panel, where
+                                     #6f1616 measured 1.2:1 against the 3:1 large text needs. Same
+                                     defect, same fix as the faculties hub. --}}
+                                @if ($stat->suffix)<span class="text-3xl font-bold text-spu-gold ms-1" translate="no">{{ $stat->suffix }}</span>@endif
+                            </div>
+                            <p class="text-[#799DD6] text-xs font-bold tracking-widest uppercase">{{ $stat->label }}</p>
+                        </div>
+                    @endforeach
+                </div>
+            </div>
+        @endif
+    </div>
+</section>

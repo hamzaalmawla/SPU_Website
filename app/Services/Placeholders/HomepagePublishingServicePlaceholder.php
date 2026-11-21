@@ -4,8 +4,9 @@ declare(strict_types=1);
 
 namespace App\Services\Placeholders;
 
-use App\Contracts\HomepagePublishingServiceInterface;
-use App\DTOs\HomepageDraftDTO;
+use App\Contracts\Homepage\HomepagePublishingServiceInterface;
+use App\DTOs\Homepage\HomepageDraftDataDTO;
+use App\DTOs\Homepage\HomepageDraftDTO;
 use BadMethodCallException;
 use DateTimeInterface;
 
@@ -14,7 +15,7 @@ use DateTimeInterface;
  */
 final class HomepagePublishingServicePlaceholder implements HomepagePublishingServiceInterface
 {
-    public function saveDraft(array $payload, int $userId): HomepageDraftDTO
+    public function saveDraft(HomepageDraftDataDTO $payload, int $userId, ?int $expectedVersion = null): HomepageDraftDTO
     {
         throw new BadMethodCallException(__METHOD__.' is not implemented.');
     }
@@ -24,12 +25,32 @@ final class HomepagePublishingServicePlaceholder implements HomepagePublishingSe
         throw new BadMethodCallException(__METHOD__.' is not implemented.');
     }
 
-    public function unpublish(string $targetType, int $targetId, int $userId): bool
+    public function unpublish(string $targetType, ?int $targetId, int $userId): bool
     {
         throw new BadMethodCallException(__METHOD__.' is not implemented.');
     }
 
     public function schedulePublish(int $draftId, DateTimeInterface $publishAt, int $userId): bool
+    {
+        throw new BadMethodCallException(__METHOD__.' is not implemented.');
+    }
+
+    public function publishDueScheduled(): int
+    {
+        throw new BadMethodCallException(__METHOD__.' is not implemented.');
+    }
+
+    public function hasEditableDraft(): bool
+    {
+        throw new BadMethodCallException(__METHOD__.' is not implemented.');
+    }
+
+    public function discardEditableDraft(int $userId): int
+    {
+        throw new BadMethodCallException(__METHOD__.' is not implemented.');
+    }
+
+    public function latestHomepageState(): ?string
     {
         throw new BadMethodCallException(__METHOD__.' is not implemented.');
     }

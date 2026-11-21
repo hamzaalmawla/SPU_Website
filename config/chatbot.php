@@ -1,0 +1,390 @@
+<?php
+
+declare(strict_types=1);
+
+/*
+|--------------------------------------------------------------------------
+| SPU AI assistant (public chat widget + knowledge base)
+|--------------------------------------------------------------------------
+|
+| The assistant answers visitors' questions from the files editors upload in
+| the admin (Administration › AI assistant). Retrieval and generation run in
+| this application: the files are split into passages, each passage is
+| embedded once with OpenAI, and a question is answered from the closest
+| passages. Nothing else is deployed; shared cPanel hosting cannot run the
+| Python/Qdrant stack the standalone chatbot uses.
+|
+| Values here are defaults. Everything an editor may change (on/off, model,
+| API key, welcome text, limits) is stored by ChatbotSettingsService and
+| overrides these, so a change never needs a deploy.
+|
+*/
+
+return [
+
+    // Master switch from the environment. When false the widget never renders
+    // and the endpoint answers "unavailable" whatever the admin setting says.
+    'enabled' => (bool) env('CHATBOT_ENABLED', true),
+
+    'openai' => [
+        'base_url' => rtrim((string) env('OPENAI_BASE_URL', 'https://api.openai.com/v1'), '/'),
+        // Fallback only: the key saved in the admin (encrypted) wins.
+        'api_key' => env('OPENAI_API_KEY'),
+        'connect_timeout' => (int) env('CHATBOT_CONNECT_TIMEOUT', 5),
+        'timeout' => (int) env('CHATBOT_TIMEOUT', 45),
+        'embedding_timeout' => (int) env('CHATBOT_EMBEDDING_TIMEOUT', 60),
+    ],
+
+    // GPT-5.4 mini: the strongest model in OpenAI's complimentary tier (up to
+    // 10M tokens a day free for organizations that share traffic with
+    // OpenAI), run with reasoning off for fast answers.
+    'default_model' => env('CHATBOT_MODEL', 'gpt-5.4-mini'),
+
+    // Asked when the main model is rate limited, out of quota, unavailable
+    // or refuses the request (never on a rejected key). GPT-6 Luna: $0.10 /
+    // 1M input, $0.01 cached, $0.50 / 1M output (November 2026).
+    'fallback_model' => env('CHATBOT_FALLBACK_MODEL', 'gpt-6-luna'),
+
+    /*
+     * Models editors can pick, with USD prices per 1M tokens, used for the
+     * cost figures on the admin page. `reasoning` models take a reasoning
+     * effort and no temperature. Every listed model supports structured
+     * output, which the scope guard relies on. `free_daily` marks models in
+     * OpenAI's complimentary daily tier (10M tokens a day across them, for
+     * organizations with data sharing on); the prices are what usage beyond
+     * that costs, so the admin page's figures are an upper bound for them.
+     */
+    'models' => [
+        'gpt-5.4-mini' => ['label' => 'GPT-5.4 mini (recommended, free daily tier)', 'input' => 0.75, 'cached_input' => 0.075, 'output' => 4.50, 'reasoning' => true, 'free_daily' => true],
+        'gpt-6-luna' => ['label' => 'GPT-6 Luna (cheap, newest)', 'input' => 0.10, 'cached_input' => 0.01, 'output' => 0.50, 'reasoning' => true, 'free_daily' => false],
+        'gpt-5.4-nano' => ['label' => 'GPT-5.4 nano (free daily tier)', 'input' => 0.20, 'cached_input' => 0.02, 'output' => 1.25, 'reasoning' => true, 'free_daily' => true],
+        'gpt-5-mini' => ['label' => 'GPT-5 mini (free daily tier)', 'input' => 0.25, 'cached_input' => 0.025, 'output' => 2.00, 'reasoning' => true, 'free_daily' => true],
+        'gpt-5-nano' => ['label' => 'GPT-5 nano (free daily tier, cheapest)', 'input' => 0.05, 'cached_input' => 0.005, 'output' => 0.40, 'reasoning' => true, 'free_daily' => true],
+        'gpt-6.1-terra' => ['label' => 'GPT-6.1 Terra (reads scanned pages)', 'input' => 1.00, 'cached_input' => 0.10, 'output' => 5.00, 'reasoning' => true, 'free_daily' => false],
+        'gpt-4.1-nano' => ['label' => 'GPT-4.1 nano (free daily tier)', 'input' => 0.10, 'cached_input' => 0.025, 'output' => 0.40, 'reasoning' => false, 'free_daily' => true],
+    ],
+
+    // Lowest effort each model accepts: fastest and cheapest. GPT-6 and
+    // GPT-5.4+ models take "none"; GPT-5 takes "minimal".
+    'reasoning_effort' => [
+        'default' => 'minimal',
+        'gpt-6-luna' => 'none',
+        'gpt-5.4-mini' => 'none',
+        'gpt-5.4-nano' => 'none',
+        'gpt-6.1-terra' => 'none',
+    ],
+
+    /*
+     * Misuse protection (see App\Support\Chatbot\ChatbotGuard and
+     * Docs/AI_ASSISTANT.md). The assistant only talks about the university:
+     * coding, homework, translation, role-play and attempts to change its
+     * rules are refused, mostly before any paid call is made.
+     */
+    'guard' => [
+        // OpenAI's moderation endpoint is free; it screens each question.
+        'moderation' => (bool) env('CHATBOT_MODERATION', true),
+        'moderation_model' => 'omni-moderation-latest',
+        // Refused questions cost points: 1 for an innocent off-topic question,
+        // 2 for code, rule-bypass, abuse or harmful content. A visitor
+        // reaching `strikes` points within the window is paused; a second
+        // pause on the same day lasts `repeat_block_hours`. One IP address
+        // is paused at `ip_strikes` points.
+        'strikes' => 4,
+        'ip_strikes' => 16,
+        'strike_window_minutes' => 60,
+        'block_minutes' => 60,
+        'repeat_block_hours' => 24,
+        // Hosts answers may link to (besides this site's own).
+        'link_hosts' => ['spu.edu.sy'],
+    ],
+
+    /*
+     * Scanned pages (a PDF of page images, or an uploaded photo) are read by
+     * a vision model, one page per call, `concurrency` calls at a time. A web
+     * request reads for at most `request_seconds` and the rest continues on
+     * the next refresh of the admin list or the scheduler's
+     * chatbot:continue-indexing run (every minute, `command_seconds`), so a
+     * 60-page scan never hits a request timeout. Each page is read once; its
+     * text is kept next to the file and reused when the file is re-indexed.
+     */
+    'ocr' => [
+        // GPT-6.1 Terra, OpenAI's model for visual reasoning: $1 / $5 per 1M
+        // tokens, about one US cent a page. GPT-5.4 mini misread Arabic scans
+        // in ways that change the meaning ("at most" for "at least"). When
+        // the key cannot use it, pages are read with the main model instead.
+        // Empty: always the main model.
+        'model' => env('CHATBOT_OCR_MODEL', 'gpt-6.1-terra'),
+        'concurrency' => (int) env('CHATBOT_OCR_CONCURRENCY', 8),
+        'request_seconds' => 40,
+        // The admin list's refresh reads one batch; keep it short so the page
+        // stays responsive while a scan is being read.
+        'poll_seconds' => 15,
+        'command_seconds' => 50,
+        // Time one batch may take, used to decide whether another fits.
+        'batch_seconds' => 45,
+        'timeout' => 120,
+        'max_output_tokens' => 8000,
+        // A page that fails this many times is given up (left empty).
+        'max_attempts' => 3,
+    ],
+
+    'embedding' => [
+        'model' => 'text-embedding-3-small',
+        // 512 of the model's 1536 dimensions: a third of the storage and of
+        // the scoring time, for a small loss in ranking quality. Changing it
+        // requires re-indexing every file (the admin page offers it).
+        'dimensions' => 512,
+        'price_per_million' => 0.02,
+        'batch_size' => 96,
+    ],
+
+    'knowledge' => [
+        'disk' => 'local',
+        'directory' => 'chatbot/documents',
+        // PHP's upload_max_filesize on this host is 16M; Livewire's temporary
+        // upload rule (config/livewire.php) matches it.
+        'max_upload_kb' => 16384,
+        'extensions' => ['pdf', 'docx', 'xlsx', 'txt', 'md', 'csv', 'jpg', 'jpeg', 'png', 'webp'],
+        'max_documents' => 500,
+        'max_chunks_per_document' => 1500,
+        'chunk_characters' => 1100,
+        'chunk_overlap' => 160,
+        // Uploaded files of at least this many characters get a "document
+        // card" (ChatbotDocumentCardWriter): one extra passage with what the
+        // document is and its key facts, so a deadline is found with the
+        // document's name. Written once (saved next to the file), by the
+        // reading model; about one US cent a document. 0 turns it off.
+        'card_min_characters' => 2500,
+        // What the card is written from: the first and the last characters.
+        'card_head_characters' => 24000,
+        'card_tail_characters' => 8000,
+        'card_retry_ms' => 4000,
+        'card_model' => env('CHATBOT_CARD_MODEL', ''),
+        // Contextual retrieval (ChatbotPassageContextWriter): each passage of
+        // an uploaded file or typed text gets one or two sentences saying
+        // where it sits in its document, written once when it is indexed
+        // (from the card and the text around the passage), cached a year,
+        // and searched with it. Empty model: the main one.
+        'contextual' => (bool) env('CHATBOT_CONTEXTUAL', true),
+        'context_sources' => ['upload', 'text'],
+        'context_model' => env('CHATBOT_CONTEXT_MODEL', ''),
+        'context_concurrency' => 8,
+        'context_before_characters' => 1200,
+        'context_after_characters' => 500,
+    ],
+
+    /*
+     * The website's own published pages as knowledge (chatbot:sync-website,
+     * run by every deploy and from the admin). Starts at the section pages and
+     * follows links inside the main content `depth` levels, within `allow`
+     * and outside `deny`. Pages that list people by name (students, staff
+     * lists), news, projects and publications are left out.
+     */
+    'website' => [
+        'enabled' => (bool) env('CHATBOT_WEBSITE_SYNC', true),
+        // Defaults to APP_CANONICAL_URL / APP_URL.
+        'base_url' => env('CHATBOT_WEBSITE_URL'),
+        'seeds' => ['', 'about', 'admissions', 'faculties', 'centers', 'campus-life', 'e-services', 'contact'],
+        'depth' => 2,
+        'max_pages' => 400,
+        'max_characters' => 30000,
+        'timeout' => 20,
+        'allow' => '#^/(ar|en)(/(about|admissions|faculties|centers|campus-life|e-services|contact|virtual-tour)(/[a-z0-9-]+)*)?$#',
+        'deny' => '#/(news|events|research|projects|alumni|valedictorians|honor-list|top-students|graduates|members|staff|profile|search|preview|staff-intake|forms|course|leadership/[a-z0-9-]+)(/|$)#',
+    ],
+
+    'retrieval' => [
+        // Passages in the visitor's language rank a little higher.
+        'same_language_boost' => 0.03,
+        // Each question is first rewritten into the documents' wording, in
+        // Arabic and English, by a small model call (SearchRewrite; about
+        // 300 tokens, cached a week per question), and passages are scored
+        // against the question and the rewrite. Empty model: the main one.
+        'rewrite' => (bool) env('CHATBOT_SEARCH_REWRITE', true),
+        'rewrite_model' => env('CHATBOT_REWRITE_MODEL', ''),
+        'rewrite_timeout' => 8,
+        // Passages sent to the model with each question; a question the
+        // rewrite split into several parts gets `top_k_multi`, shared out
+        // between the parts. When the model finds no answer in them, the
+        // question is searched once more with `top_k_retry` passages.
+        'top_k' => 6,
+        'top_k_multi' => 10,
+        'top_k_retry' => 14,
+        // The best few passages also bring the passage after them in their
+        // file, so a rule's cases that run on past a passage stay together.
+        'neighbors' => 3,
+        // LLM reranking: a model reorders the best `rerank_candidates` before
+        // the cut (one call). On since the 2026-11-09 evaluation: with passage
+        // contexts it answered 32 of 32 golden questions against 31 without,
+        // for +0.2 s on average and about twice the tokens per question.
+        // CHATBOT_RERANK=false switches it off. Empty model: the main one.
+        'rerank' => (bool) env('CHATBOT_RERANK', true),
+        'rerank_model' => env('CHATBOT_RERANK_MODEL', ''),
+        'rerank_candidates' => 24,
+        'rerank_passage_characters' => 700,
+        'rerank_timeout' => 10,
+        // Candidates per search: the best by meaning (vector), plus the best
+        // by rare words (names, numbers; BM25-style weights), ranked together.
+        'candidates' => 40,
+        'keyword_candidates' => 20,
+        // Below this cosine similarity a passage is not considered relevant.
+        'min_similarity' => 0.22,
+        'keyword_weight' => 0.18,
+        'max_passage_characters' => 1400,
+    ],
+
+    /*
+     * Conversation memory (Docs/AI_ASSISTANT.md, "Conversation memory").
+     * The last `max_history_turns` messages travel verbatim (signed pairs, at
+     * most `max_history_total_characters` together). Everything said before
+     * them lives in the conversation notes: the model rewrites them with
+     * every answer (the `memory` field of its structured reply), and the
+     * visitor's browser keeps them as a sealed token (ConversationMemory)
+     * that expires after `memory_hours`. Nothing is stored on the server.
+     */
+    'conversation' => [
+        'max_message_characters' => 1000,
+        'max_history_turns' => 8,
+        'max_history_characters' => 1500,
+        'max_history_total_characters' => 6000,
+        'memory_characters' => 900,
+        'memory_hours' => 24,
+        // What the search rewrite sees of the conversation, per turn.
+        'rewrite_context_characters' => 400,
+        'max_output_tokens' => 1200,
+        // A spoken question gets a short answer (about 70 words, read aloud).
+        'max_spoken_output_tokens' => 600,
+        // Identical first questions are answered from cache until the
+        // knowledge base or the settings change.
+        'answer_cache_minutes' => 720,
+    ],
+
+    'limits' => [
+        // Flood guard per IP address in front of everything (route
+        // middleware). Generous, because a campus network puts many students
+        // behind one address; fair use per visitor is below.
+        'per_minute' => (int) env('CHATBOT_RATE_PER_MINUTE', 30),
+        'per_day' => (int) env('CHATBOT_RATE_PER_DAY', 600),
+        // Site-wide daily cap; editors can change it in the admin.
+        'daily_requests' => 3000,
+    ],
+
+    /*
+     * Fair use per visitor (browser session), checked in ChatbotService so the
+     * visitor gets a clear "ask again in N minutes". The hourly and daily
+     * numbers are defaults editors can change; one IP address may use
+     * `ip_multiplier` times a visitor's share (shared campus networks).
+     */
+    'fair_use' => [
+        'per_minute' => 5,
+        'hourly' => 20,
+        'daily' => 40,
+        'ip_multiplier' => 8,
+        // The same question this many times in ten minutes is spam.
+        'repeat_limit' => 3,
+    ],
+
+    /*
+     * Voice (Docs/AI_ASSISTANT.md, "Voice"). A spoken question is recorded
+     * in the browser, transcribed here, and then asked like a typed one, so
+     * every guard, limit and source applies. The answer is read aloud by
+     * OpenAI's speech model, one short segment at a time so the first words
+     * play within a second; the browser's own voice takes over whenever that
+     * is unavailable (switched off, over the daily cap, an outage, or after
+     * the model's shutdown date). Audio is never stored.
+     */
+    'voice' => [
+        'enabled' => (bool) env('CHATBOT_VOICE_ENABLED', true),
+
+        'transcription' => [
+            // OpenAI's recommended model for recorded speech (November 2026);
+            // the fallback answers when the key cannot use it. Both list the
+            // estimated USD price per minute of audio.
+            'model' => env('CHATBOT_TRANSCRIPTION_MODEL', 'gpt-transcribe'),
+            'fallback_model' => env('CHATBOT_TRANSCRIPTION_FALLBACK_MODEL', 'gpt-4o-mini-transcribe'),
+            'prices_per_minute' => [
+                'gpt-transcribe' => 0.0045,
+                'gpt-4o-mini-transcribe' => 0.003,
+                'gpt-4o-transcribe' => 0.006,
+            ],
+            // Models that take `languages[]` and `keywords[]` (the older ones take neither).
+            'hinted_models' => ['gpt-transcribe'],
+            // A minute of Opus is ~0.25 MB and of Safari's AAC ~1 MB.
+            'max_kb' => 3072,
+            'max_seconds' => 60,
+            'timeout' => 30,
+            // Accepted recordings (what MediaRecorder produces in each browser).
+            'mimes' => ['audio/webm', 'video/webm', 'audio/ogg', 'audio/mp4', 'video/mp4', 'audio/x-m4a', 'audio/m4a', 'audio/mpeg', 'audio/wav', 'audio/x-wav'],
+            'keywords' => ['الجامعة السورية الخاصة', 'SPU', 'المفاضلة', 'التسجيل', 'الرسوم', 'الأقساط', 'المنح', 'كلية الطب البشري', 'كلية طب الأسنان', 'كلية الصيدلة', 'الهندسة المعلوماتية', 'إدارة الأعمال', 'الشهادة الثانوية'],
+        ],
+
+        /*
+         * Live transcription: while the visitor speaks, the browser streams
+         * the microphone (PCM, 24 kHz) to OpenAI's Realtime transcription
+         * over a WebSocket, with a short-lived key this server mints for a
+         * transcription-only session (it cannot chat or answer). The text is
+         * then ready about half a second after they stop, instead of after
+         * an upload and a file transcription. Any failure falls back to the
+         * recording upload above.
+         */
+        'live_transcription' => [
+            'enabled' => (bool) env('CHATBOT_LIVE_TRANSCRIPTION', true),
+            'model' => env('CHATBOT_LIVE_TRANSCRIPTION_MODEL', 'gpt-live-transcribe'),
+            'url' => 'wss://api.openai.com/v1/realtime?intent=transcription',
+            // How long the key may be used to open the connection.
+            'key_seconds' => 60,
+            'noise_reduction' => 'near_field',
+            // Estimated USD per minute of audio, and minutes per session, for
+            // the admin's cost figures (audio is streamed only while listening).
+            'price_per_minute' => 0.017,
+            'estimated_minutes_per_session' => 1,
+            // Per visitor (browser session).
+            'sessions_per_hour' => 20,
+        ],
+
+        'speech' => [
+            'model' => env('CHATBOT_SPEECH_MODEL', 'gpt-4o-mini-tts'),
+            // OpenAI shuts the /audio/speech models down on this date; from
+            // then on answers are read by the browser's voice until a new
+            // model is configured (and this date updated or cleared).
+            'retires_on' => env('CHATBOT_SPEECH_RETIRES_ON', '2027-01-06'),
+            // Voices editors can pick. marin and cedar are OpenAI's best.
+            'voices' => ['cedar', 'marin', 'ash', 'ballad', 'coral', 'echo', 'onyx', 'sage', 'shimmer', 'verse', 'alloy', 'nova', 'fable'],
+            'default_voice' => 'cedar',
+            // A whole file per segment (mp3), or, when the browser asks for it,
+            // raw PCM (24 kHz, 16-bit, mono) streamed as it is made, so the
+            // voice starts within about a second (OpenAI recommends pcm for the
+            // fastest response). The browser asks for mp3 on slow connections.
+            'format' => 'mp3',
+            'stream' => (bool) env('CHATBOT_SPEECH_STREAM', true),
+            // How the host should sound (the speech model's `instructions`).
+            'instructions' => [
+                'ar' => 'You are the warm, confident host of the Syrian Private University, talking with a visitor. Read the text exactly as written, in clear Modern Standard Arabic with a neutral Levantine accent, at a natural, lively conversational pace, like an advisor talking to a student: brisk and fluent, never slow or drawn out, with short pauses only between sentences. Say numbers, dates and amounts clearly.',
+                'en' => 'You are the warm, confident host of the Syrian Private University, talking with a visitor. Read the text exactly as written, in clear, friendly English at a natural, lively conversational pace, like an advisor talking to a student: brisk and fluent, never slow or drawn out, with short pauses only between sentences. Say numbers, dates and amounts clearly.',
+            ],
+            // A call takes 3 to 10 seconds, much the same whatever its length
+            // (measured on the host, 2026-11-07). The first segment is short so
+            // the voice starts soon; each next one is at most twice the one
+            // before (120, 240, 480, 900), and the browser fetches the first
+            // two together and keeps two in flight, so each is ready before
+            // the one before it ends.
+            'first_segment_characters' => 120,
+            'segment_characters' => 900,
+            'max_characters' => 3000,
+            'timeout' => 30,
+            // Estimated price: ~$0.015 a minute of speech, ~900 characters a minute.
+            'usd_per_1k_characters' => 0.017,
+        ],
+
+        'limits' => [
+            // Flood guard per IP address (route middleware `chatbot-voice`).
+            'per_minute' => (int) env('CHATBOT_VOICE_RATE_PER_MINUTE', 90),
+            'per_day' => (int) env('CHATBOT_VOICE_RATE_PER_DAY', 3000),
+            // Per visitor (browser session); one address gets fair_use.ip_multiplier shares.
+            'transcriptions_per_hour' => 30,
+            'speech_segments_per_hour' => 200,
+            // Site-wide default, editable in the admin (0 = no limit).
+            'daily_requests' => 1500,
+        ],
+    ],
+];

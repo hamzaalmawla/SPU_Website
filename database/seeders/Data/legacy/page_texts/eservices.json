@@ -1,0 +1,57 @@
+{
+  "source": "Old site spu.edu.sy, Student Life > SPU Library (jx_categories 841) and Services > IT services (1617). Arabic and English are the old site's text, English spacing and spelling corrected. The library page keeps its verified open-resource links and support button; the IT page's invented help categories are replaced by the old site's description of the IT services.",
+  "targets": {
+    "e_services.library": {
+      "ar": {
+        "hero.title": "مكتبة الجامعة",
+        "hero.summary": "تقديم خدمة مكتبية ذات جودة عالية في مجالي التعليم والبحث العلمي، مع التركيز على الخدمات الإلكترونية والتعاون مع المكتبات الوطنية والعالمية.",
+        "intro": {"title": "رؤية المكتبة", "body": "تقديم خدمة مكتبية ذات جودة عالية في مجالي التعليم والبحث العلمي، لطلاب مرحلتي البكالوريوس والدراسات العليا وأعضاء هيئة التدريس بالجامعة مع التركيز على الخدمات الإلكترونية والتعاون مع المكتبات الوطنية والعالمية."},
+        "sections": [
+          {"id": "objectives", "title": "أهداف المكتبة", "body": "- تهيئة البيئة المناسبة للتعلم لطلاب الجامعة السورية الخاصة.\n- توفير المراجع الحديثة للطلاب وأعضاء هيئة التدريس.\n- توفير الأبحاث العلمية في كافة المجالات لأعضاء هيئة التدريس والباحثين.\n- توفير الخدمات الإلكترونية وخاصة فيما يخص قواعد البيانات والكتب الإلكترونية.\n- تحديث محتوى مقررات البحث العلمي بالكليات بحيث تتناسب مع التطورات التكنولوجية الحديثة.\n- فتح قنوات الاتصال والشراكات مع المكتبات الوطنية والعالمية.\n- ربط المكتبة المركزية بغيرها من المكتبات المحلية والعربية والعالمية وإمكانية البحث فيها من داخل الجامعة وخارجها، وتوفير الدعم الفني، وإعداد كتيب إرشادي.\n- إثراء عملية البحث العلمي في الجامعة السورية الخاصة."},
+          {"id": "central-library", "title": "المكتبة المركزية", "body": "تسعى المكتبة المركزية في الجامعة إلى توفير المعارف والمعلومات للمستفيدين من الطلبة وأعضاء الهيئة التدريسية، وتحتوي على العديد من الكتب والمراجع وقواعد البيانات الإلكترونية والمجلات والكتب الإلكترونية العلمية. حيث تشكل المكتبة ركناً أساسياً في أعمدة الجامعة السورية الخاصة لما لها من تأثير في العملية البحثية والتدريسية، ومن هذا المنطلق فإن الجامعة أولت المكتبة اهتماماً كبيراً خاصة وأنها قامت بتطوير المكتبة المركزية باستمرار وزيادة مقتنياتها الأجنبية والعربية وإمداد المكتبة بالكتب والمراجع بناءً على طلب أعضاء الهيئة التدريسية في الكليات بالإضافة إلى توفير برنامج للمكتبة يخدم جميع الأعمال الداخلية من إدخال وبحث وإعارة ويخدم جميع المستفيدين الذين يرتادون المكتبة."},
+          {"id": "electronic-library", "title": "المكتبة الإلكترونية", "body": "المكتبة الإلكترونية هي الجانب التقني الرديف للمكتبة العامة وتشمل الجوانب التالية:\n1. تأمين الدخول إلى مكتبات إلكترونية عالمية.\n2. تأمين كتب إلكترونية للكادر التعليمي والطلاب.\n3. تأمين الأقراص المدمجة CD-DVD المرفقة مع الكتب الموجودة في المكتبة.\n4. تأمين أفلام علمية للطلاب."}
+        ],
+        "seo.title": "مكتبة الجامعة | الجامعة السورية الخاصة",
+        "seo.description": "رؤية مكتبة الجامعة السورية الخاصة وأهدافها والمكتبة المركزية والمكتبة الإلكترونية."
+      },
+      "en": {
+        "hero.title": "SPU Library",
+        "hero.summary": "High-quality library services for education and scientific research, with special emphasis on electronic services and cooperation with national and international libraries.",
+        "intro": {"title": "Library Vision", "body": "Providing high-quality library services in the fields of education and scientific research for undergraduate and postgraduate students and university teaching staff, with special emphasis on constantly enriching our resources and electronic services in cooperation with national and international libraries and electronic databases."},
+        "sections": [
+          {"id": "objectives", "title": "Objectives", "body": "- Create a suitable learning environment for Syrian Private University students.\n- Provide modern references for the university's students and teaching staff.\n- Provide scientific research papers in all fields for the university's teaching staff and researchers.\n- Establish up-to-date database services and e-books.\n- Update faculties' curricula contents to keep pace with the latest technological developments.\n- Open communication and cooperation channels with national and international libraries.\n- Link the central university library to other local, Arab and international libraries to enable cross-university search, provide technical support and prepare a library guidebook.\n- Facilitate the scientific research process at the Syrian Private University."},
+          {"id": "central-library", "title": "The Central Library", "body": "The central library strives to provide knowledge and information for students and teaching staff. It contains a considerable number of books, references, electronic databases, and electronic journals and books. It is a cornerstone of SPU due to its role in research, teaching and learning.\n\nAccordingly, the university has given the library great attention and works steadily to develop it by continuously providing new Arabic and English textbooks and references proposed by the academic staff. The library's internal database search engine assists in easy search and retrieval."},
+          {"id": "electronic-library", "title": "Electronic Library", "body": "The Electronic Library is the technical counterpart of the library and offers the following:\n- Access to global electronic libraries and databases.\n- E-books for teaching staff and students.\n- Copies of the CDs and DVDs attached to the library's books.\n- Scientific videos and films for teaching staff and students."}
+        ],
+        "seo.title": "SPU Library | Syrian Private University",
+        "seo.description": "The vision and objectives of the Syrian Private University library, its central library and its electronic library."
+      }
+    },
+    "e_services.it-support": {
+      "ar": {
+        "hero.title": "خدمات تقانة المعلومات",
+        "hero.summary": "تقدم الجامعة مجموعة من الخدمات الهامة لطلبتها بهدف تسهيل وتطوير العملية التعليمية في الجامعة.",
+        "intro": {"title": "خدمات تقانة المعلومات", "body": "تقدم الجامعة مجموعة من الخدمات الهامة لطلبتها بهدف تسهيل وتطوير العملية التعليمية في الجامعة ولتقديم المساعدة للطلاب في الحصول على أكبر كم من المعلومات من عدة مصادر."},
+        "sections": [
+          {"id": "internet", "title": "الاتصال بشبكة الإنترنت", "body": "يمكن لجميع الطلبة تصفح المواقع الإلكترونية والحصول على المراجع العلمية والمقالات المفيدة عن طريق استخدام الأجهزة الحاسوبية الموجودة في مختبرات الحاسوب المتصلة بشبكة الإنترنت."},
+          {"id": "student-account", "title": "الحساب الإلكتروني الخاص بكل طالب", "body": "يمكّن الطالب من الاستفادة من الخدمات الإلكترونية في الجامعة مثل البريد الإلكتروني، بوابة الطالب الإلكترونية، نظام إدارة المقررات... إلخ."},
+          {"id": "course-management", "title": "نظام إدارة المقررات", "body": "يقوم المدرس عن طريق الموقع الإلكتروني للجامعة بوضع المحتوى العلمي الخاص بكل مقرر، بحيث يمكن للطالب الاطلاع عليه في أي وقت وتحميله على جهازه الخاص، بالإضافة إلى تقديم خدمات أخرى تتعلق بالامتحانات والوظائف والمشاريع الفصلية."}
+        ],
+        "seo.title": "خدمات تقانة المعلومات | الجامعة السورية الخاصة",
+        "seo.description": "خدمات تقانة المعلومات في الجامعة السورية الخاصة: الاتصال بالإنترنت، والحساب الإلكتروني لكل طالب، ونظام إدارة المقررات."
+      },
+      "en": {
+        "hero.title": "IT Services",
+        "hero.summary": "The IT Department provides several services for students to facilitate and develop the education process at the university.",
+        "intro": {"title": "IT Services", "body": "The IT Department provides several services for students to facilitate and develop the education process at the university."},
+        "sections": [
+          {"id": "internet", "title": "Internet connection", "body": "Students can browse the web to get scientific information and sources through the computers provided in the university."},
+          {"id": "student-account", "title": "A personal account for each student", "body": "Each student has an account to check email and use the student portal, the course management system and the library system. Through this account the student can access all his university information, grades, fees and payments."},
+          {"id": "course-management", "title": "Course management system", "body": "Through it, the instructor adds his course lectures, so students can see them anytime and download them to their own computers. Homework and assignments can be delivered here, and tests can be taken too."}
+        ],
+        "seo.title": "IT Services | Syrian Private University",
+        "seo.description": "IT services at the Syrian Private University: internet access, a personal account for each student, and the course management system."
+      }
+    }
+  }
+}

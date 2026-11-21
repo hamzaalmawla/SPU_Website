@@ -1,0 +1,559 @@
+{
+  "source": "Old site spu.edu.sy faculty pages the redesign lacked: Dentistry 'Clinical cases performed with microscopic magnification' (jx_categories 3043, cases 3039-3392, videos from the pages and jx_items), Pharmacy 'Internship and training system' (1415, file jx_items 2254) and the 'Final examination schedule' pages of Medicine (5348), AI (5357), Petroleum (6075) and Business (5345) with their current PDFs (jx_items). Arabic is the old text; English is the old site's where it had one (cases 1, 3, 4 and 8 by title, case 8 in full, the internship regulation), otherwise a faithful translation. The pages themselves are created by faculty:import-structure, which must run first.",
+  "targets": {
+    "facilities.dentistry.clinical-cases": {
+      "ar": {
+        "title": "حالات سريرية منجزة بالتكبير المجهري",
+        "summary": "حالات سريرية منجزة تحت التكبير المجهري في كلية طب الأسنان في الجامعة السورية الخاصة، يعرض الفيديو المرفق بكل منها مراحل العمل السريرية كافة.",
+        "body": "",
+        "payload": {
+          "entries": [
+            {
+              "title": "حالة سريرية 1: ترميم تجميلي صنف ثالث",
+              "meta": "إنجاز الأستاذ الدكتور طلال النحلاوي، قسم مداواة الأسنان",
+              "body": "راجع مريض بعمر 25 سنة كلية طب الأسنان في الجامعة السورية الخاصة يشكو من حساسية مؤقتة من المشروبات الباردة تزول بزوال المسبب.\n\nأظهر الفحص السريري والشعاعي وجود نخر متوسط العمق على السطح الوحشي للسن رقم 21 (FDI)، وكانت خطة المعالجة عبارة عن إزالة النخر مع إجراء ترميم تجميلي كومبوزيت تحت العزل بالحاجز المطاطي.\n\nتم تحضير وترميم الآفة النخرية تحت التكبير المجهري، ويظهر الفيديو المرفق مراحل العمل السريرية بكافة مراحلها.",
+              "videoUrl": "https://www.youtube.com/watch?v=zWz4p2r0tsA"
+            },
+            {
+              "title": "حالة سريرية 2: معالجة لبية – تحضير آلي وحشو حراري",
+              "meta": "إنجاز الأستاذ الدكتور طلعت أبو حطب، قسم مداواة الأسنان",
+              "body": "راجع مريض بعمر 23 سنة كلية طب الأسنان في الجامعة السورية الخاصة يشكو من نوبات ألم عفوية مستمرة وشديدة.\n\nأظهر الفحص السريري والشعاعي وجود نخر عميق ونافذ على السطح الوحشي للسن رقم 15 (FDI)، وكانت خطة المعالجة عبارة عن استئصال النسيج اللبي الملتهب عبر إجراء معالجة لبية تحت العزل بالحاجز المطاطي.\n\nتم إجراء فتح الحجرة اللبية، وتحضير، وتطهير، وحشو القناة الجذرية الحراري ثلاثي الأبعاد تحت التكبير المجهري. ويظهر الفيديو المرفق مراحل العمل السريرية بكافة مراحلها.",
+              "videoUrl": "https://www.youtube.com/watch?v=84ktqAsY9aY"
+            },
+            {
+              "title": "حالة سريرية 3: ترميم تجميلي صنف أول",
+              "meta": "إنجاز الأستاذ الدكتور طلال النحلاوي، قسم مداواة الأسنان",
+              "body": "راجع مريض بعمر 22 سنة كلية طب الأسنان في الجامعة السورية الخاصة يشكو من حساسية مؤقتة على المشروبات الباردة تزول بزوال المسبب.\n\nأظهر الفحص السريري والشعاعي وجود نخر متوسط العمق على السطح الإطباقي للسن رقم 16 (FDI) الرحى الأولى العلوية مع نخر ملاصق أيضاً، وكانت خطة المعالجة عبارة عن إزالة النخر مع إجراء ترميم تجميلي كومبوزيت تحت العزل بالحاجز المطاطي، ومعالجة النخر الملاصق بجلسة منفصلة لاحقاً.\n\nتم تحضير وترميم الآفة النخرية تحت التكبير المجهري، ويظهر الفيديو المرفق مراحل العمل السريرية كافة.",
+              "videoUrl": "https://www.youtube.com/watch?v=l_-aEqjrxeM"
+            },
+            {
+              "title": "حالة سريرية 4: ترميم تجميلي صنف ثانٍ",
+              "meta": "إنجاز الأستاذ الدكتور طلال النحلاوي، قسم مداواة الأسنان",
+              "body": "راجع مريض بعمر 18 سنة كلية طب الأسنان في الجامعة السورية الخاصة يشكو من حساسية مؤقتة على المشروبات الباردة والمأكولات الحلوة تزول بزوال المسبب، ما يشخص وجود التهاب لب ردود (reversible pulpitis).\n\nأظهر الفحص السريري والشعاعي وجود نخر متوسط العمق على السطح الملاصق للسن رقم 16 (FDI) الرحى الأولى العلوية، وكانت خطة المعالجة عبارة عن إزالة النخر مع إجراء ترميم تجميلي كومبوزيت تحت العزل بالحاجز المطاطي.\n\nتم تحضير وترميم الآفة النخرية تحت التكبير المجهري، ويظهر الفيديو المرفق مراحل العمل السريرية كافة.",
+              "videoUrl": "https://www.youtube.com/watch?v=3OdHT_pijkY"
+            },
+            {
+              "title": "حالة سريرية 5: معالجة لبية بالتحضير الآلي والحشو بالتكثيف الجانبي",
+              "meta": "إنجاز الطالب أحمد عبد الإله من السنة الخامسة، بإشراف الدكتور أحمد العبدالله، قسم مداواة الأسنان",
+              "body": "راجع مريض بعمر 19 سنة كلية طب الأسنان في الجامعة السورية الخاصة يشكو من ألم دائم ومستمر متشعع ونابض عفوي ومثار على المشروبات الباردة والحارة.\n\nأظهر الفحص السريري والشعاعي وجود نخر عميق نافذ على السطح الوحشي للسن رقم 35 (FDI)، وكانت خطة المعالجة عبارة عن إزالة النخر مع إجراء معالجة لبية تحت العزل بالحاجز المطاطي.\n\nتم تحضير القناة الجذرية بالتحضير الآلي وحشو القناة بالتكثيف الجانبي تحت التكبير المجهري.",
+              "videoUrl": ""
+            },
+            {
+              "title": "حالة سريرية 6: معالجة لبية بالتحضير الآلي والحشو بالتكثيف الجانبي",
+              "meta": "إنجاز الطالب محمد أسامة الحموي من السنة الخامسة، بإشراف الدكتور أحمد العبدالله، قسم مداواة الأسنان",
+              "body": "راجع مريض بعمر 38 سنة كلية طب الأسنان في الجامعة السورية الخاصة يشكو من ألم دائم ومستمر متشعع ونابض عفوي ومثار على المشروبات الباردة والحارة.\n\nأظهر الفحص السريري والشعاعي وجود نخر عميق نافذ على السطح الوحشي للسن رقم 34 (FDI)، وكانت خطة المعالجة عبارة عن إزالة النخر مع إجراء معالجة لبية تحت العزل بالحاجز المطاطي.\n\nتم تحضير القناة الجذرية بالتحضير الآلي وحشو القناة بالتكثيف الجانبي تحت التكبير المجهري، ويظهر الفيديو المرفق مراحل العمل السريرية بكافة مراحلها.",
+              "videoUrl": "https://www.youtube.com/watch?v=PCM440Gkgvw"
+            },
+            {
+              "title": "حالة سريرية 7: معالجة لبية بالتحضير الآلي والحشو بالتكثيف الجانبي",
+              "meta": "إنجاز الطالب تيسير الحمود من السنة الخامسة، بإشراف الدكتور أحمد العبدالله، قسم مداواة الأسنان",
+              "body": "راجع مريض بعمر 32 سنة كلية طب الأسنان في الجامعة السورية الخاصة يشكو من ألم دائم ومستمر متشعع ونابض عفوي ومثار على المشروبات الباردة والحارة.\n\nأظهر الفحص السريري والشعاعي وجود نخر عميق نافذ على السطح الوحشي للسن رقم 35 (FDI)، وكانت خطة المعالجة عبارة عن إزالة النخر مع إجراء معالجة لبية تحت العزل بالحاجز المطاطي.\n\nتم تحضير القناة الجذرية بالتحضير الآلي وحشو القناة بالتكثيف الجانبي تحت التكبير المجهري، ويظهر الفيديو المرفق مراحل العمل السريرية بكافة مراحلها.",
+              "videoUrl": "https://www.youtube.com/watch?v=B3phZ1mYCtQ"
+            },
+            {
+              "title": "حالة سريرية 8: تدبير اختلاط معالجة لبية – سد انثقاب مفترق الجذور",
+              "meta": "إنجاز الأستاذ الدكتور طلعت أبو حطب، قسم مداواة الأسنان",
+              "body": "راجعت مريضة بعمر 27 سنة كلية طب الأسنان في الجامعة السورية الخاصة تشكو من نوبات ألمية متقطعة وانتباج على مستوى اللثة في أحد الأسنان المعالجة مسبقاً.\n\nأظهر الفحص السريري والشعاعي وجود انثقاب في منطقة مفترق الجذور على السطح الوحشي للسن رقم 14 (FDI)، وكانت خطة المعالجة عبارة عن ترميم منطقة الانثقاب بمادة الـ MTA واستكمال المعالجة اللبية تحت العزل بالحاجز المطاطي، حيث تمت جميع إجراءات المعالجة تحت التكبير المجهري باستخدام المجهر اللبي.\n\nويظهر الفيديو المرفق مراحل العمل السريرية بكافة مراحلها.",
+              "videoUrl": "https://youtu.be/eRL68saNnqU"
+            }
+          ]
+        },
+        "seoTitle": "حالات سريرية منجزة بالتكبير المجهري | كلية طب الأسنان",
+        "seoDescription": "حالات سريرية في الترميم التجميلي والمعالجة اللبية منجزة تحت التكبير المجهري في كلية طب الأسنان في الجامعة السورية الخاصة، مع فيديو لكل حالة."
+      },
+      "en": {
+        "title": "Clinical Cases Performed Under the Dental Microscope",
+        "summary": "Clinical cases performed under microscopic magnification at the Faculty of Dentistry, Syrian Private University. The video of each case shows all its clinical stages.",
+        "body": "",
+        "payload": {
+          "entries": [
+            {
+              "title": "Clinical case 1: Class III aesthetic restoration",
+              "meta": "Performed by Prof. Dr. Talal Al Nahlawi, Department of Operative Dentistry",
+              "body": "A 25-year-old patient consulted the Faculty of Dentistry at the Syrian Private University complaining of temporary sensitivity to cold drinks that disappeared once the cause was removed.\n\nClinical and radiographic examination showed medium-depth caries on the distal surface of tooth No. 21 (FDI). The treatment plan was to remove the caries and place an aesthetic composite restoration under rubber dam isolation.\n\nThe carious lesion was prepared and restored under microscopic magnification; the attached video shows all the clinical stages.",
+              "videoUrl": "https://www.youtube.com/watch?v=zWz4p2r0tsA"
+            },
+            {
+              "title": "Clinical case 2: Endodontic treatment – rotary preparation and thermal obturation",
+              "meta": "Performed by Prof. Dr. Talaat Abo Hatab, Department of Operative Dentistry",
+              "body": "A 23-year-old patient consulted the Faculty of Dentistry at the Syrian Private University complaining of severe, continuous spontaneous attacks of pain.\n\nClinical and radiographic examination showed deep, penetrating caries on the distal surface of tooth No. 15 (FDI). The treatment plan was to remove the inflamed pulp tissue through endodontic treatment under rubber dam isolation.\n\nThe pulp chamber was opened and the root canal was prepared, disinfected and filled with three-dimensional thermal obturation under microscopic magnification. The attached video shows all the clinical stages.",
+              "videoUrl": "https://www.youtube.com/watch?v=84ktqAsY9aY"
+            },
+            {
+              "title": "Clinical case 3: Class I aesthetic restoration",
+              "meta": "Performed by Prof. Dr. Talal Al Nahlawi, Department of Operative Dentistry",
+              "body": "A 22-year-old patient consulted the Faculty of Dentistry at the Syrian Private University complaining of temporary sensitivity to cold drinks that disappeared once the cause was removed.\n\nClinical and radiographic examination showed medium-depth caries on the occlusal surface of tooth No. 16 (FDI), the upper first molar, together with proximal caries. The treatment plan was to remove the caries and place an aesthetic composite restoration under rubber dam isolation, and to treat the proximal caries in a later, separate session.\n\nThe carious lesion was prepared and restored under microscopic magnification; the attached video shows all the clinical stages.",
+              "videoUrl": "https://www.youtube.com/watch?v=l_-aEqjrxeM"
+            },
+            {
+              "title": "Clinical case 4: Class II aesthetic restoration",
+              "meta": "Performed by Prof. Dr. Talal Al Nahlawi, Department of Operative Dentistry",
+              "body": "An 18-year-old patient consulted the Faculty of Dentistry at the Syrian Private University complaining of temporary sensitivity to cold drinks and sweet foods that disappeared once the cause was removed, indicating reversible pulpitis.\n\nClinical and radiographic examination showed medium-depth caries on the proximal surface of tooth No. 16 (FDI), the upper first molar. The treatment plan was to remove the caries and place an aesthetic composite restoration under rubber dam isolation.\n\nThe carious lesion was prepared and restored under microscopic magnification; the attached video shows all the clinical stages.",
+              "videoUrl": "https://www.youtube.com/watch?v=3OdHT_pijkY"
+            },
+            {
+              "title": "Clinical case 5: Endodontic treatment with rotary preparation and lateral condensation",
+              "meta": "Performed by fifth-year student Ahmad Abdul Ilah, supervised by Dr. Ahmad Al Abdullah, Department of Operative Dentistry",
+              "body": "A 19-year-old patient consulted the Faculty of Dentistry at the Syrian Private University complaining of constant, continuous, radiating and throbbing pain, both spontaneous and provoked by cold and hot drinks.\n\nClinical and radiographic examination showed deep, penetrating caries on the distal surface of tooth No. 35 (FDI). The treatment plan was to remove the caries and perform endodontic treatment under rubber dam isolation.\n\nThe root canal was prepared with rotary instruments and filled by lateral condensation under microscopic magnification.",
+              "videoUrl": ""
+            },
+            {
+              "title": "Clinical case 6: Endodontic treatment with rotary preparation and lateral condensation",
+              "meta": "Performed by fifth-year student Mohammad Osama Al Hamwi, supervised by Dr. Ahmad Al Abdullah, Department of Operative Dentistry",
+              "body": "A 38-year-old patient consulted the Faculty of Dentistry at the Syrian Private University complaining of constant, continuous, radiating and throbbing pain, both spontaneous and provoked by cold and hot drinks.\n\nClinical and radiographic examination showed deep, penetrating caries on the distal surface of tooth No. 34 (FDI). The treatment plan was to remove the caries and perform endodontic treatment under rubber dam isolation.\n\nThe root canal was prepared with rotary instruments and filled by lateral condensation under microscopic magnification; the attached video shows all the clinical stages.",
+              "videoUrl": "https://www.youtube.com/watch?v=PCM440Gkgvw"
+            },
+            {
+              "title": "Clinical case 7: Endodontic treatment with rotary preparation and lateral condensation",
+              "meta": "Performed by fifth-year student Tayseer Al Hamoud, supervised by Dr. Ahmad Al Abdullah, Department of Operative Dentistry",
+              "body": "A 32-year-old patient consulted the Faculty of Dentistry at the Syrian Private University complaining of constant, continuous, radiating and throbbing pain, both spontaneous and provoked by cold and hot drinks.\n\nClinical and radiographic examination showed deep, penetrating caries on the distal surface of tooth No. 35 (FDI). The treatment plan was to remove the caries and perform endodontic treatment under rubber dam isolation.\n\nThe root canal was prepared with rotary instruments and filled by lateral condensation under microscopic magnification; the attached video shows all the clinical stages.",
+              "videoUrl": "https://www.youtube.com/watch?v=B3phZ1mYCtQ"
+            },
+            {
+              "title": "Clinical case 8: Endodontic complication management – furcation perforation repair",
+              "meta": "Performed by Prof. Dr. Talaat Abo Hatab, Department of Operative Dentistry",
+              "body": "A 27-year-old female patient consulted the Faculty of Dentistry at the Syrian Private University complaining of intermittent painful attacks and gingival swelling at one of her previously treated teeth.\n\nClinical and radiographic examination showed a perforation in the furcation area on the distal surface of tooth No. 14 (FDI). The treatment plan was to repair the perforation with MTA and complete the endodontic treatment under rubber dam isolation. All treatment procedures were carried out under micro-magnification using a dental microscope.\n\nThe attached video shows all the clinical stages.",
+              "videoUrl": "https://youtu.be/eRL68saNnqU"
+            }
+          ]
+        },
+        "seoTitle": "Clinical Cases Under the Dental Microscope | Faculty of Dentistry",
+        "seoDescription": "Aesthetic restoration and endodontic cases performed under microscopic magnification at the SPU Faculty of Dentistry, each with a video of its clinical stages."
+      }
+    },
+    "facilities.pharmacy.training": {
+      "ar": {
+        "title": "نظام الملازمة والتدريب",
+        "summary": "يتبع طالب الصيدلة تدريباً في إحدى الصيدليات خلال العطل الصيفية بإشراف عمادة كلية الصيدلة، على ثلاث فترات مدة كل منها 200 ساعة.",
+        "payload": {
+          "hero": {
+            "eyebrow": "كلية الصيدلة",
+            "title": "نظام الملازمة والتدريب",
+            "summary": "ثلاث فترات تدريب صيفية في الصيدليات، مدة كل منها 200 ساعة.",
+            "image": "/images/pharmacy-place.jpg"
+          },
+          "breadcrumb": {
+            "home": "الرئيسية",
+            "facilities": "الكليات",
+            "pharmacy": "كلية الصيدلة"
+          },
+          "introCards": [
+            {
+              "title": "التدريب في الصيدليات",
+              "icon": "/images/icons/training.svg",
+              "description": "يتدرب الطالب في إحدى الصيدليات خلال العطل الصيفية بإشراف عمادة الكلية، ويجوز له قضاء 50 ساعة منها في مصانع الأدوية والمخابر بعد موافقة العمادة."
+            },
+            {
+              "title": "دفتر الملازمة",
+              "icon": "/images/icons/training.svg",
+              "description": "يقتني الطالب دفتر الملازمة المصدق من العمادة، ويدوّن فيه الوصفات التي حضّرها بنفسه وملاحظاته عن الأدوية الجاهزة، بتأشير من الصيدلي المشرف."
+            },
+            {
+              "title": "امتحان الملازمة",
+              "icon": "/images/icons/training.svg",
+              "description": "مقرر إلزامي شرط للحصول على الإجازة في الصيدلة والكيمياء الصيدلية، وامتحانه كتابي وشفهي لكل منهما 50 علامة."
+            }
+          ],
+          "programme": {
+            "title": "فترات الملازمة",
+            "steps": [
+              {
+                "number": "1",
+                "title": "الفترة الأولى",
+                "description": "200 ساعة بعد إنجاز الطالب 60 ساعة معتمدة."
+              },
+              {
+                "number": "2",
+                "title": "الفترة الثانية",
+                "description": "200 ساعة بعد إنجاز الطالب 90 ساعة معتمدة."
+              },
+              {
+                "number": "3",
+                "title": "الفترة الثالثة",
+                "description": "200 ساعة بعد إنجاز الطالب 120 ساعة معتمدة."
+              },
+              {
+                "number": "4",
+                "title": "امتحان الملازمة",
+                "description": "امتحان كتابي وآخر شفهي، لكل منهما 50 علامة من أصل 100، اعتباراً من المستوى التاسع."
+              }
+            ]
+          },
+          "regulations": {
+            "title": "أحكام الملازمة",
+            "items": [
+              {
+                "title": "1. فترات التدريب",
+                "body": "يتبع الطالب تدريباً في إحدى الصيدليات خلال العطل الصيفية بإشراف عمادة كلية الصيدلة وذلك على ثلاث مراحل:\n- الفترة الأولى لمدة 200 ساعة بعد إنجاز الطالب 60 ساعة معتمدة.\n- الفترة الثانية لمدة 200 ساعة بعد إنجاز الطالب 90 ساعة معتمدة.\n- الفترة الثالثة لمدة 200 ساعة بعد إنجاز الطالب 120 ساعة معتمدة.\n\nويجوز للطالب خلالها أن يداوم في مصانع الأدوية والمخابر بما يعادل 50 ساعة تدريب بعد موافقة عمادة الكلية.\n\nيجري تسجيل هذه الساعات وتسديد قيمتها المادية قبل البدء بفترة التدريب بما يعادل قيمة ساعة معتمدة واحدة عن كل فترة."
+              },
+              {
+                "title": "2. مراقبة الدوام",
+                "body": "يُراقب دوام الطالب على الملازمة من قبل من يكلفه عميد الكلية (مكتب تدريب الطلاب) من أعضاء الهيئة التعليمية في كلية الصيدلة، وعلى الطالب الذي يثبت غيابه أكثر من ثلاث مرات من دون عذر مشروع يقبله عميد الكلية خلال فترات الملازمة المشار إليها في الفقرة (1)، أن يلازم لمدة إضافية تعادل كامل الفترة التي تغيب خلالها."
+              },
+              {
+                "title": "3. دفتر الملازمة",
+                "body": "على الطالب أن يقتني دفتر الملازمة الخاص والمصدق عليه من قبل عمادة الكلية، وأن يحصل على تأشير خطي من الصيدلي المشرف على ملازمته يُشعر ببدء مباشرته الملازمة وانتهائها في كل فترة من فترات الملازمة المذكورة في الفقرة (1)."
+              },
+              {
+                "title": "4. تدوين الوصفات",
+                "body": "على الطالب الملازم أن يدوّن في دفتر الملازمة جميع الوصفات التي قام بتحضيرها بنفسه في الصيدلية وفقاً لأرقام متسلسلة وأن يذكر كيفية التحضير، كما يدوّن في دفتر الملازمة الملاحظات حول الأدوية الجاهزة من حيث تصنيفها ومقاديرها وأشكالها الصيدلانية."
+              },
+              {
+                "title": "5. التنسيق",
+                "body": "يتم التنسيق بين عمادة الكلية ونقابة الصيادلة والصيدليات حول كيفية تنفيذ ملازمة الطلاب."
+              },
+              {
+                "title": "6. مقرر الملازمة وامتحانه",
+                "body": "يُعد مقرر الملازمة من مقررات الكلية الإلزامية (المستوى الرابع والثامن)، وتقوم عمادة الكلية بتكليف من تراه مناسباً لإعطاء محاضرات توجيهية اعتباراً من السنة الدراسية الثانية (المستوى الرابع – المستوى الثامن) وفق برنامج تضعه عمادة الكلية. ويكون النجاح في هذا المقرر شرطاً لازماً للحصول على الإجازة في الصيدلة والكيمياء الصيدلية، ولا تسري عليه أحكام امتحانات المقررات الأخرى وإنما تسري الأحكام التالية:\n\n(1) يجري امتحان الملازمة على مرحلتين:\n- المرحلة الأولى: امتحان كتابي في المقررات: الكيمياء الصيدلية – الصيدلانيات – علم الأدوية – العقاقير، وعلامته خمسون (50) علامة من أصل مائة (100) علامة، وتتم هذه المرحلة اعتباراً من المستوى التاسع أثناء الامتحانات العملية.\n- المرحلة الثانية: امتحان شفهي لاختبار معرفة الطالب بالتأثير الدوائي وبالمقادير اليومية والأشكال الصيدلانية ودراسة وصفات دوائية وكل الأعمال التي تتعلق بملازمة الطالب في الصيدلية، وعلامته خمسون (50) علامة من أصل مائة (100) علامة، وتتم هذه المرحلة اعتباراً من المستوى التاسع بعد الانتهاء من الامتحانات النظرية.\n\n(2) يقوم بامتحان الملازمة بمرحلتيها لجنة يؤلفها عميد الكلية من أعضاء الهيئة التدريسية في الكلية على ألا يقل عدد أعضائها عن ثلاثة.\n\n(3) إذا رسب الطالب في امتحان المرحلة الثانية يحتفظ الطالب بعلامة المرحلة الأولى."
+              }
+            ]
+          },
+          "documents": [
+            {
+              "label": "نظام الملازمة والتدريب (PDF)",
+              "url": "/downloads/files/1497172569_66-05.pdf"
+            }
+          ],
+          "partners": {
+            "title": "",
+            "cta": "",
+            "items": []
+          },
+          "facts": [
+            {
+              "value": "600 ساعة",
+              "label": "مجموع ساعات الملازمة في الصيدليات",
+              "verified": true
+            },
+            {
+              "value": "3 فترات",
+              "label": "بعد 60 و90 و120 ساعة معتمدة",
+              "verified": true
+            },
+            {
+              "value": "50 ساعة",
+              "label": "يمكن قضاؤها في مصانع الأدوية والمخابر",
+              "verified": true
+            },
+            {
+              "value": "100 علامة",
+              "label": "امتحان كتابي (50) وشفهي (50)",
+              "verified": true
+            }
+          ]
+        },
+        "seoTitle": "نظام الملازمة والتدريب | كلية الصيدلة",
+        "seoDescription": "نظام الملازمة والتدريب لطلاب كلية الصيدلة في الجامعة السورية الخاصة: فترات التدريب في الصيدليات، دفتر الملازمة، وامتحان الملازمة.",
+        "seoImage": "/images/pharmacy-place.jpg"
+      },
+      "en": {
+        "title": "Pharmacy Internship and Training System",
+        "summary": "Pharmacy students train in a pharmacy during the summer holidays, under the supervision of the Faculty of Pharmacy deanship, over three periods of 200 hours each.",
+        "payload": {
+          "hero": {
+            "eyebrow": "Faculty of Pharmacy",
+            "title": "Internship and Training System",
+            "summary": "Three summer training periods in pharmacies, 200 hours each.",
+            "image": "/images/pharmacy-place.jpg"
+          },
+          "breadcrumb": {
+            "home": "Home",
+            "facilities": "Faculties",
+            "pharmacy": "Faculty of Pharmacy"
+          },
+          "introCards": [
+            {
+              "title": "Training in pharmacies",
+              "icon": "/images/icons/training.svg",
+              "description": "Students train in a pharmacy during the summer holidays under the faculty deanship's supervision, and may spend 50 of the hours in pharmaceutical factories and laboratories with its approval."
+            },
+            {
+              "title": "The internship book",
+              "icon": "/images/icons/training.svg",
+              "description": "Students keep the internship book certified by the deanship, recording the prescriptions they prepared and notes on ready-made medicines, endorsed by the supervising pharmacist."
+            },
+            {
+              "title": "The internship exam",
+              "icon": "/images/icons/training.svg",
+              "description": "A compulsory course required for the licence in pharmacy and pharmaceutical chemistry, examined in a written and an oral stage of 50 marks each."
+            }
+          ],
+          "programme": {
+            "title": "Internship periods",
+            "steps": [
+              {
+                "number": "1",
+                "title": "First period",
+                "description": "200 hours after the student completes 60 credit hours."
+              },
+              {
+                "number": "2",
+                "title": "Second period",
+                "description": "200 hours after the student completes 90 credit hours."
+              },
+              {
+                "number": "3",
+                "title": "Third period",
+                "description": "200 hours after the student completes 120 credit hours."
+              },
+              {
+                "number": "4",
+                "title": "Internship exam",
+                "description": "A written and an oral exam of 50 marks each out of 100, from the ninth level."
+              }
+            ]
+          },
+          "regulations": {
+            "title": "Internship regulations",
+            "items": [
+              {
+                "title": "1. Training periods",
+                "body": "The student trains in a pharmacy during the summer holidays under the supervision of the deanship of the Faculty of Pharmacy, over three periods:\n- The first period: 200 hours after the student completes 60 credit hours.\n- The second period: 200 hours after the student completes 90 credit hours.\n- The third period: 200 hours after the student completes 120 credit hours.\n\nDuring these periods the student may attend pharmaceutical factories and laboratories for up to 50 training hours, with the approval of the faculty deanship.\n\nThese hours are registered, and their fees (the value of one credit hour per period) are paid before the training period begins."
+              },
+              {
+                "title": "2. Attendance",
+                "body": "The student's internship attendance is monitored by a member of the Faculty of Pharmacy teaching staff appointed by the dean (Student Training Office). A student who is absent more than three times without a legitimate excuse accepted by the dean during the periods mentioned in paragraph (1) must attend an additional period equal to the whole period of the absence."
+              },
+              {
+                "title": "3. The internship book",
+                "body": "The student must obtain the special internship book certified by the faculty deanship, and a written endorsement from the supervising pharmacist recording the start and the end of the internship in each of the periods mentioned in paragraph (1)."
+              },
+              {
+                "title": "4. Recording prescriptions",
+                "body": "The student must record in the internship book every prescription he or she prepared in the pharmacy, numbered in sequence, with how it was prepared, together with notes on ready-made medicines: their classification, doses and pharmaceutical forms."
+              },
+              {
+                "title": "5. Coordination",
+                "body": "The faculty deanship coordinates with the Pharmacists Syndicate and the pharmacies on how the students' internship is carried out."
+              },
+              {
+                "title": "6. The internship course and its exam",
+                "body": "The internship is one of the faculty's compulsory courses (levels four and eight). The deanship appoints suitable lecturers to give guidance lectures from the second academic year (level four to level eight) according to a programme it sets. Passing this course is a prerequisite for the licence in pharmacy and pharmaceutical chemistry. The examination regulations of other courses do not apply to it; the following rules do:\n\n(1) The internship exam has two stages:\n- First stage: a written exam in Pharmaceutical Chemistry, Pharmaceutics, Pharmacology and Pharmacognosy, worth fifty (50) marks out of one hundred (100), held from the ninth level during the practical exams.\n- Second stage: an oral exam testing the student's knowledge of drug effects, daily doses, pharmaceutical forms, prescription study and all the work of the internship in the pharmacy, worth fifty (50) marks out of one hundred (100), held from the ninth level after the theoretical exams.\n\n(2) Both stages are examined by a committee of at least three members of the faculty's teaching staff formed by the dean.\n\n(3) A student who fails the second stage keeps the first-stage mark."
+              }
+            ]
+          },
+          "documents": [
+            {
+              "label": "Internship and training system (PDF)",
+              "url": "/downloads/files/1497172569_66-05.pdf"
+            }
+          ],
+          "partners": {
+            "title": "",
+            "cta": "",
+            "items": []
+          },
+          "facts": [
+            {
+              "value": "600 hours",
+              "label": "Total pharmacy internship hours",
+              "verified": true
+            },
+            {
+              "value": "3 periods",
+              "label": "After 60, 90 and 120 credit hours",
+              "verified": true
+            },
+            {
+              "value": "50 hours",
+              "label": "May be spent in pharmaceutical factories and laboratories",
+              "verified": true
+            },
+            {
+              "value": "100 marks",
+              "label": "Written (50) and oral (50) exam",
+              "verified": true
+            }
+          ]
+        },
+        "seoTitle": "Pharmacy Internship and Training System | Faculty of Pharmacy",
+        "seoDescription": "The SPU Faculty of Pharmacy internship and training system: pharmacy training periods, the internship book and the internship exam.",
+        "seoImage": "/images/pharmacy-place.jpg"
+      }
+    },
+    "facilities.medicine.final-exams": {
+      "ar": {
+        "title": "برنامج الامتحان النهائي",
+        "summary": "برامج الامتحانات النهائية لكلية الطب البشري.",
+        "payload": {
+          "schedules": [
+            {
+              "title": "الفصل الصيفي 2025/2026",
+              "note": "مرفق إليكم برنامج الامتحان النهائي للفصل الصيفي لعام 2025/2026.",
+              "documents": [
+                {
+                  "label": "برنامج الامتحان النهائي 1 (PDF)",
+                  "url": "/downloads/files/1784487408_Exam_Schedule_B.pdf"
+                },
+                {
+                  "label": "برنامج الامتحان النهائي 2 (PDF)",
+                  "url": "/downloads/files/1785082214_22.pdf"
+                }
+              ],
+              "rows": []
+            }
+          ]
+        },
+        "seoTitle": "برنامج الامتحان النهائي | كلية الطب البشري",
+        "seoDescription": "برنامج الامتحان النهائي لكلية الطب البشري في الجامعة السورية الخاصة."
+      },
+      "en": {
+        "title": "Final Examination Schedule",
+        "summary": "The Faculty of Medicine's final examination schedules.",
+        "payload": {
+          "schedules": [
+            {
+              "title": "Summer semester 2025/2026",
+              "note": "Attached is the final examination schedule for the summer semester of 2025/2026.",
+              "documents": [
+                {
+                  "label": "Final examination schedule 1 (PDF)",
+                  "url": "/downloads/files/1784487408_Exam_Schedule_B.pdf"
+                },
+                {
+                  "label": "Final examination schedule 2 (PDF)",
+                  "url": "/downloads/files/1785082214_22.pdf"
+                }
+              ],
+              "rows": []
+            }
+          ]
+        },
+        "seoTitle": "Final Examination Schedule | Faculty of Medicine",
+        "seoDescription": "The final examination schedule of the Faculty of Medicine at the Syrian Private University."
+      }
+    },
+    "facilities.artificial-intelligence.final-exams": {
+      "ar": {
+        "title": "برنامج الامتحان النهائي",
+        "summary": "برامج الامتحانات النهائية لكلية هندسة الذكاء الاصطناعي.",
+        "payload": {
+          "schedules": [
+            {
+              "title": "الفصل الصيفي 2025/2026",
+              "note": "مرفق إليكم برنامج الامتحان النهائي للفصل الصيفي لعام 2025/2026.",
+              "documents": [
+                {
+                  "label": "برنامج الامتحان النهائي (PDF)",
+                  "url": "/downloads/files/1784974741_final.pdf"
+                }
+              ],
+              "rows": []
+            }
+          ]
+        },
+        "seoTitle": "برنامج الامتحان النهائي | كلية هندسة الذكاء الاصطناعي",
+        "seoDescription": "برنامج الامتحان النهائي لكلية هندسة الذكاء الاصطناعي في الجامعة السورية الخاصة."
+      },
+      "en": {
+        "title": "Final Examination Schedule",
+        "summary": "The Faculty of Artificial Intelligence Engineering's final examination schedules.",
+        "payload": {
+          "schedules": [
+            {
+              "title": "Summer semester 2025/2026",
+              "note": "Attached is the final examination schedule for the summer semester of 2025/2026.",
+              "documents": [
+                {
+                  "label": "Final examination schedule (PDF)",
+                  "url": "/downloads/files/1784974741_final.pdf"
+                }
+              ],
+              "rows": []
+            }
+          ]
+        },
+        "seoTitle": "Final Examination Schedule | Faculty of Artificial Intelligence Engineering",
+        "seoDescription": "The final examination schedule of the Faculty of Artificial Intelligence Engineering at the Syrian Private University."
+      }
+    },
+    "facilities.petroleum.final-exams": {
+      "ar": {
+        "title": "برنامج الامتحان النهائي",
+        "summary": "برامج الامتحانات النهائية لكلية هندسة البترول.",
+        "payload": {
+          "schedules": [
+            {
+              "title": "الفصل الصيفي 2025/2026",
+              "note": "مرفق إليكم برنامج الامتحان النهائي للفصل الصيفي لعام 2025/2026.",
+              "documents": [
+                {
+                  "label": "برنامج الامتحان النهائي (PDF)",
+                  "url": "/downloads/files/1784622442_Exam_Schedule.pdf"
+                }
+              ],
+              "rows": []
+            }
+          ]
+        },
+        "seoTitle": "برنامج الامتحان النهائي | كلية هندسة البترول",
+        "seoDescription": "برنامج الامتحان النهائي لكلية هندسة البترول في الجامعة السورية الخاصة."
+      },
+      "en": {
+        "title": "Final Examination Schedule",
+        "summary": "The Faculty of Petroleum Engineering's final examination schedules.",
+        "payload": {
+          "schedules": [
+            {
+              "title": "Summer semester 2025/2026",
+              "note": "Attached is the final examination schedule for the summer semester of 2025/2026.",
+              "documents": [
+                {
+                  "label": "Final examination schedule (PDF)",
+                  "url": "/downloads/files/1784622442_Exam_Schedule.pdf"
+                }
+              ],
+              "rows": []
+            }
+          ]
+        },
+        "seoTitle": "Final Examination Schedule | Faculty of Petroleum Engineering",
+        "seoDescription": "The final examination schedule of the Faculty of Petroleum Engineering at the Syrian Private University."
+      }
+    },
+    "facilities.business-administration.final-exams": {
+      "ar": {
+        "title": "برنامج الامتحان النهائي",
+        "summary": "برامج الامتحانات النهائية لكلية إدارة الأعمال.",
+        "payload": {
+          "schedules": [
+            {
+              "title": "الفصل الصيفي 2025/2026",
+              "note": "مرفق إليكم برنامج الامتحان النهائي للفصل الصيفي لعام 2025/2026.",
+              "documents": [
+                {
+                  "label": "برنامج الامتحان النهائي (PDF)",
+                  "url": "/downloads/files/1784549299_M-09-Coll-F1.pdf"
+                }
+              ],
+              "rows": []
+            }
+          ]
+        },
+        "seoTitle": "برنامج الامتحان النهائي | كلية إدارة الأعمال",
+        "seoDescription": "برنامج الامتحان النهائي لكلية إدارة الأعمال في الجامعة السورية الخاصة."
+      },
+      "en": {
+        "title": "Final Examination Schedule",
+        "summary": "The Faculty of Business Administration's final examination schedules.",
+        "payload": {
+          "schedules": [
+            {
+              "title": "Summer semester 2025/2026",
+              "note": "Attached is the final examination schedule for the summer semester of 2025/2026.",
+              "documents": [
+                {
+                  "label": "Final examination schedule (PDF)",
+                  "url": "/downloads/files/1784549299_M-09-Coll-F1.pdf"
+                }
+              ],
+              "rows": []
+            }
+          ]
+        },
+        "seoTitle": "Final Examination Schedule | Faculty of Business Administration",
+        "seoDescription": "The final examination schedule of the Faculty of Business Administration at the Syrian Private University."
+      }
+    }
+  }
+}

@@ -1,0 +1,1609 @@
+{
+  "source": "خطة كلية صيدلة مرمزة.pdf (transcribed)",
+  "departments": [
+    {
+      "id": "pharmacy",
+      "nameEn": "Pharmacy",
+      "nameAr": "الصيدلة",
+      "summaryEn": "",
+      "summaryAr": "",
+      "totalCredits": 178,
+      "terms": [
+        {
+          "id": 1,
+          "labelEn": "1",
+          "labelAr": "1",
+          "courses": [
+            {
+              "id": "requ101",
+              "code": "REQU101",
+              "titleEn": "Arabic Language",
+              "titleAr": "اللغة العربية",
+              "term": 1,
+              "type": "university",
+              "required": true,
+              "forced": false,
+              "credits": 2,
+              "prerequisites": [],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 2,
+                "practical": 0
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "requ105",
+              "code": "REQU105",
+              "titleEn": "English Language 1",
+              "titleAr": "اللغة الإنكليزية 1",
+              "term": 1,
+              "type": "university",
+              "required": true,
+              "forced": false,
+              "credits": 2,
+              "prerequisites": [],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 2,
+                "practical": 0
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "phcc103",
+              "code": "PHCC103",
+              "titleEn": "General and Inorganic Chemistry",
+              "titleAr": "كيمياء عامة ولا عضوية",
+              "term": 1,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 3,
+              "prerequisites": [],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 2,
+                "practical": 2
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "phbm104",
+              "code": "PHBM104",
+              "titleEn": "Biology - Zoology",
+              "titleAr": "بيولوجيا حيوانية",
+              "term": 1,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 3,
+              "prerequisites": [],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 2,
+                "practical": 2
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "phss105",
+              "code": "PHSS105",
+              "titleEn": "General Physics",
+              "titleAr": "فيزياء عامة",
+              "term": 1,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 3,
+              "prerequisites": [],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 2,
+                "practical": 2
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "phss106",
+              "code": "PHSS106",
+              "titleEn": "Mathematics",
+              "titleAr": "رياضيات",
+              "term": 1,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 2,
+              "prerequisites": [],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 2,
+                "practical": 0
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "phpt107",
+              "code": "PHPT107",
+              "titleEn": "Pharmaceutical Calculation",
+              "titleAr": "حسابات صيدلانية",
+              "term": 1,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 2,
+              "prerequisites": [],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 2,
+                "practical": 0
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            }
+          ]
+        },
+        {
+          "id": 2,
+          "labelEn": "2",
+          "labelAr": "2",
+          "courses": [
+            {
+              "id": "requ207",
+              "code": "REQU207",
+              "titleEn": "English Language 2",
+              "titleAr": "اللغة الإنكليزية 2",
+              "term": 2,
+              "type": "university",
+              "required": true,
+              "forced": false,
+              "credits": 2,
+              "prerequisites": [
+                "requ105"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 2,
+                "practical": 0
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "phpc201",
+              "code": "PHPC201",
+              "titleEn": "Biology - Botany",
+              "titleAr": "بيولوجيا نباتية",
+              "term": 2,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 3,
+              "prerequisites": [],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 2,
+                "practical": 2
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "phss202",
+              "code": "PHSS202",
+              "titleEn": "Biostatistics",
+              "titleAr": "إحصاء حيوي",
+              "term": 2,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 2,
+              "prerequisites": [
+                "phss106"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 2,
+                "practical": 0
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "phss203",
+              "code": "PHSS203",
+              "titleEn": "Histology and Anatomy",
+              "titleAr": "تشريح ونسج",
+              "term": 2,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 3,
+              "prerequisites": [
+                "phbm104"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 2,
+                "practical": 2
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "phcc204",
+              "code": "PHCC204",
+              "titleEn": "Pharmaceutical Organic Chemistry 1",
+              "titleAr": "كيمياء عضوية صيدلانية 1",
+              "term": 2,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 3,
+              "prerequisites": [
+                "phcc103"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 2,
+                "practical": 2
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "requ103",
+              "code": "REQU103",
+              "titleEn": "Computer Skills",
+              "titleAr": "مهارات الحاسوب",
+              "term": 2,
+              "type": "university",
+              "required": true,
+              "forced": false,
+              "credits": 3,
+              "prerequisites": [],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 2,
+                "practical": 2
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "elec-u1",
+              "code": "ELEC-U1",
+              "titleEn": "Elective University Requirement (1)",
+              "titleAr": "متطلب جامعة اختياري (1)",
+              "term": 2,
+              "type": "university",
+              "required": false,
+              "forced": false,
+              "credits": 2,
+              "prerequisites": [],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 2,
+                "practical": 0
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            }
+          ]
+        },
+        {
+          "id": 3,
+          "labelEn": "3",
+          "labelAr": "3",
+          "courses": [
+            {
+              "id": "phpt301",
+              "code": "PHPT301",
+              "titleEn": "Introduction to Pharmacy",
+              "titleAr": "مدخل إلى الصيدلة",
+              "term": 3,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 2,
+              "prerequisites": [],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 2,
+                "practical": 0
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "phcc302",
+              "code": "PHCC302",
+              "titleEn": "Pharmaceutical Organic Chemistry 2",
+              "titleAr": "كيمياء عضوية صيدلانية 2",
+              "term": 3,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 4,
+              "prerequisites": [
+                "phcc204"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 3,
+                "practical": 2
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "phac304",
+              "code": "PHAC304",
+              "titleEn": "Pharmaceutical Analytical Chemistry 1",
+              "titleAr": "كيمياء تحليلية صيدلانية 1",
+              "term": 3,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 4,
+              "prerequisites": [
+                "phcc103"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 3,
+                "practical": 3
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "phac305",
+              "code": "PHAC305",
+              "titleEn": "Physical Pharmacy",
+              "titleAr": "صيدلة فيزيائية",
+              "term": 3,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 3,
+              "prerequisites": [
+                "phss105"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 2,
+                "practical": 2
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "elec-u2",
+              "code": "ELEC-U2",
+              "titleEn": "Elective University Requirement (2)",
+              "titleAr": "متطلب جامعة اختياري (2)",
+              "term": 3,
+              "type": "university",
+              "required": false,
+              "forced": false,
+              "credits": 2,
+              "prerequisites": [
+                "requ207"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 2,
+                "practical": 0
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "phpp306",
+              "code": "PHPP306",
+              "titleEn": "Physiology and Pathological Physiology",
+              "titleAr": "فيزيولوجيا وفيزيولوجيا مرضية",
+              "term": 3,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 2,
+              "prerequisites": [
+                "phbm104",
+                "phss203"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 2,
+                "practical": 0
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            }
+          ]
+        },
+        {
+          "id": 4,
+          "labelEn": "4",
+          "labelAr": "4",
+          "courses": [
+            {
+              "id": "phac401",
+              "code": "PHAC401",
+              "titleEn": "Pharmaceutical Analytical Chemistry 2",
+              "titleAr": "كيمياء تحليلية صيدلانية 2",
+              "term": 4,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 3,
+              "prerequisites": [
+                "phac304"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 2,
+                "practical": 3
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "phbm402",
+              "code": "PHBM402",
+              "titleEn": "General Biochemistry 1",
+              "titleAr": "كيمياء حيوية عامة 1",
+              "term": 4,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 3,
+              "prerequisites": [
+                "phcc302"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 2,
+                "practical": 2
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "phpt403",
+              "code": "PHPT403",
+              "titleEn": "Pharmaceutics 1",
+              "titleAr": "صيدلانيات 1",
+              "term": 4,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 3,
+              "prerequisites": [
+                "phpt301"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 2,
+                "practical": 2
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "phbm404",
+              "code": "PHBM404",
+              "titleEn": "Molecular Biology",
+              "titleAr": "بيولوجيا جزيئية",
+              "term": 4,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 3,
+              "prerequisites": [
+                "phbm104"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 2,
+                "practical": 2
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "phpc405",
+              "code": "PHPC405",
+              "titleEn": "Pharmacognosy 1",
+              "titleAr": "عقاقير 1",
+              "term": 4,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 3,
+              "prerequisites": [
+                "phpc201"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 2,
+                "practical": 2
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "phss406",
+              "code": "PHSS406",
+              "titleEn": "English Pharmaceutical Terminology",
+              "titleAr": "مصطلحات صيدلانية باللغة الإنكليزية",
+              "term": 4,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 2,
+              "prerequisites": [
+                "elec-u2"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 2,
+                "practical": 0
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "phss407",
+              "code": "PHSS407",
+              "titleEn": "Internship 1",
+              "titleAr": "ملازمة 1",
+              "term": 4,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 1,
+              "prerequisites": [],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 1,
+                "practical": 0
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            }
+          ]
+        },
+        {
+          "id": 5,
+          "labelEn": "5",
+          "labelAr": "5",
+          "courses": [
+            {
+              "id": "phpp501",
+              "code": "PHPP501",
+              "titleEn": "Pharmacology 1",
+              "titleAr": "علم الأدوية 1",
+              "term": 5,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 2,
+              "prerequisites": [
+                "phpp306"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 2,
+                "practical": 0
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "phbm502",
+              "code": "PHBM502",
+              "titleEn": "General Biochemistry 2",
+              "titleAr": "كيمياء حيوية عامة 2",
+              "term": 5,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 3,
+              "prerequisites": [
+                "phbm402"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 2,
+                "practical": 2
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "phpt503",
+              "code": "PHPT503",
+              "titleEn": "Pharmaceutics 2",
+              "titleAr": "صيدلانيات 2",
+              "term": 5,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 3,
+              "prerequisites": [
+                "phpt403"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 2,
+                "practical": 2
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "phpc504",
+              "code": "PHPC504",
+              "titleEn": "Pharmacognosy 2",
+              "titleAr": "عقاقير 2",
+              "term": 5,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 3,
+              "prerequisites": [
+                "phpc405"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 2,
+                "practical": 2
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "phss505",
+              "code": "PHSS505",
+              "titleEn": "Pathology",
+              "titleAr": "علم الأمراض",
+              "term": 5,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 2,
+              "prerequisites": [
+                "phpp306"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 2,
+                "practical": 0
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "phac506",
+              "code": "PHAC506",
+              "titleEn": "Instrumental Analysis",
+              "titleAr": "تحليل آلي",
+              "term": 5,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 3,
+              "prerequisites": [
+                "phac401"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 2,
+                "practical": 2
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "elec-f1",
+              "code": "ELEC-F1",
+              "titleEn": "Elective Faculty Requirement (1)",
+              "titleAr": "متطلب كلية اختياري (1)",
+              "term": 5,
+              "type": "faculty",
+              "required": false,
+              "forced": false,
+              "credits": 2,
+              "prerequisites": [],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 2,
+                "practical": 0
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            }
+          ]
+        },
+        {
+          "id": 6,
+          "labelEn": "6",
+          "labelAr": "6",
+          "courses": [
+            {
+              "id": "phcc601",
+              "code": "PHCC601",
+              "titleEn": "Pharmaceutical Chemistry 1",
+              "titleAr": "كيمياء صيدلية 1",
+              "term": 6,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 4,
+              "prerequisites": [
+                "phcc302",
+                "phpp501"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 3,
+                "practical": 2
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "phpp602",
+              "code": "PHPP602",
+              "titleEn": "Pharmacology 2",
+              "titleAr": "علم الأدوية 2",
+              "term": 6,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 4,
+              "prerequisites": [
+                "phpp501"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 3,
+                "practical": 2
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "phpc603",
+              "code": "PHPC603",
+              "titleEn": "Phytochemistry",
+              "titleAr": "كيمياء العقاقير",
+              "term": 6,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 3,
+              "prerequisites": [
+                "phac506",
+                "phpc504"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 2,
+                "practical": 3
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "phpt604",
+              "code": "PHPT604",
+              "titleEn": "Pharmaceutical Technology",
+              "titleAr": "تكنولوجيا صيدلانية",
+              "term": 6,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 4,
+              "prerequisites": [
+                "phpt503"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 3,
+                "practical": 2
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "phbm605",
+              "code": "PHBM605",
+              "titleEn": "Parasitology and Mycology",
+              "titleAr": "طفيليات وفطريات",
+              "term": 6,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 3,
+              "prerequisites": [
+                "phbm104",
+                "phpc201"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 2,
+                "practical": 2
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "elec-f2",
+              "code": "ELEC-F2",
+              "titleEn": "Elective Faculty Requirement (2)",
+              "titleAr": "متطلب كلية اختياري (2)",
+              "term": 6,
+              "type": "faculty",
+              "required": false,
+              "forced": false,
+              "credits": 2,
+              "prerequisites": [],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 2,
+                "practical": 0
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            }
+          ]
+        },
+        {
+          "id": 7,
+          "labelEn": "7",
+          "labelAr": "7",
+          "courses": [
+            {
+              "id": "phcc701",
+              "code": "PHCC701",
+              "titleEn": "Pharmaceutical Chemistry 2",
+              "titleAr": "كيمياء صيدلية 2",
+              "term": 7,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 4,
+              "prerequisites": [
+                "phcc601"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 3,
+                "practical": 2
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "phpt702",
+              "code": "PHPT702",
+              "titleEn": "Industrial Pharmacy",
+              "titleAr": "صيدلة صناعية",
+              "term": 7,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 3,
+              "prerequisites": [
+                "phpt604"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 2,
+                "practical": 3
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "phbm703",
+              "code": "PHBM703",
+              "titleEn": "Bacteriology and Virology",
+              "titleAr": "جراثيم وفيروسات",
+              "term": 7,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 4,
+              "prerequisites": [
+                "phss505"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 3,
+                "practical": 2
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "phpp704",
+              "code": "PHPP704",
+              "titleEn": "Toxicology",
+              "titleAr": "علم السموم",
+              "term": 7,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 3,
+              "prerequisites": [
+                "phpp602"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 2,
+                "practical": 2
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "phss705",
+              "code": "PHSS705",
+              "titleEn": "Biotechnology in Pharmacy",
+              "titleAr": "تقانة حيوية في الصيدلة",
+              "term": 7,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 2,
+              "prerequisites": [
+                "phbm404"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 2,
+                "practical": 0
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "phss706",
+              "code": "PHSS706",
+              "titleEn": "English Scientific Composition",
+              "titleAr": "الإنشاء العلمي باللغة الإنكليزية",
+              "term": 7,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 2,
+              "prerequisites": [
+                "phss406"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 2,
+                "practical": 0
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            }
+          ]
+        },
+        {
+          "id": 8,
+          "labelEn": "8",
+          "labelAr": "8",
+          "courses": [
+            {
+              "id": "phpp801",
+              "code": "PHPP801",
+              "titleEn": "Molecular Pharmacology",
+              "titleAr": "علم الأدوية الجزيئي",
+              "term": 8,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 2,
+              "prerequisites": [
+                "phpp602"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 2,
+                "practical": 0
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "phpt802",
+              "code": "PHPT802",
+              "titleEn": "Biopharmacy and Pharmacokinetics",
+              "titleAr": "صيدلة حيوية وحرائك الدواء",
+              "term": 8,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 3,
+              "prerequisites": [
+                "phpt702"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 2,
+                "practical": 2
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "phac803",
+              "code": "PHAC803",
+              "titleEn": "Bromatology",
+              "titleAr": "كيمياء غذائية",
+              "term": 8,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 3,
+              "prerequisites": [
+                "phac401"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 2,
+                "practical": 2
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "phbm804",
+              "code": "PHBM804",
+              "titleEn": "Clinical Biochemistry",
+              "titleAr": "كيمياء حيوية سريرية",
+              "term": 8,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 3,
+              "prerequisites": [
+                "phbm502"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 2,
+                "practical": 2
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "phpp805",
+              "code": "PHPP805",
+              "titleEn": "Applied and Forensic Toxicology",
+              "titleAr": "سموم تطبيقية وشرعية",
+              "term": 8,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 3,
+              "prerequisites": [
+                "phpp704"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 2,
+                "practical": 2
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "elec-f3",
+              "code": "ELEC-F3",
+              "titleEn": "Elective Faculty Requirement (3)",
+              "titleAr": "متطلب كلية اختياري (3)",
+              "term": 8,
+              "type": "faculty",
+              "required": false,
+              "forced": false,
+              "credits": 2,
+              "prerequisites": [],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 2,
+                "practical": 0
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "phss807",
+              "code": "PHSS807",
+              "titleEn": "Internship 2",
+              "titleAr": "ملازمة 2",
+              "term": 8,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 1,
+              "prerequisites": [],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 1,
+                "practical": 0
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            }
+          ]
+        },
+        {
+          "id": 9,
+          "labelEn": "9",
+          "labelAr": "9",
+          "courses": [
+            {
+              "id": "phcc901",
+              "code": "PHCC901",
+              "titleEn": "Quality Control of Medicaments",
+              "titleAr": "مراقبة الأدوية",
+              "term": 9,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 3,
+              "prerequisites": [
+                "phcc701",
+                "phac506"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 2,
+                "practical": 2
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "phcc902",
+              "code": "PHCC902",
+              "titleEn": "Medicinal Chemistry - Drug Design",
+              "titleAr": "كيمياء دوائية: تصميم الدواء",
+              "term": 9,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 2,
+              "prerequisites": [
+                "phcc701"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 2,
+                "practical": 0
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "phcc903",
+              "code": "PHCC903",
+              "titleEn": "Radiopharmaceuticals",
+              "titleAr": "مواد صيدلانية مشعة",
+              "term": 9,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 2,
+              "prerequisites": [
+                "phcc701"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 2,
+                "practical": 0
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "phss904",
+              "code": "PHSS904",
+              "titleEn": "Research Project",
+              "titleAr": "مشروع التخرج",
+              "term": 9,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 2,
+              "prerequisites": [],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 2,
+                "practical": 0
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "phcc905",
+              "code": "PHCC905",
+              "titleEn": "Drug Synthesis",
+              "titleAr": "تخليق دوائي",
+              "term": 9,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 3,
+              "prerequisites": [
+                "phcc701"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 2,
+                "practical": 2
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "elec-f4",
+              "code": "ELEC-F4",
+              "titleEn": "Elective Faculty Requirement (4)",
+              "titleAr": "متطلب كلية اختياري (4)",
+              "term": 9,
+              "type": "faculty",
+              "required": false,
+              "forced": false,
+              "credits": 2,
+              "prerequisites": [],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 2,
+                "practical": 0
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "phss906",
+              "code": "PHSS906",
+              "titleEn": "Microbial Pharmacy",
+              "titleAr": "صيدلة جرثومية",
+              "term": 9,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 2,
+              "prerequisites": [
+                "phbm703",
+                "phpt702"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 1,
+                "practical": 2
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            }
+          ]
+        },
+        {
+          "id": 10,
+          "labelEn": "10",
+          "labelAr": "10",
+          "courses": [
+            {
+              "id": "phbm001",
+              "code": "PHBM001",
+              "titleEn": "Hematology and Immunology",
+              "titleAr": "دمويات ومناعيات",
+              "term": 10,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 4,
+              "prerequisites": [
+                "phss505"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 3,
+                "practical": 2
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "phss002",
+              "code": "PHSS002",
+              "titleEn": "Pharmaceutical Promotion, Marketing and Pharmacoeconomics",
+              "titleAr": "ترويج وتسويق واقتصاد صيدلاني",
+              "term": 10,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 2,
+              "prerequisites": [],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 2,
+                "practical": 0
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "phss003",
+              "code": "PHSS003",
+              "titleEn": "History, Ethics and Legislation",
+              "titleAr": "تاريخ وأخلاقيات وتشريعات الصيدلة",
+              "term": 10,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 2,
+              "prerequisites": [],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 2,
+                "practical": 0
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "phss004",
+              "code": "PHSS004",
+              "titleEn": "Communication Skills",
+              "titleAr": "مهارات تواصل",
+              "term": 10,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 2,
+              "prerequisites": [],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 2,
+                "practical": 0
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "phss005",
+              "code": "PHSS005",
+              "titleEn": "First Aid",
+              "titleAr": "إسعاف أولي",
+              "term": 10,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 2,
+              "prerequisites": [
+                "phss505"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 2,
+                "practical": 0
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "phpt006",
+              "code": "PHPT006",
+              "titleEn": "Clinical and Hospital Pharmacy",
+              "titleAr": "صيدلة سريرية وصيدلة مستشفيات",
+              "term": 10,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 3,
+              "prerequisites": [
+                "phpt802"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 2,
+                "practical": 2
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "elec-u3",
+              "code": "ELEC-U3",
+              "titleEn": "Elective University Requirement (3)",
+              "titleAr": "متطلب جامعة اختياري (3)",
+              "term": 10,
+              "type": "university",
+              "required": false,
+              "forced": false,
+              "credits": 2,
+              "prerequisites": [],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 2,
+                "practical": 0
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "elec-f5",
+              "code": "ELEC-F5",
+              "titleEn": "Elective Faculty Requirement (5)",
+              "titleAr": "متطلب كلية اختياري (5)",
+              "term": 10,
+              "type": "faculty",
+              "required": false,
+              "forced": false,
+              "credits": 2,
+              "prerequisites": [],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 2,
+                "practical": 0
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

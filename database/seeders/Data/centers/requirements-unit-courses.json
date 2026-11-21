@@ -1,0 +1,707 @@
+{
+  "courses": [
+    {
+      "id": "arabic-language",
+      "code": "",
+      "titleAr": "اللغة العربية",
+      "titleEn": "Arabic Language",
+      "descriptionAr": "",
+      "descriptionEn": "",
+      "required": true,
+      "credits": 2,
+      "hours": {
+        "theory": 2,
+        "practical": 0
+      },
+      "prerequisites": [],
+      "faculties": [
+        {
+          "faculty": "medicine",
+          "code": "REQU103",
+          "term": 1
+        },
+        {
+          "faculty": "dentistry",
+          "code": "UNRE103",
+          "term": 1
+        },
+        {
+          "faculty": "pharmacy",
+          "code": "REQU101",
+          "term": 1
+        },
+        {
+          "faculty": "artificial-intelligence",
+          "code": "UR-2-01",
+          "term": 7
+        },
+        {
+          "faculty": "building-construction-engineering",
+          "code": "UR-2-01",
+          "term": 1
+        },
+        {
+          "faculty": "petroleum",
+          "code": "REQU-1-05",
+          "term": 2
+        },
+        {
+          "faculty": "business-administration",
+          "code": "UR-2-01",
+          "term": 4
+        }
+      ],
+      "teachers": {
+        "theory": {
+          "memberIds": [],
+          "enabled": true
+        },
+        "practical": {
+          "memberIds": [],
+          "enabled": true
+        }
+      },
+      "specificationUrl": "",
+      "lessons": []
+    },
+    {
+      "id": "english-language-1",
+      "code": "",
+      "titleAr": "اللغة الإنكليزية (1)",
+      "titleEn": "English Language (1)",
+      "descriptionAr": "",
+      "descriptionEn": "",
+      "required": true,
+      "credits": 2,
+      "hours": {
+        "theory": 2,
+        "practical": 0
+      },
+      "prerequisites": [],
+      "faculties": [
+        {
+          "faculty": "medicine",
+          "code": "REQU101",
+          "term": 1
+        },
+        {
+          "faculty": "dentistry",
+          "code": "UNRE105",
+          "term": 1
+        },
+        {
+          "faculty": "pharmacy",
+          "code": "REQU105",
+          "term": 1
+        },
+        {
+          "faculty": "artificial-intelligence",
+          "code": "UR-2-03",
+          "credits": 3,
+          "term": 1
+        },
+        {
+          "faculty": "building-construction-engineering",
+          "code": "UR-2-03",
+          "credits": 3,
+          "term": 1
+        },
+        {
+          "faculty": "petroleum",
+          "code": "REQU-1-01",
+          "term": 1
+        },
+        {
+          "faculty": "business-administration",
+          "code": "UR-2-03",
+          "credits": 3,
+          "term": 2
+        }
+      ],
+      "teachers": {
+        "theory": {
+          "memberIds": [],
+          "enabled": true
+        },
+        "practical": {
+          "memberIds": [],
+          "enabled": true
+        }
+      },
+      "specificationUrl": "",
+      "lessons": []
+    },
+    {
+      "id": "english-language-2",
+      "code": "",
+      "titleAr": "اللغة الإنكليزية (2)",
+      "titleEn": "English Language (2)",
+      "descriptionAr": "",
+      "descriptionEn": "",
+      "required": true,
+      "credits": 2,
+      "hours": {
+        "theory": 2,
+        "practical": 0
+      },
+      "prerequisites": [
+        "english-language-1"
+      ],
+      "faculties": [
+        {
+          "faculty": "medicine",
+          "code": "REQU204",
+          "term": 2
+        },
+        {
+          "faculty": "dentistry",
+          "code": "UNRE207",
+          "term": 2
+        },
+        {
+          "faculty": "pharmacy",
+          "code": "REQU207",
+          "term": 2
+        },
+        {
+          "faculty": "artificial-intelligence",
+          "code": "UR-2-04",
+          "credits": 3,
+          "term": 2
+        },
+        {
+          "faculty": "building-construction-engineering",
+          "code": "UR-2-04",
+          "credits": 3,
+          "term": 2
+        },
+        {
+          "faculty": "petroleum",
+          "code": "REQU-2-07",
+          "term": 2
+        },
+        {
+          "faculty": "business-administration",
+          "code": "UR-2-04",
+          "credits": 3,
+          "term": 3
+        }
+      ],
+      "teachers": {
+        "theory": {
+          "memberIds": [],
+          "enabled": true
+        },
+        "practical": {
+          "memberIds": [],
+          "enabled": true
+        }
+      },
+      "specificationUrl": "",
+      "lessons": []
+    },
+    {
+      "id": "computer-skills",
+      "code": "",
+      "titleAr": "مهارات الحاسوب",
+      "titleEn": "Computer Skills",
+      "descriptionAr": "",
+      "descriptionEn": "",
+      "required": true,
+      "credits": 3,
+      "hours": {
+        "theory": 2,
+        "practical": 2
+      },
+      "prerequisites": [],
+      "faculties": [
+        {
+          "faculty": "medicine",
+          "code": "REQU102",
+          "term": 1
+        },
+        {
+          "faculty": "dentistry",
+          "code": "UNRE101",
+          "term": 1
+        },
+        {
+          "faculty": "pharmacy",
+          "code": "REQU103",
+          "term": 2
+        },
+        {
+          "faculty": "artificial-intelligence",
+          "code": "UR-2-02",
+          "term": 1
+        },
+        {
+          "faculty": "building-construction-engineering",
+          "code": "UR-2-02",
+          "term": 2
+        },
+        {
+          "faculty": "petroleum",
+          "code": "REQU-1-03",
+          "term": 3
+        },
+        {
+          "faculty": "business-administration",
+          "code": "UR-2-02",
+          "term": 1
+        }
+      ],
+      "teachers": {
+        "theory": {
+          "memberIds": [],
+          "enabled": true
+        },
+        "practical": {
+          "memberIds": [],
+          "enabled": true
+        }
+      },
+      "specificationUrl": "",
+      "lessons": []
+    },
+    {
+      "id": "english-language-3",
+      "code": "",
+      "titleAr": "اللغة الإنكليزية (3)",
+      "titleEn": "English Language (3)",
+      "descriptionAr": "",
+      "descriptionEn": "",
+      "required": false,
+      "credits": 2,
+      "hours": {
+        "theory": 2,
+        "practical": 0
+      },
+      "prerequisites": [
+        "english-language-2"
+      ],
+      "faculties": [
+        {
+          "faculty": "medicine",
+          "code": "REQU305"
+        },
+        {
+          "faculty": "dentistry",
+          "code": "UNRE302"
+        },
+        {
+          "faculty": "artificial-intelligence",
+          "code": "UR-2-10"
+        },
+        {
+          "faculty": "building-construction-engineering",
+          "code": "UR-2-10"
+        },
+        {
+          "faculty": "business-administration",
+          "code": "UR-2-10"
+        }
+      ],
+      "teachers": {
+        "theory": {
+          "memberIds": [],
+          "enabled": true
+        },
+        "practical": {
+          "memberIds": [],
+          "enabled": true
+        }
+      },
+      "specificationUrl": "",
+      "lessons": []
+    },
+    {
+      "id": "scientific-thinking",
+      "code": "",
+      "titleAr": "مهارات التفكير والبحث العلمي",
+      "titleEn": "Scientific Thinking and Research Skills",
+      "descriptionAr": "",
+      "descriptionEn": "",
+      "required": false,
+      "credits": 2,
+      "hours": {
+        "theory": 2,
+        "practical": 0
+      },
+      "prerequisites": [],
+      "faculties": [
+        {
+          "faculty": "medicine",
+          "code": "REQU106"
+        },
+        {
+          "faculty": "dentistry",
+          "code": "UNRE104"
+        },
+        {
+          "faculty": "artificial-intelligence",
+          "code": "UR-2-07"
+        },
+        {
+          "faculty": "building-construction-engineering",
+          "code": "UR-2-07"
+        },
+        {
+          "faculty": "business-administration",
+          "code": "UR-2-07"
+        }
+      ],
+      "teachers": {
+        "theory": {
+          "memberIds": [],
+          "enabled": true
+        },
+        "practical": {
+          "memberIds": [],
+          "enabled": true
+        }
+      },
+      "specificationUrl": "",
+      "lessons": []
+    },
+    {
+      "id": "sociology",
+      "code": "",
+      "titleAr": "علم الاجتماع",
+      "titleEn": "Sociology",
+      "descriptionAr": "",
+      "descriptionEn": "",
+      "required": false,
+      "credits": 2,
+      "hours": {
+        "theory": 2,
+        "practical": 0
+      },
+      "prerequisites": [],
+      "faculties": [
+        {
+          "faculty": "medicine",
+          "code": "REQU108"
+        },
+        {
+          "faculty": "dentistry",
+          "code": "UNRE108"
+        },
+        {
+          "faculty": "artificial-intelligence",
+          "code": "UR-2-06"
+        },
+        {
+          "faculty": "building-construction-engineering",
+          "code": "UR-2-06"
+        },
+        {
+          "faculty": "business-administration",
+          "code": "UR-2-06"
+        }
+      ],
+      "teachers": {
+        "theory": {
+          "memberIds": [],
+          "enabled": true
+        },
+        "practical": {
+          "memberIds": [],
+          "enabled": true
+        }
+      },
+      "specificationUrl": "",
+      "lessons": []
+    },
+    {
+      "id": "introduction-to-law",
+      "code": "",
+      "titleAr": "مدخل إلى القانون",
+      "titleEn": "Introduction to Law",
+      "descriptionAr": "",
+      "descriptionEn": "",
+      "required": false,
+      "credits": 2,
+      "hours": {
+        "theory": 2,
+        "practical": 0
+      },
+      "prerequisites": [],
+      "faculties": [
+        {
+          "faculty": "medicine",
+          "code": "REQU109"
+        },
+        {
+          "faculty": "dentistry",
+          "code": "UNRE110"
+        },
+        {
+          "faculty": "artificial-intelligence",
+          "code": "UR-2-05"
+        },
+        {
+          "faculty": "building-construction-engineering",
+          "code": "UR-2-05"
+        },
+        {
+          "faculty": "business-administration",
+          "code": "UR-2-05"
+        }
+      ],
+      "teachers": {
+        "theory": {
+          "memberIds": [],
+          "enabled": true
+        },
+        "practical": {
+          "memberIds": [],
+          "enabled": true
+        }
+      },
+      "specificationUrl": "",
+      "lessons": []
+    },
+    {
+      "id": "management-fundamentals",
+      "code": "",
+      "titleAr": "أساسيات الإدارة ومهاراتها",
+      "titleEn": "Management Fundamentals and Skills",
+      "descriptionAr": "",
+      "descriptionEn": "",
+      "required": false,
+      "credits": 2,
+      "hours": {
+        "theory": 2,
+        "practical": 0
+      },
+      "prerequisites": [],
+      "faculties": [
+        {
+          "faculty": "medicine",
+          "code": "REQU110"
+        },
+        {
+          "faculty": "dentistry",
+          "code": "UNRE112"
+        },
+        {
+          "faculty": "artificial-intelligence",
+          "code": "UR-2-08"
+        },
+        {
+          "faculty": "building-construction-engineering",
+          "code": "UR-2-08"
+        },
+        {
+          "faculty": "business-administration",
+          "code": "UR-2-08"
+        }
+      ],
+      "teachers": {
+        "theory": {
+          "memberIds": [],
+          "enabled": true
+        },
+        "practical": {
+          "memberIds": [],
+          "enabled": true
+        }
+      },
+      "specificationUrl": "",
+      "lessons": []
+    },
+    {
+      "id": "environmental-science",
+      "code": "",
+      "titleAr": "علم البيئة",
+      "titleEn": "Environmental Science",
+      "descriptionAr": "",
+      "descriptionEn": "",
+      "required": false,
+      "credits": 2,
+      "hours": {
+        "theory": 2,
+        "practical": 0
+      },
+      "prerequisites": [],
+      "faculties": [
+        {
+          "faculty": "medicine",
+          "code": "REQU111"
+        },
+        {
+          "faculty": "dentistry",
+          "code": "UNRE114"
+        },
+        {
+          "faculty": "artificial-intelligence",
+          "code": "UR-2-09"
+        },
+        {
+          "faculty": "building-construction-engineering",
+          "code": "UR-2-09"
+        },
+        {
+          "faculty": "business-administration",
+          "code": "UR-2-09"
+        }
+      ],
+      "teachers": {
+        "theory": {
+          "memberIds": [],
+          "enabled": true
+        },
+        "practical": {
+          "memberIds": [],
+          "enabled": true
+        }
+      },
+      "specificationUrl": "",
+      "lessons": []
+    },
+    {
+      "id": "second-foreign-language",
+      "code": "",
+      "titleAr": "لغة أجنبية حية ثانية",
+      "titleEn": "Second Foreign Language",
+      "descriptionAr": "",
+      "descriptionEn": "",
+      "required": false,
+      "credits": 2,
+      "hours": {
+        "theory": 2,
+        "practical": 0
+      },
+      "prerequisites": [],
+      "faculties": [
+        {
+          "faculty": "medicine",
+          "code": "REQU107"
+        },
+        {
+          "faculty": "dentistry",
+          "code": "UNRE106"
+        },
+        {
+          "faculty": "artificial-intelligence",
+          "code": "UR-2-13"
+        },
+        {
+          "faculty": "artificial-intelligence",
+          "code": "UR-2-14"
+        },
+        {
+          "faculty": "building-construction-engineering",
+          "code": "UR-2-11"
+        },
+        {
+          "faculty": "building-construction-engineering",
+          "code": "UR-2-12"
+        },
+        {
+          "faculty": "building-construction-engineering",
+          "code": "UR-2-13"
+        },
+        {
+          "faculty": "building-construction-engineering",
+          "code": "UR-2-14"
+        },
+        {
+          "faculty": "building-construction-engineering",
+          "code": "UR-2-15"
+        },
+        {
+          "faculty": "business-administration",
+          "code": "UR-2-11/15"
+        }
+      ],
+      "teachers": {
+        "theory": {
+          "memberIds": [],
+          "enabled": true
+        },
+        "practical": {
+          "memberIds": [],
+          "enabled": true
+        }
+      },
+      "specificationUrl": "",
+      "lessons": []
+    },
+    {
+      "id": "physical-mental-skills",
+      "code": "",
+      "titleAr": "المهارات الحركية البدنية والذهنية",
+      "titleEn": "Physical and Mental Motor Skills",
+      "descriptionAr": "",
+      "descriptionEn": "",
+      "required": false,
+      "credits": 2,
+      "hours": {
+        "theory": 2,
+        "practical": 0
+      },
+      "prerequisites": [],
+      "faculties": [
+        {
+          "faculty": "building-construction-engineering",
+          "code": "UR-2-16"
+        },
+        {
+          "faculty": "business-administration",
+          "code": "UR-2-16"
+        }
+      ],
+      "teachers": {
+        "theory": {
+          "memberIds": [],
+          "enabled": true
+        },
+        "practical": {
+          "memberIds": [],
+          "enabled": true
+        }
+      },
+      "specificationUrl": "",
+      "lessons": []
+    },
+    {
+      "id": "professional-ethics",
+      "code": "",
+      "titleAr": "أخلاقيات وسلوكيات المهنة",
+      "titleEn": "Professional Ethics and Conduct",
+      "descriptionAr": "",
+      "descriptionEn": "",
+      "required": false,
+      "credits": 2,
+      "hours": {
+        "theory": 2,
+        "practical": 0
+      },
+      "prerequisites": [],
+      "faculties": [
+        {
+          "faculty": "building-construction-engineering",
+          "code": "UR-2-17"
+        },
+        {
+          "faculty": "business-administration",
+          "code": "UR-2-17"
+        }
+      ],
+      "teachers": {
+        "theory": {
+          "memberIds": [],
+          "enabled": true
+        },
+        "practical": {
+          "memberIds": [],
+          "enabled": true
+        }
+      },
+      "specificationUrl": "",
+      "lessons": []
+    }
+  ]
+}

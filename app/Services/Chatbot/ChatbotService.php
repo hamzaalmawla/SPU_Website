@@ -1,0 +1,849 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Services\Chatbot;
+
+use App\Contracts\Chatbot\ChatbotDirectoryServiceInterface;
+use App\Contracts\Chatbot\ChatbotFairUseServiceInterface;
+use App\Contracts\Chatbot\ChatbotKnowledgeServiceInterface;
+use App\Contracts\Chatbot\ChatbotServiceInterface;
+use App\Contracts\Chatbot\ChatbotSettingsServiceInterface;
+use App\Contracts\Chatbot\ChatbotUsageServiceInterface;
+use App\Contracts\Chatbot\OpenAiClientInterface;
+use App\Contracts\Settings\SettingsServiceInterface;
+use App\Contracts\Shared\CacheServiceInterface;
+use App\DTOs\Chatbot\ChatbotCompletionDTO;
+use App\DTOs\Chatbot\ChatbotCompletionRequestDTO;
+use App\DTOs\Chatbot\ChatbotConversationMemoryDTO;
+use App\DTOs\Chatbot\ChatbotPassageDTO;
+use App\DTOs\Chatbot\ChatbotQuestionDTO;
+use App\DTOs\Chatbot\ChatbotReplyDTO;
+use App\DTOs\Chatbot\ChatbotSettingsDTO;
+use App\DTOs\Chatbot\ChatbotSourceDTO;
+use App\DTOs\Chatbot\ChatbotWidgetDTO;
+use App\Exceptions\ChatbotProviderException;
+use App\Support\Chatbot\ChatbotGuard;
+use App\Support\Chatbot\ChatbotPrompt;
+use App\Support\Chatbot\ConversationMemory;
+use App\Support\Chatbot\ConversationSigner;
+use App\Support\Chatbot\SearchRewrite;
+use App\Support\Chatbot\VoiceModels;
+use App\Support\SearchTextNormalizer;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
+use Throwable;
+
+/**
+ * Retrieval-augmented answers for the public assistant.
+ *
+ * One question costs one embedding call (cached per question text) and one
+ * Responses call. An identical first question is answered from cache until
+ * the knowledge base or the settings change.
+ *
+ * A conversation is remembered without storing it: the last few signed
+ * question-and-answer pairs come back verbatim, and the model's own notes on
+ * everything before them come back sealed (ConversationMemory). Both inform
+ * the search rewrite, so a follow-up such as "and the fees?" is searched as
+ * the question it stands for.
+ *
+ * Logs carry the failure kind and HTTP status only, never the question, the
+ * answer or the key.
+ */
+final class ChatbotService implements ChatbotServiceInterface
+{
+    public function __construct(
+        private readonly ChatbotSettingsServiceInterface $settings,
+        private readonly ChatbotKnowledgeServiceInterface $knowledge,
+        private readonly ChatbotUsageServiceInterface $usage,
+        private readonly OpenAiClientInterface $openAi,
+        private readonly SettingsServiceInterface $siteSettings,
+        private readonly CacheServiceInterface $cache,
+        private readonly ChatbotFairUseServiceInterface $fairUse,
+        private readonly ChatbotDirectoryServiceInterface $directory,
+    ) {}
+
+    public function widget(string $locale): ChatbotWidgetDTO
+    {
+        $locale = $locale === 'en' ? 'en' : 'ar';
+
+        /** @var array<string, mixed> $payload */
+        $payload = $this->cache->remember(ChatbotCaches::widgetKey($locale), function () use ($locale): array {
+            $settings = $this->settings->get();
+            $contacts = $this->contacts($locale);
+
+            return [
+                'enabled' => $this->isLive($settings),
+                'assistantName' => $locale === 'ar' ? $settings->assistantNameAr : $settings->assistantNameEn,
+                'welcome' => $locale === 'ar' ? $settings->welcomeAr : $settings->welcomeEn,
+                'suggestions' => $locale === 'ar' ? $settings->suggestionsAr : $settings->suggestionsEn,
+                'phone' => $contacts['phone'],
+                'email' => $contacts['email'],
+                'voice' => (bool) config('chatbot.voice.enabled', true) && $settings->voiceEnabled,
+                'serverSpeech' => VoiceModels::speech() !== null,
+            ];
+        }, 3600);
+        $voice = (bool) ($payload['voice'] ?? false) && VoiceModels::transcription() !== [];
+
+        return new ChatbotWidgetDTO(
+            enabled: (bool) ($payload['enabled'] ?? false),
+            locale: $locale,
+            assistantName: (string) ($payload['assistantName'] ?? ''),
+            welcome: (string) ($payload['welcome'] ?? ''),
+            suggestions: array_values(array_filter((array) ($payload['suggestions'] ?? []), 'is_string')),
+            endpoint: route('public.chatbot.messages', ['locale' => $locale], false),
+            maxMessageLength: (int) config('chatbot.conversation.max_message_characters', 1000),
+            contactPhone: is_string($payload['phone'] ?? null) ? $payload['phone'] : null,
+            contactEmail: is_string($payload['email'] ?? null) ? $payload['email'] : null,
+            voiceEnabled: $voice,
+            transcriptionEndpoint: $voice ? route('public.chatbot.transcriptions', ['locale' => $locale], false) : null,
+            speechEndpoint: $voice ? route('public.chatbot.speech', ['locale' => $locale], false) : null,
+            liveTranscriptionEndpoint: $voice && (bool) config('chatbot.voice.live_transcription.enabled', true) && trim((string) config('chatbot.voice.live_transcription.model', '')) !== ''
+                ? route('public.chatbot.live-session', ['locale' => $locale], false)
+                : null,
+            serverSpeech: $voice && (bool) ($payload['serverSpeech'] ?? false),
+            maxRecordingSeconds: max(5, (int) config('chatbot.voice.transcription.max_seconds', 60)),
+        );
+    }
+
+    public function ask(ChatbotQuestionDTO $question): ChatbotReplyDTO
+    {
+        $locale = $question->locale === 'en' ? 'en' : 'ar';
+        $this->timings = [];
+        $started = hrtime(true);
+        $reply = $this->answer($question, $locale);
+        $this->timings['total'] = intdiv(hrtime(true) - $started, 1_000_000);
+
+        // Every reply the visitor sees may be read aloud, and only those.
+        return new ChatbotReplyDTO(
+            $reply->status,
+            $reply->answer,
+            $reply->sources,
+            $reply->cached,
+            $reply->signature,
+            $reply->reason,
+            $reply->passages,
+            $reply->searchHint,
+            $reply->memory,
+            ConversationSigner::signSpeech($locale, $reply->answer),
+            $this->timings,
+        );
+    }
+
+    /** @var array<string, int> milliseconds per stage of the current question */
+    private array $timings = [];
+
+    /**
+     * Run one stage of an answer and note how long it took.
+     *
+     * @template T
+     *
+     * @param  callable(): T  $stage
+     * @return T
+     */
+    private function timed(string $name, callable $stage): mixed
+    {
+        $started = hrtime(true);
+        try {
+            return $stage();
+        } finally {
+            $this->timings[$name] = intdiv(hrtime(true) - $started, 1_000_000);
+        }
+    }
+
+    private function answer(ChatbotQuestionDTO $question, string $locale): ChatbotReplyDTO
+    {
+        $settings = $this->settings->get();
+        $apiKey = $this->settings->apiKey();
+
+        if ($apiKey === null || (! $question->adminTest && ! $this->isLive($settings))) {
+            return $this->notice(ChatbotReplyDTO::STATUS_UNAVAILABLE, 'unavailable', $locale);
+        }
+
+        // A visitor or address that kept asking for things the assistant does
+        // not do is paused before anything else runs, so it costs nothing.
+        if (! $question->adminTest && $this->fairUse->isPaused($question->visitorKey, $question->clientKey)) {
+            return $this->notice(ChatbotReplyDTO::STATUS_REFUSED, 'blocked', $locale, false);
+        }
+
+        // Fair use: each visitor gets a share per minute, hour and day.
+        if (! $question->adminTest) {
+            $wait = $this->fairUseWait($question, $settings);
+            if ($wait !== null) {
+                $this->usage->recordRateLimited();
+                $reply = $this->notice(ChatbotReplyDTO::STATUS_LIMITED, 'limited', $locale, false);
+
+                return new ChatbotReplyDTO($reply->status, str_replace(':minutes', (string) max(1, (int) ceil($wait / 60)), $reply->answer));
+            }
+        }
+
+        $message = trim($question->message);
+
+        // Layer 1: deterministic screen (code, rule-bypass, obfuscation). Free.
+        $reason = ChatbotGuard::inspectQuestion($message);
+        if ($reason !== null) {
+            return $this->refuse($question, $locale, $reason);
+        }
+
+        // The same question over and over is someone playing, not asking.
+        if (! $question->adminTest && $this->isRepeated($question, $message)) {
+            return $this->refuse($question, $locale, 'spam');
+        }
+
+        if (! $question->adminTest && $settings->dailyQuestionLimit > 0 && $this->usage->questionsToday() >= $settings->dailyQuestionLimit) {
+            return $this->notice(ChatbotReplyDTO::STATUS_BUSY, 'daily_limit', $locale);
+        }
+
+        $history = $this->history($question->history, $locale);
+        $memory = ConversationMemory::open($question->memory, $locale);
+        $exchanges = max($memory?->exchanges ?? 0, intdiv(count($history), 2)) + 1;
+        // Only a conversation's first question is the same for everyone.
+        $directory = $this->directory->forPrompt($locale);
+        $cacheKey = $history === [] && $memory === null && $question->useCache && ! $question->adminTest ? $this->answerCacheKey($settings, $locale, $message, $question->spoken, $directory) : null;
+
+        if ($cacheKey !== null) {
+            $cached = Cache::get($cacheKey);
+            if (is_array($cached) && is_string($cached['answer'] ?? null)) {
+                $this->usage->recordCachedAnswer();
+
+                return new ChatbotReplyDTO(
+                    ChatbotReplyDTO::STATUS_OK,
+                    $cached['answer'],
+                    $this->sourcesFromArray((array) ($cached['sources'] ?? [])),
+                    true,
+                    ConversationSigner::sign($locale, $message, $cached['answer']),
+                    memory: ConversationMemory::seal($locale, is_string($cached['memory'] ?? null) ? $cached['memory'] : '', $exchanges),
+                );
+            }
+        }
+
+        // Personal data is never needed to answer and never leaves the site.
+        $outgoing = ChatbotGuard::redactPersonalData($message);
+        $embeddingTokens = 0;
+
+        try {
+            // Layer 2 (OpenAI's free moderation check for harmful content) runs
+            // at the same time as the search rewrite, which does not depend on
+            // it. A moderation outage does not stop answers: the other layers
+            // still apply.
+            [$flagged, $searchHint] = $this->timed('screen', fn (): array => $this->screenAndRewrite(
+                $outgoing,
+                SearchRewrite::input(
+                    $outgoing,
+                    array_map(static fn (array $turn): array => ['role' => $turn['role'], 'content' => ChatbotGuard::redactPersonalData($turn['content'])], array_slice($history, -4)),
+                    $memory?->notes ?? '',
+                    (int) config('chatbot.conversation.rewrite_context_characters', 400),
+                ),
+                $apiKey,
+                $settings->model,
+            ));
+            if ($flagged) {
+                return $this->refuse($question, $locale, 'unsafe');
+            }
+
+            // The rewrite already turns a follow-up into a whole search; the
+            // previous question is added only when there is no rewrite.
+            $searchQuery = $searchHint === null ? $this->retrievalQuery($outgoing, $history) : $outgoing;
+            $retrieval = $this->timed('search', fn () => $this->knowledge->retrieve($searchQuery, $apiKey, $locale, $searchHint));
+            $embeddingTokens = $retrieval->embeddingTokens;
+
+            // Layer 3: the model classifies the message before answering
+            // (structured output), so an out-of-scope request comes back as a
+            // category, never as text shown to the visitor.
+            $instructions = ChatbotPrompt::instructions(
+                $locale === 'ar' ? $settings->assistantNameAr : $settings->assistantNameEn,
+                $locale,
+                $this->contacts($locale) + ['website' => (string) config('app.url')],
+                $settings->extraInstructions,
+                now()->toFormattedDateString(),
+                $directory,
+            );
+            $request = fn (array $passages): ChatbotCompletionRequestDTO => new ChatbotCompletionRequestDTO(
+                apiKey: $apiKey,
+                model: $settings->model,
+                instructions: $instructions,
+                messages: [
+                    ...array_map(static fn (array $turn): array => ['role' => $turn['role'], 'content' => ChatbotGuard::redactPersonalData($turn['content'])], $history),
+                    ['role' => 'user', 'content' => ChatbotPrompt::questionTurn($outgoing, $passages, (int) config('chatbot.retrieval.max_passage_characters', 1400), $memory, $question->spoken)],
+                ],
+                // A spoken answer is read aloud, so it is short: less to write and to say.
+                maxOutputTokens: $question->spoken
+                    ? (int) config('chatbot.conversation.max_spoken_output_tokens', 600)
+                    : (int) config('chatbot.conversation.max_output_tokens', 1200),
+                reasoningEffort: $this->reasoningEffort($settings->model),
+                cacheKey: 'spu-assistant-'.$locale,
+                jsonSchema: ChatbotPrompt::schema(),
+                temperature: $this->temperature($settings->model),
+            );
+            [$completion, $model] = $this->timed('model', fn (): array => $this->respondWithFallback($request($retrieval->passages), $settings->fallbackModel));
+
+            // Corrective retrieval: when the passages did not answer the whole
+            // question, search once more with a wider net (more passages per
+            // part) and keep whichever answer covers more.
+            $first = ChatbotPrompt::parseReply($completion->text);
+            if ($first !== null && $first['category'] === 'university' && $first['coverage'] !== 'full' && $retrieval->passages !== []) {
+                try {
+                    $wider = $this->timed('search_retry', fn () => $this->knowledge->retrieve($searchQuery, $apiKey, $locale, $searchHint, (int) config('chatbot.retrieval.top_k_retry', 14)));
+                    $embeddingTokens += $wider->embeddingTokens;
+                    if ($this->passageIds($wider->passages) !== $this->passageIds($retrieval->passages)) {
+                        [$retry, $retryModel] = $this->timed('model_retry', fn (): array => $this->respondWithFallback($request($wider->passages), $settings->fallbackModel));
+                        $second = ChatbotPrompt::parseReply($retry->text);
+                        $better = $second !== null && in_array($second['category'], ChatbotPrompt::ANSWERABLE, true) && $second['answer'] !== ''
+                            && self::COVERAGE_RANK[$second['coverage']] > self::COVERAGE_RANK[$first['coverage']];
+                        // The call not kept is still paid for.
+                        [$spent, $spentModel] = $better ? [$completion, $model] : [$retry, $retryModel];
+                        $this->usage->recordModelUse($spentModel, $spent->inputTokens, $spent->outputTokens, $spent->cachedInputTokens);
+                        if ($better) {
+                            [$completion, $model, $retrieval] = [$retry, $retryModel, $wider];
+                        }
+                    }
+                } catch (ChatbotProviderException $exception) {
+                    // The first answer stands.
+                    Log::notice('Chatbot wider search skipped.', ['reason' => $exception->reason, 'status' => $exception->status]);
+                }
+            }
+        } catch (ChatbotProviderException $exception) {
+            $this->usage->recordFailure($embeddingTokens);
+            Log::warning('Chatbot provider call failed.', ['reason' => $exception->reason, 'status' => $exception->status]);
+
+            return $this->notice(
+                $exception->reason === ChatbotProviderException::RATE_LIMITED ? ChatbotReplyDTO::STATUS_BUSY : ChatbotReplyDTO::STATUS_ERROR,
+                $exception->reason === ChatbotProviderException::RATE_LIMITED ? 'busy' : 'error',
+                $locale,
+            );
+        } catch (Throwable $exception) {
+            $this->usage->recordFailure($embeddingTokens);
+            report($exception);
+
+            return $this->notice(ChatbotReplyDTO::STATUS_ERROR, 'error', $locale);
+        }
+
+        $this->usage->recordAnswer(
+            $model,
+            $completion->inputTokens,
+            $completion->cachedInputTokens,
+            $completion->outputTokens,
+            $embeddingTokens,
+            $retrieval->passages === [],
+        );
+
+        $reply = ChatbotPrompt::parseReply($completion->text);
+        if ($reply === null || ($completion->truncated && $reply['answer'] === '')) {
+            Log::warning('Chatbot reply was not valid structured output.', ['truncated' => $completion->truncated]);
+
+            return $this->notice(ChatbotReplyDTO::STATUS_ERROR, 'error', $locale);
+        }
+
+        if (! in_array($reply['category'], ChatbotPrompt::ANSWERABLE, true) || $reply['answer'] === '') {
+            return $this->refuse($question, $locale, $reply['category'] === '' ? 'off_topic' : $reply['category']);
+        }
+
+        // Layer 4: whatever the model said, nothing code-like or carrying its
+        // instructions reaches the page, and links stay on university hosts.
+        $leak = ChatbotGuard::inspectAnswer($reply['answer']);
+        if ($leak !== null) {
+            Log::warning('Chatbot answer withheld by the output guard.', ['reason' => $leak]);
+
+            return $this->refuse($question, $locale, 'answer_'.$leak);
+        }
+
+        $answer = ChatbotGuard::restrictLinks($reply['answer'], $this->linkHosts());
+        $sources = $reply['category'] === 'university' ? $this->sources($retrieval->passages) : [];
+        $notes = $this->nextNotes($reply['memory'], $memory);
+
+        // Only a complete answer is shared: "I don't have that" must never be
+        // served from cache to the next visitor (it was, for twelve hours).
+        if ($cacheKey !== null && ! $completion->truncated && $reply['coverage'] === 'full') {
+            Cache::put($cacheKey, [
+                'answer' => $answer,
+                'sources' => array_map(static fn (ChatbotSourceDTO $source): array => ['title' => $source->title, 'pages' => $source->pages, 'url' => $source->url], $sources),
+                'memory' => $notes,
+            ], (int) config('chatbot.conversation.answer_cache_minutes', 720) * 60);
+        }
+
+        return new ChatbotReplyDTO(
+            ChatbotReplyDTO::STATUS_OK,
+            $answer,
+            $sources,
+            false,
+            ConversationSigner::sign($locale, $message, $answer),
+            passages: $question->adminTest ? $retrieval->passages : [],
+            searchHint: $question->adminTest ? $searchHint : null,
+            memory: ConversationMemory::seal($locale, $notes, $exchanges),
+        );
+    }
+
+    /**
+     * The notes to carry forward: the model's update, unless it is unusable
+     * (empty while there were notes, or carrying code or instruction text),
+     * in which case the previous notes stay.
+     */
+    private function nextNotes(string $update, ?ChatbotConversationMemoryDTO $memory): string
+    {
+        $previous = $memory?->notes ?? '';
+        $update = ConversationMemory::clean($update);
+
+        if ($update === '' || ChatbotGuard::inspectAnswer($update) !== null) {
+            return $previous;
+        }
+
+        return $update;
+    }
+
+    /**
+     * The moderation verdict and the search hint for one question. Both are
+     * OpenAI calls that do not depend on each other, so they go out together
+     * (a second saved on every question); either may be skipped (moderation
+     * switched off, the hint cached or switched off).
+     *
+     * @return array{0: bool, 1: ?string} flagged, search hint
+     *
+     * @throws ChatbotProviderException when the key is rejected or the account is empty
+     */
+    private function screenAndRewrite(string $outgoing, string $rewriteInput, string $apiKey, string $mainModel): array
+    {
+        $moderate = (bool) config('chatbot.guard.moderation', true);
+        $rewrite = $this->rewritePlan($rewriteInput, $outgoing, $apiKey, $mainModel);
+
+        if ($rewrite['request'] === null) {
+            return [$moderate && $this->flagged($outgoing, $apiKey), $rewrite['hint']];
+        }
+
+        if (! $moderate) {
+            return [false, $this->rewriteResult($rewrite, $this->attempt($rewrite['request']), $outgoing)];
+        }
+
+        $results = $this->openAi->moderateAndRespond($outgoing, $apiKey, $rewrite['request']);
+
+        return [$this->moderationVerdict($results['moderation']), $this->rewriteResult($rewrite, $results['completion'], $outgoing)];
+    }
+
+    /**
+     * How to get the question in the documents' wording (SearchRewrite): a
+     * hint already cached for this input (a week), or the small model call
+     * that writes it, which also sees the conversation so follow-ups come
+     * out as whole searches. No request when switched off or cached.
+     *
+     * @return array{hint: ?string, request: ?ChatbotCompletionRequestDTO, key: string, model: string}
+     */
+    private function rewritePlan(string $input, string $message, string $apiKey, string $mainModel): array
+    {
+        $model = trim((string) config('chatbot.retrieval.rewrite_model', '')) ?: $mainModel;
+        // v3: one line per part, with the glossary of the documents' terms.
+        $key = 'chatbot.search-hint.v3.'.sha1($model.'|'.SearchTextNormalizer::normalize($input));
+        $plan = ['hint' => null, 'request' => null, 'key' => $key, 'model' => $model];
+
+        if (! (bool) config('chatbot.retrieval.rewrite', true) || mb_strlen($message) < 3) {
+            return $plan;
+        }
+
+        $cached = Cache::get($key);
+        if (is_string($cached)) {
+            return ['hint' => $cached !== '' ? $cached : null] + $plan;
+        }
+
+        return ['request' => new ChatbotCompletionRequestDTO(
+            apiKey: $apiKey,
+            model: $model,
+            instructions: SearchRewrite::INSTRUCTIONS,
+            messages: [['role' => 'user', 'content' => $input]],
+            maxOutputTokens: 400,
+            reasoningEffort: $this->reasoningEffort($model),
+            cacheKey: 'spu-assistant-search',
+            timeout: (int) config('chatbot.retrieval.rewrite_timeout', 8),
+            temperature: $this->temperature($model),
+        )] + $plan;
+    }
+
+    /**
+     * The hint from the rewrite call's outcome, counted and cached. A failed
+     * rewrite gives none: retrieval then uses the question alone.
+     *
+     * @param  array{hint: ?string, request: ?ChatbotCompletionRequestDTO, key: string, model: string}  $plan
+     */
+    private function rewriteResult(array $plan, ChatbotCompletionDTO|ChatbotProviderException $outcome, string $message): ?string
+    {
+        if ($outcome instanceof ChatbotProviderException) {
+            Log::notice('Chatbot search rewrite skipped.', ['reason' => $outcome->reason, 'status' => $outcome->status]);
+
+            return null;
+        }
+
+        $this->usage->recordModelUse($plan['model'], $outcome->inputTokens, $outcome->outputTokens, $outcome->cachedInputTokens);
+        $hint = SearchRewrite::parse($outcome->text, $message);
+        Cache::put($plan['key'], $hint ?? '', 604_800);
+
+        return $hint;
+    }
+
+    private function attempt(ChatbotCompletionRequestDTO $request): ChatbotCompletionDTO|ChatbotProviderException
+    {
+        try {
+            return $this->openAi->respond($request);
+        } catch (ChatbotProviderException $exception) {
+            return $exception;
+        }
+    }
+
+    /**
+     * Refuse politely, count it, and pause a visitor that keeps trying.
+     * The visitor sees the same message whatever the reason, so probing
+     * learns nothing about which layer stopped it.
+     */
+    private function refuse(ChatbotQuestionDTO $question, string $locale, string $reason): ChatbotReplyDTO
+    {
+        $this->usage->recordBlocked();
+
+        if (! $question->adminTest) {
+            // An innocent off-topic question costs one point; attacks two.
+            $points = $reason === 'off_topic' ? 1 : 2;
+            $window = (int) config('chatbot.guard.strike_window_minutes', 60) * 60;
+
+            foreach ([['v', $question->visitorKey, (int) config('chatbot.guard.strikes', 4)], ['ip', $question->clientKey, (int) config('chatbot.guard.ip_strikes', 16)]] as [$scope, $key, $threshold]) {
+                if ($key === null) {
+                    continue;
+                }
+
+                $strikesKey = "chatbot.strikes.{$scope}.{$key}";
+                $strikes = (int) Cache::get($strikesKey, 0) + $points;
+                Cache::put($strikesKey, $strikes, $window);
+
+                if ($strikes >= $threshold) {
+                    $this->pause($scope, $key);
+                    Cache::forget($strikesKey);
+                }
+            }
+        }
+
+        $reply = $this->notice(ChatbotReplyDTO::STATUS_REFUSED, 'refused', $locale, false);
+
+        return new ChatbotReplyDTO($reply->status, $reply->answer, [], false, null, $reason);
+    }
+
+    /**
+     * Pause for an hour; a second pause the same day lasts a day.
+     */
+    private function pause(string $scope, string $key): void
+    {
+        $repeatKey = "chatbot.paused-today.{$scope}.{$key}";
+        $seconds = Cache::has($repeatKey)
+            ? (int) config('chatbot.guard.repeat_block_hours', 24) * 3600
+            : (int) config('chatbot.guard.block_minutes', 60) * 60;
+
+        Cache::put(ChatbotCaches::pauseKey($scope, $key), true, $seconds);
+        Cache::put($repeatKey, true, 86400);
+        $this->usage->recordPaused();
+        Log::notice('Chatbot paused a visitor after repeated refused questions.', ['scope' => $scope, 'key' => substr($key, 0, 12), 'minutes' => intdiv($seconds, 60)]);
+    }
+
+    /**
+     * Seconds until this visitor may ask again, or null when within their
+     * share (minute, hour and day; the last two from the settings).
+     */
+    private function fairUseWait(ChatbotQuestionDTO $question, ChatbotSettingsDTO $settings): ?int
+    {
+        return $this->fairUse->consume('q', [
+            'm' => [60, (int) config('chatbot.fair_use.per_minute', 5)],
+            'h' => [3600, $settings->visitorHourlyLimit],
+            'd' => [86400, $settings->visitorDailyLimit],
+        ], $question->visitorKey, $question->clientKey);
+    }
+
+    private function isRepeated(ChatbotQuestionDTO $question, string $message): bool
+    {
+        $owner = $question->visitorKey ?? $question->clientKey;
+        if ($owner === null) {
+            return false;
+        }
+
+        $key = 'chatbot.repeat.'.$owner.'.'.sha1(SearchTextNormalizer::normalize((string) preg_replace('/[^\p{L}\p{N}\s]+/u', ' ', $message)));
+        $count = (int) Cache::get($key, 0) + 1;
+        Cache::put($key, $count, 600);
+
+        return $count > max(1, (int) config('chatbot.fair_use.repeat_limit', 3));
+    }
+
+    /**
+     * Ask the main model; when it is rate limited, out of quota, unavailable
+     * or refuses the request, ask the fallback model once. A rejected key is
+     * never retried: it would fail the same way.
+     *
+     * @return array{0: ChatbotCompletionDTO, 1: string}
+     */
+    private function respondWithFallback(ChatbotCompletionRequestDTO $request, ?string $fallback): array
+    {
+        try {
+            return [$this->openAi->respond($request), $request->model];
+        } catch (ChatbotProviderException $exception) {
+            if ($fallback === null || $fallback === $request->model || $exception->reason === ChatbotProviderException::AUTH) {
+                throw $exception;
+            }
+
+            Log::notice('Chatbot main model failed; asking the fallback model.', ['model' => $request->model, 'fallback' => $fallback, 'reason' => $exception->reason, 'status' => $exception->status]);
+
+            return [$this->openAi->respond(new ChatbotCompletionRequestDTO(
+                apiKey: $request->apiKey,
+                model: $fallback,
+                instructions: $request->instructions,
+                messages: $request->messages,
+                maxOutputTokens: $request->maxOutputTokens,
+                reasoningEffort: $this->reasoningEffort($fallback),
+                cacheKey: $request->cacheKey,
+                jsonSchema: $request->jsonSchema,
+                temperature: $this->temperature($fallback),
+            )), $fallback];
+        }
+    }
+
+    private function flagged(string $text, string $apiKey): bool
+    {
+        try {
+            return $this->openAi->moderate($text, $apiKey);
+        } catch (ChatbotProviderException $exception) {
+            return $this->moderationVerdict($exception);
+        }
+    }
+
+    /**
+     * A moderation outcome as a verdict. A rejected key or an empty account
+     * stops the answer (it would fail the same way); any other failure lets
+     * it through to the remaining layers.
+     *
+     * @throws ChatbotProviderException
+     */
+    private function moderationVerdict(bool|ChatbotProviderException $outcome): bool
+    {
+        if (is_bool($outcome)) {
+            return $outcome;
+        }
+        if ($outcome->reason === ChatbotProviderException::AUTH || $outcome->reason === ChatbotProviderException::QUOTA) {
+            throw $outcome;
+        }
+        Log::notice('Chatbot moderation check skipped.', ['reason' => $outcome->reason, 'status' => $outcome->status]);
+
+        return false;
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function linkHosts(): array
+    {
+        $hosts = array_values(array_filter((array) config('chatbot.guard.link_hosts', []), 'is_string'));
+        foreach ([config('app.url'), config('edge.canonical_url')] as $url) {
+            $host = is_string($url) ? parse_url($url, PHP_URL_HOST) : null;
+            if (is_string($host) && $host !== '') {
+                $hosts[] = $host;
+            }
+        }
+
+        return array_values(array_unique($hosts));
+    }
+
+    private function isLive(ChatbotSettingsDTO $settings): bool
+    {
+        return (bool) config('chatbot.enabled', true)
+            && $settings->enabled
+            && $settings->hasApiKey
+            && $this->knowledge->stats()->searchableDocuments > 0;
+    }
+
+    /**
+     * Follow-ups ("and the fees?") carry little meaning alone, so a short
+     * question is searched together with the visitor's previous one.
+     *
+     * @param  list<array{role: 'user'|'assistant', content: string}>  $history
+     */
+    private function retrievalQuery(string $message, array $history): string
+    {
+        if (mb_strlen($message) >= 60) {
+            return $message;
+        }
+
+        for ($index = count($history) - 1; $index >= 0; $index--) {
+            if ($history[$index]['role'] === 'user') {
+                return mb_substr($history[$index]['content'], 0, 300)."\n".$message;
+            }
+        }
+
+        return $message;
+    }
+
+    /**
+     * Earlier turns, kept only as whole question-and-answer pairs this server
+     * produced (signed), newest last, the newest that fit the character
+     * budget. A forged or edited turn is dropped with its partner.
+     *
+     * @param  list<array{role: 'user'|'assistant', content: string, signature?: ?string}>  $history
+     * @return list<array{role: 'user'|'assistant', content: string}>
+     */
+    private function history(array $history, string $locale): array
+    {
+        $maxTurns = (int) config('chatbot.conversation.max_history_turns', 8);
+        $maxCharacters = (int) config('chatbot.conversation.max_history_characters', 1500);
+        $budget = (int) config('chatbot.conversation.max_history_total_characters', 6000);
+
+        $pairs = [];
+        for ($index = 0; $index < count($history) - 1; $index++) {
+            $user = $history[$index];
+            $assistant = $history[$index + 1];
+            if ($user['role'] !== 'user' || $assistant['role'] !== 'assistant') {
+                continue;
+            }
+
+            if (ConversationSigner::verify($locale, $user['content'], $assistant['content'], $assistant['signature'] ?? null)) {
+                $pairs[] = [
+                    ['role' => 'user', 'content' => mb_substr(trim($user['content']), 0, $maxCharacters)],
+                    ['role' => 'assistant', 'content' => mb_substr(trim($assistant['content']), 0, $maxCharacters)],
+                ];
+                $index++;
+            }
+        }
+
+        $pairs = array_slice($pairs, -max(1, intdiv($maxTurns, 2)));
+
+        // Within the budget, newest first: older turns live on in the notes.
+        $kept = [];
+        $used = 0;
+        foreach (array_reverse($pairs) as $pair) {
+            $length = mb_strlen($pair[0]['content']) + mb_strlen($pair[1]['content']);
+            if ($kept !== [] && $used + $length > $budget) {
+                break;
+            }
+            $used += $length;
+            array_unshift($kept, $pair);
+        }
+
+        return array_merge(...$kept);
+    }
+
+    /**
+     * Distinct documents behind the answer, best first, with their pages.
+     *
+     * @param  list<ChatbotPassageDTO>  $passages
+     * @return list<ChatbotSourceDTO>
+     */
+    private function sources(array $passages): array
+    {
+        $byDocument = [];
+        foreach ($passages as $passage) {
+            $entry = $byDocument[$passage->documentId] ?? ['title' => $passage->documentTitle, 'pages' => [], 'url' => $passage->url];
+            if ($passage->page !== null && ! in_array($passage->page, $entry['pages'], true)) {
+                $entry['pages'][] = $passage->page;
+            }
+            $byDocument[$passage->documentId] = $entry;
+        }
+
+        return $this->sourcesFromArray(array_slice(array_values($byDocument), 0, 4));
+    }
+
+    /**
+     * @param  array<mixed>  $items
+     * @return list<ChatbotSourceDTO>
+     */
+    private function sourcesFromArray(array $items): array
+    {
+        $sources = [];
+        foreach ($items as $item) {
+            if (is_array($item) && is_string($item['title'] ?? null) && $item['title'] !== '') {
+                $pages = array_values(array_filter((array) ($item['pages'] ?? []), 'is_int'));
+                sort($pages);
+                $url = is_string($item['url'] ?? null) && preg_match('#^/(ar|en)(/[a-z0-9/-]*)?$#', $item['url']) === 1 ? $item['url'] : null;
+                $sources[] = new ChatbotSourceDTO($item['title'], array_slice($pages, 0, 6), $url);
+            }
+        }
+
+        return $sources;
+    }
+
+    private function answerCacheKey(ChatbotSettingsDTO $settings, string $locale, string $message, bool $spoken, string $directory): string
+    {
+        return 'chatbot.answer.'.sha1(implode('|', [
+            self::ANSWER_VERSION,
+            $locale,
+            // A faculty or center added or renamed changes the answers that list them.
+            sha1($directory),
+            // A spoken answer is a different, shorter answer.
+            $spoken ? 'spoken' : 'typed',
+            $settings->model,
+            $this->settings->version(),
+            $this->knowledge->version(),
+            SearchTextNormalizer::normalize((string) preg_replace('/[^\p{L}\p{N}\s]+/u', ' ', $message)),
+        ]));
+    }
+
+    /** How much of a question an answer covered, for comparing two answers. */
+    private const COVERAGE_RANK = ['none' => 0, 'partial' => 1, 'full' => 2];
+
+    /**
+     * Bumped when the rules or the retrieval change, so answers cached
+     * before are not served again.
+     */
+    private const ANSWER_VERSION = 'v5';
+
+    /**
+     * @param  list<ChatbotPassageDTO>  $passages
+     * @return list<int>
+     */
+    private function passageIds(array $passages): array
+    {
+        $ids = array_map(static fn (ChatbotPassageDTO $passage): int => $passage->chunkId, $passages);
+        sort($ids);
+
+        return $ids;
+    }
+
+    /**
+     * Temperature 0 (the same question gets the same wording and the same
+     * search) for every model that takes one: those run without thinking
+     * (reasoning "none") and those without reasoning. Thinking models take
+     * none. A model that refuses it is asked again without (OpenAiClient).
+     */
+    private function temperature(string $model): ?float
+    {
+        if (! (bool) (((array) config('chatbot.models', []))[$model]['reasoning'] ?? false)) {
+            return 0.0;
+        }
+
+        return $this->reasoningEffort($model) === 'none' ? 0.0 : null;
+    }
+
+    private function reasoningEffort(string $model): ?string
+    {
+        // Model ids contain dots (gpt-5.4-mini), so never address them with a config dot path.
+        if (! (bool) (((array) config('chatbot.models', []))[$model]['reasoning'] ?? false)) {
+            return null;
+        }
+
+        $efforts = (array) config('chatbot.reasoning_effort', []);
+
+        return (string) ($efforts[$model] ?? $efforts['default'] ?? 'minimal');
+    }
+
+    /**
+     * @return array{phone: ?string, email: ?string}
+     */
+    private function contacts(string $locale): array
+    {
+        try {
+            $footer = $this->siteSettings->getFooterSettings($locale);
+
+            return ['phone' => $footer->phone, 'email' => $footer->email];
+        } catch (Throwable) {
+            return ['phone' => null, 'email' => null];
+        }
+    }
+
+    private function notice(string $status, string $key, string $locale, bool $withContact = true): ChatbotReplyDTO
+    {
+        $contacts = $this->contacts($locale);
+        $message = (string) __('chatbot.replies.'.$key, [], $locale);
+        $reach = array_values(array_filter([$contacts['phone'], $contacts['email']]));
+
+        if ($withContact && $reach !== []) {
+            $message .= ' '.__('chatbot.replies.contact', ['contact' => implode(' · ', $reach)], $locale);
+        }
+
+        return new ChatbotReplyDTO($status, $message);
+    }
+}

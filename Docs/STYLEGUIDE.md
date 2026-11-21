@@ -13,6 +13,8 @@
 
 - Interfaces: `SomethingServiceInterface` in `app/Contracts/`
 - Services: `SomethingService` in `app/Services/`
+- Service-layer Actions: `VerbNounAction` in `app/Actions/` only when architecture-approved for a workflow extraction
+- Pure support mappers/helpers: `SpecificPurposeMapper` or `SpecificPurposeResolver` in `app/Support/`
 - Placeholder services: `SomethingServicePlaceholder` in `app/Services/Placeholders/`
 - Controllers: `SomethingController`
 - Requests: `SomethingRequest`

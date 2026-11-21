@@ -1,0 +1,72 @@
+{
+  "translations": {
+    "en": {
+      "title": "Media Gallery",
+      "headline": "Media Gallery",
+      "summary": "Explore university life, academic activities, research, events, and student achievements through the SPU media gallery.",
+      "heroImage": "/images/slider-1.webp",
+      "allLabel": "All Images",
+      "latestLabel": "Showing Latest",
+      "emptyLabel": "No gallery images match this category.",
+      "openLabel": "Open image",
+      "closeLabel": "Close image viewer",
+      "previousLabel": "Previous image",
+      "nextLabel": "Next image",
+      "categories": [
+        {"id":"campus-life","label":"Campus Life"},
+        {"id":"academic","label":"Academic Activities"},
+        {"id":"events","label":"Events"},
+        {"id":"research","label":"Research"},
+        {"id":"clinics","label":"Hospitals & Clinics"},
+        {"id":"student-activities","label":"Student Activities"}
+      ],
+      "items": [
+        {"id":"campus-featured","title":"Syrian Private University Campus","altText":"Main Syrian Private University campus building","caption":"University campus and academic community","dateLabel":"2026","categoryId":"campus-life","categoryLabel":"Campus Life","imageUrl":"/images/slider-1.webp","featured":true},
+        {"id":"campus-community","title":"Campus Community","altText":"Students gathering on the university campus","dateLabel":"2026","categoryId":"campus-life","categoryLabel":"Campus Life","imageUrl":"/images/DSC_1015.JPG"},
+        {"id":"academic-presentation","title":"Academic Presentation","altText":"Academic presentation at Syrian Private University","dateLabel":"2026","categoryId":"academic","categoryLabel":"Academic Activities","imageUrl":"/images/DSC_1060.jpg"},
+        {"id":"research-activity","title":"Research Activity","altText":"University research activity","dateLabel":"2026","categoryId":"research","categoryLabel":"Research","imageUrl":"/images/news/researches.jpeg"},
+        {"id":"clinical-training","title":"Clinical Training","altText":"Students participating in clinical simulation training","dateLabel":"2026","categoryId":"clinics","categoryLabel":"Hospitals & Clinics","imageUrl":"/images/research-clinical-simulation.webp"},
+        {"id":"digital-dentistry","title":"Digital Dentistry Research","altText":"Digital dentistry research equipment","dateLabel":"2026","categoryId":"research","categoryLabel":"Research","imageUrl":"/images/research-digital-dentistry.webp"},
+        {"id":"campus-hospital","title":"University Medical Facilities","altText":"Syrian Private University medical facility","dateLabel":"2026","categoryId":"clinics","categoryLabel":"Hospitals & Clinics","imageUrl":"/images/campus-hospital.webp"},
+        {"id":"student-clubs","title":"Student Clubs","altText":"Students taking part in university club activities","dateLabel":"2026","categoryId":"student-activities","categoryLabel":"Student Activities","imageUrl":"/images/campus-clubs.webp"},
+        {"id":"campus-event-one","title":"University Event","altText":"Students attending a university event","dateLabel":"2026","categoryId":"events","categoryLabel":"Events","imageUrl":"/images/campus-feature-01.webp"},
+        {"id":"campus-event-two","title":"Student Activity","altText":"Student activity at Syrian Private University","dateLabel":"2026","categoryId":"student-activities","categoryLabel":"Student Activities","imageUrl":"/images/campus-feature-02.webp"},
+        {"id":"admissions-campus","title":"Discover SPU","altText":"Prospective students visiting the university campus","dateLabel":"2026","categoryId":"campus-life","categoryLabel":"Campus Life","imageUrl":"/images/admissions-hero-campus.webp"}
+      ]
+    },
+    "ar": {
+      "title": "معرض الوسائط",
+      "headline": "معرض الوسائط",
+      "summary": "استكشف الحياة الجامعية والأنشطة الأكاديمية والبحث العلمي والفعاليات وإنجازات الطلبة من خلال معرض وسائط الجامعة.",
+      "heroImage": "/images/slider-1.webp",
+      "allLabel": "كل الصور",
+      "latestLabel": "عرض الأحدث",
+      "emptyLabel": "لا توجد صور ضمن هذا التصنيف.",
+      "openLabel": "فتح الصورة",
+      "closeLabel": "إغلاق عارض الصور",
+      "previousLabel": "الصورة السابقة",
+      "nextLabel": "الصورة التالية",
+      "categories": [
+        {"id":"campus-life","label":"الحياة الجامعية"},
+        {"id":"academic","label":"الأنشطة الأكاديمية"},
+        {"id":"events","label":"الفعاليات"},
+        {"id":"research","label":"البحث العلمي"},
+        {"id":"clinics","label":"المستشفى والعيادات"},
+        {"id":"student-activities","label":"الأنشطة الطلابية"}
+      ],
+      "items": [
+        {"id":"campus-featured","title":"حرم الجامعة السورية الخاصة","altText":"المبنى الرئيسي للجامعة السورية الخاصة","caption":"الحرم الجامعي والمجتمع الأكاديمي","dateLabel":"2026","categoryId":"campus-life","categoryLabel":"الحياة الجامعية","imageUrl":"/images/slider-1.webp","featured":true},
+        {"id":"campus-community","title":"المجتمع الجامعي","altText":"طلبة مجتمعون في الحرم الجامعي","dateLabel":"2026","categoryId":"campus-life","categoryLabel":"الحياة الجامعية","imageUrl":"/images/DSC_1015.JPG"},
+        {"id":"academic-presentation","title":"عرض أكاديمي","altText":"عرض أكاديمي في الجامعة السورية الخاصة","dateLabel":"2026","categoryId":"academic","categoryLabel":"الأنشطة الأكاديمية","imageUrl":"/images/DSC_1060.jpg"},
+        {"id":"research-activity","title":"نشاط بحثي","altText":"نشاط بحثي جامعي","dateLabel":"2026","categoryId":"research","categoryLabel":"البحث العلمي","imageUrl":"/images/news/researches.jpeg"},
+        {"id":"clinical-training","title":"التدريب السريري","altText":"طلبة يشاركون في تدريب المحاكاة السريرية","dateLabel":"2026","categoryId":"clinics","categoryLabel":"المستشفى والعيادات","imageUrl":"/images/research-clinical-simulation.webp"},
+        {"id":"digital-dentistry","title":"أبحاث طب الأسنان الرقمي","altText":"معدات أبحاث طب الأسنان الرقمي","dateLabel":"2026","categoryId":"research","categoryLabel":"البحث العلمي","imageUrl":"/images/research-digital-dentistry.webp"},
+        {"id":"campus-hospital","title":"المرافق الطبية الجامعية","altText":"مرفق طبي تابع للجامعة السورية الخاصة","dateLabel":"2026","categoryId":"clinics","categoryLabel":"المستشفى والعيادات","imageUrl":"/images/campus-hospital.webp"},
+        {"id":"student-clubs","title":"الأندية الطلابية","altText":"طلبة يشاركون في أنشطة الأندية الجامعية","dateLabel":"2026","categoryId":"student-activities","categoryLabel":"الأنشطة الطلابية","imageUrl":"/images/campus-clubs.webp"},
+        {"id":"campus-event-one","title":"فعالية جامعية","altText":"طلبة يحضرون فعالية جامعية","dateLabel":"2026","categoryId":"events","categoryLabel":"الفعاليات","imageUrl":"/images/campus-feature-01.webp"},
+        {"id":"campus-event-two","title":"نشاط طلابي","altText":"نشاط طلابي في الجامعة السورية الخاصة","dateLabel":"2026","categoryId":"student-activities","categoryLabel":"الأنشطة الطلابية","imageUrl":"/images/campus-feature-02.webp"},
+        {"id":"admissions-campus","title":"اكتشف الجامعة","altText":"طلاب محتملون يزورون الحرم الجامعي","dateLabel":"2026","categoryId":"campus-life","categoryLabel":"الحياة الجامعية","imageUrl":"/images/admissions-hero-campus.webp"}
+      ]
+    }
+  }
+}

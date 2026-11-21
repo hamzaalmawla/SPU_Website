@@ -1,0 +1,1875 @@
+{
+  "source": "الخطة الدراسية: المقررات (Medicine, transcribed)",
+  "departments": [
+    {
+      "id": "medicine",
+      "nameEn": "Medicine",
+      "nameAr": "الطب البشري",
+      "summaryEn": "",
+      "summaryAr": "",
+      "totalCredits": 241,
+      "terms": [
+        {
+          "id": 1,
+          "labelEn": "1",
+          "labelAr": "1",
+          "courses": [
+            {
+              "id": "requ101",
+              "code": "REQU101",
+              "titleEn": "English Language (1)",
+              "titleAr": "اللغة الإنجليزية (1)",
+              "term": 1,
+              "type": "university",
+              "required": true,
+              "forced": false,
+              "credits": 2,
+              "prerequisites": [],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 2,
+                "practical": 0
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "requ103",
+              "code": "REQU103",
+              "titleEn": "Arabic Language",
+              "titleAr": "اللغة العربية",
+              "term": 1,
+              "type": "university",
+              "required": true,
+              "forced": false,
+              "credits": 2,
+              "prerequisites": [],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 2,
+                "practical": 0
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "requ102",
+              "code": "REQU102",
+              "titleEn": "Computer Skills",
+              "titleAr": "مهارات الحاسوب",
+              "term": 1,
+              "type": "university",
+              "required": true,
+              "forced": false,
+              "credits": 3,
+              "prerequisites": [],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 2,
+                "practical": 2
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "requ107",
+              "code": "REQU107",
+              "titleEn": "Second Foreign Language",
+              "titleAr": "لغة أجنبية حية (ثانية)",
+              "term": 1,
+              "type": "university",
+              "required": false,
+              "forced": false,
+              "credits": 2,
+              "prerequisites": [],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 2,
+                "practical": 0
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "requ106",
+              "code": "REQU106",
+              "titleEn": "Scientific Thinking",
+              "titleAr": "المنطق والتفكير العلمي",
+              "term": 1,
+              "type": "university",
+              "required": false,
+              "forced": false,
+              "credits": 2,
+              "prerequisites": [],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 2,
+                "practical": 0
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "requ108",
+              "code": "REQU108",
+              "titleEn": "Social Science",
+              "titleAr": "علم اجتماع",
+              "term": 1,
+              "type": "university",
+              "required": false,
+              "forced": false,
+              "credits": 2,
+              "prerequisites": [],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 2,
+                "practical": 0
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "requ109",
+              "code": "REQU109",
+              "titleEn": "Introduction to Law",
+              "titleAr": "مدخل إلى القانون",
+              "term": 1,
+              "type": "university",
+              "required": false,
+              "forced": false,
+              "credits": 2,
+              "prerequisites": [],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 2,
+                "practical": 0
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "requ110",
+              "code": "REQU110",
+              "titleEn": "Management Science",
+              "titleAr": "علم الإدارة",
+              "term": 1,
+              "type": "university",
+              "required": false,
+              "forced": false,
+              "credits": 2,
+              "prerequisites": [],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 2,
+                "practical": 0
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "requ111",
+              "code": "REQU111",
+              "titleEn": "Environment Science",
+              "titleAr": "علم البيئة",
+              "term": 1,
+              "type": "university",
+              "required": false,
+              "forced": false,
+              "credits": 2,
+              "prerequisites": [],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 2,
+                "practical": 0
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "mera101",
+              "code": "MERA101",
+              "titleEn": "Medical Physics",
+              "titleAr": "الفيزياء الطبية",
+              "term": 1,
+              "type": "faculty",
+              "required": true,
+              "forced": false,
+              "credits": 3,
+              "prerequisites": [],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 2,
+                "practical": 2
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "mean106",
+              "code": "MEAN106",
+              "titleEn": "Genetics",
+              "titleAr": "علم الوراثة",
+              "term": 1,
+              "type": "faculty",
+              "required": true,
+              "forced": false,
+              "credits": 2,
+              "prerequisites": [],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 2,
+                "practical": 0
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            }
+          ]
+        },
+        {
+          "id": 2,
+          "labelEn": "2",
+          "labelAr": "2",
+          "courses": [
+            {
+              "id": "requ204",
+              "code": "REQU204",
+              "titleEn": "English Language (2)",
+              "titleAr": "اللغة الإنجليزية (2)",
+              "term": 2,
+              "type": "university",
+              "required": true,
+              "forced": false,
+              "credits": 2,
+              "prerequisites": [
+                "requ101"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 2,
+                "practical": 0
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "mebc101",
+              "code": "MEBC101",
+              "titleEn": "General & Organic Chemistry",
+              "titleAr": "الكيمياء العامة والعضوية",
+              "term": 2,
+              "type": "faculty",
+              "required": true,
+              "forced": false,
+              "credits": 4,
+              "prerequisites": [],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 3,
+                "practical": 2
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "mebi101",
+              "code": "MEBI101",
+              "titleEn": "Biology & Cytology",
+              "titleAr": "علم الحياة والخلية",
+              "term": 2,
+              "type": "faculty",
+              "required": true,
+              "forced": false,
+              "credits": 4,
+              "prerequisites": [],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 3,
+                "practical": 2
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "meed101",
+              "code": "MEED101",
+              "titleEn": "Research Methodology & Evidence-Based Medicine",
+              "titleAr": "منهجية البحث والطب المسند بالدليل",
+              "term": 2,
+              "type": "faculty",
+              "required": true,
+              "forced": false,
+              "credits": 2,
+              "prerequisites": [],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 1,
+                "practical": 2
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "meed102",
+              "code": "MEED102",
+              "titleEn": "Communication Skills",
+              "titleAr": "مهارات التواصل",
+              "term": 2,
+              "type": "faculty",
+              "required": true,
+              "forced": false,
+              "credits": 2,
+              "prerequisites": [],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 2,
+                "practical": 0
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "meed103",
+              "code": "MEED103",
+              "titleEn": "Medicine History & Ethics",
+              "titleAr": "تاريخ الطب وآدابه",
+              "term": 2,
+              "type": "faculty",
+              "required": true,
+              "forced": false,
+              "credits": 2,
+              "prerequisites": [],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 2,
+                "practical": 0
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "meed108",
+              "code": "MEED108",
+              "titleEn": "Graduation Project",
+              "titleAr": "رسالة التخرج",
+              "term": 2,
+              "type": "faculty",
+              "required": true,
+              "forced": false,
+              "credits": 3,
+              "prerequisites": [],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 0,
+                "practical": 6
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "mecm104",
+              "code": "MECM104",
+              "titleEn": "Health Systems",
+              "titleAr": "النظم الصحية",
+              "term": 2,
+              "type": "faculty",
+              "required": false,
+              "forced": false,
+              "credits": 2,
+              "prerequisites": [],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 2,
+                "practical": 0
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "meed105",
+              "code": "MEED105",
+              "titleEn": "Behavioral Psychology",
+              "titleAr": "علم النفس السلوكي",
+              "term": 2,
+              "type": "faculty",
+              "required": false,
+              "forced": false,
+              "credits": 2,
+              "prerequisites": [],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 2,
+                "practical": 0
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            }
+          ]
+        },
+        {
+          "id": 3,
+          "labelEn": "3",
+          "labelAr": "3",
+          "courses": [
+            {
+              "id": "requ305",
+              "code": "REQU305",
+              "titleEn": "English Language (3)",
+              "titleAr": "اللغة الإنجليزية (3)",
+              "term": 3,
+              "type": "university",
+              "required": false,
+              "forced": false,
+              "credits": 2,
+              "prerequisites": [
+                "requ204"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 2,
+                "practical": 0
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "meed204",
+              "code": "MEED204",
+              "titleEn": "Medical Terminology",
+              "titleAr": "علم المصطلحات الطبية",
+              "term": 3,
+              "type": "faculty",
+              "required": false,
+              "forced": false,
+              "credits": 2,
+              "prerequisites": [
+                "requ204"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 2,
+                "practical": 0
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "meed207",
+              "code": "MEED207",
+              "titleEn": "Research Skills",
+              "titleAr": "مهارات بحثية",
+              "term": 3,
+              "type": "faculty",
+              "required": false,
+              "forced": false,
+              "credits": 2,
+              "prerequisites": [
+                "meed101"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 1,
+                "practical": 2
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "mean105",
+              "code": "MEAN105",
+              "titleEn": "Medical Embryology",
+              "titleAr": "علم الجنين الطبي",
+              "term": 3,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 3,
+              "prerequisites": [],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 2,
+                "practical": 2
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "mean101",
+              "code": "MEAN101",
+              "titleEn": "Anatomy (1)",
+              "titleAr": "التشريح (1)",
+              "term": 3,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 4,
+              "prerequisites": [],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 3,
+                "practical": 2
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "mebc202",
+              "code": "MEBC202",
+              "titleEn": "Medical Biochemistry (1)",
+              "titleAr": "الكيمياء الحيوية الطبية (1)",
+              "term": 3,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 5,
+              "prerequisites": [
+                "mebc101"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 4,
+                "practical": 2
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "meph101",
+              "code": "MEPH101",
+              "titleEn": "Physiology (1)",
+              "titleAr": "الفيزيولوجيا (1)",
+              "term": 3,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 4,
+              "prerequisites": [],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 3,
+                "practical": 2
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "mecm101",
+              "code": "MECM101",
+              "titleEn": "Public & Occupational Health",
+              "titleAr": "الصحة العامة والمهنية",
+              "term": 3,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 3,
+              "prerequisites": [],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 2,
+                "practical": 2
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            }
+          ]
+        },
+        {
+          "id": 4,
+          "labelEn": "4",
+          "labelAr": "4",
+          "courses": [
+            {
+              "id": "mean202",
+              "code": "MEAN202",
+              "titleEn": "Anatomy (2)",
+              "titleAr": "التشريح (2)",
+              "term": 4,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 4,
+              "prerequisites": [
+                "mean101"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 3,
+                "practical": 2
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "mebc303",
+              "code": "MEBC303",
+              "titleEn": "Medical Biochemistry (2)",
+              "titleAr": "الكيمياء الحيوية الطبية (2)",
+              "term": 4,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 5,
+              "prerequisites": [
+                "mebc202"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 4,
+                "practical": 2
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "meph202",
+              "code": "MEPH202",
+              "titleEn": "Physiology (2)",
+              "titleAr": "الفيزيولوجيا (2)",
+              "term": 4,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 5,
+              "prerequisites": [
+                "meph101"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 4,
+                "practical": 2
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "mepa201",
+              "code": "MEPA201",
+              "titleEn": "Histology (1)",
+              "titleAr": "علم الأنسجة (1)",
+              "term": 4,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 4,
+              "prerequisites": [
+                "mebi101"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 3,
+                "practical": 2
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "mebi202",
+              "code": "MEBI202",
+              "titleEn": "Microbiology (1)",
+              "titleAr": "الأحياء الدقيقة (1)",
+              "term": 4,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 4,
+              "prerequisites": [
+                "mebi101"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 3,
+                "practical": 2
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "mecm102",
+              "code": "MECM102",
+              "titleEn": "Epidemiology & Biostatistics",
+              "titleAr": "الوبائيات والإحصاء الحيوي",
+              "term": 4,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 3,
+              "prerequisites": [],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 2,
+                "practical": 2
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            }
+          ]
+        },
+        {
+          "id": 5,
+          "labelEn": "5",
+          "labelAr": "5",
+          "courses": [
+            {
+              "id": "mebc405",
+              "code": "MEBC405",
+              "titleEn": "Genetic Engineering: Principles & Applications",
+              "titleAr": "الهندسة الوراثية: مبادئ وتطبيقات",
+              "term": 5,
+              "type": "faculty",
+              "required": false,
+              "forced": false,
+              "credits": 2,
+              "prerequisites": [
+                "mean106",
+                "mebc303"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 2,
+                "practical": 0
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "mean303",
+              "code": "MEAN303",
+              "titleEn": "Anatomy (3)",
+              "titleAr": "التشريح (3)",
+              "term": 5,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 4,
+              "prerequisites": [
+                "mean202",
+                "mean105"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 3,
+                "practical": 2
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "mebc404",
+              "code": "MEBC404",
+              "titleEn": "Clinical Biochemistry",
+              "titleAr": "الكيمياء السريرية",
+              "term": 5,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 2,
+              "prerequisites": [
+                "mebc303"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 2,
+                "practical": 0
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "meph303",
+              "code": "MEPH303",
+              "titleEn": "Physiology (3)",
+              "titleAr": "الفيزيولوجيا (3)",
+              "term": 5,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 5,
+              "prerequisites": [
+                "meph202"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 4,
+                "practical": 2
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "mepa302",
+              "code": "MEPA302",
+              "titleEn": "Histology (2)",
+              "titleAr": "علم الأنسجة (2)",
+              "term": 5,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 4,
+              "prerequisites": [
+                "mepa201"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 3,
+                "practical": 2
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "mebi303",
+              "code": "MEBI303",
+              "titleEn": "Microbiology (Parasitology) (2)",
+              "titleAr": "الأحياء الدقيقة (2)",
+              "term": 5,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 4,
+              "prerequisites": [
+                "mebi202"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 3,
+                "practical": 2
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "mebi304",
+              "code": "MEBI304",
+              "titleEn": "Immunology",
+              "titleAr": "علم المناعة",
+              "term": 5,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 2,
+              "prerequisites": [
+                "mebi202"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 2,
+                "practical": 0
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            }
+          ]
+        },
+        {
+          "id": 6,
+          "labelEn": "6",
+          "labelAr": "6",
+          "courses": [
+            {
+              "id": "mean404",
+              "code": "MEAN404",
+              "titleEn": "Anatomy (4)",
+              "titleAr": "التشريح (4)",
+              "term": 6,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 4,
+              "prerequisites": [
+                "mean303"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 3,
+                "practical": 2
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "meph404",
+              "code": "MEPH404",
+              "titleEn": "Pharmacology (1) (General)",
+              "titleAr": "علم الأدوية (1) (العام)",
+              "term": 6,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 4,
+              "prerequisites": [
+                "meph303",
+                "mepa302"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 3,
+                "practical": 2
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "mepa403",
+              "code": "MEPA403",
+              "titleEn": "Pathology (1) (General)",
+              "titleAr": "علم الأمراض (1) (العام)",
+              "term": 6,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 4,
+              "prerequisites": [
+                "meph303",
+                "mepa302"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 3,
+                "practical": 2
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "mecm103",
+              "code": "MECM103",
+              "titleEn": "Preventive & Family Medicine",
+              "titleAr": "الطب الوقائي وطب الأسرة",
+              "term": 6,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 3,
+              "prerequisites": [],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 2,
+                "practical": 40
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "meim407",
+              "code": "MEIM407",
+              "titleEn": "Psychiatry",
+              "titleAr": "الطب النفسي",
+              "term": 6,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 3,
+              "prerequisites": [
+                "mean303"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 2,
+                "practical": 40
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "mera402",
+              "code": "MERA402",
+              "titleEn": "Radiology & Radiotherapy",
+              "titleAr": "الأشعة والمعالجة الشعاعية",
+              "term": 6,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 3,
+              "prerequisites": [
+                "mean303"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 2,
+                "practical": 40
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "mesr406",
+              "code": "MESR406",
+              "titleEn": "Ophthalmology",
+              "titleAr": "أمراض العين وجراحتها",
+              "term": 6,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 3,
+              "prerequisites": [
+                "mean303"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 2,
+                "practical": 40
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            }
+          ]
+        },
+        {
+          "id": 7,
+          "labelEn": "7",
+          "labelAr": "7",
+          "courses": [
+            {
+              "id": "meed506",
+              "code": "MEED506",
+              "titleEn": "Alternative Medicine",
+              "titleAr": "الطب البديل",
+              "term": 7,
+              "type": "faculty",
+              "required": false,
+              "forced": false,
+              "credits": 2,
+              "prerequisites": [
+                "meph404"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 2,
+                "practical": 0
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "meph505",
+              "code": "MEPH505",
+              "titleEn": "Pharmacology (2) (Special)",
+              "titleAr": "علم الأدوية (2) (الخاص)",
+              "term": 7,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 4,
+              "prerequisites": [
+                "meph404"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 3,
+                "practical": 2
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "mepa504",
+              "code": "MEPA504",
+              "titleEn": "Pathology (2) (Special)",
+              "titleAr": "علم الأمراض (2) (الخاص)",
+              "term": 7,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 4,
+              "prerequisites": [
+                "mepa403"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 3,
+                "practical": 2
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "meim501",
+              "code": "MEIM501",
+              "titleEn": "Internal Medicine (1) (Symptoms & Diagnosis)",
+              "titleAr": "الطب الباطني (1) (الأعراض والتشخيص)",
+              "term": 7,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 2,
+              "prerequisites": [
+                "mean404",
+                "meph303"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 2,
+                "practical": 0
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "mesr501",
+              "code": "MESR501",
+              "titleEn": "Surgery (1) (Minor Surgery)",
+              "titleAr": "الجراحة (1) (جراحة صغرى)",
+              "term": 7,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 3,
+              "prerequisites": [
+                "mean404"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 2,
+                "practical": 2
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "mesr407",
+              "code": "MESR407",
+              "titleEn": "Emergency, Anesthesia & IC",
+              "titleAr": "الطوارئ والتخدير والإنعاش",
+              "term": 7,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 4.5,
+              "prerequisites": [
+                "meph303"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 3,
+                "practical": 60
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "mesr408",
+              "code": "MESR408",
+              "titleEn": "Otorhinolaryngology",
+              "titleAr": "أمراض الأذن والأنف والحنجرة",
+              "term": 7,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 3,
+              "prerequisites": [
+                "mean303"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 2,
+                "practical": 40
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            }
+          ]
+        },
+        {
+          "id": 8,
+          "labelEn": "8",
+          "labelAr": "8",
+          "courses": [
+            {
+              "id": "mepa605",
+              "code": "MEPA605",
+              "titleEn": "Forensic Medicine & Toxicology",
+              "titleAr": "الطب الشرعي وعلم السموم",
+              "term": 8,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 3,
+              "prerequisites": [
+                "mepa504"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 2,
+                "practical": 2
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "meim602",
+              "code": "MEIM602",
+              "titleEn": "Internal Medicine (2)",
+              "titleAr": "الطب الباطني (2)",
+              "term": 8,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 6,
+              "prerequisites": [
+                "meim501",
+                "meph505",
+                "meed102",
+                "mepa504"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 4,
+                "practical": 80
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "meim603",
+              "code": "MEIM603",
+              "titleEn": "Internal Medicine (3)",
+              "titleAr": "الطب الباطني (3)",
+              "term": 8,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 6,
+              "prerequisites": [
+                "meim501",
+                "meph505",
+                "meed102",
+                "mepa504"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 4,
+                "practical": 80
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "meim604",
+              "code": "MEIM604",
+              "titleEn": "Internal Medicine (4)",
+              "titleAr": "الطب الباطني (4)",
+              "term": 8,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 6,
+              "prerequisites": [
+                "meim501",
+                "meph505",
+                "meed102",
+                "mepa504"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 4,
+                "practical": 80
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "meim608",
+              "code": "MEIM608",
+              "titleEn": "Dermatology & Venereal Diseases",
+              "titleAr": "أمراض الجلد والأمراض المنتقلة بالجنس",
+              "term": 8,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 3,
+              "prerequisites": [
+                "mepa504"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 2,
+                "practical": 40
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            }
+          ]
+        },
+        {
+          "id": 9,
+          "labelEn": "9",
+          "labelAr": "9",
+          "courses": [
+            {
+              "id": "meim605",
+              "code": "MEIM605",
+              "titleEn": "Internal Medicine (5)",
+              "titleAr": "الطب الباطني (5)",
+              "term": 9,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 6,
+              "prerequisites": [
+                "meim501",
+                "meph505",
+                "meed102",
+                "mepa504"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 4,
+                "practical": 80
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "meim606",
+              "code": "MEIM606",
+              "titleEn": "Internal Medicine (6)",
+              "titleAr": "الطب الباطني (6)",
+              "term": 9,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 6,
+              "prerequisites": [
+                "meim501",
+                "meph505",
+                "meed102",
+                "mepa504"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 4,
+                "practical": 80
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "mepd601",
+              "code": "MEPD601",
+              "titleEn": "Pediatrics (1)",
+              "titleAr": "أمراض الأطفال (1)",
+              "term": 9,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 4.5,
+              "prerequisites": [
+                "meim501",
+                "meph505",
+                "meed102",
+                "mepa504"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 3,
+                "practical": 60
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "mego601",
+              "code": "MEGO601",
+              "titleEn": "Obstetrics",
+              "titleAr": "طب التوليد",
+              "term": 9,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 4.5,
+              "prerequisites": [
+                "meim501",
+                "meph505",
+                "meed102",
+                "mepa504"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 3,
+                "practical": 60
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            }
+          ]
+        },
+        {
+          "id": 10,
+          "labelEn": "10",
+          "labelAr": "10",
+          "courses": [
+            {
+              "id": "mepd702",
+              "code": "MEPD702",
+              "titleEn": "Pediatrics (2)",
+              "titleAr": "أمراض الأطفال (2)",
+              "term": 10,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 5,
+              "prerequisites": [
+                "mepd601"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 3,
+                "practical": 80
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "mego702",
+              "code": "MEGO702",
+              "titleEn": "Gynecology",
+              "titleAr": "أمراض النساء",
+              "term": 10,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 4.5,
+              "prerequisites": [
+                "mego601"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 3,
+                "practical": 60
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "mesr602",
+              "code": "MESR602",
+              "titleEn": "Surgery (2)",
+              "titleAr": "الجراحة (2)",
+              "term": 10,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 6,
+              "prerequisites": [
+                "mesr501"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 4,
+                "practical": 80
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "mesr603",
+              "code": "MESR603",
+              "titleEn": "Surgery (3)",
+              "titleAr": "الجراحة (3)",
+              "term": 10,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 5,
+              "prerequisites": [
+                "mesr501"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 3,
+                "practical": 80
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "mesr605",
+              "code": "MESR605",
+              "titleEn": "Surgery (5)",
+              "titleAr": "الجراحة (5)",
+              "term": 10,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 6,
+              "prerequisites": [
+                "mesr501"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 4,
+                "practical": 80
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            }
+          ]
+        },
+        {
+          "id": 11,
+          "labelEn": "11",
+          "labelAr": "11",
+          "courses": [
+            {
+              "id": "mesr804",
+              "code": "MESR804",
+              "titleEn": "Surgery (4)",
+              "titleAr": "الجراحة (4)",
+              "term": 11,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 5,
+              "prerequisites": [
+                "mesr501",
+                "mepd702"
+              ],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 3,
+                "practical": 80
+              },
+              "descriptionEn": "",
+              "descriptionAr": "",
+              "lessons": []
+            },
+            {
+              "id": "meim809",
+              "code": "MEIM809",
+              "titleEn": "Internal Medicine",
+              "titleAr": "الطب الباطني",
+              "term": 11,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 6,
+              "prerequisites": [],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 0,
+                "practical": 240
+              },
+              "descriptionEn": "Requires passing all compulsory and elective courses of years 1 to 5 except the graduation project.",
+              "descriptionAr": "يتطلب اجتياز جميع مقررات السنوات الأولى إلى الخامسة، الإلزامية والاختيارية، عدا رسالة التخرج.",
+              "lessons": []
+            },
+            {
+              "id": "mesr809",
+              "code": "MESR809",
+              "titleEn": "Surgery",
+              "titleAr": "الجراحة",
+              "term": 11,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 5,
+              "prerequisites": [],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 0,
+                "practical": 200
+              },
+              "descriptionEn": "Requires passing all compulsory and elective courses of years 1 to 5 except the graduation project.",
+              "descriptionAr": "يتطلب اجتياز جميع مقررات السنوات الأولى إلى الخامسة، الإلزامية والاختيارية، عدا رسالة التخرج.",
+              "lessons": []
+            }
+          ]
+        },
+        {
+          "id": 12,
+          "labelEn": "12",
+          "labelAr": "12",
+          "courses": [
+            {
+              "id": "mepd803",
+              "code": "MEPD803",
+              "titleEn": "Pediatrics",
+              "titleAr": "أمراض الأطفال",
+              "term": 12,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 4,
+              "prerequisites": [],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 0,
+                "practical": 160
+              },
+              "descriptionEn": "Requires passing all compulsory and elective courses of years 1 to 5 except the graduation project.",
+              "descriptionAr": "يتطلب اجتياز جميع مقررات السنوات الأولى إلى الخامسة، الإلزامية والاختيارية، عدا رسالة التخرج.",
+              "lessons": []
+            },
+            {
+              "id": "mego803",
+              "code": "MEGO803",
+              "titleEn": "Gynecology & Obstetrics",
+              "titleAr": "طب التوليد وأمراض النساء",
+              "term": 12,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 4,
+              "prerequisites": [],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 0,
+                "practical": 160
+              },
+              "descriptionEn": "Requires passing all compulsory and elective courses of years 1 to 5 except the graduation project.",
+              "descriptionAr": "يتطلب اجتياز جميع مقررات السنوات الأولى إلى الخامسة، الإلزامية والاختيارية، عدا رسالة التخرج.",
+              "lessons": []
+            },
+            {
+              "id": "meim810",
+              "code": "MEIM810",
+              "titleEn": "Dermatology",
+              "titleAr": "الأمراض الجلدية",
+              "term": 12,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 1,
+              "prerequisites": [],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 0,
+                "practical": 40
+              },
+              "descriptionEn": "Requires passing all compulsory and elective courses of years 1 to 5 except the graduation project.",
+              "descriptionAr": "يتطلب اجتياز جميع مقررات السنوات الأولى إلى الخامسة، الإلزامية والاختيارية، عدا رسالة التخرج.",
+              "lessons": []
+            },
+            {
+              "id": "mesr510",
+              "code": "MESR510",
+              "titleEn": "Ophthalmology",
+              "titleAr": "أمراض العين وجراحتها",
+              "term": 12,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 1,
+              "prerequisites": [],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 0,
+                "practical": 40
+              },
+              "descriptionEn": "Requires passing all compulsory and elective courses of years 1 to 5 except the graduation project.",
+              "descriptionAr": "يتطلب اجتياز جميع مقررات السنوات الأولى إلى الخامسة، الإلزامية والاختيارية، عدا رسالة التخرج.",
+              "lessons": []
+            },
+            {
+              "id": "mecm804",
+              "code": "MECM804",
+              "titleEn": "Primary Health Care",
+              "titleAr": "الرعاية الصحية الأولية",
+              "term": 12,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 1,
+              "prerequisites": [],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 0,
+                "practical": 40
+              },
+              "descriptionEn": "Requires passing all compulsory and elective courses of years 1 to 5 except the graduation project.",
+              "descriptionAr": "يتطلب اجتياز جميع مقررات السنوات الأولى إلى الخامسة، الإلزامية والاختيارية، عدا رسالة التخرج.",
+              "lessons": []
+            },
+            {
+              "id": "mesr811",
+              "code": "MESR811",
+              "titleEn": "Otorhinolaryngology",
+              "titleAr": "أمراض الأنف والأذن والحنجرة وجراحتها",
+              "term": 12,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 1,
+              "prerequisites": [],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 0,
+                "practical": 40
+              },
+              "descriptionEn": "Requires passing all compulsory and elective courses of years 1 to 5 except the graduation project.",
+              "descriptionAr": "يتطلب اجتياز جميع مقررات السنوات الأولى إلى الخامسة، الإلزامية والاختيارية، عدا رسالة التخرج.",
+              "lessons": []
+            },
+            {
+              "id": "mesr812",
+              "code": "MESR812",
+              "titleEn": "Emergency, Anesthesia & Intensive Care",
+              "titleAr": "طب الطوارئ والتخدير والإنعاش",
+              "term": 12,
+              "type": "specialization",
+              "required": true,
+              "forced": false,
+              "credits": 1,
+              "prerequisites": [],
+              "prerequisiteCredits": 0,
+              "instructor": null,
+              "hours": {
+                "theory": 0,
+                "practical": 40
+              },
+              "descriptionEn": "Requires passing all compulsory and elective courses of years 1 to 5 except the graduation project.",
+              "descriptionAr": "يتطلب اجتياز جميع مقررات السنوات الأولى إلى الخامسة، الإلزامية والاختيارية، عدا رسالة التخرج.",
+              "lessons": []
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

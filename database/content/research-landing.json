@@ -1,0 +1,166 @@
+{
+  "translations": {
+    "ar": {
+      "hero": {
+        "eyebrow": "البحث العلمي في الجامعة السورية الخاصة",
+        "title": "أبحاث من دمشق، منشورة عالمياً",
+        "summary": "253 منشوراً بحثياً لـ 270 باحثاً، من الطب السريري والجراحة إلى هندسة البترول، صدرت في مجلات دولية بين عامي 1996 و2019. الأرشيف الكامل متاح للاطلاع هنا.",
+        "backgroundImage": "/images/uni-main-place.JPG",
+        "cta1": "تصفح المنشورات",
+        "cta1Url": "/ar/research/publications",
+        "cta2": "ابحث عن باحث",
+        "cta2Url": "/ar/research/researchers"
+      },
+      "stats": [
+        {
+          "value": "253",
+          "label": "منشور بحثي في الأرشيف"
+        },
+        {
+          "value": "270",
+          "label": "باحثاً"
+        },
+        {
+          "value": "1996–2019",
+          "label": "سنوات النشر"
+        },
+        {
+          "counter": "projects",
+          "value": "",
+          "label": "مشاريع البحث"
+        }
+      ],
+      "latestResearch": {
+        "sectionTitle": "أحدث الأبحاث"
+      },
+      "gateway": {
+        "sectionTitle": "من أين تبدأ",
+        "cards": [
+          {
+            "number": "01",
+            "title": "المنشورات البحثية",
+            "summary": "الأرشيف الكامل، مع تصفية حسب الكلية والنوع والسنة.",
+            "cta": "تصفح الأرشيف",
+            "url": "/ar/research/publications"
+          },
+          {
+            "number": "02",
+            "title": "مراكز البحث",
+            "summary": "مراكز البحث والمخابر المتخصصة في كليات الجامعة، مع مشاريعها وباحثيها.",
+            "cta": "تعرّف على المراكز",
+            "url": "/ar/research/centers"
+          },
+          {
+            "number": "03",
+            "title": "المؤتمرات والندوات",
+            "summary": "الفعاليات العلمية القادمة والتسجيل فيها، ووقائع المؤتمرات السابقة.",
+            "cta": "اطّلع على المؤتمرات",
+            "url": "/ar/research/conferences"
+          },
+          {
+            "number": "04",
+            "title": "مكتب البحث",
+            "summary": "دعم المنح والمراجعة الأخلاقية والنشر، والتدريب على منهجيات البحث.",
+            "cta": "تعرّف على المكتب",
+            "url": "/ar/research/office"
+          },
+          {
+            "number": "05",
+            "title": "الباحث عن الخبراء",
+            "summary": "اعثر على المختص المناسب حسب مجال الخبرة.",
+            "cta": "ابحث عن خبير",
+            "url": "/ar/research/expert-finder"
+          },
+          {
+            "number": "06",
+            "title": "مكتبة البحث",
+            "summary": "قواعد البيانات الأكاديمية والموارد الإلكترونية، وقواعد الاستعارة.",
+            "cta": "تصفح المكتبة",
+            "url": "/ar/research/library"
+          }
+        ]
+      }
+    },
+    "en": {
+      "hero": {
+        "eyebrow": "Research at the Syrian Private University",
+        "title": "Research from Damascus, published worldwide",
+        "summary": "253 publications by 270 researchers, from clinical medicine and surgery to petroleum engineering, appearing in international journals from 1996 to 2019. The full archive is open to read here.",
+        "backgroundImage": "/images/uni-main-place.JPG",
+        "cta1": "Browse publications",
+        "cta1Url": "/en/research/publications",
+        "cta2": "Find a researcher",
+        "cta2Url": "/en/research/researchers"
+      },
+      "stats": [
+        {
+          "value": "253",
+          "label": "Publications in the archive"
+        },
+        {
+          "value": "270",
+          "label": "Researchers"
+        },
+        {
+          "value": "1996–2019",
+          "label": "Years covered"
+        },
+        {
+          "counter": "projects",
+          "value": "",
+          "label": "Research projects"
+        }
+      ],
+      "latestResearch": {
+        "sectionTitle": "Latest research"
+      },
+      "gateway": {
+        "sectionTitle": "Where to start",
+        "cards": [
+          {
+            "number": "01",
+            "title": "Publications",
+            "summary": "The full archive, filterable by faculty, type and year.",
+            "cta": "Browse the archive",
+            "url": "/en/research/publications"
+          },
+          {
+            "number": "02",
+            "title": "Research centers",
+            "summary": "Specialized research centers and laboratories across the faculties, with their projects and researchers.",
+            "cta": "Explore the centers",
+            "url": "/en/research/centers"
+          },
+          {
+            "number": "03",
+            "title": "Conferences and seminars",
+            "summary": "Upcoming scientific events and how to register, and the proceedings of past conferences.",
+            "cta": "See the conferences",
+            "url": "/en/research/conferences"
+          },
+          {
+            "number": "04",
+            "title": "Research office",
+            "summary": "Grant support, ethical review, publishing guidance and training in research methods.",
+            "cta": "Visit the office",
+            "url": "/en/research/office"
+          },
+          {
+            "number": "05",
+            "title": "Expert Finder",
+            "summary": "Find the right specialist by field of expertise.",
+            "cta": "Find an expert",
+            "url": "/en/research/expert-finder"
+          },
+          {
+            "number": "06",
+            "title": "Research library",
+            "summary": "Academic databases, electronic resources and borrowing rules.",
+            "cta": "Browse the library",
+            "url": "/en/research/library"
+          }
+        ]
+      }
+    }
+  }
+}

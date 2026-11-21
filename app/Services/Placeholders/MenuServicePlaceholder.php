@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace App\Services\Placeholders;
 
-use App\Contracts\MenuServiceInterface;
-use App\DTOs\MenuItemDataDTO;
-use App\DTOs\MenuItemDTO;
-use App\DTOs\MenuTreeNodeDTO;
-use App\DTOs\NavigationTreeDTO;
+use App\Contracts\Navigation\MenuServiceInterface;
+use App\DTOs\Navigation\MenuItemDataDTO;
+use App\DTOs\Navigation\MenuItemDTO;
+use App\DTOs\Navigation\MenuTreeNodeDTO;
+use App\DTOs\Navigation\NavigationTreeDTO;
 use BadMethodCallException;
 
 /**
@@ -44,7 +44,12 @@ final class MenuServicePlaceholder implements MenuServiceInterface
         throw new BadMethodCallException(__METHOD__.' is not implemented.');
     }
 
-    public function getPrimaryTree(string $locale, ?string $currentPath = null): NavigationTreeDTO
+    public function getHeaderTree(string $locale, ?string $currentPath = null): NavigationTreeDTO
+    {
+        throw new BadMethodCallException(__METHOD__.' is not implemented.');
+    }
+
+    public function getFooterTree(string $locale, ?string $currentPath = null): NavigationTreeDTO
     {
         throw new BadMethodCallException(__METHOD__.' is not implemented.');
     }

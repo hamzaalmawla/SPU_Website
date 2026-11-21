@@ -1,0 +1,339 @@
+{
+  "source": "Old site spu.edu.sy, About menu (jx_categories 322, 23, 22, 5796, 5794, 5797, 5798). Arabic is the old text verbatim; the old site had no English for these pages, so the English is a faithful translation.",
+  "targets": {
+    "about.history": {
+      "ar": {
+        "title": "تأسيس الجامعة",
+        "headline": "تأسيس الجامعة",
+        "summary": "أُحدثت الجامعة بموجب المرسوم الجمهوري رقم 339 تاريخ 7/8/2005، وهي عضو في اتحاد الجامعات العربية.",
+        "seoTitle": "تأسيس الجامعة",
+        "seoDescription": "أُحدثت الجامعة السورية الخاصة بموجب المرسوم الجمهوري رقم 339 تاريخ 7/8/2005، وخرّجت الدفعة الأولى من طلابها في العام 2009.",
+        "sections": {
+          "foundingTitle": "تأسيس الجامعة",
+          "quote": "تتطلع الجامعة وهي عضو في اتحاد الجامعات العربية، إلى أن تكون مركزاً علمياً فاعلاً ومتميزاً محلياً وإقليمياً وعالمياً.",
+          "body": [
+            "أُحدثت الجامعة السورية الدولية الخاصة للعلوم والتكنولوجيا بموجب المرسوم الجمهوري رقم 339 تاريخ 7/8/2005، وتم تعديل اسمها لاحقاً ليصبح الجامعة السورية الخاصة وذلك بموجب المرسوم الجمهوري رقم 343 تاريخ 24/9/2012.",
+            "تعد الجامعة السورية الخاصة مشروعاً علمياً وثقافياً وتنموياً هاماً يهدف إلى دعم وتطوير التعليم العالي في الجمهورية العربية السورية وذلك من خلال المناهج والبرامج التعليمية والتدريبية التي تعتمدها والكادر التدريسي المتميز لديها والمؤلف من أساتذة مختصين من خريجي الجامعات العريقة العربية والدولية في مختلف الاختصاصات الطبية والهندسية والإدارية.",
+            "كما تعمل من خلال الاتفاقيات التي تعقدها مع جامعات مرموقة إلى تفعيل التعاون العلمي والتبادل الثقافي مع تلك المؤسسات التعليمية المتميزة بهدف رفع سوية التعليم لدى طلابها وتقديم كل ما من شأنه أن يدعم تحصيلهم العلمي."
+          ],
+          "timelineTitle": "محطات التأسيس",
+          "timeline": [
+            {"year": "2005", "title": "إحداث الجامعة", "body": "أُحدثت الجامعة السورية الدولية الخاصة للعلوم والتكنولوجيا بموجب المرسوم الجمهوري رقم 339 تاريخ 7/8/2005."},
+            {"year": "2009", "title": "تخريج الدفعة الأولى", "body": "خرّجت الجامعة السورية الخاصة الدفعة الأولى من طلابها في العام 2009."},
+            {"year": "2012", "title": "الجامعة السورية الخاصة", "body": "تم تعديل اسم الجامعة ليصبح الجامعة السورية الخاصة بموجب المرسوم الجمهوري رقم 343 تاريخ 24/9/2012."}
+          ],
+          "narratives": [],
+          "legacyTitle": "خريجونا",
+          "legacyBody": "خرّجت الجامعة السورية الخاصة الدفعة الأولى من طلابها في العام 2009 ولا تزال سنوياً ترفد المجتمع بأفواج من الخريجين الاختصاصيين المؤهلين لخوض منافسة سوق العمل لا بل تحقيق التميز فيه."
+        }
+      },
+      "en": {
+        "title": "Founding of the University",
+        "headline": "Founding of the University",
+        "summary": "The university was established by Presidential Decree No. 339 of 7/8/2005 and is a member of the Association of Arab Universities.",
+        "seoTitle": "Founding of the University",
+        "seoDescription": "Syrian Private University was established by Presidential Decree No. 339 of 7/8/2005 and graduated its first class in 2009.",
+        "sections": {
+          "foundingTitle": "Founding of the University",
+          "quote": "A member of the Association of Arab Universities, the university aspires to be an effective and distinguished scientific centre locally, regionally and internationally.",
+          "body": [
+            "The Syrian International Private University for Science and Technology was established by Presidential Decree No. 339 of 7/8/2005. Its name was later changed to the Syrian Private University by Presidential Decree No. 343 of 24/9/2012.",
+            "The Syrian Private University is an important scientific, cultural and developmental project that aims to support and develop higher education in the Syrian Arab Republic through the curricula and the educational and training programmes it adopts, and through its distinguished teaching staff of specialist professors who graduated from long-established Arab and international universities in the medical, engineering and administrative disciplines.",
+            "Through the agreements it concludes with prestigious universities, it also works to activate scientific cooperation and cultural exchange with these distinguished institutions, in order to raise the standard of education of its students and provide everything that supports their academic achievement."
+          ],
+          "timelineTitle": "Founding Milestones",
+          "timeline": [
+            {"year": "2005", "title": "The university is established", "body": "The Syrian International Private University for Science and Technology was established by Presidential Decree No. 339 of 7/8/2005."},
+            {"year": "2009", "title": "First graduating class", "body": "The Syrian Private University graduated its first class of students in 2009."},
+            {"year": "2012", "title": "Syrian Private University", "body": "The university's name was changed to the Syrian Private University by Presidential Decree No. 343 of 24/9/2012."}
+          ],
+          "narratives": [],
+          "legacyTitle": "Our Graduates",
+          "legacyBody": "The Syrian Private University graduated its first class in 2009, and every year since it has provided society with classes of specialist graduates qualified to compete in the labour market, and indeed to excel in it."
+        }
+      }
+    },
+    "about.vision-mission": {
+      "ar": {
+        "title": "رؤية الجامعة وأهدافها",
+        "headline": "رؤية الجامعة وأهدافها",
+        "summary": "برؤيتها الجديدة، تنطلق الجامعة السورية الخاصة بخطى واثقة، نحو مستقبل ترتسم معالمه الأساسية في إتاحة اختصاصات علمية وتقنية حديثة تواكب تطور المجتمع الاقتصادي والاجتماعي وتتطلع لتلبية احتياجات سوق العمل فيه من خلال الاعتماد على أحدث المناهج العلمية والبرامج التعليمية، لتمنح طلابها وخريجيها مفاتيح أبواب النجاح لمستقبل حياتهم المهنية.",
+        "seoTitle": "رؤية الجامعة وأهدافها",
+        "seoDescription": "أن تكون الجامعة السورية الخاصة مؤسسة تعليمية وبحثية رائدة على المستويين المحلي والدولي، داعمة للابتكار والإبداع.",
+        "sections": {
+          "cardsTitle": "الرؤية والرسالة",
+          "cards": [
+            {"icon": "/images/icon-search-outline.svg", "title": "الرؤية", "body": "أن تكون الجامعة السورية الخاصة مؤسسة تعليمية وبحثية رائدة على المستويين المحلي والدولي، داعمة للابتكار والإبداع، ورائدة في تحقيق الأثر التنموي المستدام للتعليم والبحث العلمي وخدمة المجتمع."},
+            {"icon": "/images/icon-award-outline.svg", "title": "الرسالة", "body": "تقديم تعليم جامعي متميز وبرامج أكاديمية معتمدة محلياً ودولياً، لإعداد قادة ومختصين مؤهلين للمنافسة والإبداع، وتعزيز البحث العلمي التطبيقي، ودعم الريادة والابتكار من خلال بيئة تعليمية رقمية متطورة وشراكات دولية فعّالة، بما يسهم في تحقيق التنمية المستدامة وصناعة أثر مجتمعي راسخ."}
+          ],
+          "pillarsTitle": "الأهداف",
+          "pillars": [
+            {"title": "1", "summary": "اعتماد مناهج دراسية متطورة بما يؤمن مواكبة التطورات العلمية المتجددة، ورفدها بالمخابر اللازمة وأعضاء هيئة تدريسية متميزين."},
+            {"title": "2", "summary": "تنشيط البحث العلمي والدراسات التي تساهم في التقدم العلمي والتقاني وتأمين المقومات اللازمة لذلك."},
+            {"title": "3", "summary": "تعزيز شخصية الطالب علمياً وتربوياً وثقافياً وتنمية حبه للعلم والبحث العلمي والعمل الجماعي، وتشجيع التفوق والإبداع العلمي."},
+            {"title": "4", "summary": "إعداد المتميزين في مجالات اختصاصات كليات الجامعة وتأهيلهم وتزويدهم بمستوى عالٍ من المعارف والمهارات وتقويم مدى استيعابهم وتفهمهم وتطبيقهم لها من خلال نظام امتحانات مرشّد، وعلى نحو يقوي قدرتهم على المنافسة في سوق العمل."},
+            {"title": "5", "summary": "تشجيع النشاط الرياضي والفني والثقافي والاجتماعي بين الطلاب."},
+            {"title": "6", "summary": "تحقيق مستوى عالٍ من التفاعل بين الجامعة والمجتمع بفعالياته العلمية والتقنية والإدارية والاجتماعية والاقتصادية."},
+            {"title": "7", "summary": "ضمان الجودة في التعليم العالي، وفق معايير الجودة والاعتمادية المعتمدة من قبل الوزارة، وبالتعاون مع جامعات وخبرات أجنبية ذات سوية وسمعة مرموقتين."},
+            {"title": "8", "summary": "بناء جسر للتبادل والتعاون العلمي والثقافي مع الجامعات السورية، والعربية، والإقليمية والعالمية."}
+          ]
+        }
+      },
+      "en": {
+        "title": "University Vision and Objectives",
+        "headline": "University Vision and Objectives",
+        "summary": "With its new vision, the Syrian Private University moves forward with confident steps towards a future whose main features are modern scientific and technical specialisations that keep pace with the economic and social development of society and meet the needs of its labour market, relying on the latest curricula and educational programmes to give its students and graduates the keys to success in their professional lives.",
+        "seoTitle": "University Vision and Objectives",
+        "seoDescription": "For the Syrian Private University to be a leading educational and research institution locally and internationally, supporting innovation and creativity.",
+        "sections": {
+          "cardsTitle": "Vision and Mission",
+          "cards": [
+            {"icon": "/images/icon-search-outline.svg", "title": "Vision", "body": "For the Syrian Private University to be a leading educational and research institution at the local and international levels, supporting innovation and creativity, and leading in achieving the sustainable developmental impact of education, scientific research and community service."},
+            {"icon": "/images/icon-award-outline.svg", "title": "Mission", "body": "To provide distinguished university education and academic programmes accredited locally and internationally, preparing leaders and specialists qualified to compete and create; to strengthen applied scientific research; and to support entrepreneurship and innovation through an advanced digital learning environment and effective international partnerships, contributing to sustainable development and a lasting impact on society."}
+          ],
+          "pillarsTitle": "Objectives",
+          "pillars": [
+            {"title": "1", "summary": "Adopting advanced curricula that keep pace with continuous scientific developments, supported by the necessary laboratories and distinguished faculty members."},
+            {"title": "2", "summary": "Activating scientific research and studies that contribute to scientific and technological progress, and providing what they require."},
+            {"title": "3", "summary": "Strengthening the student's scientific, educational and cultural character, developing their love of knowledge, research and teamwork, and encouraging excellence and scientific creativity."},
+            {"title": "4", "summary": "Preparing outstanding graduates in the specialisations of the university's faculties, providing them with a high level of knowledge and skills, and assessing how well they understand and apply them through a well-guided examination system, in a way that strengthens their ability to compete in the labour market."},
+            {"title": "5", "summary": "Encouraging sports, artistic, cultural and social activity among students."},
+            {"title": "6", "summary": "Achieving a high level of interaction between the university and society in its scientific, technical, administrative, social and economic activities."},
+            {"title": "7", "summary": "Ensuring quality in higher education according to the quality and accreditation standards adopted by the Ministry, in cooperation with foreign universities and experts of high standing and reputation."},
+            {"title": "8", "summary": "Building a bridge of scientific and cultural exchange and cooperation with Syrian, Arab, regional and international universities."}
+          ]
+        }
+      }
+    },
+    "about.why-spu": {
+      "ar": {
+        "title": "مميزات الجامعة",
+        "headline": "مميزات الجامعة",
+        "summary": "ما يميز الجامعة السورية الخاصة في التعليم والبحث العلمي والتدريب والخدمات.",
+        "badge": "مميزات الجامعة",
+        "seoTitle": "مميزات الجامعة",
+        "seoDescription": "كادر تدريسي متميّز، ومناهج متطورة، واهتمام كبير بالبحث العلمي والتدريب العملي، ومشفى تعليمي وعيادات سنية متميزة.",
+        "intro": [],
+        "sections": [
+          {"title": "", "body": "كادر تدريسي متميّز يضم نخبة الأساتذة في الجمهورية العربية السورية من مختلف الاختصاصات الطبية والهندسية والإدارية."},
+          {"title": "", "body": "تعتمد الجامعة على مناهج وخطط دراسية متطورة وقابلة للتحديث المستمر لتواكب تطور الاحتياجات المتسارعة في سوق العمل."},
+          {"title": "", "body": "الاهتمام الكبير بالبحث العلمي في مختلف الاختصاصات وإعطاؤه أولوية كبيرة من خلال تشجيع الطلبة على إعداد ونشر البحوث العلمية في مجلات علمية محكّمة بإشراف أساتذة ومشرفين متميزين يمتلكون الخبرة الكبيرة في هذا المجال، حيث تسعى الجامعة لوضع البحث العلمي كأداة وطريقة للتفكير والعمل التي تساهم في التنمية والتطوير على صعيد الجامعة والمجتمع ككل."},
+          {"title": "", "body": "اعتماد أساليب تدريس حديثة ومتطورة تعتمد على إشراك الطالب في العملية التعليمية والبحثية والابتعاد عن أسلوب التلقين."},
+          {"title": "", "body": "تهيئة البيئة التعليمية التنافسية التي تشجع الطلبة على الإقبال على العلم والمعرفة من خلال إعطاء حسومات مالية كبيرة للطلبة المتفوقين والتي تصل إلى 100% للطالب الأول على الدفعة في نهاية كل فصل دراسي."},
+          {"title": "", "body": "التركيز على جودة العملية التعليمية من خلال تأمين كل المستلزمات المطلوبة والمتابعة الدائمة لحسن سير العملية التعليمية في كل وظائفها."},
+          {"title": "", "body": "إيفاد الطلبة إلى جامعات أجنبية مرموقة بشكل مستمر لحضور المؤتمرات وورشات العمل واكتساب الخبرة، من خلال اتفاقيات التعاون العلمي الموقّعة مع هذه الجامعات والتي تقدم التسهيلات للطلبة لمتابعة دراساتهم العليا فيها."},
+          {"title": "", "body": "تأمين فرص تدريب للطلبة في مختلف التخصصات خلال فترة دراستهم والتي تعمل على تعزيز الجانب العملي والتطبيقي لدى الطلبة ودمجهم في سوق العمل للتعرف على آليات العمل المتبعة وربط المعارف النظرية بتطبيقاتها العملية."},
+          {"title": "", "body": "العمل على تأمين فرص عمل للخريجين وخصوصاً المتميزين منهم، وذلك من خلال العلاقات المتميزة للجامعة مع مختلف المؤسسات والشركات في سوق العمل السوري."},
+          {"title": "", "body": "تهتم الجامعة بشكل كبير بالتدريب العملي لطلبة كلية الطب، وهي متعاقدة مع العديد من المشافي في مدينة دمشق لتزويد الطلبة بالتدريب السريري الذي يمكنهم من امتلاك المهارات والخبرات الضرورية لممارسة مهنتهم مستقبلاً باحتراف وكفاءة عالية."},
+          {"title": "", "body": "تميّز طلبة الجامعة في المسابقات العلمية ومسابقات البحث العلمي، حيث حقق الطلبة في كليات الطب وطب الأسنان وهندسة المعلوماتية والاتصالات المراكز الأولى في المسابقات العلمية التي شاركوا بها وتنافسوا فيها مع طلبة الجامعات الحكومية والخاصة."},
+          {"title": "", "body": "تولي الجامعة اهتماماً كبيراً للمبادرات والنشاطات العلمية التخصصية والموجّهة، حيث تنظم الجامعة بشكل سنوي عدداً كبيراً من المؤتمرات والندوات وورشات العمل التي تستقطب من خلالها أهم الكفاءات والخبرات المحلية والأجنبية."},
+          {"title": "", "body": "تنظيم زيارات علمية للطلبة إلى الشركات والمؤسسات والمعامل للاطلاع على آليات العمل والتعرف على أحدث التقنيات المستخدمة."},
+          {"title": "", "body": "دعم التأهيل التطبيقي للطلبة من خلال تنظيم دورات تدريبية في مختلف التخصصات بشكل دائم وتزويدهم بشهادات حضور لهذه الدورات بالتعاون مع هيئات ومؤسسات محلية ودولية."},
+          {"title": "", "body": "تمتلك الجامعة مشفى تعليمياً هاماً ومميزاً يقع في مركز الجامعة الرئيسي وينافس بتجهيزاته أهم المشافي في المنطقة."},
+          {"title": "", "body": "الاهتمام بالتدريب العملي لطلبة طب الأسنان من خلال العيادات السنية المتميزة التي تم تجهيزها بأحدث وأهم الأجهزة بإشراف نخبة من الأساتذة ليتمكن الطالب من الحصول على الخبرة العملية الكافية لممارسة مهنته مستقبلاً بمهارة وكفاءة عالية."},
+          {"title": "", "body": "الاهتمام بمختلف أنواع الأنشطة الثقافية والاجتماعية والفنية والرياضية، حيث تنظم سنوياً العديد من هذه الأنشطة من أجل تشجيع وتنمية مواهب الطلبة."},
+          {"title": "", "body": "تقديم مستوى متميز من الخدمات، وإتاحة إمكانية التقسيط المريح للرسوم والأقساط الدراسية."},
+          {"title": "", "body": "تنظيم معارض لفرص العمل داخل الجامعة وذلك من أجل إتاحة الفرصة أمام الطلبة من التواصل مع الشركات والمؤسسات بشكل مباشر والتعرف على فرص العمل المتاحة والمؤهلات المطلوبة."}
+        ]
+      },
+      "en": {
+        "title": "SPU Overview",
+        "headline": "What Distinguishes SPU",
+        "summary": "What distinguishes the Syrian Private University in teaching, research, training and services.",
+        "badge": "SPU Overview",
+        "seoTitle": "SPU Overview",
+        "seoDescription": "Distinguished teaching staff, advanced curricula, a strong commitment to research and practical training, a teaching hospital and well-equipped dental clinics.",
+        "intro": [],
+        "sections": [
+          {"title": "", "body": "A distinguished teaching staff that includes some of the finest professors in the Syrian Arab Republic across the medical, engineering and administrative disciplines."},
+          {"title": "", "body": "The university relies on advanced curricula and study plans that are continuously updated to keep pace with the fast-changing needs of the labour market."},
+          {"title": "", "body": "Great attention to scientific research in all disciplines, given high priority by encouraging students to prepare and publish research in peer-reviewed journals under the supervision of distinguished, highly experienced professors. The university seeks to make research a tool and a way of thinking and working that contributes to development at the university and in society as a whole."},
+          {"title": "", "body": "Modern teaching methods that involve the student in teaching and research and move away from rote learning."},
+          {"title": "", "body": "A competitive learning environment that encourages students to pursue knowledge, with large fee discounts for outstanding students, reaching 100% for the top student of each class at the end of every semester."},
+          {"title": "", "body": "A focus on the quality of education by providing everything it requires and continuously following up on every part of the teaching process."},
+          {"title": "", "body": "Students are regularly sent to prestigious foreign universities to attend conferences and workshops and gain experience, through scientific cooperation agreements with these universities, which also make it easier for students to continue their postgraduate studies there."},
+          {"title": "", "body": "Training opportunities for students in all specialisations during their studies, strengthening the practical side of their education, introducing them to the labour market and its working practices, and linking theoretical knowledge to its practical applications."},
+          {"title": "", "body": "Working to secure jobs for graduates, especially outstanding ones, through the university's strong relationships with institutions and companies in the Syrian labour market."},
+          {"title": "", "body": "The university pays great attention to the practical training of medical students and has agreements with many hospitals in Damascus to provide clinical training that gives students the skills and experience they need to practise their profession with professionalism and high competence."},
+          {"title": "", "body": "The university's students excel in scientific and research competitions: students of the faculties of Medicine, Dentistry and Informatics and Communications Engineering have taken first places in competitions against students of public and private universities."},
+          {"title": "", "body": "The university gives great importance to specialised scientific initiatives and activities, organising every year a large number of conferences, seminars and workshops that bring together leading local and international experts."},
+          {"title": "", "body": "Scientific visits for students to companies, institutions and factories to see how they work and learn about the latest technologies in use."},
+          {"title": "", "body": "Ongoing support for students' practical qualification through training courses in all specialisations, with attendance certificates, in cooperation with local and international bodies and institutions."},
+          {"title": "", "body": "The university has an important teaching hospital at its main campus whose equipment rivals the leading hospitals in the region."},
+          {"title": "", "body": "Attention to the practical training of dentistry students in distinguished dental clinics equipped with the latest devices and supervised by leading professors, so that students gain the practical experience to practise their profession with skill and competence."},
+          {"title": "", "body": "Attention to all kinds of cultural, social, artistic and sports activities, with many organised every year to encourage and develop students' talents."},
+          {"title": "", "body": "A high standard of services, and convenient instalment plans for tuition fees."},
+          {"title": "", "body": "Job fairs on campus that give students the chance to meet companies and institutions directly and learn about available jobs and the qualifications they require."}
+        ]
+      }
+    },
+    "about.quality-policy": {
+      "ar": {
+        "title": "سياسة الجودة في الجامعة السورية الخاصة",
+        "headline": "سياسة الجودة في الجامعة السورية الخاصة",
+        "summary": "تلتزم الجامعة السورية الخاصة بتقديم تعليم جامعي متميز وتعزيز دورها في البحث العلمي وخدمة المجتمع.",
+        "badge": "ISO 21001:2018 · ISO 9001:2015",
+        "seoTitle": "سياسة الجودة في الجامعة السورية الخاصة",
+        "seoDescription": "تعتمد الجامعة سياسة جودة شاملة وتلتزم بتطبيق متطلبات مواصفة ISO-21001-2018 ومواصفة ISO-9001-2015.",
+        "intro": [
+          "تلتزم الجامعة السورية الخاصة بتقديم تعليم جامعي متميز وتعزيز دورها في البحث العلمي وخدمة المجتمع، تعتمد الجامعة سياسة جودة شاملة تهدف إلى تحقيق أعلى معايير التميز الأكاديمي والإداري، وتطبيق أفضل الممارسات في التعليم العالي وضمان الجودة والاعتماد الأكاديمي بما يحقق رضا الطلبة وأصحاب المصلحة ويسهم في تحقيق التنمية المستدامة.",
+          "كما تلتزم الجامعة بتطبيق متطلبات مواصفة ISO-21001-2018 ومواصفة ISO-9001-2015 من خلال اعتماد نظام متكامل لإدارة الجودة يقوم على التحسين المستمر، والشفافية، والمساءلة، والابتكار، والتحول الرقمي في جميع عملياتها الأكاديمية والإدارية.",
+          "تهدف سياسة الجودة في الجامعة إلى تحقيق ما يلي:"
+        ],
+        "sections": [
+          {"title": "", "body": "1. ضمان جودة البرامج الأكاديمية وتطويرها بما يتوافق مع المعايير الوطنية والدولية."},
+          {"title": "", "body": "2. تعزيز التميز في التعليم والتعلّم من خلال استخدام أساليب تعليم حديثة وتقنيات رقمية متطورة."},
+          {"title": "", "body": "3. تطوير منظومة البحث العلمي والابتكار وتشجيع النشر العلمي في المجلات العلمية المرموقة."},
+          {"title": "", "body": "4. تحقيق الاعتماد الأكاديمي المؤسسي والبرامجي وفق معايير هيئات ضمان الجودة."},
+          {"title": "", "body": "5. تعزيز الشراكات الأكاديمية والبحثية الدولية مع الجامعات والمراكز البحثية."},
+          {"title": "", "body": "6. رفع كفاءة الموارد البشرية من أعضاء هيئة التدريس والكوادر الإدارية."},
+          {"title": "", "body": "7. تعزيز التحول الرقمي في التعليم والإدارة الجامعية."},
+          {"title": "", "body": "8. تحقيق رضا الطلبة وأصحاب المصلحة وتحسين جودة الخدمات التعليمية."},
+          {"title": "", "body": "9. تعزيز دور الجامعة في خدمة المجتمع والتنمية المستدامة."},
+          {"title": "", "body": "10. تحسين تصنيف الجامعة الأكاديمي على المستوى الإقليمي والدولي."},
+          {"title": "", "body": "11. تحسين نظام جودة الإدارة التعليمية المدمج."}
+        ],
+        "closing": "رئيس الجامعة السورية الخاصة\nالأستاذ الدكتور عبد الرزاق الحسين",
+        "documents": [{"label": "سياسة الجودة (PDF)", "url": "/downloads/files/1781948659_t.pdf"}]
+      },
+      "en": {
+        "title": "Quality Policy at the Syrian Private University",
+        "headline": "Quality Policy at the Syrian Private University",
+        "summary": "The Syrian Private University is committed to providing distinguished university education and strengthening its role in scientific research and community service.",
+        "badge": "ISO 21001:2018 · ISO 9001:2015",
+        "seoTitle": "Quality Policy at the Syrian Private University",
+        "seoDescription": "The university adopts a comprehensive quality policy and is committed to the requirements of ISO 21001:2018 and ISO 9001:2015.",
+        "intro": [
+          "The Syrian Private University is committed to providing distinguished university education and strengthening its role in scientific research and community service. The university adopts a comprehensive quality policy that aims to achieve the highest standards of academic and administrative excellence and to apply best practice in higher education, quality assurance and academic accreditation, so as to satisfy students and stakeholders and contribute to sustainable development.",
+          "The university is also committed to the requirements of ISO 21001:2018 and ISO 9001:2015 through an integrated quality management system based on continuous improvement, transparency, accountability, innovation and digital transformation in all its academic and administrative processes.",
+          "The university's quality policy aims to achieve the following:"
+        ],
+        "sections": [
+          {"title": "", "body": "1. Assuring and developing the quality of academic programmes in line with national and international standards."},
+          {"title": "", "body": "2. Strengthening excellence in teaching and learning through modern teaching methods and advanced digital technologies."},
+          {"title": "", "body": "3. Developing the research and innovation system and encouraging publication in prestigious scientific journals."},
+          {"title": "", "body": "4. Achieving institutional and programme accreditation according to the standards of quality assurance bodies."},
+          {"title": "", "body": "5. Strengthening international academic and research partnerships with universities and research centres."},
+          {"title": "", "body": "6. Raising the competence of human resources, both faculty members and administrative staff."},
+          {"title": "", "body": "7. Advancing digital transformation in teaching and university administration."},
+          {"title": "", "body": "8. Achieving the satisfaction of students and stakeholders and improving the quality of educational services."},
+          {"title": "", "body": "9. Strengthening the university's role in community service and sustainable development."},
+          {"title": "", "body": "10. Improving the university's academic ranking regionally and internationally."},
+          {"title": "", "body": "11. Improving the integrated educational management quality system."}
+        ],
+        "closing": "President of the Syrian Private University\nProf. Dr. Abdul Razzaq Al-Hussein",
+        "documents": [{"label": "Quality Policy (PDF, Arabic)", "url": "/downloads/files/1781948659_t.pdf"}]
+      }
+    },
+    "about.ethical-charter": {
+      "ar": {
+        "title": "الميثاق الأخلاقي للجامعة السورية الخاصة",
+        "headline": "الميثاق الأخلاقي للجامعة السورية الخاصة",
+        "summary": "إطار منظم لسلوك أعضاء الهيئة التعليمية والطلبة والموظفين، يعزز النزاهة الأكاديمية والشفافية والمسؤولية المهنية داخل الحرم الجامعي.",
+        "badge": "الميثاق الأخلاقي",
+        "seoTitle": "الميثاق الأخلاقي للجامعة السورية الخاصة",
+        "seoDescription": "الميثاق الأخلاقي للجامعة السورية الخاصة: نطاقه ومبادئه وأهدافه وأخلاقيات أعضاء هيئة التدريس والطلبة والبحث العلمي والعمل الإداري.",
+        "intro": [
+          "انطلاقاً من رسالة الجامعة في نشر المعرفة وخدمة المجتمع، وإيماناً بأهمية الالتزام بالقيم الأخلاقية في العملية التعليمية والبحث العلمي، تعتمد الجامعة هذا الميثاق الأخلاقي ليكون إطاراً منظماً لسلوك أعضاء الهيئة التعليمية والطلبة والموظفين، بما يعزز النزاهة الأكاديمية والشفافية والمسؤولية المهنية داخل الحرم الجامعي."
+        ],
+        "sections": [
+          {"title": "نطاق تطبيق الميثاق", "body": "يسري هذا الميثاق على:\n1. أعضاء الهيئة التدريسية.\n2. أعضاء الهيئة الفنية والإدارية.\n3. الطلاب.\n4. الباحثين والزائرين الأكاديميين.\n5. جميع العاملين المرتبطين بالجامعة."},
+          {"title": "المبادئ الأساسية للميثاق", "body": "يقوم هذا الميثاق على مجموعة من القيم الأساسية، وهي:\n1. النزاهة الأكاديمية: الالتزام بالصدق والأمانة في التعليم والبحث العلمي.\n2. العدالة والمساواة: معاملة جميع الأفراد في الجامعة دون تمييز.\n3. الاحترام المتبادل: احترام كرامة الآخرين وآرائهم.\n4. المسؤولية المهنية: أداء الواجبات الأكاديمية والإدارية بكفاءة.\n5. الشفافية: الوضوح في الإجراءات الأكاديمية والإدارية.\n6. المساءلة: تحمل المسؤولية عن القرارات والممارسات المهنية."},
+          {"title": "أهداف الميثاق", "body": "يهدف هذا الميثاق إلى:\n1. تعزيز القيم الأخلاقية في التعليم والبحث العلمي.\n2. ترسيخ مبادئ النزاهة والشفافية والمسؤولية الأكاديمية.\n3. توضيح معايير السلوك المهني لأعضاء الهيئة التعليمية والإدارية.\n4. منع الممارسات غير الأخلاقية مثل الغش والانتحال العلمي.\n5. دعم بيئة جامعية قائمة على الاحترام المتبادل والعدالة."},
+          {"title": "أخلاقيات أعضاء هيئة التدريس", "body": "يلتزم عضو هيئة التدريس بما يلي:\n1. الالتزام بالأمانة العلمية في التدريس والبحث والنشر.\n2. احترام حقوق الملكية الفكرية وتوثيق المصادر العلمية.\n3. التعامل مع الطلبة بعدالة وموضوعية في التقييم والامتحانات.\n4. الامتناع عن استغلال المنصب الأكاديمي لتحقيق مصالح شخصية.\n5. الحفاظ على سرية المعلومات الأكاديمية والإدارية.\n6. تشجيع التفكير النقدي والبحث العلمي لدى الطلبة.\n7. عدم قبول أي هدايا عينية أو نقدية من الطلاب.\n8. الابتعاد عن كل أشكال التمييز (الطائفي، العرقي، الإثني، المناطقي).\n9. الالتزام بالقوانين والأنظمة الجامعية."},
+          {"title": "أخلاقيات الطلبة", "body": "يلتزم الطالب بما يلي:\n1. احترام القوانين والأنظمة الجامعية.\n2. الالتزام بالأمانة الأكاديمية في الامتحانات والواجبات.\n3. تجنب الغش أو الانتحال العلمي أو تزوير الوثائق.\n4. احترام أعضاء هيئة التدريس والموظفين وزملائه الطلاب.\n5. الحفاظ على ممتلكات الجامعة ومرافقها.\n6. المشاركة الإيجابية في الأنشطة العلمية والثقافية.\n7. الالتزام بقيم المجتمع وآدابه العامة."},
+          {"title": "أخلاقيات البحث العلمي", "body": "يلتزم الباحثون في الجامعة بما يلي:\n1. الالتزام بمعايير النزاهة العلمية في جميع مراحل البحث.\n2. عدم تزوير البيانات أو تحريف النتائج.\n3. توثيق المصادر والمراجع العلمية بدقة.\n4. احترام حقوق المشاركين في الدراسات البحثية.\n5. الالتزام بالقوانين والأنظمة المتعلقة بالملكية الفكرية.\n6. نشر المعرفة العلمية بما يخدم المجتمع."},
+          {"title": "أخلاقيات العمل الإداري", "body": "يلتزم الموظفون الإداريون بما يلي:\n1. الالتزام بالقوانين والأنظمة الجامعية.\n2. أداء المهام الوظيفية بكفاءة ومسؤولية.\n3. الحفاظ على سرية المعلومات المؤسسية.\n4. تقديم الخدمات للطلاب وأعضاء الهيئة التعليمية بروح التعاون والاحترام.\n5. تجنب تضارب المصالح أو استغلال الوظيفة."},
+          {"title": "المخالفات الأخلاقية والسلوكية", "body": "تشمل المخالفات الأخلاقية، على سبيل المثال لا الحصر:\n1. الغش في الامتحانات.\n2. الانتحال العلمي أو سرقة الأفكار البحثية.\n3. تزوير الوثائق أو البيانات الأكاديمية.\n4. إساءة استخدام الموارد الجامعية.\n5. كل أشكال التمييز (الطائفي، العرقي، الإثني، المناطقي).\n6. سوء السلوك الجنسي في مكان العمل.\n7. استغلال السلطة لتحقيق مكاسب شخصية."},
+          {"title": "تعزيز الثقافة الأخلاقية", "body": "تلتزم الجامعة بما يلي:\n1. نشر الوعي بالميثاق الأخلاقي بين الطلاب والكادر التدريسي والإداري.\n2. تنظيم ورشات تدريبية حول أخلاقيات التعليم والبحث العلمي.\n3. دعم المبادرات التي تعزز النزاهة الأكاديمية."}
+        ],
+        "closing": "",
+        "documents": [{"label": "الميثاق الأخلاقي (PDF)", "url": "/downloads/files/1781949004_v.pdf"}]
+      },
+      "en": {
+        "title": "Code of Ethics of the Syrian Private University",
+        "headline": "Code of Ethics of the Syrian Private University",
+        "summary": "A framework for the conduct of faculty members, students and staff that strengthens academic integrity, transparency and professional responsibility on campus.",
+        "badge": "Code of Ethics",
+        "seoTitle": "Code of Ethics of the Syrian Private University",
+        "seoDescription": "The Code of Ethics of the Syrian Private University: its scope, principles and objectives, and the ethics of faculty, students, research and administrative work.",
+        "intro": [
+          "Based on the university's mission to spread knowledge and serve society, and believing in the importance of ethical values in teaching and research, the university adopts this Code of Ethics as a framework for the conduct of faculty members, students and staff, strengthening academic integrity, transparency and professional responsibility on campus."
+        ],
+        "sections": [
+          {"title": "Scope", "body": "This code applies to:\n1. Faculty members.\n2. Technical and administrative staff.\n3. Students.\n4. Researchers and visiting academics.\n5. Everyone working with the university."},
+          {"title": "Core Principles", "body": "This code is based on the following core values:\n1. Academic integrity: honesty and trustworthiness in teaching and research.\n2. Fairness and equality: treating everyone at the university without discrimination.\n3. Mutual respect: respecting the dignity and opinions of others.\n4. Professional responsibility: carrying out academic and administrative duties competently.\n5. Transparency: clarity in academic and administrative procedures.\n6. Accountability: taking responsibility for professional decisions and practices."},
+          {"title": "Objectives of the Code", "body": "This code aims to:\n1. Strengthen ethical values in teaching and research.\n2. Establish the principles of integrity, transparency and academic responsibility.\n3. Clarify standards of professional conduct for academic and administrative staff.\n4. Prevent unethical practices such as cheating and plagiarism.\n5. Support a university environment based on mutual respect and fairness."},
+          {"title": "Ethics of Faculty Members", "body": "Faculty members commit to:\n1. Academic honesty in teaching, research and publication.\n2. Respecting intellectual property rights and citing sources.\n3. Treating students fairly and objectively in assessment and examinations.\n4. Not using their academic position for personal gain.\n5. Keeping academic and administrative information confidential.\n6. Encouraging critical thinking and research among students.\n7. Not accepting any gifts, in kind or in cash, from students.\n8. Avoiding all forms of discrimination (sectarian, racial, ethnic, regional).\n9. Abiding by university laws and regulations."},
+          {"title": "Ethics of Students", "body": "Students commit to:\n1. Respecting university laws and regulations.\n2. Academic honesty in examinations and assignments.\n3. Avoiding cheating, plagiarism and forging documents.\n4. Respecting faculty members, staff and fellow students.\n5. Taking care of university property and facilities.\n6. Taking a positive part in scientific and cultural activities.\n7. Respecting the values and public morals of society."},
+          {"title": "Research Ethics", "body": "Researchers at the university commit to:\n1. Standards of scientific integrity at every stage of research.\n2. Not fabricating data or misrepresenting results.\n3. Citing sources and references accurately.\n4. Respecting the rights of research participants.\n5. Abiding by intellectual property laws and regulations.\n6. Disseminating scientific knowledge in the service of society."},
+          {"title": "Ethics of Administrative Work", "body": "Administrative staff commit to:\n1. Abiding by university laws and regulations.\n2. Performing their duties competently and responsibly.\n3. Keeping institutional information confidential.\n4. Serving students and faculty in a spirit of cooperation and respect.\n5. Avoiding conflicts of interest and misuse of their position."},
+          {"title": "Ethical and Behavioural Violations", "body": "Ethical violations include, among others:\n1. Cheating in examinations.\n2. Plagiarism or theft of research ideas.\n3. Forging academic documents or data.\n4. Misusing university resources.\n5. All forms of discrimination (sectarian, racial, ethnic, regional).\n6. Sexual misconduct in the workplace.\n7. Abusing authority for personal gain."},
+          {"title": "Promoting an Ethical Culture", "body": "The university commits to:\n1. Raising awareness of the Code of Ethics among students, faculty and staff.\n2. Organising training workshops on the ethics of teaching and research.\n3. Supporting initiatives that strengthen academic integrity."}
+        ],
+        "closing": "",
+        "documents": [{"label": "Code of Ethics (PDF, Arabic)", "url": "/downloads/files/1781949004_v.pdf"}]
+      }
+    },
+    "about.organizational-structure": {
+      "ar": {
+        "title": "الهيكل التنظيمي",
+        "headline": "الهيكل التنظيمي",
+        "summary": "للاطلاع على الهيكل التنظيمي في الجامعة السورية الخاصة يرجى الاطلاع على الملف المرفق.",
+        "badge": "الهيكل التنظيمي",
+        "seoTitle": "الهيكل التنظيمي",
+        "seoDescription": "الهيكل التنظيمي للجامعة السورية الخاصة.",
+        "intro": ["للاطلاع على الهيكل التنظيمي في الجامعة السورية الخاصة يرجى الاطلاع على الملف المرفق."],
+        "sections": [],
+        "closing": "",
+        "documents": [{"label": "الهيكل التنظيمي (PDF)", "url": "/downloads/files/1781949883_fc.pdf"}]
+      },
+      "en": {
+        "title": "Organisational Structure",
+        "headline": "Organisational Structure",
+        "summary": "The organisational structure of the Syrian Private University is in the attached file.",
+        "badge": "Organisational Structure",
+        "seoTitle": "Organisational Structure",
+        "seoDescription": "The organisational structure of the Syrian Private University.",
+        "intro": ["The organisational structure of the Syrian Private University is in the attached file."],
+        "sections": [],
+        "closing": "",
+        "documents": [{"label": "Organisational Structure (PDF)", "url": "/downloads/files/1781949883_fc.pdf"}]
+      }
+    },
+    "about.accreditation": {
+      "ar": {
+        "title": "الاعتمادية",
+        "headline": "الاعتمادية",
+        "summary": "الجامعة السورية الخاصة جامعة مرخصة بموجب المرسوم الجمهوري رقم /339/ تاريخ 7/8/2005، معتمدة محلياً ورسمياً، وعضو دائم في اتحاد الجامعات العربية.",
+        "badge": "الاعتمادية",
+        "seoTitle": "الاعتمادية",
+        "seoDescription": "الجامعة السورية الخاصة معتمدة محلياً ورسمياً من وزارة التعليم العالي، وعضو دائم في اتحاد الجامعات العربية.",
+        "intro": [],
+        "sections": [
+          {"title": "الاعتماد المحلي", "body": "الجامعة السورية الخاصة هي جامعة مرخصة بموجب المرسوم الجمهوري رقم /339/ تاريخ 7/8/2005 وهي مؤسسة علمية أكاديمية تُعتمد أنظمتها وخططها الدراسية من قبل وزارة التعليم العالي في الجمهورية العربية السورية وهذا يجعلها معتمدة محلياً ورسمياً."},
+          {"title": "قواعد الاعتماد العام", "body": "تلتزم الجامعة السورية الخاصة بقواعد الاعتماد العام من خلال تشييدها أبنية نموذجية تحتوي على قاعات دراسية ومخابر مجهزة بأحدث التجهيزات العلمية والفنية والتي تلبي حاجة الطلبة والتدريسيين، ومطاعم ومكتبة مركزية مجهزة بأحدث الكتب والمراجع العلمية وملاعب رياضية ومساحات خضراء. وتقوم الجامعة بتطوير برامجها وخططها العلمية والبحثية بما يتلاءم مع حاجة المجتمع وبما يواكب التطور العلمي في العالم."},
+          {"title": "الاعتمادية العربية", "body": "فيما يخص الاعتمادية العربية فالجامعة السورية الخاصة حصلت على عضوية واعتماد اتحاد الجامعات العربية حيث تم الإقرار النهائي لانضمام الجامعة السورية الخاصة لاتحاد الجامعات العربية كعضو دائم في اتحاد الجامعات العربية."}
+        ],
+        "closing": "",
+        "documents": [{"label": "الاعتمادية (PDF)", "url": "/downloads/files/1781952025_cdvff.pdf"}]
+      },
+      "en": {
+        "title": "Accreditation",
+        "headline": "Accreditation",
+        "summary": "The Syrian Private University is licensed by Presidential Decree No. 339 of 7/8/2005, accredited locally and officially, and a permanent member of the Association of Arab Universities.",
+        "badge": "Accreditation",
+        "seoTitle": "Accreditation",
+        "seoDescription": "The Syrian Private University is accredited locally and officially by the Ministry of Higher Education and is a permanent member of the Association of Arab Universities.",
+        "intro": [],
+        "sections": [
+          {"title": "Local Accreditation", "body": "The Syrian Private University is licensed by Presidential Decree No. 339 of 7/8/2005. It is an academic institution whose regulations and study plans are approved by the Ministry of Higher Education of the Syrian Arab Republic, which makes it locally and officially accredited."},
+          {"title": "General Accreditation Standards", "body": "The Syrian Private University meets the general accreditation standards through its purpose-built buildings with lecture halls and laboratories equipped with the latest scientific and technical equipment to meet the needs of students and teachers, as well as restaurants, a central library stocked with the latest books and scientific references, sports grounds and green spaces. The university develops its academic and research programmes and plans to suit the needs of society and keep pace with scientific progress in the world."},
+          {"title": "Arab Accreditation", "body": "As for Arab accreditation, the Syrian Private University has obtained membership and accreditation of the Association of Arab Universities, with final approval of its admission as a permanent member of the Association of Arab Universities."}
+        ],
+        "closing": "",
+        "documents": [{"label": "Accreditation (PDF, Arabic)", "url": "/downloads/files/1781952025_cdvff.pdf"}]
+      }
+    }
+  }
+}

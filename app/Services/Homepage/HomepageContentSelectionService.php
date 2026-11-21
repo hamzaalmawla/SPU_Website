@@ -1,0 +1,183 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Services\Homepage;
+
+use App\Contracts\Achievement\AchievementServiceInterface;
+use App\Contracts\Homepage\HomepageContentSelectionServiceInterface;
+use App\Contracts\News\NewsServiceInterface;
+use App\Contracts\Research\ResearchPageServiceInterface;
+use App\DTOs\Achievement\AchievementCardDTO;
+use App\DTOs\Content\ArticleCardDTO;
+use App\DTOs\Content\ResearchCardDTO;
+use App\DTOs\Homepage\HomepageSectionDataDTO;
+use App\DTOs\Homepage\HomepageSectionDTO;
+use App\DTOs\News\NewsEventDTO;
+use App\Support\HomepagePayloadMapper;
+
+final class HomepageContentSelectionService implements HomepageContentSelectionServiceInterface
+{
+    /** Sections whose cards come from their own module rather than the homepage editor. */
+    private const LIVE_SECTIONS = ['achievements_highlights', 'university_news', 'research_studies', 'events_activities'];
+
+    public function __construct(
+        private readonly NewsServiceInterface $newsService,
+        private readonly ResearchPageServiceInterface $researchService,
+        private readonly AchievementServiceInterface $achievementService,
+    ) {}
+
+    public function hydrateSection(HomepageSectionDTO $section, string $locale): HomepageSectionDTO
+    {
+        if (! in_array($section->key, self::LIVE_SECTIONS, true)) {
+            return $section;
+        }
+
+        $arabicPayload = $section->arabicPayload ?? $section->payload;
+        $englishPayload = $section->englishPayload ?? $section->payload;
+        $localizedPayload = $locale === 'en' ? $englishPayload : $arabicPayload;
+        $localizedPayload = $this->hydratePayload($localizedPayload, $section->key, $locale);
+
+        return new HomepageSectionDTO(
+            id: $section->id,
+            key: $section->key,
+            sortOrder: $section->sortOrder,
+            isEnabled: $section->isEnabled,
+            payload: $localizedPayload,
+            arabicTranslation: $section->arabicTranslation,
+            englishTranslation: $section->englishTranslation,
+            arabicPayload: $locale === 'ar' ? $localizedPayload : $arabicPayload,
+            englishPayload: $locale === 'en' ? $localizedPayload : $englishPayload,
+        );
+    }
+
+    public function hydratePayload(HomepageSectionDataDTO $payload, string $sectionKey, string $locale): HomepageSectionDataDTO
+    {
+        if (! in_array($sectionKey, self::LIVE_SECTIONS, true)) {
+            return $payload;
+        }
+
+        $content = $payload->content;
+        $manual = ($content['selectionMode'] ?? $content['selection_mode'] ?? null) === 'manual';
+        $data = HomepagePayloadMapper::sectionDataToArray($payload);
+
+        if ($sectionKey === 'achievements_highlights') {
+            $data['items'] = $this->achievementService->homepage($locale, 3)
+                ->map(static fn (AchievementCardDTO $card): array => [
+                    'id' => $card->id,
+                    'title' => $card->title,
+                    'typeTag' => $card->typeTag,
+                    'summary' => $card->summary,
+                    'image' => $card->image,
+                    'meta' => $card->meta,
+                    'action' => $card->action,
+                ])
+                ->all();
+            $data['featuredItems'] = [];
+        } elseif ($sectionKey === 'events_activities') {
+            // The calendar shows the Events page, upcoming and past.
+            $data['events'] = $this->newsService->listNewsEvents($locale)
+                ->concat($this->newsService->listNewsEvents($locale, true))
+                ->values()
+                ->map(fn (NewsEventDTO $event, int $index): array => $this->eventToArray($event, $index, $locale))
+                ->all();
+        } elseif ($sectionKey === 'university_news') {
+            $cards = $this->newsService->getHomepageCategoryCards($locale);
+            $data['articles'] = $cards->map(fn (ArticleCardDTO $card): array => $this->articleToArray($card))->all();
+        } else {
+            $slugs = $manual ? $this->selectedResearchSlugs($content) : [];
+            $cards = $this->researchService->getHomepagePublicationCards($locale, $slugs, null, $manual ? max(1, count($slugs)) : 5);
+            $data['researchItems'] = $cards->map(fn (ResearchCardDTO $card): array => $this->researchToArray($card))->all();
+        }
+
+        return HomepagePayloadMapper::sectionDataFromArray($data);
+    }
+
+    public function hasValidManualSelection(HomepageSectionDataDTO $payload, string $sectionKey, string $locale): bool
+    {
+        $content = $payload->content;
+
+        if (($content['selectionMode'] ?? $content['selection_mode'] ?? null) !== 'manual') {
+            return true;
+        }
+
+        if ($sectionKey === 'university_news') {
+            return true;
+        }
+
+        if ($sectionKey === 'research_studies') {
+            $slugs = $this->selectedResearchSlugs($content);
+
+            return $slugs !== []
+                && $this->researchService->getHomepagePublicationCards($locale, $slugs, null, count($slugs))->count() === count($slugs);
+        }
+
+        return true;
+    }
+
+    /** @param array<string, mixed> $content @return array<int, string> */
+    private function selectedResearchSlugs(array $content): array
+    {
+        $values = $content['selectedResearchSlugs'] ?? $content['selected_research_slugs'] ?? [];
+
+        return array_values(array_unique(array_filter(
+            array_map(static fn (mixed $slug): string => is_string($slug) ? trim($slug) : '', is_array($values) ? $values : []),
+            static fn (string $slug): bool => $slug !== '',
+        )));
+    }
+
+    /** @return array<string, mixed> */
+    private function articleToArray(ArticleCardDTO $card): array
+    {
+        return [
+            'id' => $card->id,
+            'locale' => $card->locale,
+            'title' => $card->title,
+            'slug' => $card->slug,
+            'excerpt' => $card->excerpt,
+            'imageUrl' => $card->imageUrl,
+            'publishedAt' => $card->publishedAt,
+            'url' => $card->url,
+            'categoryLabel' => $card->categoryLabel,
+            'badgeTag' => $card->badgeTag,
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    private function eventToArray(NewsEventDTO $event, int $index, string $locale): array
+    {
+        $summary = trim((string) preg_replace('/\s+/u', ' ', html_entity_decode(strip_tags($event->summary), ENT_QUOTES | ENT_HTML5, 'UTF-8')));
+
+        return [
+            'id' => $index + 1,
+            'locale' => $locale,
+            'title' => $event->title,
+            'slug' => $event->id,
+            'summary' => mb_strimwidth($summary, 0, 240, '…'),
+            'startsAt' => $event->startsAt,
+            'endsAt' => $event->endsAt,
+            'location' => $event->location,
+            'url' => $event->detailUrl,
+            'imageUrl' => $event->imageUrl,
+            // Shown as the card's badge.
+            'timeLabel' => $event->categoryLabel !== '' ? $event->categoryLabel : ($locale === 'ar' ? 'فعالية' : 'Event'),
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    private function researchToArray(ResearchCardDTO $card): array
+    {
+        return [
+            'id' => $card->id,
+            'locale' => $card->locale,
+            'title' => $card->title,
+            'slug' => $card->slug,
+            'summary' => $card->summary,
+            'imageUrl' => $card->imageUrl,
+            'publishedAt' => $card->publishedAt,
+            'url' => $card->url,
+            'categoryLabel' => $card->categoryLabel,
+            'authors' => $card->authors,
+        ];
+    }
+}

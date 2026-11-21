@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 namespace App\Services\Placeholders;
 
-use App\Contracts\AuthServiceInterface;
+use App\Contracts\Auth\AuthServiceInterface;
+use App\DTOs\Auth\LoginCredentialsDTO;
 use BadMethodCallException;
 use Illuminate\Contracts\Auth\Authenticatable;
 
@@ -13,7 +14,7 @@ use Illuminate\Contracts\Auth\Authenticatable;
  */
 final class AuthServicePlaceholder implements AuthServiceInterface
 {
-    public function attempt(array $credentials): bool
+    public function attempt(LoginCredentialsDTO $credentials): bool
     {
         throw new BadMethodCallException(__METHOD__.' is not implemented.');
     }
@@ -28,12 +29,37 @@ final class AuthServicePlaceholder implements AuthServiceInterface
         throw new BadMethodCallException(__METHOD__.' is not implemented.');
     }
 
-    public function logout(): bool
+    public function unlockAccount(string $email): bool
     {
         throw new BadMethodCallException(__METHOD__.' is not implemented.');
     }
 
-    public function extendSession(): bool
+    public function logout(): void
+    {
+        throw new BadMethodCallException(__METHOD__.' is not implemented.');
+    }
+
+    public function extendSession(): void
+    {
+        throw new BadMethodCallException(__METHOD__.' is not implemented.');
+    }
+
+    public function recordFailedTwoFactor(Authenticatable $user): void
+    {
+        throw new BadMethodCallException(__METHOD__.' is not implemented.');
+    }
+
+    public function recordSuccessfulTwoFactor(Authenticatable $user): void
+    {
+        throw new BadMethodCallException(__METHOD__.' is not implemented.');
+    }
+
+    public function createUser(array $payload, int $actorUserId): ?int
+    {
+        throw new BadMethodCallException(__METHOD__.' is not implemented.');
+    }
+
+    public function updateUser(int $userId, array $payload, int $actorUserId): bool
     {
         throw new BadMethodCallException(__METHOD__.' is not implemented.');
     }

@@ -1,0 +1,288 @@
+import assert from 'node:assert/strict';
+import { afterEach, test } from 'node:test';
+import dayjs from 'dayjs';
+
+import { createCalendarApp } from '../../resources/js/alpine/calendarApp.js';
+import { createHeroSlider } from '../../resources/js/alpine/heroSlider.js';
+import { createHonorPanel } from '../../resources/js/alpine/honorPanel.js';
+import { createPathSlider } from '../../resources/js/alpine/pathSlider.js';
+import { createResearchSlider } from '../../resources/js/alpine/researchSlider.js';
+import { createStatsCounter } from '../../resources/js/alpine/statsCounter.js';
+
+const originalWindow = globalThis.window;
+const originalDocument = globalThis.document;
+const originalIntersectionObserver = globalThis.IntersectionObserver;
+
+afterEach(() => {
+    globalThis.window = originalWindow;
+    globalThis.document = originalDocument;
+    globalThis.IntersectionObserver = originalIntersectionObserver;
+});
+
+function installReducedMotionBrowser() {
+    globalThis.document = {
+        activeElement: null,
+        readyState: 'complete',
+        documentElement: { lang: 'en', direction: 'ltr' },
+    };
+    globalThis.window = {
+        getComputedStyle: () => ({ direction: 'ltr' }),
+        matchMedia: () => ({
+            matches: true,
+            addEventListener() {},
+            removeEventListener() {},
+        }),
+    };
+}
+
+function root(dataset = {}) {
+    return {
+        dataset,
+        contains: () => false,
+        matches: () => false,
+    };
+}
+
+test('hero and honor autoplay remain stopped under reduced motion', () => {
+    installReducedMotionBrowser();
+
+    const hero = createHeroSlider();
+    hero.$el = root({ images: JSON.stringify(['/one.jpg', '/two.jpg']) });
+    hero.init();
+
+    const honor = createHonorPanel();
+    honor.$el = root({
+        items: JSON.stringify([{ id: 1 }, { id: 2 }]),
+        itemLabel: 'Show item',
+    });
+    honor.init();
+
+    assert.equal(hero._timer, null);
+    assert.equal(honor._timer, null);
+    assert.equal(honor.itemLabel(0), 'Show item 1 / 2');
+});
+
+test('hero autoplay waits for the window load event', () => {
+    const listeners = {};
+    globalThis.document = {
+        activeElement: null,
+        readyState: 'interactive',
+        documentElement: { lang: 'en', direction: 'ltr' },
+    };
+    globalThis.window = {
+        getComputedStyle: () => ({ direction: 'ltr' }),
+        addEventListener: (type, listener) => { listeners[type] = listener; },
+        matchMedia: () => ({
+            matches: false,
+            addEventListener() {},
+            removeEventListener() {},
+        }),
+    };
+
+    const hero = createHeroSlider();
+    hero.$el = root({ images: JSON.stringify(['/one.jpg', '/two.jpg']) });
+    hero.init();
+
+    assert.equal(hero._timer, null);
+
+    listeners.load();
+
+    assert.notEqual(hero._timer, null);
+    hero.destroy();
+});
+
+test('calendar selects the current day on init and stops autoplay', () => {
+    installReducedMotionBrowser();
+    const calendar = createCalendarApp();
+    const today = dayjs().format('YYYY-MM-DD');
+    calendar.$el = root({
+        events: JSON.stringify([
+            { id: 2, title: 'Later', startsAt: dayjs(today).add(1, 'day').format('YYYY-MM-DD') },
+            { id: 1, title: 'Today', startsAt: today },
+        ]),
+    });
+
+    calendar.init();
+
+    assert.equal(calendar.selectedDate, today);
+    assert.equal(calendar.selectedEvent.title, 'Today');
+    assert.equal(calendar.viewDate.format('YYYY-MM-DD'), dayjs().startOf('month').format('YYYY-MM-DD'));
+    assert.equal(calendar.carouselInterval, null);
+});
+
+test('calendar marks every day of an event that spans several days', () => {
+    installReducedMotionBrowser();
+    const calendar = createCalendarApp();
+    calendar.$el = root({
+        events: JSON.stringify([
+            { id: 1, title: 'Book fair', startsAt: '2026-02-05', endsAt: '2026-02-16' },
+        ]),
+    });
+
+    calendar.init();
+    calendar.selectDate('2026-02-10');
+
+    assert.equal(calendar.selectedEvent.title, 'Book fair');
+    assert.equal(calendar.calendarDays.filter((day) => day.hasEvent).length, 12);
+});
+
+test('calendar stays on today when today has no events', () => {
+    installReducedMotionBrowser();
+    const calendar = createCalendarApp();
+    const nextEventDate = dayjs().add(5, 'day').format('YYYY-MM-DD');
+    calendar.$el = root({
+        events: JSON.stringify([
+            { id: 1, title: 'Past', startsAt: dayjs().subtract(1, 'day').format('YYYY-MM-DD') },
+            { id: 2, title: 'Next', startsAt: nextEventDate },
+        ]),
+    });
+
+    calendar.init();
+
+    assert.equal(calendar.selectedDate, dayjs().format('YYYY-MM-DD'));
+    assert.equal(calendar.selectedEvent, null);
+    assert.equal(calendar.viewDate.format('YYYY-MM-DD'), dayjs().startOf('month').format('YYYY-MM-DD'));
+});
+
+test('counters retain their server-rendered value under reduced motion', () => {
+    installReducedMotionBrowser();
+    const target = { dataset: { value: '1250' }, textContent: '1250' };
+    const counter = createStatsCounter();
+    counter.$el = { querySelectorAll: () => [target] };
+
+    counter.init();
+
+    assert.equal(target.textContent, '1250');
+});
+
+test('path cards flip open on tap and close on second tap when the device cannot hover', () => {
+    globalThis.window = { matchMedia: () => ({ matches: false }) };
+
+    const slider = createPathSlider();
+
+    slider.togglePathCard(2);
+    assert.equal(slider.activePathCard, 2);
+
+    slider.togglePathCard(2);
+    assert.equal(slider.activePathCard, null);
+});
+
+test('path cards ignore taps on hover-capable devices', () => {
+    globalThis.window = { matchMedia: () => ({ matches: true }) };
+
+    const slider = createPathSlider();
+    slider.togglePathCard(2);
+
+    assert.equal(slider.activePathCard, null);
+});
+
+test('path card taps on links navigate without toggling the card', () => {
+    globalThis.window = { matchMedia: () => ({ matches: false }) };
+
+    const slider = createPathSlider();
+    const linkEvent = { target: { closest: (selector) => (selector === 'a, button' ? {} : null) } };
+    const plainEvent = { target: { closest: () => null } };
+
+    slider.handlePathCardTap(linkEvent, 1);
+    assert.equal(slider.activePathCard, null);
+
+    slider.handlePathCardTap(plainEvent, 1);
+    assert.equal(slider.activePathCard, 1);
+});
+
+test('research slider advances by the rendered card width and gap', () => {
+    globalThis.window = {
+        getComputedStyle: () => ({ direction: 'ltr', columnGap: '32px', gap: '32px' }),
+        matchMedia: () => ({ matches: false }),
+    };
+
+    const scrollCalls = [];
+    const slider = createResearchSlider();
+    const track = {
+        querySelector: () => ({ getBoundingClientRect: () => ({ width: 262 }) }),
+        scrollBy: (options) => scrollCalls.push(options),
+    };
+    slider.$refs = { researchTrack: track };
+
+    slider.slide('next');
+
+    assert.deepEqual(scrollCalls, [{ left: 294, behavior: 'smooth' }]);
+});
+
+test('research slider measures the card selector it is given', () => {
+    globalThis.window = {
+        getComputedStyle: () => ({ direction: 'ltr', columnGap: '32px', gap: '32px' }),
+        matchMedia: () => ({ matches: false }),
+    };
+
+    const scrollCalls = [];
+    const selectors = [];
+    const slider = createResearchSlider('.news-slide');
+    slider.$refs = {
+        researchTrack: {
+            querySelector: (selector) => {
+                selectors.push(selector);
+                return { getBoundingClientRect: () => ({ width: 320 }) };
+            },
+            scrollBy: (options) => scrollCalls.push(options),
+        },
+    };
+
+    slider.slide('next');
+
+    assert.deepEqual(selectors, ['.news-slide']);
+    assert.deepEqual(scrollCalls, [{ left: 352, behavior: 'smooth' }]);
+});
+
+test('honor panel fetches images only for the cards on screen and the next one', () => {
+    installReducedMotionBrowser();
+    globalThis.window.matchMedia = (query) => ({
+        matches: query.includes('reduce') || false,
+        addEventListener() {},
+        removeEventListener() {},
+    });
+
+    const honor = createHonorPanel();
+    honor.$el = root({
+        items: JSON.stringify([1, 2, 3, 4, 5].map((id) => ({ id, image: `/honor-${id}.webp`, imageSrcset: `/honor-${id}-480.webp 480w` }))),
+    });
+    honor.init();
+
+    // A phone shows one card, so it fetches that one and the next.
+    assert.deepEqual([0, 1, 2, 3, 4].map((index) => honor.itemImage(honor.items[index], index)), ['/honor-1.webp', '/honor-2.webp', null, null, null]);
+    assert.equal(honor.itemSrcset(honor.items[4], 4), null);
+
+    // A card keeps its image once fetched, so it does not blank as it leaves.
+    honor.next();
+    assert.equal(honor.itemImage(honor.items[0], 0), '/honor-1.webp');
+    assert.equal(honor.itemImage(honor.items[2], 2), '/honor-3.webp');
+    assert.equal(honor.itemImage(honor.items[3], 3), null);
+});
+
+test('honor panel fetches the three desktop cards and the next one on a wide screen', () => {
+    installReducedMotionBrowser();
+    globalThis.window.matchMedia = (query) => ({
+        matches: true,
+        addEventListener() {},
+        removeEventListener() {},
+    });
+
+    const honor = createHonorPanel();
+    honor.$el = root({ items: JSON.stringify([1, 2, 3, 4, 5, 6].map((id) => ({ id, image: `/honor-${id}.webp` }))) });
+    honor.init();
+
+    assert.deepEqual(honor.items.map((item, index) => honor.itemImage(item, index)), ['/honor-1.webp', '/honor-2.webp', '/honor-3.webp', '/honor-4.webp', null, null]);
+});
+
+test('hero switches only the next slide to eager loading', () => {
+    installReducedMotionBrowser();
+    const slides = [{ loading: 'eager' }, { loading: 'lazy' }, { loading: 'lazy' }];
+
+    const hero = createHeroSlider();
+    hero.$el = { ...root({ images: JSON.stringify(['/one.webp', '/two.webp', '/three.webp']) }), querySelectorAll: () => slides };
+    hero.init();
+
+    hero.preloadSlide(hero.currentIndex + 1);
+
+    assert.deepEqual(slides.map((slide) => slide.loading), ['eager', 'eager', 'lazy']);
+});
