@@ -1746,6 +1746,7 @@ after_dns() {
         chmod 644 /etc/cron.d/spu-backup
         ok "Nightly backup installed. Copy ${ROOT}/backups to another place regularly too."
     fi
+    install_cache_warm
     if [[ -f "${SECRETS}/ftp.env" ]] && yesno "Delete the saved FTP password from this server now? (only needed for copying)" Y; then
         shred -u "${SECRETS}/ftp.env" 2>/dev/null || rm -f "${SECRETS}/ftp.env"
         ok "FTP password deleted."
@@ -1763,6 +1764,18 @@ after_dns() {
    - Old links that do not resolve:  spu artisan continuity:report-unresolved
    - Errors:                         spu logs --tail 200 web
 TXT
+}
+
+# Publishing empties the page cache, and the deploy warms it only once. Every
+# 15 minutes cache:warm renders the home page, the main landing pages and the
+# menus again (about 20 s), so the first visitor after a publish does not wait
+# for them. flock keeps runs from overlapping.
+install_cache_warm() {
+    local f=/etc/cron.d/spu-cache-warm
+    [[ -f "${f}" ]] && return 0
+    echo "*/15 * * * * root flock -n /run/spu-cache-warm.lock ${SPU} exec -T web spu-entrypoint artisan cache:warm >/dev/null 2>&1" > "${f}"
+    chmod 644 "${f}"
+    ok "Page cache warm-up every 15 minutes installed."
 }
 
 # ── temporary preview address ─────────────────────────────────────────────────
