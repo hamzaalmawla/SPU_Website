@@ -77,7 +77,11 @@ with 200 pages; they gain one 301 hop and end on the same target.)
 - `/<path>/` → **301** `/<path>` (except the old subsite roots like `/med/`,
   which go straight to the application so they redirect in one hop).
 - `/index.php?...` is a legacy URL handled by the application; `/app.php` 404.
-- `/forms`, `/Medicine`, `/spuh`: served by the legacy apps at the same paths.
+- `/forms`, `/Medicine`, `/spuh`: **retired** on the VPS (product decision,
+  2026-11-21): `SPU_LEGACY_APPS=off` / `APPS_MODE=off`, so they answer 404 and
+  step 7 is skipped. Their databases (`spuedu_forms`, `spuedu_medical`,
+  `spuedu_spuh`) stay loaded on the VPS; the files stay on the old host.
+  Setting `SPU_LEGACY_APPS=local` and running step 7 brings them back.
 
 ### 2.4 Application (unchanged; the data moves with `spuedu_v2`)
 

@@ -901,7 +901,7 @@ API_PKG=""   # this run's package of the old server's .env, storage, runtime fil
 
 api_core_items() {
     local items=(env storage web "db:${SITE_DB}") pair
-    if [[ "${APPS_MODE:-local}" != remote ]]; then
+    if [[ "${APPS_MODE:-local}" == local ]]; then
         items+=(app:forms app:Medicine app:spuh)
         for pair in "${APP_DBS[@]}"; do items+=("db:${pair%%:*}:${pair#*:}"); done
     fi
@@ -1102,6 +1102,10 @@ step_site() {
 step_apps() {
     need_code || return 1
     info "/forms, /Medicine and /spuh are three older PHP applications that v2 shows at those addresses."
+    if [[ "${APPS_MODE:-local}" == off ]]; then
+        info "They are retired (APPS_MODE=off): those addresses are not served, so there is nothing to copy."
+        return 0
+    fi
     if [[ "${APPS_MODE:-local}" == remote ]] && ! yesno "They are set to stay on the old server. Copy them now instead?" Y; then
         info "Left on the old server."; return 0
     fi
@@ -1536,8 +1540,11 @@ parity_check() {
     fi
     head -1 "${dir}/compare-${stamp}.txt" | sed 's/^/   /'
     # A difference may only mean the content changed since 17 Nov. Ask the old server now.
-    python3 - "${base}" "${dir}/vps-${stamp}.tsv" > "${dir}/diff-paths-${stamp}.txt" <<'PY'
-import sys
+    # Retired apps (APPS_MODE=off) answer 404 on purpose: leave their addresses out.
+    local retired=""; [[ "${APPS_MODE:-local}" == off ]] && retired='^/(forms|Medicine|spuh)(/|$)'
+    python3 - "${base}" "${dir}/vps-${stamp}.tsv" "${retired}" > "${dir}/diff-paths-${stamp}.txt" <<'PY'
+import re, sys
+retired = re.compile(sys.argv[3]) if len(sys.argv) > 3 and sys.argv[3] else None
 def load(p):
     rows = {}
     with open(p, encoding="utf-8") as fh:
@@ -1549,10 +1556,16 @@ def load(p):
     return rows
 b, a = load(sys.argv[1]), load(sys.argv[2])
 for p in b:
+    if retired and retired.search(p):
+        continue
     if p not in a or b[p] != a[p]:
         print(p)
 PY
     local n; n="$(grep -c . "${dir}/diff-paths-${stamp}.txt")"
+    if [[ "${n}" -eq 0 ]]; then
+        check_result PASS "Old links: every recorded address answers as on the old server (retired /forms, /Medicine, /spuh left out)"
+        return
+    fi
     info "${n} addresses differ from the 17 Nov record. Asking the old server how it answers them today..."
     python3 "${tool}" record --base "https://v2.spu.edu.sy" --connect-to "${OLD_IP}" --insecure \
         --paths "${dir}/diff-paths-${stamp}.txt" --concurrency 2 --out "${dir}/old-now-${stamp}.tsv" 2>/dev/null
@@ -1590,6 +1603,7 @@ step_checks() {
     fi
     [[ "${MEDIA_MODE:-local}" == remote ]] && check_result WARN "Old images/downloads still come from the old server (step 8 not finished)"
     [[ "${APPS_MODE:-local}" == remote ]] && check_result WARN "/forms, /Medicine, /spuh still run on the old server (step 7)"
+    [[ "${APPS_MODE:-local}" == off ]] && check_result WARN "/forms, /Medicine, /spuh are retired (APPS_MODE=off) and answer 404; left out of the old-links check"
     if [[ -n "$(spu_artisan queue:failed 2>/dev/null | grep -E '^[[:space:]]*[0-9a-f-]{8,}' || true)" ]]; then
         check_result WARN "There are failed queue jobs (spu artisan queue:failed)"
     fi
@@ -1812,7 +1826,7 @@ final_sync() {
     local i id
     for id in site apps media appenv databases start checks report; do
         for i in "${!STEP_IDS[@]}"; do [[ "${STEP_IDS[$i]}" == "${id}" ]] && break; done
-        [[ "${id}" == apps && "${APPS_MODE:-local}" == remote ]] && continue
+        [[ "${id}" == apps && "${APPS_MODE:-local}" =~ ^(remote|off)$ ]] && continue
         [[ "${id}" == media && "${MEDIA_MODE:-local}" == remote ]] && { warn "Old media is still served from the old server (step 8 never finished)."; continue; }
         # The old site's media no longer changes; over the API a fresh copy would mean packing ~20 GB again.
         [[ "${id}" == media && "${FILE_METHOD:-}" =~ ^(api|folder)$ ]] && is_done media && { info "Old media was already copied; not copied again."; continue; }
