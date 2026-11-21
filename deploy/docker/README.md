@@ -95,6 +95,9 @@ directly when wanted, dry run first, for example
 - `SPU_CANONICAL_HOST` / `SPU_ALIAS_HOSTS`: the one address and the names
   that 301 to it. Must agree with `APP_URL` / `APP_CANONICAL_URL` in app.env.
 - `SPU_HSTS`: keep identical to the application's HSTS (`HSTS_*` in app.env).
+- Page cache warm-up: `/etc/cron.d/spu-cache-warm` runs `cache:warm` every 15
+  minutes (about 20 s; home page, main landing pages, menus), so pages stay
+  cached after a publish empties the cache. `migrate.sh after-dns` installs it.
 - `SPU_INDEXING`, `SPU_WRITES`: `on` normally. `off` only while a temporary
   preview address is on (`migrate.sh preview on preview.spu.edu.sy`, before the
   switch): every response gets `X-Robots-Tag: noindex`, and Caddy answers
