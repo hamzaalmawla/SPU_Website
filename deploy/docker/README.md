@@ -97,7 +97,11 @@ directly when wanted, dry run first, for example
 - `SPU_HSTS`: keep identical to the application's HSTS (`HSTS_*` in app.env).
 - `SPU_LEGACY_MEDIA`, `SPU_LEGACY_APPS`: `local` once the files are copied;
   `remote` proxies them to the old host (a bridge if a copy is unfinished; the
-  old host must then stay up).
+  old host must then stay up). `SPU_LEGACY_APPS=off` retires `/forms`,
+  `/Medicine` and `/spuh` (they answer 404); with it set `COMPOSE_PROFILES=""`
+  and `APPS_MODE=off` in `secrets/migrate.conf`, so step 7, `final` and the
+  old-links check skip them. Retired on 2026-11-21 by product decision; their
+  databases stay loaded on the VPS.
 - `INNODB_BUFFER_POOL_SIZE`, `APACHE_MAX_WORKERS`: size to the VPS.
 
 `app.env` is the cPanel `.env` with only host-specific keys changed
